@@ -3205,6 +3205,8 @@ class RenderEditable extends RenderBox with RelayoutWhenSystemFontsChangeMixin, 
 
     final List<ui.TextBox> boxes = _textPainter.getBoxesForSelection(
       TextSelection(baseOffset: range.start, extentOffset: range.end),
+      boxHeightStyle: selectionHeightStyle,
+      boxWidthStyle: selectionWidthStyle,
     );
 
     return boxes.fold(
@@ -4181,6 +4183,7 @@ class _TextHighlightPainter extends RenderEditablePainter {
 
   Color? get highlightColor => _highlightColor;
   Color? _highlightColor;
+
   set highlightColor(Color? newValue) {
     if (newValue == _highlightColor)
       return;
