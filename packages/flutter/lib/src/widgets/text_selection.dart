@@ -8,6 +8,7 @@ library;
 
 import 'dart:async';
 import 'dart:math' as math;
+import 'dart:ui';
 
 import 'package:characters/characters.dart';
 import 'package:flutter/foundation.dart';
@@ -15,7 +16,9 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter/src/widgets/shortcuts.dart';
 
+import 'actions.dart';
 import 'basic.dart';
 import 'binding.dart';
 import 'constants.dart';
@@ -1821,20 +1824,41 @@ class _SelectionToolbarWrapperState extends State<_SelectionToolbarWrapper>
   @override
   Widget build(BuildContext context) {
     return TextFieldTapRegion(
-      child: Directionality(
-        textDirection: Directionality.of(this.context),
-        child: FadeTransition(
-          opacity: _opacity,
-          child: CompositedTransformFollower(
-            link: widget.layerLink,
-            showWhenUnlinked: false,
-            offset: widget.offset,
-            child: widget.child,
+      child: Semantics(
+        // role: SemanticsRole.toolbar,
+        label: 'MyLabel',
+        child: Shortcuts(
+          shortcuts: const <ShortcutActivator, Intent>{
+            SingleActivator(
+              LogicalKeyboardKey.arrowDown,
+            ) : _SelectionToolbarNextItemIntent(),
+          },
+          child: Actions(
+            actions: <Type, Action<Intent>>{
+              _SelectionToolbarNextItemIntent : CallbackAction<_SelectionToolbarNextItemIntent>(onInvoke: (_SelectionToolbarNextItemIntent intent) {
+              }),
+            },
+            child: Directionality(
+              textDirection: Directionality.of(this.context),
+              child: FadeTransition(
+                opacity: _opacity,
+                child: CompositedTransformFollower(
+                  link: widget.layerLink,
+                  showWhenUnlinked: false,
+                  offset: widget.offset,
+                  child: widget.child,
+                ),
+              ),
+            ),
           ),
         ),
       ),
     );
   }
+}
+
+class _SelectionToolbarNextItemIntent extends Intent {
+  const _SelectionToolbarNextItemIntent();
 }
 
 /// This widget represents a single draggable selection handle.
