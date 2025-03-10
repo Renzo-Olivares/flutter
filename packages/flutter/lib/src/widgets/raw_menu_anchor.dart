@@ -31,15 +31,6 @@ import 'tap_region.dart';
 
 const bool _kDebugMenus = false;
 
-const Map<ShortcutActivator, Intent> _kMenuTraversalShortcuts = <ShortcutActivator, Intent>{
-  SingleActivator(LogicalKeyboardKey.gameButtonA): ActivateIntent(),
-  SingleActivator(LogicalKeyboardKey.escape): DismissIntent(),
-  SingleActivator(LogicalKeyboardKey.arrowDown): DirectionalFocusIntent(TraversalDirection.down),
-  SingleActivator(LogicalKeyboardKey.arrowUp): DirectionalFocusIntent(TraversalDirection.up),
-  SingleActivator(LogicalKeyboardKey.arrowLeft): DirectionalFocusIntent(TraversalDirection.left),
-  SingleActivator(LogicalKeyboardKey.arrowRight): DirectionalFocusIntent(TraversalDirection.right),
-};
-
 /// Anchor and menu information passed to [RawMenuAnchor].
 @immutable
 class RawMenuOverlayInfo {
@@ -588,6 +579,17 @@ class _RawMenuAnchorState extends State<RawMenuAnchor> with _RawMenuAnchorBaseMi
 
     return widget.overlayBuilder(context, info);
   }
+
+  Map<ShortcutActivator, Intent> get _kMenuTraversalShortcuts => <ShortcutActivator, Intent>{
+    if (isOpen) ...<ShortcutActivator, Intent>{
+      SingleActivator(LogicalKeyboardKey.gameButtonA): ActivateIntent(),
+      SingleActivator(LogicalKeyboardKey.escape): DismissIntent(),
+      SingleActivator(LogicalKeyboardKey.arrowDown): DirectionalFocusIntent(TraversalDirection.down),
+      SingleActivator(LogicalKeyboardKey.arrowUp): DirectionalFocusIntent(TraversalDirection.up),
+      SingleActivator(LogicalKeyboardKey.arrowLeft): DirectionalFocusIntent(TraversalDirection.left),
+      SingleActivator(LogicalKeyboardKey.arrowRight): DirectionalFocusIntent(TraversalDirection.right),
+    }
+  };
 
   @override
   Widget buildAnchor(BuildContext context) {

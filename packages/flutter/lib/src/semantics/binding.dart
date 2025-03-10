@@ -142,6 +142,7 @@ mixin SemanticsBinding on BindingBase {
         arguments is ByteData
             ? action.copyWith(arguments: const StandardMessageCodec().decodeMessage(arguments))
             : action;
+    debugPrint('framework decoded action ${decodedAction.arguments}');
     // Listeners may get added/removed while the iteration is in progress. Since the list cannot
     // be modified while iterating, we are creating a local copy for the iteration.
     final List<ValueSetter<ui.SemanticsActionEvent>> localListeners = _semanticsActionListeners

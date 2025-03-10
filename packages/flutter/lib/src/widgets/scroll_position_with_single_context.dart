@@ -127,7 +127,9 @@ class ScrollPositionWithSingleContext extends ScrollPosition implements ScrollAc
 
   @override
   void applyUserOffset(double delta) {
+    debugPrint('setting position to ${pixels - physics.applyPhysicsToUserOffset(this, delta)}, max extent ${maxScrollExtent}, min extent ${minScrollExtent}, current extent ${pixels}, extent before ${extentBefore}, extent inside ${extentInside}, extent after ${extentAfter}');
     updateUserScrollDirection(delta > 0.0 ? ScrollDirection.forward : ScrollDirection.reverse);
+    // setPixels(1837.0);
     setPixels(pixels - physics.applyPhysicsToUserOffset(this, delta));
   }
 

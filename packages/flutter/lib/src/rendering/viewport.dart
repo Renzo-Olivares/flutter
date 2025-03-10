@@ -310,11 +310,21 @@ abstract class RenderViewportBase<ParentDataClass extends ContainerParentDataMix
     config.addTagForChildren(RenderViewport.useTwoPaneSemantics);
   }
 
+  void _debugPrintSliverGeometry(SliverGeometry geometry) {
+    debugPrint('cacheExtent: ${geometry.cacheExtent},\n crossAxisExtent: ${geometry.crossAxisExtent},\n hasVisualOverflow: ${geometry.hasVisualOverflow},\n hitTestExtent: ${geometry.hitTestExtent},\n layoutExtent: ${geometry.layoutExtent},\n maxPaintExtent: ${geometry.maxPaintExtent},\n maxScrollObstructuionExtent: ${geometry.maxScrollObstructionExtent},\n paintExtent: ${geometry.paintExtent},\n paintOrigin ${geometry.paintOrigin}, \n scrollExtent: ${geometry.scrollExtent},\n scrollOffsetCorrection: ${geometry.scrollOffsetCorrection},\n visible: ${geometry.visible}');
+  }
+
   @override
   void visitChildrenForSemantics(RenderObjectVisitor visitor) {
+    debugPrint('RenderViewPortBase - visitChildrenForSemantics num of children ${childrenInPaintOrder.length} ${childrenInPaintOrder.toList()}');
     childrenInPaintOrder
         .where(
-          (RenderSliver sliver) => sliver.geometry!.visible || sliver.geometry!.cacheExtent > 0.0,
+          (RenderSliver sliver) {
+            debugPrint('RenderViewPortBase - visitingChildForSemantics - $sliver, is the sliver visible? ${sliver.geometry!.visible}, is the sliver cache extent >= 0? ${sliver.geometry!.cacheExtent > 0.0}, skipping ${!sliver.geometry!.visible && sliver.geometry!.cacheExtent <= 0.0}\n geometry: ');
+            _debugPrintSliverGeometry(sliver.geometry!);
+            return true;
+            // return sliver.geometry!.visible || sliver.geometry!.cacheExtent > 0.0;
+          },
         )
         .forEach(visitor);
   }

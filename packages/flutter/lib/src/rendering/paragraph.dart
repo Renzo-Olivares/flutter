@@ -1266,6 +1266,7 @@ class RenderParagraph extends RenderBox
     Iterable<SemanticsNode> children,
   ) {
     assert(_semanticsInfo != null && _semanticsInfo!.isNotEmpty);
+    debugPrint('framework renderParagraph - assembleSemanticNode \n ${StackTrace.current.toString()}\n');
     final List<SemanticsNode> newChildren = <SemanticsNode>[];
     TextDirection currentDirection = textDirection;
     Rect currentRect;

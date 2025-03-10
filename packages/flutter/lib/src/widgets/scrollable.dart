@@ -1698,11 +1698,22 @@ class _RenderScrollSemantics extends RenderProxyBox {
   }
 
   void _onScrollToOffset(Offset targetOffset) {
+    debugPrint('framework - scroll to offset $targetOffset');
     final double offset = switch (axis) {
       Axis.horizontal => targetOffset.dx,
       Axis.vertical => targetOffset.dy,
     };
     _position.jumpTo(offset);
+  }
+
+  void _onScrollByDelta(Offset delta) {
+    debugPrint('framework - scroll by delta $delta');
+    final double offset = switch (axis) {
+      Axis.horizontal => delta.dx,
+      Axis.vertical => delta.dy,
+    };
+    final double effectivePos = _position.pixels + offset;
+    _position.jumpTo(effectivePos);
   }
 
   @override
@@ -1715,7 +1726,11 @@ class _RenderScrollSemantics extends RenderProxyBox {
         ..scrollPosition = _position.pixels
         ..scrollExtentMax = _position.maxScrollExtent
         ..scrollExtentMin = _position.minScrollExtent
-        ..scrollChildCount = semanticChildCount;
+        ..scrollChildCount = semanticChildCount
+        ..onShowOnScreen = () {
+          debugPrint('framework - onShowOnScreen');
+          super.showOnScreen();
+        };
       if (position.maxScrollExtent > position.minScrollExtent && allowImplicitScrolling) {
         config.onScrollToOffset = _onScrollToOffset;
       }
@@ -1736,11 +1751,14 @@ class _RenderScrollSemantics extends RenderProxyBox {
       return;
     }
 
-    (_innerNode ??= SemanticsNode(showOnScreen: showOnScreen)).rect = node.rect;
+    (_innerNode ??= SemanticsNode(showOnScreen: () {
+      debugPrint('showOnScreen');
+      showOnScreen();})).rect = node.rect;
 
     int? firstVisibleIndex;
     final List<SemanticsNode> excluded = <SemanticsNode>[_innerNode!];
     final List<SemanticsNode> included = <SemanticsNode>[];
+    debugPrint('assemble semantics node in RenderScrollSemantics ${children.length} \n${StackTrace.current.toString()}\n');
     for (final SemanticsNode child in children) {
       assert(child.isTagged(RenderViewport.useTwoPaneSemantics));
       if (child.isTagged(RenderViewport.excludeFromScrolling)) {

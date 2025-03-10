@@ -1381,6 +1381,7 @@ base class PipelineOwner with DiagnosticableTreeMixin {
               .where((RenderObject object) => !object._needsLayout && object.owner == this)
               .toList()
             ..sort((RenderObject a, RenderObject b) => a.depth - b.depth);
+      // debugPrint('flush semantics num of nodes to process: ${nodesToProcess.length}, num of nodes needing semantics ${_nodesNeedingSemantics.length}');
       _nodesNeedingSemantics.clear();
       if (!kReleaseMode) {
         FlutterTimeline.startSync('Semantics.updateChildren');
@@ -1429,6 +1430,7 @@ base class PipelineOwner with DiagnosticableTreeMixin {
         FlutterTimeline.startSync('Semantics.ensureSemanticsNode');
       }
       for (final RenderObject node in nodesToProcess.reversed) {
+        // debugPrint('processing renderObject: $node');
         if (node._semantics.parentDataDirty) {
           // same as above.
           continue;
@@ -3811,6 +3813,7 @@ abstract class RenderObject with DiagnosticableTreeMixin implements HitTestTarge
     assert(node == _semantics.cachedSemanticsNode);
     // TODO(a14n): remove the following cast by updating type of parameter in either updateWith or assembleSemanticsNode
     node.updateWith(config: config, childrenInInversePaintOrder: children as List<SemanticsNode>);
+    // debugPrint('RenderObject - assembling semantics node $node ${children.length} ${node.label} \n${StackTrace.current.toString()}\n');
   }
 
   // EVENTS
@@ -4910,7 +4913,9 @@ class _RenderObjectSemantics extends _SemanticsFragment with DiagnosticableTreeM
     return _blocksPreviousSibling!;
   }
 
-  bool shouldDrop(SemanticsNode node) => node.isInvisible;
+  bool shouldDrop(SemanticsNode node) {
+    return node.isInvisible;
+  }
 
   void markNeedsBuild() {
     built = false;
@@ -4952,6 +4957,7 @@ class _RenderObjectSemantics extends _SemanticsFragment with DiagnosticableTreeM
   /// into [_childrenAndElevationAdjustments].
   void updateChildren() {
     assert(parentData != null || isRoot, 'parent data can only be null for root rendering object');
+    // debugPrint('updateChildren for renderObject: $renderObject');
     configProvider.reset();
     final Set<SemanticsTag>? tagsForChildren = _getTagsForChildren();
     final bool explicitChildNodesForChildren =
@@ -4999,6 +5005,7 @@ class _RenderObjectSemantics extends _SemanticsFragment with DiagnosticableTreeM
       // because they are either absorbed or will form a semantics node.
       mergeUp.clear();
       mergeUp.add(this);
+      // debugPrint('inside updateChildren $renderObject before - framework : ${_childrenAndElevationAdjustments.keys.length}, raw length: ${result.$1.whereType<_RenderObjectSemantics>().length}');
       for (final _RenderObjectSemantics childSemantics
           in result.$1.whereType<_RenderObjectSemantics>()) {
         assert(childSemantics.contributesToSemanticsTree);
@@ -5007,6 +5014,11 @@ class _RenderObjectSemantics extends _SemanticsFragment with DiagnosticableTreeM
         } else {
           final Map<_RenderObjectSemantics, double> passUpChildren =
               childSemantics._childrenAndElevationAdjustments;
+          final List<RenderObject> childRenderObjects = <RenderObject>[];
+          passUpChildren.keys.forEach((_RenderObjectSemantics renderObjectSemantics) {
+            childRenderObjects.add(renderObjectSemantics.renderObject);
+          });
+          // debugPrint('inside updateChildren $renderObject - passing up child length: ${passUpChildren.keys.length}, child semantics $childSemantics child ro ${childSemantics.renderObject}');
           for (final _RenderObjectSemantics passUpChild in passUpChildren.keys) {
             final double passUpElevationAdjustment =
                 passUpChildren[passUpChild]! + childSemantics.configProvider.original.elevation;
@@ -5016,6 +5028,7 @@ class _RenderObjectSemantics extends _SemanticsFragment with DiagnosticableTreeM
           siblingMergeGroups.addAll(childSemantics.siblingMergeGroups);
         }
       }
+      // debugPrint('inside updateChildren $renderObject after - framework : ${_childrenAndElevationAdjustments.length}');
 
       final Set<SemanticsTag>? tags = parentData?.tagsForChildren;
       if (tags != null) {
@@ -5034,13 +5047,23 @@ class _RenderObjectSemantics extends _SemanticsFragment with DiagnosticableTreeM
   }
 
   List<_RenderObjectSemantics> _getNonBlockedChildren() {
+    // debugPrint('hello from getNonBlockedChildren for $renderObject');
     final List<_RenderObjectSemantics> result = <_RenderObjectSemantics>[];
+    int index = 0;
+    int secondIdx = 0;
     renderObject.visitChildrenForSemantics((RenderObject renderChild) {
+      index += 1;
       if (renderChild._semantics.isBlockingPreviousSibling) {
+        index = 0;
         result.clear();
       }
+      secondIdx += 1;
       result.add(renderChild._semantics);
     });
+    if (result.length == 19) {
+      // debugPrint('Maybe this is the renderObject $renderObject');
+    }
+    // debugPrint('goodbye from getNonBlockedChildren for $renderObject ${result.length}');
     return result;
   }
 
@@ -5274,6 +5297,7 @@ class _RenderObjectSemantics extends _SemanticsFragment with DiagnosticableTreeM
   /// already up-to-date.
   void _buildSemantics({required Set<int> usedSemanticsIds}) {
     assert(shouldFormSemanticsNode);
+    // debugPrint('_buildSemantics renderObject: $renderObject, number of children: ${_childrenAndElevationAdjustments.keys.length}');
     if (cachedSemanticsNode != null) {
       // Any node other than producedNode in _semanticsNodes are sibling nodes
       // from children fragments. This fragment is responsible for updating
@@ -5316,8 +5340,10 @@ class _RenderObjectSemantics extends _SemanticsFragment with DiagnosticableTreeM
     List<SemanticsNode>? semanticsNodes,
   }) {
     final List<SemanticsNode> children = <SemanticsNode>[];
+    // debugPrint('_buildSemanticsSubtree number of children: ${_childrenAndElevationAdjustments.keys.length}');
     for (final _RenderObjectSemantics child in _childrenAndElevationAdjustments.keys) {
       assert(child.shouldFormSemanticsNode);
+      // debugPrint('_buildSemanticsSubtree renderObject: ${renderObject} ${_childrenAndElevationAdjustments.keys.length}, child renderObject we are about to built tree for: ${child.renderObject}');
       // Cached semantics node may be part of sibling merging group prior
       // to this update. In this case, the semantics node may continue to
       // be reused in that sibling merging group.
@@ -5327,21 +5353,25 @@ class _RenderObjectSemantics extends _SemanticsFragment with DiagnosticableTreeM
         child.cachedSemanticsNode = null;
       }
 
-      child._buildSemantics(usedSemanticsIds: usedSemanticsIds);
+      child._buildSemantics(usedSemanticsIds: usedSemanticsIds);// here we go into another RenderObject.
       children.addAll(child.semanticsNodes);
     }
 
     final SemanticsNode node = cachedSemanticsNode!;
-    children.removeWhere(shouldDrop);
+    // debugPrint('_buildSemanticsSubtree before drop ${children.length}');
+    // children.removeWhere(shouldDrop);
+    // debugPrint('_buildSemanticsSubtree after drop ${children.length}');
     if (configProvider.effective.isSemanticBoundary) {
       renderObject.assembleSemanticsNode(node, configProvider.effective, children);
     } else {
       node.updateWith(config: configProvider.effective, childrenInInversePaintOrder: children);
     }
+    // debugPrint('_buildSemanticsSubtree end');
   }
 
   void _produceSemanticsNode({required Set<int> usedSemanticsIds}) {
     assert(!built);
+    // debugPrint('_produceSemantics $renderObject num of children: ${_childrenAndElevationAdjustments.keys.length}}');
     built = true;
     final SemanticsNode node = cachedSemanticsNode ??= _createSemanticsNode();
     semanticsNodes.add(node);

@@ -22,7 +22,12 @@ import 'layout_helper.dart';
 import 'object.dart';
 
 export 'package:flutter/gestures.dart'
-    show PointerCancelEvent, PointerDownEvent, PointerEvent, PointerMoveEvent, PointerUpEvent;
+    show
+        PointerCancelEvent,
+        PointerDownEvent,
+        PointerEvent,
+        PointerMoveEvent,
+        PointerUpEvent;
 
 /// A base class for render boxes that resemble their children.
 ///
@@ -61,7 +66,8 @@ class RenderProxyBox extends RenderBox
 /// If a class already inherits from [RenderProxyBox] and also uses this mixin,
 /// you can safely delete the use of the mixin.
 @optionalTypeArgs
-mixin RenderProxyBoxMixin<T extends RenderBox> on RenderBox, RenderObjectWithChildMixin<T> {
+mixin RenderProxyBoxMixin<T extends RenderBox>
+    on RenderBox, RenderObjectWithChildMixin<T> {
   @override
   void setupParentData(RenderObject child) {
     // We don't actually use the offset argument in BoxParentData, so let's
@@ -99,14 +105,18 @@ mixin RenderProxyBoxMixin<T extends RenderBox> on RenderBox, RenderObjectWithChi
 
   @override
   @protected
-  double? computeDryBaseline(covariant BoxConstraints constraints, TextBaseline baseline) {
+  double? computeDryBaseline(
+    covariant BoxConstraints constraints,
+    TextBaseline baseline,
+  ) {
     return child?.getDryBaseline(constraints, baseline);
   }
 
   @override
   @protected
   Size computeDryLayout(covariant BoxConstraints constraints) {
-    return child?.getDryLayout(constraints) ?? computeSizeForNoChild(constraints);
+    return child?.getDryLayout(constraints) ??
+        computeSizeForNoChild(constraints);
   }
 
   @override
@@ -180,7 +190,8 @@ abstract class RenderProxyBoxWithHitTestBehavior extends RenderProxyBox {
   bool hitTest(BoxHitTestResult result, {required Offset position}) {
     bool hitTarget = false;
     if (size.contains(position)) {
-      hitTarget = hitTestChildren(result, position: position) || hitTestSelf(position);
+      hitTarget =
+          hitTestChildren(result, position: position) || hitTestSelf(position);
       if (hitTarget || behavior == HitTestBehavior.translucent) {
         result.add(BoxHitTestEntry(this, position));
       }
@@ -194,7 +205,9 @@ abstract class RenderProxyBoxWithHitTestBehavior extends RenderProxyBox {
   @override
   void debugFillProperties(DiagnosticPropertiesBuilder properties) {
     super.debugFillProperties(properties);
-    properties.add(EnumProperty<HitTestBehavior>('behavior', behavior, defaultValue: null));
+    properties.add(
+      EnumProperty<HitTestBehavior>('behavior', behavior, defaultValue: null),
+    );
   }
 }
 
@@ -212,10 +225,12 @@ class RenderConstrainedBox extends RenderProxyBox {
   /// Creates a render box that constrains its child.
   ///
   /// The [additionalConstraints] argument must be valid.
-  RenderConstrainedBox({RenderBox? child, required BoxConstraints additionalConstraints})
-    : assert(additionalConstraints.debugAssertIsValid()),
-      _additionalConstraints = additionalConstraints,
-      super(child);
+  RenderConstrainedBox({
+    RenderBox? child,
+    required BoxConstraints additionalConstraints,
+  }) : assert(additionalConstraints.debugAssertIsValid()),
+       _additionalConstraints = additionalConstraints,
+       super(child);
 
   /// Additional constraints to apply to [child] during layout.
   BoxConstraints get additionalConstraints => _additionalConstraints;
@@ -231,7 +246,8 @@ class RenderConstrainedBox extends RenderProxyBox {
 
   @override
   double computeMinIntrinsicWidth(double height) {
-    if (_additionalConstraints.hasBoundedWidth && _additionalConstraints.hasTightWidth) {
+    if (_additionalConstraints.hasBoundedWidth &&
+        _additionalConstraints.hasTightWidth) {
       return _additionalConstraints.minWidth;
     }
     final double width = super.computeMinIntrinsicWidth(height);
@@ -244,7 +260,8 @@ class RenderConstrainedBox extends RenderProxyBox {
 
   @override
   double computeMaxIntrinsicWidth(double height) {
-    if (_additionalConstraints.hasBoundedWidth && _additionalConstraints.hasTightWidth) {
+    if (_additionalConstraints.hasBoundedWidth &&
+        _additionalConstraints.hasTightWidth) {
       return _additionalConstraints.minWidth;
     }
     final double width = super.computeMaxIntrinsicWidth(height);
@@ -257,7 +274,8 @@ class RenderConstrainedBox extends RenderProxyBox {
 
   @override
   double computeMinIntrinsicHeight(double width) {
-    if (_additionalConstraints.hasBoundedHeight && _additionalConstraints.hasTightHeight) {
+    if (_additionalConstraints.hasBoundedHeight &&
+        _additionalConstraints.hasTightHeight) {
       return _additionalConstraints.minHeight;
     }
     final double height = super.computeMinIntrinsicHeight(width);
@@ -270,7 +288,8 @@ class RenderConstrainedBox extends RenderProxyBox {
 
   @override
   double computeMaxIntrinsicHeight(double width) {
-    if (_additionalConstraints.hasBoundedHeight && _additionalConstraints.hasTightHeight) {
+    if (_additionalConstraints.hasBoundedHeight &&
+        _additionalConstraints.hasTightHeight) {
       return _additionalConstraints.minHeight;
     }
     final double height = super.computeMaxIntrinsicHeight(width);
@@ -282,15 +301,24 @@ class RenderConstrainedBox extends RenderProxyBox {
   }
 
   @override
-  double? computeDryBaseline(covariant BoxConstraints constraints, TextBaseline baseline) {
-    return child?.getDryBaseline(_additionalConstraints.enforce(constraints), baseline);
+  double? computeDryBaseline(
+    covariant BoxConstraints constraints,
+    TextBaseline baseline,
+  ) {
+    return child?.getDryBaseline(
+      _additionalConstraints.enforce(constraints),
+      baseline,
+    );
   }
 
   @override
   void performLayout() {
     final BoxConstraints constraints = this.constraints;
     if (child != null) {
-      child!.layout(_additionalConstraints.enforce(constraints), parentUsesSize: true);
+      child!.layout(
+        _additionalConstraints.enforce(constraints),
+        parentUsesSize: true,
+      );
       size = child!.size;
     } else {
       size = _additionalConstraints.enforce(constraints).constrain(Size.zero);
@@ -321,7 +349,10 @@ class RenderConstrainedBox extends RenderProxyBox {
   void debugFillProperties(DiagnosticPropertiesBuilder properties) {
     super.debugFillProperties(properties);
     properties.add(
-      DiagnosticsProperty<BoxConstraints>('additionalConstraints', additionalConstraints),
+      DiagnosticsProperty<BoxConstraints>(
+        'additionalConstraints',
+        additionalConstraints,
+      ),
     );
   }
 }
@@ -382,7 +413,9 @@ class RenderLimitedBox extends RenderProxyBox {
     return BoxConstraints(
       minWidth: constraints.minWidth,
       maxWidth:
-          constraints.hasBoundedWidth ? constraints.maxWidth : constraints.constrainWidth(maxWidth),
+          constraints.hasBoundedWidth
+              ? constraints.maxWidth
+              : constraints.constrainWidth(maxWidth),
       minHeight: constraints.minHeight,
       maxHeight:
           constraints.hasBoundedHeight
@@ -391,9 +424,15 @@ class RenderLimitedBox extends RenderProxyBox {
     );
   }
 
-  Size _computeSize({required BoxConstraints constraints, required ChildLayouter layoutChild}) {
+  Size _computeSize({
+    required BoxConstraints constraints,
+    required ChildLayouter layoutChild,
+  }) {
     if (child != null) {
-      final Size childSize = layoutChild(child!, _limitConstraints(constraints));
+      final Size childSize = layoutChild(
+        child!,
+        _limitConstraints(constraints),
+      );
       return constraints.constrain(childSize);
     }
     return _limitConstraints(constraints).constrain(Size.zero);
@@ -402,19 +441,29 @@ class RenderLimitedBox extends RenderProxyBox {
   @override
   @protected
   Size computeDryLayout(covariant BoxConstraints constraints) {
-    return _computeSize(constraints: constraints, layoutChild: ChildLayoutHelper.dryLayoutChild);
+    return _computeSize(
+      constraints: constraints,
+      layoutChild: ChildLayoutHelper.dryLayoutChild,
+    );
   }
 
   @override
   void performLayout() {
-    size = _computeSize(constraints: constraints, layoutChild: ChildLayoutHelper.layoutChild);
+    size = _computeSize(
+      constraints: constraints,
+      layoutChild: ChildLayoutHelper.layoutChild,
+    );
   }
 
   @override
   void debugFillProperties(DiagnosticPropertiesBuilder properties) {
     super.debugFillProperties(properties);
-    properties.add(DoubleProperty('maxWidth', maxWidth, defaultValue: double.infinity));
-    properties.add(DoubleProperty('maxHeight', maxHeight, defaultValue: double.infinity));
+    properties.add(
+      DoubleProperty('maxWidth', maxWidth, defaultValue: double.infinity),
+    );
+    properties.add(
+      DoubleProperty('maxHeight', maxHeight, defaultValue: double.infinity),
+    );
   }
 }
 
@@ -569,8 +618,14 @@ class RenderAspectRatio extends RenderProxyBox {
   }
 
   @override
-  double? computeDryBaseline(BoxConstraints constraints, TextBaseline baseline) {
-    return super.computeDryBaseline(BoxConstraints.tight(getDryLayout(constraints)), baseline);
+  double? computeDryBaseline(
+    BoxConstraints constraints,
+    TextBaseline baseline,
+  ) {
+    return super.computeDryBaseline(
+      BoxConstraints.tight(getDryLayout(constraints)),
+      baseline,
+    );
   }
 
   @override
@@ -623,12 +678,15 @@ class RenderIntrinsicWidth extends RenderProxyBox {
   ///
   /// If [stepWidth] is non-null it must be > 0.0. Similarly If [stepHeight] is
   /// non-null it must be > 0.0.
-  RenderIntrinsicWidth({double? stepWidth, double? stepHeight, RenderBox? child})
-    : assert(stepWidth == null || stepWidth > 0.0),
-      assert(stepHeight == null || stepHeight > 0.0),
-      _stepWidth = stepWidth,
-      _stepHeight = stepHeight,
-      super(child);
+  RenderIntrinsicWidth({
+    double? stepWidth,
+    double? stepHeight,
+    RenderBox? child,
+  }) : assert(stepWidth == null || stepWidth > 0.0),
+       assert(stepHeight == null || stepHeight > 0.0),
+       _stepWidth = stepWidth,
+       _stepHeight = stepHeight,
+       super(child);
 
   /// If non-null, force the child's width to be a multiple of this value.
   ///
@@ -706,20 +764,32 @@ class RenderIntrinsicWidth extends RenderProxyBox {
     return _applyStep(height, _stepHeight);
   }
 
-  BoxConstraints _childConstraints(RenderBox child, BoxConstraints constraints) {
+  BoxConstraints _childConstraints(
+    RenderBox child,
+    BoxConstraints constraints,
+  ) {
     return constraints.tighten(
       width:
           constraints.hasTightWidth
               ? null
-              : _applyStep(child.getMaxIntrinsicWidth(constraints.maxHeight), _stepWidth),
+              : _applyStep(
+                child.getMaxIntrinsicWidth(constraints.maxHeight),
+                _stepWidth,
+              ),
       height:
           stepHeight == null
               ? null
-              : _applyStep(child.getMaxIntrinsicHeight(constraints.maxWidth), _stepHeight),
+              : _applyStep(
+                child.getMaxIntrinsicHeight(constraints.maxWidth),
+                _stepHeight,
+              ),
     );
   }
 
-  Size _computeSize({required ChildLayouter layoutChild, required BoxConstraints constraints}) {
+  Size _computeSize({
+    required ChildLayouter layoutChild,
+    required BoxConstraints constraints,
+  }) {
     final RenderBox? child = this.child;
     return child == null
         ? constraints.smallest
@@ -729,18 +799,30 @@ class RenderIntrinsicWidth extends RenderProxyBox {
   @override
   @protected
   Size computeDryLayout(covariant BoxConstraints constraints) {
-    return _computeSize(layoutChild: ChildLayoutHelper.dryLayoutChild, constraints: constraints);
+    return _computeSize(
+      layoutChild: ChildLayoutHelper.dryLayoutChild,
+      constraints: constraints,
+    );
   }
 
   @override
-  double? computeDryBaseline(BoxConstraints constraints, TextBaseline baseline) {
+  double? computeDryBaseline(
+    BoxConstraints constraints,
+    TextBaseline baseline,
+  ) {
     final RenderBox? child = this.child;
-    return child?.getDryBaseline(_childConstraints(child, constraints), baseline);
+    return child?.getDryBaseline(
+      _childConstraints(child, constraints),
+      baseline,
+    );
   }
 
   @override
   void performLayout() {
-    size = _computeSize(layoutChild: ChildLayoutHelper.layoutChild, constraints: constraints);
+    size = _computeSize(
+      layoutChild: ChildLayoutHelper.layoutChild,
+      constraints: constraints,
+    );
   }
 
   @override
@@ -812,13 +894,21 @@ class RenderIntrinsicHeight extends RenderProxyBox {
     return getMaxIntrinsicHeight(width);
   }
 
-  BoxConstraints _childConstraints(RenderBox child, BoxConstraints constraints) {
+  BoxConstraints _childConstraints(
+    RenderBox child,
+    BoxConstraints constraints,
+  ) {
     return constraints.hasTightHeight
         ? constraints
-        : constraints.tighten(height: child.getMaxIntrinsicHeight(constraints.maxWidth));
+        : constraints.tighten(
+          height: child.getMaxIntrinsicHeight(constraints.maxWidth),
+        );
   }
 
-  Size _computeSize({required ChildLayouter layoutChild, required BoxConstraints constraints}) {
+  Size _computeSize({
+    required ChildLayouter layoutChild,
+    required BoxConstraints constraints,
+  }) {
     final RenderBox? child = this.child;
     return child == null
         ? constraints.smallest
@@ -828,18 +918,30 @@ class RenderIntrinsicHeight extends RenderProxyBox {
   @override
   @protected
   Size computeDryLayout(covariant BoxConstraints constraints) {
-    return _computeSize(layoutChild: ChildLayoutHelper.dryLayoutChild, constraints: constraints);
+    return _computeSize(
+      layoutChild: ChildLayoutHelper.dryLayoutChild,
+      constraints: constraints,
+    );
   }
 
   @override
-  double? computeDryBaseline(BoxConstraints constraints, TextBaseline baseline) {
+  double? computeDryBaseline(
+    BoxConstraints constraints,
+    TextBaseline baseline,
+  ) {
     final RenderBox? child = this.child;
-    return child?.getDryBaseline(_childConstraints(child, constraints), baseline);
+    return child?.getDryBaseline(
+      _childConstraints(child, constraints),
+      baseline,
+    );
   }
 
   @override
   void performLayout() {
-    size = _computeSize(layoutChild: ChildLayoutHelper.layoutChild, constraints: constraints);
+    size = _computeSize(
+      layoutChild: ChildLayoutHelper.layoutChild,
+      constraints: constraints,
+    );
   }
 }
 
@@ -854,7 +956,10 @@ class RenderIgnoreBaseline extends RenderProxyBox {
   }
 
   @override
-  Null computeDryBaseline(covariant BoxConstraints constraints, TextBaseline baseline) {
+  Null computeDryBaseline(
+    covariant BoxConstraints constraints,
+    TextBaseline baseline,
+  ) {
     return null;
   }
 }
@@ -872,12 +977,15 @@ class RenderOpacity extends RenderProxyBox {
   /// Creates a partially transparent render object.
   ///
   /// The [opacity] argument must be between 0.0 and 1.0, inclusive.
-  RenderOpacity({double opacity = 1.0, bool alwaysIncludeSemantics = false, RenderBox? child})
-    : assert(opacity >= 0.0 && opacity <= 1.0),
-      _opacity = opacity,
-      _alwaysIncludeSemantics = alwaysIncludeSemantics,
-      _alpha = ui.Color.getAlphaFromOpacity(opacity),
-      super(child);
+  RenderOpacity({
+    double opacity = 1.0,
+    bool alwaysIncludeSemantics = false,
+    RenderBox? child,
+  }) : assert(opacity >= 0.0 && opacity <= 1.0),
+       _opacity = opacity,
+       _alwaysIncludeSemantics = alwaysIncludeSemantics,
+       _alpha = ui.Color.getAlphaFromOpacity(opacity),
+       super(child);
 
   @override
   bool get alwaysNeedsCompositing => child != null && _alpha > 0;
@@ -937,7 +1045,9 @@ class RenderOpacity extends RenderProxyBox {
   }
 
   @override
-  OffsetLayer updateCompositedLayer({required covariant OpacityLayer? oldLayer}) {
+  OffsetLayer updateCompositedLayer({
+    required covariant OpacityLayer? oldLayer,
+  }) {
     final OpacityLayer layer = oldLayer ?? OpacityLayer();
     layer.alpha = _alpha;
     return layer;
@@ -977,7 +1087,8 @@ class RenderOpacity extends RenderProxyBox {
 /// This mixin allows the logic of animating opacity to be used with different
 /// layout models, e.g. the way that [RenderAnimatedOpacity] uses it for [RenderBox]
 /// and [RenderSliverAnimatedOpacity] uses it for [RenderSliver].
-mixin RenderAnimatedOpacityMixin<T extends RenderObject> on RenderObjectWithChildMixin<T> {
+mixin RenderAnimatedOpacityMixin<T extends RenderObject>
+    on RenderObjectWithChildMixin<T> {
   int? _alpha;
 
   @override
@@ -985,7 +1096,9 @@ mixin RenderAnimatedOpacityMixin<T extends RenderObject> on RenderObjectWithChil
   bool? _currentlyIsRepaintBoundary;
 
   @override
-  OffsetLayer updateCompositedLayer({required covariant OpacityLayer? oldLayer}) {
+  OffsetLayer updateCompositedLayer({
+    required covariant OpacityLayer? oldLayer,
+  }) {
     final OpacityLayer updatedLayer = oldLayer ?? OpacityLayer();
     updatedLayer.alpha = _alpha;
     return updatedLayer;
@@ -1103,7 +1216,8 @@ mixin RenderAnimatedOpacityMixin<T extends RenderObject> on RenderObjectWithChil
 ///
 /// This is a variant of [RenderOpacity] that uses an [Animation<double>] rather
 /// than a [double] to control the opacity.
-class RenderAnimatedOpacity extends RenderProxyBox with RenderAnimatedOpacityMixin<RenderBox> {
+class RenderAnimatedOpacity extends RenderProxyBox
+    with RenderAnimatedOpacityMixin<RenderBox> {
   /// Creates a partially transparent render object.
   RenderAnimatedOpacity({
     required Animation<double> opacity,
@@ -1343,7 +1457,8 @@ abstract class CustomClipper<T> extends Listenable {
   /// the [Listenable] provided to the constructor in the `reclip` argument, if
   /// it was not null.
   @override
-  void removeListener(VoidCallback listener) => _reclip?.removeListener(listener);
+  void removeListener(VoidCallback listener) =>
+      _reclip?.removeListener(listener);
 
   /// Returns a description of the clip given that the render object being
   /// clipped is of the given size.
@@ -1411,7 +1526,8 @@ class ShapeBorderClipper extends CustomClipper<Path> {
       return true;
     }
     final ShapeBorderClipper typedOldClipper = oldClipper as ShapeBorderClipper;
-    return typedOldClipper.shape != shape || typedOldClipper.textDirection != textDirection;
+    return typedOldClipper.shape != shape ||
+        typedOldClipper.textDirection != textDirection;
   }
 }
 
@@ -1524,7 +1640,10 @@ abstract class _RenderCustomClip<T> extends RenderProxyBox {
             ..strokeWidth = 2.0
             ..style = PaintingStyle.stroke;
       _debugText ??= TextPainter(
-        text: const TextSpan(text: '✂', style: TextStyle(color: Color(0xFFFF00FF), fontSize: 14.0)),
+        text: const TextSpan(
+          text: '✂',
+          style: TextStyle(color: Color(0xFFFF00FF), fontSize: 14.0),
+        ),
         textDirection: TextDirection.rtl, // doesn't matter, it's one character
       )..layout();
       return true;
@@ -1599,7 +1718,11 @@ class RenderClipRect extends _RenderCustomClip<Rect> {
           context.canvas.drawRect(_clip!.shift(offset), _debugPaint!);
           _debugText!.paint(
             context.canvas,
-            offset + Offset(_clip!.width / 8.0, -_debugText!.text!.style!.fontSize! * 1.1),
+            offset +
+                Offset(
+                  _clip!.width / 8.0,
+                  -_debugText!.text!.style!.fontSize! * 1.1,
+                ),
           );
         }
       }
@@ -1659,7 +1782,8 @@ class RenderClipRRect extends _RenderCustomClip<RRect> {
   }
 
   @override
-  RRect get _defaultClip => _borderRadius.resolve(textDirection).toRRect(Offset.zero & size);
+  RRect get _defaultClip =>
+      _borderRadius.resolve(textDirection).toRRect(Offset.zero & size);
 
   @override
   bool hitTest(BoxHitTestResult result, {required Offset position}) {
@@ -1705,7 +1829,11 @@ class RenderClipRRect extends _RenderCustomClip<RRect> {
           context.canvas.drawRRect(_clip!.shift(offset), _debugPaint!);
           _debugText!.paint(
             context.canvas,
-            offset + Offset(_clip!.tlRadiusX, -_debugText!.text!.style!.fontSize! * 1.1),
+            offset +
+                Offset(
+                  _clip!.tlRadiusX,
+                  -_debugText!.text!.style!.fontSize! * 1.1,
+                ),
           );
         }
       }
@@ -1789,7 +1917,10 @@ class RenderClipOval extends _RenderCustomClip<Rect> {
       if (child != null) {
         super.debugPaintSize(context, offset);
         if (clipBehavior != Clip.none) {
-          context.canvas.drawPath(_getClipPath(_clip!).shift(offset), _debugPaint!);
+          context.canvas.drawPath(
+            _getClipPath(_clip!).shift(offset),
+            _debugPaint!,
+          );
           _debugText!.paint(
             context.canvas,
             offset +
@@ -2016,7 +2147,11 @@ class RenderPhysicalModel extends _RenderPhysicalModelBase<RRect> {
     final Rect rect = Offset.zero & size;
     return switch (_shape) {
       BoxShape.rectangle => (borderRadius ?? BorderRadius.zero).toRRect(rect),
-      BoxShape.circle => RRect.fromRectXY(rect, rect.width / 2, rect.height / 2),
+      BoxShape.circle => RRect.fromRectXY(
+        rect,
+        rect.width / 2,
+        rect.height / 2,
+      ),
     };
   }
 
@@ -2061,7 +2196,12 @@ class RenderPhysicalModel extends _RenderPhysicalModelBase<RRect> {
 
     final Canvas canvas = context.canvas;
     if (elevation != 0.0 && paintShadows) {
-      canvas.drawShadow(offsetRRectAsPath, shadowColor, elevation, color.alpha != 0xFF);
+      canvas.drawShadow(
+        offsetRRectAsPath,
+        shadowColor,
+        elevation,
+        color.alpha != 0xFF,
+      );
     }
     final bool usesSaveLayer = clipBehavior == Clip.antiAliasWithSaveLayer;
     if (!usesSaveLayer) {
@@ -2096,7 +2236,9 @@ class RenderPhysicalModel extends _RenderPhysicalModelBase<RRect> {
   void debugFillProperties(DiagnosticPropertiesBuilder description) {
     super.debugFillProperties(description);
     description.add(DiagnosticsProperty<BoxShape>('shape', shape));
-    description.add(DiagnosticsProperty<BorderRadius>('borderRadius', borderRadius));
+    description.add(
+      DiagnosticsProperty<BorderRadius>('borderRadius', borderRadius),
+    );
   }
 }
 
@@ -2166,7 +2308,12 @@ class RenderPhysicalShape extends _RenderPhysicalModelBase<Path> {
 
     final Canvas canvas = context.canvas;
     if (elevation != 0.0 && paintShadows) {
-      canvas.drawShadow(offsetPath, shadowColor, elevation, color.alpha != 0xFF);
+      canvas.drawShadow(
+        offsetPath,
+        shadowColor,
+        elevation,
+        color.alpha != 0xFF,
+      );
     }
     final bool usesSaveLayer = clipBehavior == Clip.antiAliasWithSaveLayer;
     if (!usesSaveLayer) {
@@ -2200,7 +2347,9 @@ class RenderPhysicalShape extends _RenderPhysicalModelBase<Path> {
   @override
   void debugFillProperties(DiagnosticPropertiesBuilder description) {
     super.debugFillProperties(description);
-    description.add(DiagnosticsProperty<CustomClipper<Path>>('clipper', clipper));
+    description.add(
+      DiagnosticsProperty<CustomClipper<Path>>('clipper', clipper),
+    );
   }
 }
 
@@ -2297,13 +2446,19 @@ class RenderDecoratedBox extends RenderProxyBox {
 
   @override
   bool hitTestSelf(Offset position) {
-    return _decoration.hitTest(size, position, textDirection: configuration.textDirection);
+    return _decoration.hitTest(
+      size,
+      position,
+      textDirection: configuration.textDirection,
+    );
   }
 
   @override
   void paint(PaintingContext context, Offset offset) {
     _painter ??= _decoration.createBoxPainter(markNeedsPaint);
-    final ImageConfiguration filledConfiguration = configuration.copyWith(size: size);
+    final ImageConfiguration filledConfiguration = configuration.copyWith(
+      size: size,
+    );
     if (position == DecorationPosition.background) {
       int? debugSaveCount;
       assert(() {
@@ -2353,7 +2508,9 @@ class RenderDecoratedBox extends RenderProxyBox {
   void debugFillProperties(DiagnosticPropertiesBuilder properties) {
     super.debugFillProperties(properties);
     properties.add(_decoration.toDiagnosticsNode(name: 'decoration'));
-    properties.add(DiagnosticsProperty<ImageConfiguration>('configuration', configuration));
+    properties.add(
+      DiagnosticsProperty<ImageConfiguration>('configuration', configuration),
+    );
   }
 }
 
@@ -2620,9 +2777,19 @@ class RenderTransform extends RenderProxyBox {
     super.debugFillProperties(properties);
     properties.add(TransformProperty('transform matrix', _transform));
     properties.add(DiagnosticsProperty<Offset>('origin', origin));
-    properties.add(DiagnosticsProperty<AlignmentGeometry>('alignment', alignment));
-    properties.add(EnumProperty<TextDirection>('textDirection', textDirection, defaultValue: null));
-    properties.add(DiagnosticsProperty<bool>('transformHitTests', transformHitTests));
+    properties.add(
+      DiagnosticsProperty<AlignmentGeometry>('alignment', alignment),
+    );
+    properties.add(
+      EnumProperty<TextDirection>(
+        'textDirection',
+        textDirection,
+        defaultValue: null,
+      ),
+    );
+    properties.add(
+      DiagnosticsProperty<bool>('transformHitTests', transformHitTests),
+    );
   }
 }
 
@@ -2641,7 +2808,8 @@ class RenderFittedBox extends RenderProxyBox {
        _clipBehavior = clipBehavior,
        super(child);
 
-  Alignment _resolve() => _resolvedAlignment ??= alignment.resolve(textDirection);
+  Alignment _resolve() =>
+      _resolvedAlignment ??= alignment.resolve(textDirection);
   Alignment? _resolvedAlignment;
 
   void _markNeedResolution() {
@@ -2734,7 +2902,9 @@ class RenderFittedBox extends RenderProxyBox {
         case BoxFit.fitHeight:
         case BoxFit.fitWidth:
         case BoxFit.none:
-          return constraints.constrainSizeAndAttemptToPreserveAspectRatio(childSize);
+          return constraints.constrainSizeAndAttemptToPreserveAspectRatio(
+            childSize,
+          );
       }
     } else {
       return constraints.smallest;
@@ -2757,7 +2927,9 @@ class RenderFittedBox extends RenderProxyBox {
         case BoxFit.fitHeight:
         case BoxFit.fitWidth:
         case BoxFit.none:
-          size = constraints.constrainSizeAndAttemptToPreserveAspectRatio(child!.size);
+          size = constraints.constrainSizeAndAttemptToPreserveAspectRatio(
+            child!.size,
+          );
       }
       _clearPaintData();
     } else {
@@ -2800,23 +2972,34 @@ class RenderFittedBox extends RenderProxyBox {
       final FittedSizes sizes = applyBoxFit(_fit, childSize, size);
       final double scaleX = sizes.destination.width / sizes.source.width;
       final double scaleY = sizes.destination.height / sizes.source.height;
-      final Rect sourceRect = resolvedAlignment.inscribe(sizes.source, Offset.zero & childSize);
+      final Rect sourceRect = resolvedAlignment.inscribe(
+        sizes.source,
+        Offset.zero & childSize,
+      );
       final Rect destinationRect = resolvedAlignment.inscribe(
         sizes.destination,
         Offset.zero & size,
       );
       _hasVisualOverflow =
-          sourceRect.width < childSize.width || sourceRect.height < childSize.height;
+          sourceRect.width < childSize.width ||
+          sourceRect.height < childSize.height;
       assert(scaleX.isFinite && scaleY.isFinite);
       _transform =
-          Matrix4.translationValues(destinationRect.left, destinationRect.top, 0.0)
+          Matrix4.translationValues(
+              destinationRect.left,
+              destinationRect.top,
+              0.0,
+            )
             ..scale(scaleX, scaleY, 1.0)
             ..translate(-sourceRect.left, -sourceRect.top);
       assert(_transform!.storage.every((double value) => value.isFinite));
     }
   }
 
-  TransformLayer? _paintChildWithTransform(PaintingContext context, Offset offset) {
+  TransformLayer? _paintChildWithTransform(
+    PaintingContext context,
+    Offset offset,
+  ) {
     final Offset? childOffset = MatrixUtils.getAsTranslation(_transform!);
     if (childOffset == null) {
       return context.pushTransform(
@@ -2888,8 +3071,16 @@ class RenderFittedBox extends RenderProxyBox {
   void debugFillProperties(DiagnosticPropertiesBuilder properties) {
     super.debugFillProperties(properties);
     properties.add(EnumProperty<BoxFit>('fit', fit));
-    properties.add(DiagnosticsProperty<AlignmentGeometry>('alignment', alignment));
-    properties.add(EnumProperty<TextDirection>('textDirection', textDirection, defaultValue: null));
+    properties.add(
+      DiagnosticsProperty<AlignmentGeometry>('alignment', alignment),
+    );
+    properties.add(
+      EnumProperty<TextDirection>(
+        'textDirection',
+        textDirection,
+        defaultValue: null,
+      ),
+    );
   }
 }
 
@@ -2949,7 +3140,10 @@ class RenderFractionalTranslation extends RenderProxyBox {
     return result.addWithPaintOffset(
       offset:
           transformHitTests
-              ? Offset(translation.dx * size.width, translation.dy * size.height)
+              ? Offset(
+                translation.dx * size.width,
+                translation.dy * size.height,
+              )
               : null,
       position: position,
       hitTest: (BoxHitTestResult result, Offset position) {
@@ -2964,21 +3158,29 @@ class RenderFractionalTranslation extends RenderProxyBox {
     if (child != null) {
       super.paint(
         context,
-        Offset(offset.dx + translation.dx * size.width, offset.dy + translation.dy * size.height),
+        Offset(
+          offset.dx + translation.dx * size.width,
+          offset.dy + translation.dy * size.height,
+        ),
       );
     }
   }
 
   @override
   void applyPaintTransform(RenderBox child, Matrix4 transform) {
-    transform.translate(translation.dx * size.width, translation.dy * size.height);
+    transform.translate(
+      translation.dx * size.width,
+      translation.dy * size.height,
+    );
   }
 
   @override
   void debugFillProperties(DiagnosticPropertiesBuilder properties) {
     super.debugFillProperties(properties);
     properties.add(DiagnosticsProperty<Offset>('translation', translation));
-    properties.add(DiagnosticsProperty<bool>('transformHitTests', transformHitTests));
+    properties.add(
+      DiagnosticsProperty<bool>('transformHitTests', transformHitTests),
+    );
   }
 }
 
@@ -3005,17 +3207,20 @@ typedef PointerCancelEventListener = void Function(PointerCancelEvent event);
 /// Signature for listening to [PointerPanZoomStartEvent] events.
 ///
 /// Used by [Listener] and [RenderPointerListener].
-typedef PointerPanZoomStartEventListener = void Function(PointerPanZoomStartEvent event);
+typedef PointerPanZoomStartEventListener =
+    void Function(PointerPanZoomStartEvent event);
 
 /// Signature for listening to [PointerPanZoomUpdateEvent] events.
 ///
 /// Used by [Listener] and [RenderPointerListener].
-typedef PointerPanZoomUpdateEventListener = void Function(PointerPanZoomUpdateEvent event);
+typedef PointerPanZoomUpdateEventListener =
+    void Function(PointerPanZoomUpdateEvent event);
 
 /// Signature for listening to [PointerPanZoomEndEvent] events.
 ///
 /// Used by [Listener] and [RenderPointerListener].
-typedef PointerPanZoomEndEventListener = void Function(PointerPanZoomEndEvent event);
+typedef PointerPanZoomEndEventListener =
+    void Function(PointerPanZoomEndEvent event);
 
 /// Signature for listening to [PointerSignalEvent] events.
 ///
@@ -3271,9 +3476,15 @@ class RenderMouseRegion extends RenderProxyBoxWithHitTestBehavior
       }, ifEmpty: '<none>'),
     );
     properties.add(
-      DiagnosticsProperty<MouseCursor>('cursor', cursor, defaultValue: MouseCursor.defer),
+      DiagnosticsProperty<MouseCursor>(
+        'cursor',
+        cursor,
+        defaultValue: MouseCursor.defer,
+      ),
     );
-    properties.add(DiagnosticsProperty<bool>('opaque', opaque, defaultValue: true));
+    properties.add(
+      DiagnosticsProperty<bool>('opaque', opaque, defaultValue: true),
+    );
     properties.add(
       FlagProperty(
         'validForMouseTracker',
@@ -3491,7 +3702,10 @@ class RenderRepaintBoundary extends RenderProxyBox {
   }
 
   @override
-  void debugRegisterRepaintBoundaryPaint({bool includedParent = true, bool includedChild = false}) {
+  void debugRegisterRepaintBoundaryPaint({
+    bool includedParent = true,
+    bool includedChild = false,
+  }) {
     assert(() {
       if (includedParent && includedChild) {
         _debugSymmetricPaintCount += 1;
@@ -3508,17 +3722,22 @@ class RenderRepaintBoundary extends RenderProxyBox {
     bool inReleaseMode = true;
     assert(() {
       inReleaseMode = false;
-      final int totalPaints = debugSymmetricPaintCount + debugAsymmetricPaintCount;
+      final int totalPaints =
+          debugSymmetricPaintCount + debugAsymmetricPaintCount;
       if (totalPaints == 0) {
         properties.add(
-          MessageProperty('usefulness ratio', 'no metrics collected yet (never painted)'),
+          MessageProperty(
+            'usefulness ratio',
+            'no metrics collected yet (never painted)',
+          ),
         );
       } else {
         final double fraction = debugAsymmetricPaintCount / totalPaints;
         final String diagnosis = switch (fraction) {
           _ when totalPaints < 5 =>
             'insufficient data to draw conclusion (less than five repaints)',
-          > 0.9 => 'this is an outstandingly useful repaint boundary and should definitely be kept',
+          > 0.9 =>
+            'this is an outstandingly useful repaint boundary and should definitely be kept',
           > 0.5 => 'this is a useful repaint boundary and should be kept',
           > 0.3 =>
             'this repaint boundary is probably useful, but maybe it would be more useful in tandem with adding more repaint boundaries elsewhere',
@@ -3526,7 +3745,8 @@ class RenderRepaintBoundary extends RenderProxyBox {
             'this repaint boundary does sometimes show value, though currently not that often',
           _ when debugAsymmetricPaintCount > 0 =>
             'this repaint boundary is not very effective and should probably be removed',
-          _ => 'this repaint boundary is astoundingly ineffectual and should be removed',
+          _ =>
+            'this repaint boundary is astoundingly ineffectual and should be removed',
         };
 
         properties.add(
@@ -3534,7 +3754,8 @@ class RenderRepaintBoundary extends RenderProxyBox {
             'metrics',
             fraction,
             unit: 'useful',
-            tooltip: '$debugSymmetricPaintCount bad vs $debugAsymmetricPaintCount good',
+            tooltip:
+                '$debugSymmetricPaintCount bad vs $debugAsymmetricPaintCount good',
           ),
         );
         properties.add(MessageProperty('diagnosis', diagnosis));
@@ -3543,7 +3764,9 @@ class RenderRepaintBoundary extends RenderProxyBox {
     }());
     if (inReleaseMode) {
       properties.add(
-        DiagnosticsNode.message('(run in debug mode to collect repaint boundary statistics)'),
+        DiagnosticsNode.message(
+          '(run in debug mode to collect repaint boundary statistics)',
+        ),
       );
     }
   }
@@ -3649,7 +3872,10 @@ class RenderIgnorePointer extends RenderProxyBox {
       DiagnosticsProperty<bool>(
         'ignoringSemantics',
         _ignoringSemantics,
-        description: _ignoringSemantics == null ? null : 'implicitly $_ignoringSemantics',
+        description:
+            _ignoringSemantics == null
+                ? null
+                : 'implicitly $_ignoringSemantics',
       ),
     );
   }
@@ -3660,7 +3886,9 @@ class RenderIgnorePointer extends RenderProxyBox {
 /// room in the parent.
 class RenderOffstage extends RenderProxyBox {
   /// Creates an offstage render object.
-  RenderOffstage({bool offstage = true, RenderBox? child}) : _offstage = offstage, super(child);
+  RenderOffstage({bool offstage = true, RenderBox? child})
+    : _offstage = offstage,
+      super(child);
 
   /// Whether the child is hidden from the rest of the tree.
   ///
@@ -3723,7 +3951,10 @@ class RenderOffstage extends RenderProxyBox {
   bool get sizedByParent => offstage;
 
   @override
-  double? computeDryBaseline(BoxConstraints constraints, TextBaseline baseline) {
+  double? computeDryBaseline(
+    BoxConstraints constraints,
+    TextBaseline baseline,
+  ) {
     return offstage ? null : super.computeDryBaseline(constraints, baseline);
   }
 
@@ -3792,7 +4023,10 @@ class RenderOffstage extends RenderProxyBox {
     return <DiagnosticsNode>[
       child!.toDiagnosticsNode(
         name: 'child',
-        style: offstage ? DiagnosticsTreeStyle.offstage : DiagnosticsTreeStyle.sparse,
+        style:
+            offstage
+                ? DiagnosticsTreeStyle.offstage
+                : DiagnosticsTreeStyle.sparse,
       ),
     ];
   }
@@ -3874,7 +4108,9 @@ class RenderAbsorbPointer extends RenderProxyBox {
 
   @override
   bool hitTest(BoxHitTestResult result, {required Offset position}) {
-    return absorbing ? size.contains(position) : super.hitTest(result, position: position);
+    return absorbing
+        ? size.contains(position)
+        : super.hitTest(result, position: position);
   }
 
   @override
@@ -3901,7 +4137,8 @@ class RenderAbsorbPointer extends RenderProxyBox {
       DiagnosticsProperty<bool>(
         'ignoringSemantics',
         ignoringSemantics,
-        description: ignoringSemantics == null ? null : 'implicitly $ignoringSemantics',
+        description:
+            ignoringSemantics == null ? null : 'implicitly $ignoringSemantics',
       ),
     );
   }
@@ -3998,7 +4235,8 @@ class RenderSemanticsGestureHandler extends RenderProxyBoxWithHitTestBehavior {
   }
 
   /// Called when the user scrolls to the left or to the right.
-  GestureDragUpdateCallback? get onHorizontalDragUpdate => _onHorizontalDragUpdate;
+  GestureDragUpdateCallback? get onHorizontalDragUpdate =>
+      _onHorizontalDragUpdate;
   GestureDragUpdateCallback? _onHorizontalDragUpdate;
   set onHorizontalDragUpdate(GestureDragUpdateCallback? value) {
     if (_onHorizontalDragUpdate == value) {
@@ -4043,6 +4281,7 @@ class RenderSemanticsGestureHandler extends RenderProxyBoxWithHitTestBehavior {
       config.onLongPress = onLongPress;
     }
     if (onHorizontalDragUpdate != null) {
+      debugPrint('hello from setting up horizontal');
       if (_isValidAction(SemanticsAction.scrollRight)) {
         config.onScrollRight = _performSemanticScrollRight;
       }
@@ -4051,6 +4290,7 @@ class RenderSemanticsGestureHandler extends RenderProxyBoxWithHitTestBehavior {
       }
     }
     if (onVerticalDragUpdate != null) {
+      debugPrint('hello from setting up vertical');
       if (_isValidAction(SemanticsAction.scrollUp)) {
         config.onScrollUp = _performSemanticScrollUp;
       }
@@ -4065,6 +4305,7 @@ class RenderSemanticsGestureHandler extends RenderProxyBoxWithHitTestBehavior {
   }
 
   void _performSemanticScrollLeft() {
+    debugPrint('hello from performSemanticsScrollLeft');
     if (onHorizontalDragUpdate != null) {
       final double primaryDelta = size.width * -scrollFactor;
       onHorizontalDragUpdate!(
@@ -4078,6 +4319,7 @@ class RenderSemanticsGestureHandler extends RenderProxyBoxWithHitTestBehavior {
   }
 
   void _performSemanticScrollRight() {
+    debugPrint('hello from performSemanticsScrollRight');
     if (onHorizontalDragUpdate != null) {
       final double primaryDelta = size.width * scrollFactor;
       onHorizontalDragUpdate!(
@@ -4091,8 +4333,12 @@ class RenderSemanticsGestureHandler extends RenderProxyBoxWithHitTestBehavior {
   }
 
   void _performSemanticScrollUp() {
+    debugPrint('hello from performSemanticsScrollUp');
     if (onVerticalDragUpdate != null) {
       final double primaryDelta = size.height * -scrollFactor;
+      debugPrint(
+        'primary delta is $primaryDelta, size is $size, scroll factor is $scrollFactor, delta is Offset(0.0, $primaryDelta), global position is ${localToGlobal(size.center(Offset.zero))}',
+      );
       onVerticalDragUpdate!(
         DragUpdateDetails(
           delta: Offset(0.0, primaryDelta),
@@ -4104,6 +4350,7 @@ class RenderSemanticsGestureHandler extends RenderProxyBoxWithHitTestBehavior {
   }
 
   void _performSemanticScrollDown() {
+    debugPrint('hello world from perform semantics scroll down');
     if (onVerticalDragUpdate != null) {
       final double primaryDelta = size.height * scrollFactor;
       onVerticalDragUpdate!(
@@ -4247,25 +4494,36 @@ class RenderSemanticsAnnotations extends RenderProxyBox {
   }
 
   AttributedString? _effectiveAttributedLabel(SemanticsProperties value) {
-    return value.attributedLabel ?? (value.label == null ? null : AttributedString(value.label!));
+    return value.attributedLabel ??
+        (value.label == null ? null : AttributedString(value.label!));
   }
 
   AttributedString? _effectiveAttributedValue(SemanticsProperties value) {
-    return value.attributedValue ?? (value.value == null ? null : AttributedString(value.value!));
+    return value.attributedValue ??
+        (value.value == null ? null : AttributedString(value.value!));
   }
 
-  AttributedString? _effectiveAttributedIncreasedValue(SemanticsProperties value) {
+  AttributedString? _effectiveAttributedIncreasedValue(
+    SemanticsProperties value,
+  ) {
     return value.attributedIncreasedValue ??
-        (value.increasedValue == null ? null : AttributedString(value.increasedValue!));
+        (value.increasedValue == null
+            ? null
+            : AttributedString(value.increasedValue!));
   }
 
-  AttributedString? _effectiveAttributedDecreasedValue(SemanticsProperties value) {
+  AttributedString? _effectiveAttributedDecreasedValue(
+    SemanticsProperties value,
+  ) {
     return properties.attributedDecreasedValue ??
-        (value.decreasedValue == null ? null : AttributedString(value.decreasedValue!));
+        (value.decreasedValue == null
+            ? null
+            : AttributedString(value.decreasedValue!));
   }
 
   AttributedString? _effectiveAttributedHint(SemanticsProperties value) {
-    return value.attributedHint ?? (value.hint == null ? null : AttributedString(value.hint!));
+    return value.attributedHint ??
+        (value.hint == null ? null : AttributedString(value.hint!));
   }
 
   AttributedString? _attributedLabel;
@@ -4403,7 +4661,8 @@ class RenderSemanticsAnnotations extends RenderProxyBox {
     if (_properties.tooltip != null) {
       config.tooltip = _properties.tooltip!;
     }
-    if (_properties.hintOverrides != null && _properties.hintOverrides!.isNotEmpty) {
+    if (_properties.hintOverrides != null &&
+        _properties.hintOverrides!.isNotEmpty) {
       config.hintOverrides = _properties.hintOverrides;
     }
     if (_properties.scopesRoute != null) {
@@ -4473,10 +4732,12 @@ class RenderSemanticsAnnotations extends RenderProxyBox {
       config.onPaste = _performPaste;
     }
     if (_properties.onMoveCursorForwardByCharacter != null) {
-      config.onMoveCursorForwardByCharacter = _performMoveCursorForwardByCharacter;
+      config.onMoveCursorForwardByCharacter =
+          _performMoveCursorForwardByCharacter;
     }
     if (_properties.onMoveCursorBackwardByCharacter != null) {
-      config.onMoveCursorBackwardByCharacter = _performMoveCursorBackwardByCharacter;
+      config.onMoveCursorBackwardByCharacter =
+          _performMoveCursorBackwardByCharacter;
     }
     if (_properties.onMoveCursorForwardByWord != null) {
       config.onMoveCursorForwardByWord = _performMoveCursorForwardByWord;
@@ -4697,7 +4958,9 @@ class RenderExcludeSemantics extends RenderProxyBox {
 ///  * [CustomScrollView], for an explanation of scroll semantics.
 class RenderIndexedSemantics extends RenderProxyBox {
   /// Creates a render object that annotates the child semantics with an index.
-  RenderIndexedSemantics({RenderBox? child, required int index}) : _index = index, super(child);
+  RenderIndexedSemantics({RenderBox? child, required int index})
+    : _index = index,
+      super(child);
 
   /// The index used to annotated child semantics.
   int get index => _index;
@@ -4731,7 +4994,9 @@ class RenderIndexedSemantics extends RenderProxyBox {
 ///  * [LeaderLayer], the layer that this render object creates.
 class RenderLeaderLayer extends RenderProxyBox {
   /// Creates a render object that uses a [LeaderLayer].
-  RenderLeaderLayer({required LayerLink link, RenderBox? child}) : _link = link, super(child);
+  RenderLeaderLayer({required LayerLink link, RenderBox? child})
+    : _link = link,
+      super(child);
 
   /// The link object that connects this [RenderLeaderLayer] with one or more
   /// [RenderFollowerLayer]s.
@@ -4954,7 +5219,9 @@ class RenderFollowerLayer extends RenderProxyBox {
   void paint(PaintingContext context, Offset offset) {
     final Size? leaderSize = link.leaderSize;
     assert(
-      link.leaderSize != null || link.leader == null || leaderAnchor == Alignment.topLeft,
+      link.leaderSize != null ||
+          link.leader == null ||
+          leaderAnchor == Alignment.topLeft,
       '$link: layer is linked to ${link.leader} but a valid leaderSize is not set. '
       'leaderSize is required when leaderAnchor is not Alignment.topLeft '
       '(current value is $leaderAnchor).',
@@ -4962,7 +5229,9 @@ class RenderFollowerLayer extends RenderProxyBox {
     final Offset effectiveLinkedOffset =
         leaderSize == null
             ? this.offset
-            : leaderAnchor.alongSize(leaderSize) - followerAnchor.alongSize(size) + this.offset;
+            : leaderAnchor.alongSize(leaderSize) -
+                followerAnchor.alongSize(size) +
+                this.offset;
     if (layer == null) {
       layer = FollowerLayer(
         link: link,
@@ -5004,9 +5273,13 @@ class RenderFollowerLayer extends RenderProxyBox {
   void debugFillProperties(DiagnosticPropertiesBuilder properties) {
     super.debugFillProperties(properties);
     properties.add(DiagnosticsProperty<LayerLink>('link', link));
-    properties.add(DiagnosticsProperty<bool>('showWhenUnlinked', showWhenUnlinked));
+    properties.add(
+      DiagnosticsProperty<bool>('showWhenUnlinked', showWhenUnlinked),
+    );
     properties.add(DiagnosticsProperty<Offset>('offset', offset));
-    properties.add(TransformProperty('current transform matrix', getCurrentTransform()));
+    properties.add(
+      TransformProperty('current transform matrix', getCurrentTransform()),
+    );
   }
 }
 
@@ -5024,11 +5297,14 @@ class RenderAnnotatedRegion<T extends Object> extends RenderProxyBox {
   /// object to clip the results of [Layer.find].
   ///
   /// Neither [value] nor [sized] can be null.
-  RenderAnnotatedRegion({required T value, required bool sized, RenderBox? child})
-    : _value = value,
-      _sized = sized,
-      _layerHandle = LayerHandle<AnnotatedRegionLayer<T>>(),
-      super(child);
+  RenderAnnotatedRegion({
+    required T value,
+    required bool sized,
+    RenderBox? child,
+  }) : _value = value,
+       _sized = sized,
+       _layerHandle = LayerHandle<AnnotatedRegionLayer<T>>(),
+       super(child);
 
   /// A value which can be retrieved using [Layer.find].
   T get value => _value;

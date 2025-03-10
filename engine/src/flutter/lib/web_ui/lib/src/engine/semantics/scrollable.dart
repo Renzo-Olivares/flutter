@@ -2,6 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+import 'dart:typed_data';
+
 import 'package:ui/src/engine.dart';
 import 'package:ui/ui.dart' as ui;
 
@@ -68,18 +70,31 @@ class SemanticScrollable extends SemanticRole {
         return;
       }
       final bool doScrollForward = _domScrollPosition > _effectiveNeutralScrollPosition;
+      final double savedScrollPos = (_domScrollPosition - _effectiveNeutralScrollPosition).toDouble();
+      print('1. delta ${_domScrollPosition - _effectiveNeutralScrollPosition}, dom scroll position: $_domScrollPosition, effective scroll position: $_effectiveNeutralScrollPosition');
       _neutralizeDomScrollPosition();
       semanticsObject.recomputePositionAndSize();
 
       final int semanticsId = semanticsObject.id;
       if (doScrollForward) {
         if (semanticsObject.isVerticalScrollContainer) {
+          print('engine - scroll up $savedScrollPos');
+          final Float64List offsets = Float64List(2);
+          offsets[0] = 0.0;
+          offsets[1] = savedScrollPos;
+          final ByteData? message = const StandardMessageCodec().encodeMessage(offsets);
           EnginePlatformDispatcher.instance.invokeOnSemanticsAction(
             viewId,
             semanticsId,
             ui.SemanticsAction.scrollUp,
             null,
           );
+          // EnginePlatformDispatcher.instance.invokeOnSemanticsAction(
+          //   viewId,
+          //   semanticsId,
+          //   ui.SemanticsAction.scrollToOffset,
+          //   message,
+          // );
         } else {
           assert(semanticsObject.isHorizontalScrollContainer);
           EnginePlatformDispatcher.instance.invokeOnSemanticsAction(
@@ -91,12 +106,23 @@ class SemanticScrollable extends SemanticRole {
         }
       } else {
         if (semanticsObject.isVerticalScrollContainer) {
+          print('engine - scroll down $savedScrollPos');
+          final Float64List offsets = Float64List(2);
+          offsets[0] = 0.0;
+          offsets[1] = savedScrollPos;
+          final ByteData? message = const StandardMessageCodec().encodeMessage(offsets);
           EnginePlatformDispatcher.instance.invokeOnSemanticsAction(
             viewId,
             semanticsId,
             ui.SemanticsAction.scrollDown,
             null,
           );
+          // EnginePlatformDispatcher.instance.invokeOnSemanticsAction(
+          //   viewId,
+          //   semanticsId,
+          //   ui.SemanticsAction.scrollToOffset,
+          //   message,
+          // );
         } else {
           assert(semanticsObject.isHorizontalScrollContainer);
           EnginePlatformDispatcher.instance.invokeOnSemanticsAction(
