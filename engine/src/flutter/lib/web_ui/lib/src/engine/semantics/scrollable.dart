@@ -70,8 +70,11 @@ class SemanticScrollable extends SemanticRole {
         return;
       }
       final bool doScrollForward = _domScrollPosition > _effectiveNeutralScrollPosition;
-      final double savedScrollPos = (_domScrollPosition - _effectiveNeutralScrollPosition).toDouble();
-      print('1. delta ${_domScrollPosition - _effectiveNeutralScrollPosition}, dom scroll position: $_domScrollPosition, effective scroll position: $_effectiveNeutralScrollPosition');
+      final double savedScrollPos =
+          (_domScrollPosition - _effectiveNeutralScrollPosition).toDouble();
+      print(
+        '1. delta ${_domScrollPosition - _effectiveNeutralScrollPosition}, dom scroll position: $_domScrollPosition, effective scroll position: $_effectiveNeutralScrollPosition',
+      );
       _neutralizeDomScrollPosition();
       semanticsObject.recomputePositionAndSize();
 
