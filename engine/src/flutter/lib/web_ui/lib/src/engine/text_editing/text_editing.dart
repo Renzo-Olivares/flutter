@@ -965,10 +965,12 @@ class EditingState {
     if (domElement != null && domElement.isA<DomHTMLInputElement>()) {
       final DomHTMLInputElement element = domElement as DomHTMLInputElement;
       element.value = text;
+      print('applying to dom element $minOffset, $maxOffset');
       element.setSelectionRange(minOffset, maxOffset);
     } else if (domElement != null && domElement.isA<DomHTMLTextAreaElement>()) {
       final DomHTMLTextAreaElement element = domElement as DomHTMLTextAreaElement;
       element.value = text;
+      print('applying to dom element $minOffset, $maxOffset');
       element.setSelectionRange(minOffset, maxOffset);
     } else {
       throw UnsupportedError(
@@ -1455,6 +1457,7 @@ abstract class DefaultTextEditingStrategy
     if (!isEnabled || !editingState!.isValid) {
       return;
     }
+    print('setting editing state from framework');
     lastEditingState!.applyToDomElement(domElement);
   }
 
@@ -1472,6 +1475,7 @@ abstract class DefaultTextEditingStrategy
 
     EditingState newEditingState = EditingState.fromDomElement(activeDomElement);
     newEditingState = determineCompositionState(newEditingState);
+    print('engine handling change - what is the state before sending $newEditingState');
 
     TextEditingDeltaState? newTextEditingDeltaState;
     if (inputConfiguration.enableDeltaModel) {
@@ -1485,6 +1489,7 @@ abstract class DefaultTextEditingStrategy
     }
 
     if (newEditingState != lastEditingState) {
+      print('engine actually setting state');
       lastEditingState = newEditingState;
       _editingDeltaState = newTextEditingDeltaState;
       onChange!(lastEditingState, _editingDeltaState);

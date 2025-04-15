@@ -3417,6 +3417,7 @@ class EditableTextState extends State<EditableText>
       // everything else.
       value = _value.copyWith(selection: value.selection);
     }
+    debugPrint('updateEditingValue received value $value');
     _lastKnownRemoteTextEditingValue = value;
 
     if (value == _value) {

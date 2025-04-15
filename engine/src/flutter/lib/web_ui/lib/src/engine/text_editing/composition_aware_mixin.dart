@@ -47,46 +47,92 @@ mixin CompositionAwareMixin {
   /// so it is safe to reference it to get the current composingText.
   String? composingText;
 
+  DomHTMLElement? _domElement;
+
   void addCompositionEventHandlers(DomHTMLElement domElement) {
+    _domElement = domElement;
     domElement.addEventListener(_kCompositionStart, _compositionStartListener);
     domElement.addEventListener(_kCompositionUpdate, _compositionUpdateListener);
     domElement.addEventListener(_kCompositionEnd, _compositionEndListener);
   }
 
   void removeCompositionEventHandlers(DomHTMLElement domElement) {
+    _domElement = null;
     domElement.removeEventListener(_kCompositionStart, _compositionStartListener);
     domElement.removeEventListener(_kCompositionUpdate, _compositionUpdateListener);
     domElement.removeEventListener(_kCompositionEnd, _compositionEndListener);
   }
 
   void _handleCompositionStart(DomEvent event) {
+    if (event.isA<DomCompositionEvent>()) {
+      print('composing start: ${(event as DomCompositionEvent).data}');
+    }
     composingText = null;
   }
 
   void _handleCompositionUpdate(DomEvent event) {
     if (event.isA<DomCompositionEvent>()) {
       composingText = (event as DomCompositionEvent).data;
+      EditingState? newState;
+      if (_domElement != null && _domElement.isA<DomHTMLInputElement>()) {
+        final DomHTMLInputElement element = _domElement as DomHTMLInputElement;
+        if (element.selectionDirection == 'backward') {
+          newState = EditingState(
+            text: element.value,
+            baseOffset: element.selectionEnd?.toInt(),
+            extentOffset: element.selectionStart?.toInt(),
+          );
+        } else {
+          newState = EditingState(
+            text: element.value,
+            baseOffset: element.selectionStart?.toInt(),
+            extentOffset: element.selectionEnd?.toInt(),
+          );
+        }
+      } else if (_domElement != null && _domElement.isA<DomHTMLTextAreaElement>()) {
+        final DomHTMLTextAreaElement element = _domElement as DomHTMLTextAreaElement;
+        if (element.selectionDirection == 'backward') {
+          newState = EditingState(
+            text: element.value,
+            baseOffset: element.selectionEnd?.toInt(),
+            extentOffset: element.selectionStart?.toInt(),
+          );
+        } else {
+          newState = EditingState(
+            text: element.value,
+            baseOffset: element.selectionStart?.toInt(),
+            extentOffset: element.selectionEnd?.toInt(),
+          );
+        }
+      }
+      print('composing update: $composingText, selection start ${newState?.baseOffset}, selection end ${newState?.extentOffset}');
     }
   }
 
   void _handleCompositionEnd(DomEvent event) {
+    if (event.isA<DomCompositionEvent>()) {
+      print('composing end: ${(event as DomCompositionEvent).data}');
+    }
     composingText = null;
   }
 
   EditingState determineCompositionState(EditingState editingState) {
     if (editingState.extentOffset == null || composingText == null || editingState.text == null) {
+      print('1. determining composing state $editingState, composing text $composingText');
       return editingState;
     }
 
     final int composingBase = editingState.extentOffset! - composingText!.length;
 
     if (composingBase < 0) {
+      print('2. determining composing state $editingState, composing text $composingText');
       return editingState;
     }
-
-    return editingState.copyWith(
+    final EditingState newEditingState = editingState.copyWith(
       composingBaseOffset: composingBase,
       composingExtentOffset: composingBase + composingText!.length,
     );
+    print('3. determining composing state $newEditingState, composing text $composingText');
+    return newEditingState;
   }
 }
