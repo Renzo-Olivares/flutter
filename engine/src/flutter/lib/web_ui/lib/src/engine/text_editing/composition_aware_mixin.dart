@@ -105,7 +105,9 @@ mixin CompositionAwareMixin {
           );
         }
       }
-      print('composing update: $composingText, selection start ${newState?.baseOffset}, selection end ${newState?.extentOffset}');
+      print(
+        'composing update: $composingText, selection start ${newState?.baseOffset}, selection end ${newState?.extentOffset}',
+      );
     }
   }
 
