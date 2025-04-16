@@ -78,7 +78,16 @@ mixin CompositionAwareMixin {
       return editingState;
     }
 
-    final int composingBase = editingState.extentOffset - composingText!.length;
+    final int composingBase;
+    final int composingExtent;
+
+    if (editingState.baseOffset != editingState.extentOffset) {
+      composingBase = editingState.baseOffset;
+      composingExtent = editingState.baseOffset + composingText!.length;
+    } else {
+      composingBase = editingState.extentOffset - composingText!.length;
+      composingExtent = composingBase + composingText!.length;
+    }
 
     if (composingBase < 0) {
       return editingState;
@@ -86,7 +95,7 @@ mixin CompositionAwareMixin {
 
     return editingState.copyWith(
       composingBaseOffset: composingBase,
-      composingExtentOffset: composingBase + composingText!.length,
+      composingExtentOffset: composingExtent,
     );
   }
 }

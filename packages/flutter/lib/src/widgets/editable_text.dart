@@ -5576,9 +5576,12 @@ class EditableTextState extends State<EditableText>
       ),
     ),
     ScrollToDocumentBoundaryIntent: _makeOverridable(
-      CallbackAction<ScrollToDocumentBoundaryIntent>(onInvoke: _scrollToDocumentBoundary),
+      _WebComposingDeferringCallbackAction<ScrollToDocumentBoundaryIntent>(
+        onInvoke: _scrollToDocumentBoundary,
+        state: this,
+      ),
     ),
-    ScrollIntent: CallbackAction<ScrollIntent>(onInvoke: _scroll),
+    ScrollIntent: _WebComposingDeferringCallbackAction<ScrollIntent>(onInvoke: _scroll, state: this),
 
     // Expand Selection
     ExpandSelectionToLineBreakIntent: _makeOverridable(
@@ -6425,8 +6428,16 @@ class _UpdateTextSelectionAction<T extends DirectionalCaretMovementIntent>
         state.textEditingValue.text.codeUnitAt(position.offset - 1) != NEWLINE_CODE_UNIT;
   }
 
+  // Override this to defer to the webs native shortcut handling while composing.
+  @override
+  bool consumesKey(T intent) => !(kIsWeb && state._value.composing.isValid);
+
   @override
   Object? invoke(T intent, [BuildContext? context]) {
+    if (kIsWeb && state._value.composing.isValid) {
+      // Defer to the webs native shortcut handling while composing.
+      return null;
+    }
     final TextSelection selection = state._value.selection;
     assert(selection.isValid);
 
@@ -6515,8 +6526,16 @@ class _UpdateTextSelectionVerticallyAction<T extends DirectionalCaretMovementInt
     }
   }
 
+  // Override this to defer to the webs native shortcut handling while composing.
+  @override
+  bool consumesKey(T intent) => !(kIsWeb && state._value.composing.isValid);
+
   @override
   void invoke(T intent, [BuildContext? context]) {
+    if (kIsWeb && state._value.composing.isValid) {
+      // Defer to the webs native shortcut handling while composing.
+      return;
+    }
     assert(state._value.selection.isValid);
 
     final bool collapseSelection = intent.collapseSelection || !state.widget.selectionEnabled;
@@ -6660,5 +6679,24 @@ class _EditableTextTapUpOutsideAction extends ContextAction<EditableTextTapUpOut
   @override
   void invoke(EditableTextTapUpOutsideIntent intent, [BuildContext? context]) {
     // The default action is a no-op.
+  }
+}
+
+// A callback action that defers to the platform's shortcut handling when composing is
+// active on the web.
+class _WebComposingDeferringCallbackAction<T extends Intent> extends CallbackAction<T> {
+  _WebComposingDeferringCallbackAction({required super.onInvoke, required this.state});
+
+  final EditableTextState state;
+
+  @override
+  bool consumesKey(T intent) => !(kIsWeb && state._value.composing.isValid);
+
+  @override
+  Object? invoke(T intent) {
+    if (kIsWeb && state._value.composing.isValid) {
+      return false;
+    }
+    return onInvoke(intent);
   }
 }
