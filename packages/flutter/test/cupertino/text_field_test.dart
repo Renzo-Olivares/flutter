@@ -4838,7 +4838,7 @@ void main() {
 
       // On Mac, the toolbar blocks the drag on the right handle, so hide it.
       final EditableTextState editableTextState = tester.state(find.byType(EditableText));
-      editableTextState.hideToolbar(false);
+      editableTextState.hideToolbar(hideHandles: false);
       await tester.pumpAndSettle();
 
       // Drag the right handle until there's only 1 char selected.
@@ -4913,7 +4913,7 @@ void main() {
 
       // On Mac, the toolbar blocks the drag on the right handle, so hide it.
       final EditableTextState editableTextState = tester.state(find.byType(EditableText));
-      editableTextState.hideToolbar(false);
+      editableTextState.hideToolbar(hideHandles: false);
       await tester.pumpAndSettle();
 
       // Drag the right handle until there's only 1 char selected.
