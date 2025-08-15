@@ -84,8 +84,8 @@ class CupertinoTextSelectionToolbarButton extends StatefulWidget {
       return buttonItem.label!;
     }
 
-    assert(debugCheckHasCupertinoLocalizations(context));
-    final CupertinoLocalizations localizations = CupertinoLocalizations.of(context);
+    assert(debugCheckHasWidgetsLocalizations(context));
+    final WidgetsLocalizations localizations = WidgetsLocalizations.of(context);
     return switch (buttonItem.type) {
       ContextMenuButtonType.cut => localizations.cutButtonLabel,
       ContextMenuButtonType.copy => localizations.copyButtonLabel,

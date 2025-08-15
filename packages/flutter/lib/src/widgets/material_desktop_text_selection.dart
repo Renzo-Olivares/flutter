@@ -8,7 +8,7 @@ import 'package:flutter/widgets.dart';
 import 'debug.dart';
 import 'material_desktop_text_selection_toolbar.dart';
 import 'material_desktop_text_selection_toolbar_button.dart';
-import 'material_localizations.dart';
+import 'localizations.dart';
 
 /// Desktop Material styled text selection handle controls.
 ///
@@ -174,7 +174,7 @@ class _DesktopTextSelectionControlsToolbarState
 
   @override
   Widget build(BuildContext context) {
-    assert(debugCheckHasMaterialLocalizations(context));
+    assert(debugCheckHasWidgetsLocalizations(context));
     assert(debugCheckHasMediaQuery(context));
 
     // Don't render the menu until the state of the clipboard is known.
@@ -192,7 +192,7 @@ class _DesktopTextSelectionControlsToolbarState
       widget.selectionMidpoint.dy - widget.globalEditableRegion.top,
     );
 
-    final MaterialLocalizations localizations = MaterialLocalizations.of(context);
+    final WidgetsLocalizations localizations = WidgetsLocalizations.of(context);
     final List<Widget> items = <Widget>[];
 
     void addToolbarButton(String text, VoidCallback onPressed) {
