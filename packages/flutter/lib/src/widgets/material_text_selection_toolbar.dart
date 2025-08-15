@@ -18,7 +18,7 @@ import 'debug.dart';
 import 'icon_button.dart';
 import 'icons.dart';
 import 'material.dart';
-import 'material_localizations.dart';
+import 'localizations.dart';
 import 'theme.dart';
 
 const double _kToolbarHeight = 44.0;
@@ -189,8 +189,8 @@ class _TextSelectionToolbarOverflowableState extends State<_TextSelectionToolbar
 
   @override
   Widget build(BuildContext context) {
-    assert(debugCheckHasMaterialLocalizations(context));
-    final MaterialLocalizations localizations = MaterialLocalizations.of(context);
+    assert(debugCheckHasWidgetsLocalizations(context));
+    final WidgetsLocalizations localizations = WidgetsLocalizations.of(context);
     final TextDirection textDirection = Directionality.of(context);
 
     return _TextSelectionToolbarTrailingEdgeAlign(

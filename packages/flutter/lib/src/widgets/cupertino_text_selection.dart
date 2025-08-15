@@ -283,7 +283,7 @@ class _CupertinoTextSelectionControlsToolbarState
     );
 
     final List<Widget> items = <Widget>[];
-    final CupertinoLocalizations localizations = CupertinoLocalizations.of(context);
+    final WidgetsLocalizations localizations = WidgetsLocalizations.of(context);
     final Widget onePhysicalPixelVerticalDivider = SizedBox(
       width: 1.0 / MediaQuery.devicePixelRatioOf(context),
     );

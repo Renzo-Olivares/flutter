@@ -16,7 +16,7 @@ import 'text_selection.dart';
 import 'ticker_provider.dart';
 
 import 'debug.dart';
-import 'material_localizations.dart';
+import 'localizations.dart';
 import 'text_selection_theme.dart';
 import 'material_text_selection_toolbar.dart';
 import 'material_text_selection_toolbar_text_button.dart';
@@ -250,8 +250,8 @@ class _TextSelectionControlsToolbarState extends State<_TextSelectionControlsToo
     // Determine which buttons will appear so that the order and total number is
     // known. A button's position in the menu can slightly affect its
     // appearance.
-    assert(debugCheckHasMaterialLocalizations(context));
-    final MaterialLocalizations localizations = MaterialLocalizations.of(context);
+    assert(debugCheckHasWidgetsLocalizations(context));
+    final WidgetsLocalizations localizations = WidgetsLocalizations.of(context);
     final List<_TextSelectionToolbarItemData> itemDatas = <_TextSelectionToolbarItemData>[
       if (widget.handleCut != null)
         _TextSelectionToolbarItemData(

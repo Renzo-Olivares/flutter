@@ -13,7 +13,7 @@ import 'package:flutter/rendering.dart';
 import 'debug.dart';
 import 'material_desktop_text_selection_toolbar.dart';
 import 'material_desktop_text_selection_toolbar_button.dart';
-import 'material_localizations.dart';
+import 'localizations.dart';
 import 'material_text_selection_toolbar.dart';
 import 'material_text_selection_toolbar_text_button.dart';
 import 'theme.dart';
@@ -215,8 +215,8 @@ class AdaptiveTextSelectionToolbar extends StatelessWidget {
       case TargetPlatform.fuchsia:
       case TargetPlatform.linux:
       case TargetPlatform.windows:
-        assert(debugCheckHasMaterialLocalizations(context));
-        final MaterialLocalizations localizations = MaterialLocalizations.of(context);
+        assert(debugCheckHasWidgetsLocalizations(context));
+        final WidgetsLocalizations localizations = WidgetsLocalizations.of(context);
         return switch (buttonItem.type) {
           ContextMenuButtonType.cut => localizations.cutButtonLabel,
           ContextMenuButtonType.copy => localizations.copyButtonLabel,
