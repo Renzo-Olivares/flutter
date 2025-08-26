@@ -3,13 +3,19 @@
 // found in the LICENSE file.
 
 import 'dart:math';
+import 'dart:ui';
 
-import 'package:flutter/widgets.dart';
+import 'package:flutter/rendering.dart';
 
-import 'button.dart';
-import 'colors.dart';
+import 'apple_button.dart';
+import 'basic.dart';
+import 'context_menu_button_item.dart';
 import 'debug.dart';
+import 'framework.dart';
+import 'gesture_detector.dart';
 import 'localizations.dart';
+import 'media_query.dart';
+import 'text.dart';
 
 const TextStyle _kToolbarButtonFontStyle = TextStyle(
   inherit: false,
@@ -18,13 +24,18 @@ const TextStyle _kToolbarButtonFontStyle = TextStyle(
   fontWeight: FontWeight.w400,
 );
 
-const CupertinoDynamicColor _kToolbarTextColor = CupertinoDynamicColor.withBrightness(
-  color: CupertinoColors.black,
-  darkColor: CupertinoColors.white,
-);
+typedef _CupertinoDynamicColor = ({Color lightColor, Color darkColor});
 
-const CupertinoDynamicColor _kToolbarPressedColor = CupertinoDynamicColor.withBrightness(
-  color: Color(0x10000000),
+// Color was measured from a screenshot of iOS 16.0.2
+// TODO(LongCatIsLooong): https://github.com/flutter/flutter/issues/41507.
+const _CupertinoDynamicColor _kToolbarTextColor = (
+  lightColor: AppleTextSelectionToolbarButton._black,
+  darkColor: AppleTextSelectionToolbarButton._white,
+); // Can we get away with replacing `CupertinoDynamicColor` with `Color` + a `Brightness` switch.
+
+// Color was measured from a screenshot of iOS 16.0.2.
+const _CupertinoDynamicColor _kToolbarPressedColor = (
+  lightColor: Color(0x10000000),
   darkColor: Color(0x10FFFFFF),
 );
 
@@ -32,48 +43,56 @@ const CupertinoDynamicColor _kToolbarPressedColor = CupertinoDynamicColor.withBr
 const EdgeInsets _kToolbarButtonPadding = EdgeInsets.symmetric(vertical: 18.0, horizontal: 16.0);
 
 /// A button in the style of the iOS text selection toolbar buttons.
-class CupertinoTextSelectionToolbarButton extends StatefulWidget {
-  /// Create an instance of [CupertinoTextSelectionToolbarButton].
-  const CupertinoTextSelectionToolbarButton({super.key, this.onPressed, required Widget this.child})
+class AppleTextSelectionToolbarButton extends StatefulWidget {
+  /// Create an instance of [AppleTextSelectionToolbarButton].
+  const AppleTextSelectionToolbarButton({super.key, this.onPressed, required Widget this.child})
     : text = null,
       buttonItem = null;
 
-  /// Create an instance of [CupertinoTextSelectionToolbarButton] whose child is
+  /// Create an instance of [AppleTextSelectionToolbarButton] whose child is
   /// a [Text] widget styled like the default iOS text selection toolbar button.
-  const CupertinoTextSelectionToolbarButton.text({super.key, this.onPressed, required this.text})
+  const AppleTextSelectionToolbarButton.text({super.key, this.onPressed, required this.text})
     : buttonItem = null,
       child = null;
 
-  /// Create an instance of [CupertinoTextSelectionToolbarButton] from the given
+  /// Create an instance of [AppleTextSelectionToolbarButton] from the given
   /// [ContextMenuButtonItem].
-  CupertinoTextSelectionToolbarButton.buttonItem({
+  AppleTextSelectionToolbarButton.buttonItem({
     super.key,
     required ContextMenuButtonItem this.buttonItem,
   }) : child = null,
        text = null,
        onPressed = buttonItem.onPressed;
 
-  /// {@template flutter.cupertino.CupertinoTextSelectionToolbarButton.child}
+  static const Color _white = Color(0xFFFFFFFF);
+  static const Color _black = Color(0xFF000000);
+  static const Color _transparent = Color(0x00000000);
+  static const _CupertinoDynamicColor _inactiveGray = (
+    lightColor: Color(0xFF999999),
+    darkColor: Color(0xFF757575),
+  );
+
+  /// {@template flutter.cupertino.iOSTextSelectionToolbarButton.child}
   /// The child of this button.
   ///
   /// Usually a [Text] or an [Icon].
   /// {@endtemplate}
   final Widget? child;
 
-  /// {@template flutter.cupertino.CupertinoTextSelectionToolbarButton.onPressed}
+  /// {@template flutter.cupertino.iOSTextSelectionToolbarButton.onPressed}
   /// Called when this button is pressed.
   /// {@endtemplate}
   final VoidCallback? onPressed;
 
-  /// {@template flutter.cupertino.CupertinoTextSelectionToolbarButton.onPressed}
+  /// {@template flutter.cupertino.iOSTextSelectionToolbarButton.onPressed}
   /// The buttonItem used to generate the button when using
-  /// [CupertinoTextSelectionToolbarButton.buttonItem].
+  /// [AppleTextSelectionToolbarButton.buttonItem].
   /// {@endtemplate}
   final ContextMenuButtonItem? buttonItem;
 
-  /// {@template flutter.cupertino.CupertinoTextSelectionToolbarButton.text}
+  /// {@template flutter.cupertino.iOSTextSelectionToolbarButton.text}
   /// The text used in the button's label when using
-  /// [CupertinoTextSelectionToolbarButton.text].
+  /// [AppleTextSelectionToolbarButton.text].
   /// {@endtemplate}
   final String? text;
 
@@ -101,10 +120,10 @@ class CupertinoTextSelectionToolbarButton extends StatefulWidget {
   }
 
   @override
-  State<StatefulWidget> createState() => _CupertinoTextSelectionToolbarButtonState();
+  State<StatefulWidget> createState() => _AppleTextSelectionToolbarButtonState();
 }
 
-class _CupertinoTextSelectionToolbarButtonState extends State<CupertinoTextSelectionToolbarButton> {
+class _AppleTextSelectionToolbarButtonState extends State<AppleTextSelectionToolbarButton> {
   bool isPressed = false;
 
   void _onTapDown(TapDownDetails details) {
@@ -120,12 +139,22 @@ class _CupertinoTextSelectionToolbarButtonState extends State<CupertinoTextSelec
     setState(() => isPressed = false);
   }
 
+  Color _resolveColor(BuildContext context, _CupertinoDynamicColor color) {
+    final Brightness brightness = color.lightColor != color.darkColor
+        ? MediaQuery.maybePlatformBrightnessOf(context) ?? Brightness.light
+        : Brightness.light;
+    if (brightness == Brightness.light) {
+      return color.lightColor;
+    }
+    return color.darkColor;
+  }
+
   @override
   Widget build(BuildContext context) {
     final Widget content = _getContentWidget(context);
-    final Widget child = CupertinoButton(
-      color: isPressed ? _kToolbarPressedColor.resolveFrom(context) : CupertinoColors.transparent,
-      disabledColor: CupertinoColors.transparent,
+    final Widget child = AppleButton(
+      color: isPressed ? _resolveColor(context, _kToolbarPressedColor) : AppleTextSelectionToolbarButton._transparent,
+      disabledColor: AppleTextSelectionToolbarButton._transparent,
       // This CupertinoButton does not actually handle the onPressed callback,
       // this is only here to correctly enable/disable the button (see
       // GestureDetector comment below).
@@ -158,12 +187,12 @@ class _CupertinoTextSelectionToolbarButtonState extends State<CupertinoTextSelec
     }
     final Widget textWidget = Text(
       widget.text ??
-          CupertinoTextSelectionToolbarButton.getButtonLabel(context, widget.buttonItem!),
+          AppleTextSelectionToolbarButton.getButtonLabel(context, widget.buttonItem!),
       overflow: TextOverflow.ellipsis,
       style: _kToolbarButtonFontStyle.copyWith(
         color: widget.onPressed != null
-            ? _kToolbarTextColor.resolveFrom(context)
-            : CupertinoColors.inactiveGray,
+            ? _resolveColor(context, _kToolbarTextColor)
+            : AppleTextSelectionToolbarButton._inactiveGray.lightColor,
       ),
     );
     switch (widget.buttonItem?.type) {
@@ -183,7 +212,7 @@ class _CupertinoTextSelectionToolbarButtonState extends State<CupertinoTextSelec
           width: 13.0,
           height: 13.0,
           child: CustomPaint(
-            painter: _LiveTextIconPainter(color: _kToolbarTextColor.resolveFrom(context)),
+            painter: _LiveTextIconPainter(color: _resolveColor(context, _kToolbarTextColor)),
           ),
         );
     }

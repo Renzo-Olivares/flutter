@@ -2,25 +2,25 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+/// @docImport 'editable_text.dart';
+library;
+
 import 'dart:math' as math;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 
+import 'android_text_selection_toolbar.dart';
+import 'android_text_selection_toolbar_text_button.dart';
 import 'basic.dart';
+import 'debug.dart';
 import 'framework.dart';
 import 'gesture_detector.dart';
+import 'localizations.dart';
 import 'text.dart';
 import 'text_selection.dart';
 import 'ticker_provider.dart';
-
-import 'debug.dart';
-import 'localizations.dart';
-import 'text_selection_theme.dart';
-import 'material_text_selection_toolbar.dart';
-import 'material_text_selection_toolbar_text_button.dart';
-import 'theme.dart';
 
 const double _kHandleSize = 22.0;
 
@@ -36,14 +36,14 @@ const double _kToolbarContentDistance = 8.0;
   'Use `MaterialTextSelectionControls`. '
   'This feature was deprecated after v3.3.0-0.5.pre.',
 )
-class MaterialTextSelectionHandleControls extends MaterialTextSelectionControls
+class AndroidTextSelectionHandleControls extends AndroidTextSelectionControls
     with TextSelectionHandleControls {}
 
 /// Android Material styled text selection controls.
 ///
-/// The [materialTextSelectionControls] global variable has a
+/// The [androidTextSelectionControls] global variable has a
 /// suitable instance of this class.
-class MaterialTextSelectionControls extends TextSelectionControls {
+class AndroidTextSelectionControls extends TextSelectionControls {
   /// Returns the size of the Material handle.
   @override
   Size getHandleSize(double textLineHeight) => const Size(_kHandleSize, _kHandleSize);
@@ -83,17 +83,15 @@ class MaterialTextSelectionControls extends TextSelectionControls {
   Widget buildHandle(
     BuildContext context,
     TextSelectionHandleType type,
+    Color? color,
     double textHeight, [
     VoidCallback? onTap,
   ]) {
-    final ThemeData theme = Theme.of(context);
-    final Color handleColor =
-        TextSelectionTheme.of(context).selectionHandleColor ?? theme.colorScheme.primary;
     final Widget handle = SizedBox(
       width: _kHandleSize,
       height: _kHandleSize,
       child: CustomPaint(
-        painter: _TextSelectionHandlePainter(color: handleColor),
+        painter: _TextSelectionHandlePainter(color: color ?? const Color.fromARGB(255, 0, 124, 255)),
         child: GestureDetector(onTap: onTap, behavior: HitTestBehavior.translucent),
       ),
     );
@@ -280,12 +278,12 @@ class _TextSelectionControlsToolbarState extends State<_TextSelectionControlsToo
       return const SizedBox.shrink();
     }
 
-    return TextSelectionToolbar(
+    return AndroidTextSelectionToolbar(
       anchorAbove: anchorAbove,
       anchorBelow: anchorBelow,
       children: itemDatas.asMap().entries.map((MapEntry<int, _TextSelectionToolbarItemData> entry) {
-        return TextSelectionToolbarTextButton(
-          padding: TextSelectionToolbarTextButton.getPadding(entry.key, itemDatas.length),
+        return AndroidTextSelectionToolbarTextButton(
+          padding: AndroidTextSelectionToolbarTextButton.getPadding(entry.key, itemDatas.length),
           alignment: AlignmentDirectional.centerStart,
           onPressed: entry.value.onPressed,
           child: Text(entry.value.label),
@@ -323,8 +321,8 @@ class _TextSelectionHandlePainter extends CustomPainter {
 // deleted, when users should migrate back to materialTextSelectionControls.
 // See https://github.com/flutter/flutter/pull/124262
 /// Text selection handle controls that follow the Material Design specification.
-final TextSelectionControls materialTextSelectionHandleControls =
-    MaterialTextSelectionHandleControls();
+final TextSelectionControls androidTextSelectionHandleControls =
+    AndroidTextSelectionHandleControls();
 
 /// Text selection controls that follow the Material Design specification.
-final TextSelectionControls materialTextSelectionControls = MaterialTextSelectionControls();
+final TextSelectionControls androidTextSelectionControls = AndroidTextSelectionControls();

@@ -166,6 +166,7 @@ void main() {
                       child: cupertinoTextSelectionControls.buildHandle(
                         context,
                         TextSelectionHandleType.right,
+                        null,
                         10.0,
                       ),
                     ),
@@ -200,6 +201,7 @@ void main() {
                       child: cupertinoTextSelectionControls.buildHandle(
                         context,
                         TextSelectionHandleType.right,
+                        null,
                         10.0,
                       ),
                     ),

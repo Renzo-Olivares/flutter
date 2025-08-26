@@ -2,15 +2,23 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+/// @docImport 'editable_text.dart';
+library;
+
 import 'dart:math' as math;
 
 import 'package:flutter/foundation.dart' show ValueListenable, clampDouble;
-import 'package:flutter/widgets.dart';
+import 'package:flutter/rendering.dart';
+import 'package:flutter/services.dart';
 
+import 'apple_text_selection_toolbar.dart';
+import 'apple_text_selection_toolbar_button.dart';
+import 'basic.dart';
+import 'debug.dart';
+import 'framework.dart';
 import 'localizations.dart';
-import 'cupertino_text_selection_toolbar.dart';
-import 'cupertino_text_selection_toolbar_button.dart';
-import 'theme.dart';
+import 'media_query.dart';
+import 'text_selection.dart';
 
 // Read off from the output on iOS 12. This color does not vary with the
 // application's theme color.
@@ -23,8 +31,8 @@ const double _kSelectionHandleRadius = 6;
 const double _kArrowScreenPadding = 26.0;
 
 /// Draws a single text selection handle with a bar and a ball.
-class _CupertinoTextSelectionHandlePainter extends CustomPainter {
-  const _CupertinoTextSelectionHandlePainter(this.color);
+class _AppleTextSelectionHandlePainter extends CustomPainter {
+  const _AppleTextSelectionHandlePainter(this.color);
 
   final Color color;
 
@@ -51,7 +59,7 @@ class _CupertinoTextSelectionHandlePainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(_CupertinoTextSelectionHandlePainter oldPainter) => color != oldPainter.color;
+  bool shouldRepaint(_AppleTextSelectionHandlePainter oldPainter) => color != oldPainter.color;
 }
 
 /// iOS Cupertino styled text selection handle controls.
@@ -62,14 +70,14 @@ class _CupertinoTextSelectionHandlePainter extends CustomPainter {
   'Use `CupertinoTextSelectionControls`. '
   'This feature was deprecated after v3.3.0-0.5.pre.',
 )
-class CupertinoTextSelectionHandleControls extends CupertinoTextSelectionControls
+class AppleTextSelectionHandleControls extends AppleTextSelectionControls
     with TextSelectionHandleControls {}
 
 /// iOS Cupertino styled text selection controls.
 ///
-/// The [cupertinoTextSelectionControls] global variable has a
+/// The [appleTextSelectionControls] global variable has a
 /// suitable instance of this class.
-class CupertinoTextSelectionControls extends TextSelectionControls {
+class AppleTextSelectionControls extends TextSelectionControls {
   /// Returns the size of the Cupertino handle.
   @override
   Size getHandleSize(double textLineHeight) {
@@ -113,6 +121,7 @@ class CupertinoTextSelectionControls extends TextSelectionControls {
   Widget buildHandle(
     BuildContext context,
     TextSelectionHandleType type,
+    Color? color,
     double textLineHeight, [
     VoidCallback? onTap,
   ]) {
@@ -121,8 +130,8 @@ class CupertinoTextSelectionControls extends TextSelectionControls {
     final Widget handle;
 
     final Widget customPaint = CustomPaint(
-      painter: _CupertinoTextSelectionHandlePainter(
-        CupertinoTheme.of(context).selectionHandleColor,
+      painter: _AppleTextSelectionHandlePainter(
+        color ?? const Color.fromARGB(255, 0, 124, 255),
       ),
     );
 
@@ -184,11 +193,11 @@ class CupertinoTextSelectionControls extends TextSelectionControls {
 // deleted, when users should migrate back to cupertinoTextSelectionControls.
 // See https://github.com/flutter/flutter/pull/124262
 /// Text selection handle controls that follow iOS design conventions.
-final TextSelectionControls cupertinoTextSelectionHandleControls =
-    CupertinoTextSelectionHandleControls();
+final TextSelectionControls appleTextSelectionHandleControls =
+    AppleTextSelectionHandleControls();
 
 /// Text selection controls that follow iOS design conventions.
-final TextSelectionControls cupertinoTextSelectionControls = CupertinoTextSelectionControls();
+final TextSelectionControls appleTextSelectionControls = AppleTextSelectionControls();
 
 // Generates the child that's passed into CupertinoTextSelectionToolbar.
 class _CupertinoTextSelectionControlsToolbar extends StatefulWidget {
@@ -293,7 +302,7 @@ class _CupertinoTextSelectionControlsToolbarState
         items.add(onePhysicalPixelVerticalDivider);
       }
 
-      items.add(CupertinoTextSelectionToolbarButton.text(onPressed: onPressed, text: text));
+      items.add(AppleTextSelectionToolbarButton.text(onPressed: onPressed, text: text));
     }
 
     if (widget.handleCut != null) {
@@ -314,7 +323,7 @@ class _CupertinoTextSelectionControlsToolbarState
       return const SizedBox.shrink();
     }
 
-    return CupertinoTextSelectionToolbar(
+    return AppleTextSelectionToolbar(
       anchorAbove: anchorAbove,
       anchorBelow: anchorBelow,
       children: items,

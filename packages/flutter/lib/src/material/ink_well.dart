@@ -21,8 +21,8 @@ import 'package:flutter/widgets.dart';
 
 import 'debug.dart';
 import 'ink_highlight.dart';
-import 'material.dart';
-import 'material_state.dart';
+import 'material.dart';// For InkFeatures, RectCallback, MaterialInkController, Material.of(context)
+import 'material_state.dart'; // can be replaced by WidgetState?
 import 'theme.dart';
 
 // Examples can assume:

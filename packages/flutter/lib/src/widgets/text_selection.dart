@@ -94,7 +94,7 @@ class ToolbarItemsParentData extends ContainerBoxParentData<RenderBox> {
 ///  * [SelectionArea], which selects appropriate text selection controls
 ///    based on the current platform.
 abstract class TextSelectionControls {
-  /// Builds a selection handle of the given `type`.
+  /// Builds a selection handle of the given `type` and `color`.
   ///
   /// The top left corner of this widget is positioned at the bottom of the
   /// selection position.
@@ -106,6 +106,7 @@ abstract class TextSelectionControls {
   Widget buildHandle(
     BuildContext context,
     TextSelectionHandleType type,
+    Color? color,
     double textLineHeight, [
     VoidCallback? onTap,
   ]);
@@ -298,6 +299,7 @@ class EmptyTextSelectionControls extends TextSelectionControls {
   Widget buildHandle(
     BuildContext context,
     TextSelectionHandleType type,
+    Color? color,
     double textLineHeight, [
     VoidCallback? onTap,
   ]) {
@@ -2117,6 +2119,7 @@ class _SelectionHandleOverlayState extends State<_SelectionHandleOverlay>
                 child: widget.selectionControls.buildHandle(
                   context,
                   widget.type,
+                  null,///// todo
                   widget.preferredLineHeight,
                   widget.onSelectionHandleTapped,
                 ),

@@ -2,25 +2,33 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-import 'package:flutter/foundation.dart' show ValueListenable, clampDouble;
-import 'package:flutter/widgets.dart';
+/// @docImport 'editable_text.dart';
+library;
 
-import 'cupertino_desktop_text_selection_toolbar.dart';
-import 'cupertino_desktop_text_selection_toolbar_button.dart';
+import 'package:flutter/foundation.dart' show ValueListenable, clampDouble;
+import 'package:flutter/rendering.dart';
+
+import 'apple_desktop_text_selection_toolbar.dart';
+import 'apple_desktop_text_selection_toolbar_button.dart';
+import 'basic.dart';
+import 'debug.dart';
+import 'framework.dart';
 import 'localizations.dart';
+import 'media_query.dart';
+import 'text_selection.dart';
 
 /// MacOS Cupertino styled text selection handle controls.
 ///
 /// Specifically does not manage the toolbar, which is left to
 /// [EditableText.contextMenuBuilder].
-class _CupertinoDesktopTextSelectionHandleControls extends CupertinoDesktopTextSelectionControls
+class _AppleDesktopTextSelectionHandleControls extends AppleDesktopTextSelectionControls
     with TextSelectionHandleControls {}
 
 /// Desktop Cupertino styled text selection controls.
 ///
-/// The [cupertinoDesktopTextSelectionControls] global variable has a
+/// The [appleDesktopTextSelectionControls] global variable has a
 /// suitable instance of this class.
-class CupertinoDesktopTextSelectionControls extends TextSelectionControls {
+class AppleDesktopTextSelectionControls extends TextSelectionControls {
   /// Desktop has no text selection handles.
   @override
   Size getHandleSize(double textLineHeight) {
@@ -43,7 +51,7 @@ class CupertinoDesktopTextSelectionControls extends TextSelectionControls {
     ValueListenable<ClipboardStatus>? clipboardStatus,
     Offset? lastSecondaryTapDownPosition,
   ) {
-    return _CupertinoDesktopTextSelectionControlsToolbar(
+    return _AppleDesktopTextSelectionControlsToolbar(
       clipboardStatus: clipboardStatus,
       endpoints: endpoints,
       globalEditableRegion: globalEditableRegion,
@@ -62,6 +70,7 @@ class CupertinoDesktopTextSelectionControls extends TextSelectionControls {
   Widget buildHandle(
     BuildContext context,
     TextSelectionHandleType type,
+    Color? color,
     double textLineHeight, [
     VoidCallback? onTap,
   ]) {
@@ -90,16 +99,16 @@ class CupertinoDesktopTextSelectionControls extends TextSelectionControls {
 // cupertinoDesktopTextSelectionControls.
 // See https://github.com/flutter/flutter/pull/124262
 /// Text selection handle controls that follow MacOS design conventions.
-final TextSelectionControls cupertinoDesktopTextSelectionHandleControls =
-    _CupertinoDesktopTextSelectionHandleControls();
+final TextSelectionControls appleDesktopTextSelectionHandleControls =
+    _AppleDesktopTextSelectionHandleControls();
 
 /// Text selection controls that follows MacOS design conventions.
-final TextSelectionControls cupertinoDesktopTextSelectionControls =
-    CupertinoDesktopTextSelectionControls();
+final TextSelectionControls appleDesktopTextSelectionControls =
+    AppleDesktopTextSelectionControls();
 
 // Generates the child that's passed into CupertinoDesktopTextSelectionToolbar.
-class _CupertinoDesktopTextSelectionControlsToolbar extends StatefulWidget {
-  const _CupertinoDesktopTextSelectionControlsToolbar({
+class _AppleDesktopTextSelectionControlsToolbar extends StatefulWidget {
+  const _AppleDesktopTextSelectionControlsToolbar({
     required this.clipboardStatus,
     required this.endpoints,
     required this.globalEditableRegion,
@@ -124,12 +133,12 @@ class _CupertinoDesktopTextSelectionControlsToolbar extends StatefulWidget {
   final double textLineHeight;
 
   @override
-  _CupertinoDesktopTextSelectionControlsToolbarState createState() =>
-      _CupertinoDesktopTextSelectionControlsToolbarState();
+  _AppleDesktopTextSelectionControlsToolbarState createState() =>
+      _AppleDesktopTextSelectionControlsToolbarState();
 }
 
-class _CupertinoDesktopTextSelectionControlsToolbarState
-    extends State<_CupertinoDesktopTextSelectionControlsToolbar> {
+class _AppleDesktopTextSelectionControlsToolbarState
+    extends State<_AppleDesktopTextSelectionControlsToolbar> {
   void _onChangedClipboardStatus() {
     setState(() {
       // Inform the widget that the value of clipboardStatus has changed.
@@ -143,7 +152,7 @@ class _CupertinoDesktopTextSelectionControlsToolbarState
   }
 
   @override
-  void didUpdateWidget(_CupertinoDesktopTextSelectionControlsToolbar oldWidget) {
+  void didUpdateWidget(_AppleDesktopTextSelectionControlsToolbar oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.clipboardStatus != widget.clipboardStatus) {
       oldWidget.clipboardStatus?.removeListener(_onChangedClipboardStatus);
@@ -187,7 +196,7 @@ class _CupertinoDesktopTextSelectionControlsToolbarState
         items.add(onePhysicalPixelVerticalDivider);
       }
 
-      items.add(CupertinoDesktopTextSelectionToolbarButton.text(onPressed: onPressed, text: text));
+      items.add(AppleDesktopTextSelectionToolbarButton.text(onPressed: onPressed, text: text));
     }
 
     if (widget.handleCut != null) {
@@ -208,7 +217,7 @@ class _CupertinoDesktopTextSelectionControlsToolbarState
       return const SizedBox.shrink();
     }
 
-    return CupertinoDesktopTextSelectionToolbar(
+    return AppleDesktopTextSelectionToolbar(
       anchor: widget.lastSecondaryTapDownPosition ?? midpointAnchor,
       children: items,
     );

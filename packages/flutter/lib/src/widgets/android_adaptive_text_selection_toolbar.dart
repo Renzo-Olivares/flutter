@@ -2,21 +2,27 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-/// @docImport 'selectable_text.dart';
-/// @docImport 'selection_area.dart';
-/// @docImport 'text_field.dart';
-library;
-
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/rendering.dart';
+import 'package:flutter/src/foundation/platform.dart';
 
+import 'android_desktop_text_selection_toolbar.dart';
+import 'android_desktop_text_selection_toolbar_button.dart';
+import 'android_text_selection_toolbar.dart';
+import 'android_text_selection_toolbar_text_button.dart';
+import 'apple_desktop_text_selection_toolbar.dart';
+import 'apple_desktop_text_selection_toolbar_button.dart';
+import 'apple_text_selection_toolbar.dart';
+import 'apple_text_selection_toolbar_button.dart';
+import 'basic.dart';
+import 'context_menu_button_item.dart';
 import 'debug.dart';
-import 'material_desktop_text_selection_toolbar.dart';
-import 'material_desktop_text_selection_toolbar_button.dart';
+import 'editable_text.dart';
+import 'framework.dart';
 import 'localizations.dart';
-import 'material_text_selection_toolbar.dart';
-import 'material_text_selection_toolbar_text_button.dart';
-import 'theme.dart';
+import 'selectable_region.dart';
+import 'text.dart';
+import 'text_selection.dart';
+import 'text_selection_toolbar_anchors.dart';
 
 /// The default context menu for text selection for the current platform.
 ///
@@ -25,69 +31,66 @@ import 'theme.dart';
 /// supported parent widget, such as:
 ///
 /// * [EditableText.contextMenuBuilder]
-/// * [TextField.contextMenuBuilder]
-/// * [CupertinoTextField.contextMenuBuilder]
-/// * [SelectionArea.contextMenuBuilder]
-/// * [SelectableText.contextMenuBuilder]
+/// * [SelectableRegion.contextMenuBuilder]
 /// {@endtemplate}
 ///
 /// See also:
 ///
 /// * [EditableText.getEditableButtonItems], which returns the default
 ///   [ContextMenuButtonItem]s for [EditableText] on the platform.
-/// * [AdaptiveTextSelectionToolbar.getAdaptiveButtons], which builds the button
+/// * [AndroidAdaptiveTextSelectionToolbar.getAdaptiveButtons], which builds the button
 ///   Widgets for the current platform given [ContextMenuButtonItem]s.
-/// * [CupertinoAdaptiveTextSelectionToolbar], which does the same thing as this
+/// * [AppleAdaptiveTextSelectionToolbar], which does the same thing as this
 ///   widget but only for Cupertino context menus.
-/// * [TextSelectionToolbar], the default toolbar for Android.
-/// * [DesktopTextSelectionToolbar], the default toolbar for desktop platforms
+/// * [AndroidTextSelectionToolbar], the default toolbar for Android.
+/// * [AndroidDesktopTextSelectionToolbar], the default toolbar for desktop platforms
 ///    other than MacOS.
-/// * [CupertinoTextSelectionToolbar], the default toolbar for iOS.
-/// * [CupertinoDesktopTextSelectionToolbar], the default toolbar for MacOS.
-class AdaptiveTextSelectionToolbar extends StatelessWidget {
-  /// Create an instance of [AdaptiveTextSelectionToolbar] with the
+/// * [AppleTextSelectionToolbar], the default toolbar for iOS.
+/// * [AppleDesktopTextSelectionToolbar], the default toolbar for MacOS.
+class AndroidAdaptiveTextSelectionToolbar extends StatelessWidget {
+  /// Create an instance of [AndroidAdaptiveTextSelectionToolbar] with the
   /// given [children].
   ///
   /// See also:
   ///
   /// {@template flutter.material.AdaptiveTextSelectionToolbar.buttonItems}
-  /// * [AdaptiveTextSelectionToolbar.buttonItems], which takes a list of
+  /// * [AndroidAdaptiveTextSelectionToolbar.buttonItems], which takes a list of
   ///   [ContextMenuButtonItem]s instead of [children] widgets.
   /// {@endtemplate}
   /// {@template flutter.material.AdaptiveTextSelectionToolbar.editable}
-  /// * [AdaptiveTextSelectionToolbar.editable], which builds the default
+  /// * [AndroidAdaptiveTextSelectionToolbar.editable], which builds the default
   ///   children for an editable field.
   /// {@endtemplate}
   /// {@template flutter.material.AdaptiveTextSelectionToolbar.editableText}
-  /// * [AdaptiveTextSelectionToolbar.editableText], which builds the default
+  /// * [AndroidAdaptiveTextSelectionToolbar.editableText], which builds the default
   ///   children for an [EditableText].
   /// {@endtemplate}
   /// {@template flutter.material.AdaptiveTextSelectionToolbar.selectable}
-  /// * [AdaptiveTextSelectionToolbar.selectable], which builds the default
+  /// * [AndroidAdaptiveTextSelectionToolbar.selectable], which builds the default
   ///   children for content that is selectable but not editable.
   /// {@endtemplate}
-  const AdaptiveTextSelectionToolbar({super.key, required this.children, required this.anchors})
+  const AndroidAdaptiveTextSelectionToolbar({super.key, required this.children, required this.anchors})
     : buttonItems = null;
 
-  /// Create an instance of [AdaptiveTextSelectionToolbar] whose children will
+  /// Create an instance of [AndroidAdaptiveTextSelectionToolbar] whose children will
   /// be built from the given [buttonItems].
   ///
   /// See also:
   ///
   /// {@template flutter.material.AdaptiveTextSelectionToolbar.new}
-  /// * [AdaptiveTextSelectionToolbar.new], which takes the children directly as
+  /// * [AndroidAdaptiveTextSelectionToolbar.new], which takes the children directly as
   ///   a list of widgets.
   /// {@endtemplate}
   /// {@macro flutter.material.AdaptiveTextSelectionToolbar.editable}
   /// {@macro flutter.material.AdaptiveTextSelectionToolbar.editableText}
   /// {@macro flutter.material.AdaptiveTextSelectionToolbar.selectable}
-  const AdaptiveTextSelectionToolbar.buttonItems({
+  const AndroidAdaptiveTextSelectionToolbar.buttonItems({
     super.key,
     required this.buttonItems,
     required this.anchors,
   }) : children = null;
 
-  /// Create an instance of [AdaptiveTextSelectionToolbar] with the default
+  /// Create an instance of [AndroidAdaptiveTextSelectionToolbar] with the default
   /// children for an editable field.
   ///
   /// If an on* callback parameter is null, then its corresponding button will
@@ -104,7 +107,7 @@ class AdaptiveTextSelectionToolbar extends StatelessWidget {
   /// {@macro flutter.material.AdaptiveTextSelectionToolbar.editableText}
   /// {@macro flutter.material.AdaptiveTextSelectionToolbar.buttonItems}
   /// {@macro flutter.material.AdaptiveTextSelectionToolbar.selectable}
-  AdaptiveTextSelectionToolbar.editable({
+  AndroidAdaptiveTextSelectionToolbar.editable({
     super.key,
     required ClipboardStatus clipboardStatus,
     required VoidCallback? onCopy,
@@ -129,7 +132,7 @@ class AdaptiveTextSelectionToolbar extends StatelessWidget {
          onLiveTextInput: onLiveTextInput,
        );
 
-  /// Create an instance of [AdaptiveTextSelectionToolbar] with the default
+  /// Create an instance of [AndroidAdaptiveTextSelectionToolbar] with the default
   /// children for an [EditableText].
   ///
   /// See also:
@@ -138,14 +141,14 @@ class AdaptiveTextSelectionToolbar extends StatelessWidget {
   /// {@macro flutter.material.AdaptiveTextSelectionToolbar.editable}
   /// {@macro flutter.material.AdaptiveTextSelectionToolbar.buttonItems}
   /// {@macro flutter.material.AdaptiveTextSelectionToolbar.selectable}
-  AdaptiveTextSelectionToolbar.editableText({
+  AndroidAdaptiveTextSelectionToolbar.editableText({
     super.key,
     required EditableTextState editableTextState,
   }) : children = null,
        buttonItems = editableTextState.contextMenuButtonItems,
        anchors = editableTextState.contextMenuAnchors;
 
-  /// Create an instance of [AdaptiveTextSelectionToolbar] with the default
+  /// Create an instance of [AndroidAdaptiveTextSelectionToolbar] with the default
   /// children for selectable, but not editable, content.
   ///
   /// See also:
@@ -154,7 +157,7 @@ class AdaptiveTextSelectionToolbar extends StatelessWidget {
   /// {@macro flutter.material.AdaptiveTextSelectionToolbar.buttonItems}
   /// {@macro flutter.material.AdaptiveTextSelectionToolbar.editable}
   /// {@macro flutter.material.AdaptiveTextSelectionToolbar.editableText}
-  AdaptiveTextSelectionToolbar.selectable({
+  AndroidAdaptiveTextSelectionToolbar.selectable({
     super.key,
     required VoidCallback onCopy,
     required VoidCallback onSelectAll,
@@ -169,7 +172,7 @@ class AdaptiveTextSelectionToolbar extends StatelessWidget {
          onShare: onShare,
        );
 
-  /// Create an instance of [AdaptiveTextSelectionToolbar] with the default
+  /// Create an instance of [AndroidAdaptiveTextSelectionToolbar] with the default
   /// children for a [SelectableRegion].
   ///
   /// See also:
@@ -179,7 +182,7 @@ class AdaptiveTextSelectionToolbar extends StatelessWidget {
   /// {@macro flutter.material.AdaptiveTextSelectionToolbar.editable}
   /// {@macro flutter.material.AdaptiveTextSelectionToolbar.editableText}
   /// {@macro flutter.material.AdaptiveTextSelectionToolbar.selectable}
-  AdaptiveTextSelectionToolbar.selectableRegion({
+  AndroidAdaptiveTextSelectionToolbar.selectableRegion({
     super.key,
     required SelectableRegionState selectableRegionState,
   }) : children = null,
@@ -207,10 +210,10 @@ class AdaptiveTextSelectionToolbar extends StatelessWidget {
       return buttonItem.label!;
     }
 
-    switch (Theme.of(context).platform) {
+    switch (defaultTargetPlatform) {
       case TargetPlatform.iOS:
       case TargetPlatform.macOS:
-        return CupertinoTextSelectionToolbarButton.getButtonLabel(context, buttonItem);
+        return AppleTextSelectionToolbarButton.getButtonLabel(context, buttonItem);
       case TargetPlatform.android:
       case TargetPlatform.fuchsia:
       case TargetPlatform.linux:
@@ -248,17 +251,17 @@ class AdaptiveTextSelectionToolbar extends StatelessWidget {
   ///
   /// See also:
   ///
-  /// * [CupertinoAdaptiveTextSelectionToolbar.getAdaptiveButtons], which is the
+  /// * [AppleAdaptiveTextSelectionToolbar.getAdaptiveButtons], which is the
   ///   Cupertino equivalent of this class and builds only the Cupertino
   ///   buttons.
   static Iterable<Widget> getAdaptiveButtons(
     BuildContext context,
     List<ContextMenuButtonItem> buttonItems,
   ) {
-    switch (Theme.of(context).platform) {
+    switch (defaultTargetPlatform) {
       case TargetPlatform.iOS:
         return buttonItems.map((ContextMenuButtonItem buttonItem) {
-          return CupertinoTextSelectionToolbarButton.buttonItem(buttonItem: buttonItem);
+          return AppleTextSelectionToolbarButton.buttonItem(buttonItem: buttonItem);
         });
       case TargetPlatform.fuchsia:
       case TargetPlatform.android:
@@ -266,8 +269,8 @@ class AdaptiveTextSelectionToolbar extends StatelessWidget {
         for (int i = 0; i < buttonItems.length; i++) {
           final ContextMenuButtonItem buttonItem = buttonItems[i];
           buttons.add(
-            TextSelectionToolbarTextButton(
-              padding: TextSelectionToolbarTextButton.getPadding(i, buttonItems.length),
+            AndroidTextSelectionToolbarTextButton(
+              padding: AndroidTextSelectionToolbarTextButton.getPadding(i, buttonItems.length),
               onPressed: buttonItem.onPressed,
               alignment: AlignmentDirectional.centerStart,
               child: Text(getButtonLabel(context, buttonItem)),
@@ -278,7 +281,7 @@ class AdaptiveTextSelectionToolbar extends StatelessWidget {
       case TargetPlatform.linux:
       case TargetPlatform.windows:
         return buttonItems.map((ContextMenuButtonItem buttonItem) {
-          return DesktopTextSelectionToolbarButton.text(
+          return AndroidDesktopTextSelectionToolbarButton.text(
             context: context,
             onPressed: buttonItem.onPressed,
             text: getButtonLabel(context, buttonItem),
@@ -286,7 +289,7 @@ class AdaptiveTextSelectionToolbar extends StatelessWidget {
         });
       case TargetPlatform.macOS:
         return buttonItems.map((ContextMenuButtonItem buttonItem) {
-          return CupertinoDesktopTextSelectionToolbarButton.text(
+          return AppleDesktopTextSelectionToolbarButton.text(
             onPressed: buttonItem.onPressed,
             text: getButtonLabel(context, buttonItem),
           );
@@ -305,9 +308,9 @@ class AdaptiveTextSelectionToolbar extends StatelessWidget {
         ? children!
         : getAdaptiveButtons(context, buttonItems!).toList();
 
-    switch (Theme.of(context).platform) {
+    switch (defaultTargetPlatform) {
       case TargetPlatform.iOS:
-        return CupertinoTextSelectionToolbar(
+        return AppleTextSelectionToolbar(
           anchorAbove: anchors.primaryAnchor,
           anchorBelow: anchors.secondaryAnchor == null
               ? anchors.primaryAnchor
@@ -315,7 +318,7 @@ class AdaptiveTextSelectionToolbar extends StatelessWidget {
           children: resultChildren,
         );
       case TargetPlatform.android:
-        return TextSelectionToolbar(
+        return AndroidTextSelectionToolbar(
           anchorAbove: anchors.primaryAnchor,
           anchorBelow: anchors.secondaryAnchor == null
               ? anchors.primaryAnchor
@@ -325,9 +328,9 @@ class AdaptiveTextSelectionToolbar extends StatelessWidget {
       case TargetPlatform.fuchsia:
       case TargetPlatform.linux:
       case TargetPlatform.windows:
-        return DesktopTextSelectionToolbar(anchor: anchors.primaryAnchor, children: resultChildren);
+        return AndroidDesktopTextSelectionToolbar(anchor: anchors.primaryAnchor, children: resultChildren);
       case TargetPlatform.macOS:
-        return CupertinoDesktopTextSelectionToolbar(
+        return AppleDesktopTextSelectionToolbar(
           anchor: anchors.primaryAnchor,
           children: resultChildren,
         );

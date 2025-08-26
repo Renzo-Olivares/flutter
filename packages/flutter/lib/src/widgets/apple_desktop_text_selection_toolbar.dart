@@ -4,15 +4,18 @@
 
 /// @docImport 'package:flutter/material.dart';
 ///
-/// @docImport 'adaptive_text_selection_toolbar.dart';
-/// @docImport 'desktop_text_selection_toolbar_button.dart';
+/// @docImport 'apple_adaptive_text_selection_toolbar.dart';
+/// @docImport 'apple_desktop_text_selection_toolbar_button.dart';
 library;
 
 import 'dart:ui';
 
-import 'package:flutter/widgets.dart';
-
-import 'colors.dart';
+import 'basic.dart';
+import 'container.dart';
+import 'debug.dart';
+import 'desktop_text_selection_toolbar_layout_delegate.dart';
+import 'framework.dart';
+import 'media_query.dart';
 
 // The minimum padding from all edges of the selection toolbar to all edges of
 // the screen.
@@ -34,14 +37,16 @@ const List<BoxShadow> _kToolbarShadow = <BoxShadow>[
   ),
 ];
 
+typedef _CupertinoDynamicColor = ({Color lightColor, Color darkColor});
+
 // These values were measured from a screenshot of the native context menu on
 // macOS 13.2 on a Macbook Pro.
-const CupertinoDynamicColor _kToolbarBorderColor = CupertinoDynamicColor.withBrightness(
-  color: Color(0xFFB8B8B8),
+const _CupertinoDynamicColor _kToolbarBorderColor = (
+  lightColor: Color(0xFFB8B8B8),
   darkColor: Color(0xFF5B5B5B),
 );
-const CupertinoDynamicColor _kToolbarBackgroundColor = CupertinoDynamicColor.withBrightness(
-  color: Color(0xB2FFFFFF),
+const _CupertinoDynamicColor _kToolbarBackgroundColor = (
+  lightColor: Color(0xB2FFFFFF),
   darkColor: Color(0xB2303030),
 );
 
@@ -55,15 +60,15 @@ const CupertinoDynamicColor _kToolbarBackgroundColor = CupertinoDynamicColor.wit
 ///
 /// See also:
 ///
-///  * [CupertinoAdaptiveTextSelectionToolbar], where this is used to build the
+///  * [AppleAdaptiveTextSelectionToolbar], where this is used to build the
 ///    toolbar for desktop platforms.
 ///  * [AdaptiveTextSelectionToolbar], where this is used to build the toolbar on
 ///    macOS.
 ///  * [DesktopTextSelectionToolbar], which is similar but builds a
 ///    Material-style desktop toolbar.
-class CupertinoDesktopTextSelectionToolbar extends StatelessWidget {
+class AppleDesktopTextSelectionToolbar extends StatelessWidget {
   /// Creates a const instance of CupertinoTextSelectionToolbar.
-  const CupertinoDesktopTextSelectionToolbar({
+  const AppleDesktopTextSelectionToolbar({
     super.key,
     required this.anchor,
     required this.children,
@@ -92,7 +97,7 @@ class CupertinoDesktopTextSelectionToolbar extends StatelessWidget {
   /// {@macro flutter.material.TextSelectionToolbar.children}
   ///
   /// See also:
-  ///   * [CupertinoDesktopTextSelectionToolbarButton], which builds a default
+  ///   * [AppleDesktopTextSelectionToolbarButton], which builds a default
   ///     macOS-style text selection toolbar text button.
   final List<Widget> children;
 
@@ -113,9 +118,9 @@ class CupertinoDesktopTextSelectionToolbar extends StatelessWidget {
         ),
         child: DecoratedBox(
           decoration: ShapeDecoration(
-            color: _kToolbarBackgroundColor.resolveFrom(context),
+            color: _resolveColor(context, _kToolbarBackgroundColor),
             shape: RoundedSuperellipseBorder(
-              side: BorderSide(color: _kToolbarBorderColor.resolveFrom(context)),
+              side: BorderSide(color: _resolveColor(context, _kToolbarBorderColor)),
               borderRadius: const BorderRadius.all(_kToolbarBorderRadius),
             ),
           ),
@@ -123,6 +128,16 @@ class CupertinoDesktopTextSelectionToolbar extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  static Color _resolveColor(BuildContext context, _CupertinoDynamicColor color) {
+    final Brightness brightness = color.lightColor != color.darkColor
+        ? MediaQuery.maybePlatformBrightnessOf(context) ?? Brightness.light
+        : Brightness.light;
+    if (brightness == Brightness.light) {
+      return color.lightColor;
+    }
+    return color.darkColor;
   }
 
   @override

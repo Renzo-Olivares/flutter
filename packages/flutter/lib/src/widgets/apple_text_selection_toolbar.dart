@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-/// @docImport 'package:flutter/material.dart';
+/// @docImport 'android_text_selection_toolbar.dart';
 library;
 
 import 'dart:collection';
@@ -10,12 +10,20 @@ import 'dart:math' as math show pi;
 import 'dart:ui' as ui;
 
 import 'package:flutter/foundation.dart' show Brightness, clampDouble;
+import 'package:flutter/gestures.dart';
 import 'package:flutter/rendering.dart';
-import 'package:flutter/widgets.dart';
 
-import 'colors.dart';
-import 'cupertino_text_selection_toolbar_button.dart';
-import 'theme.dart';
+import 'animated_size.dart';
+import 'apple_text_selection_toolbar_button.dart';
+import 'basic.dart';
+import 'debug.dart';
+import 'framework.dart';
+import 'gesture_detector.dart';
+import 'media_query.dart';
+import 'text_selection.dart';
+import 'text_selection_toolbar_layout_delegate.dart';
+import 'ticker_provider.dart';
+import 'transitions.dart';
 
 // The radius of the toolbar RRect shape.
 // Value extracted from https://developer.apple.com/design/resources/.
@@ -37,22 +45,24 @@ const double _kArrowScreenPadding = 26.0;
 const double _kToolbarChevronSize = 10.0;
 const double _kToolbarChevronThickness = 2.0;
 
+typedef _CupertinoDynamicColor = ({Color lightColor, Color darkColor});
+
 // Color was measured from a screenshot of iOS 16.0.2
 // TODO(LongCatIsLooong): https://github.com/flutter/flutter/issues/41507.
-const CupertinoDynamicColor _kToolbarBackgroundColor = CupertinoDynamicColor.withBrightness(
-  color: Color(0xFFF6F6F6),
+const _CupertinoDynamicColor _kToolbarBackgroundColor = (
+  lightColor: Color(0xFFF6F6F6),
   darkColor: Color(0xFF222222),
-);
+); // Can we get away with replacing `CupertinoDynamicColor` with `Color` + a `Brightness` switch.
 
 // Color was measured from a screenshot of iOS 16.0.2.
-const CupertinoDynamicColor _kToolbarDividerColor = CupertinoDynamicColor.withBrightness(
-  color: Color(0xFFD6D6D6),
+const _CupertinoDynamicColor _kToolbarDividerColor = (
+  lightColor: Color(0xFFD6D6D6),
   darkColor: Color(0xFF424242),
 );
 
-const CupertinoDynamicColor _kToolbarTextColor = CupertinoDynamicColor.withBrightness(
-  color: CupertinoColors.black,
-  darkColor: CupertinoColors.white,
+const _CupertinoDynamicColor _kToolbarTextColor = (
+  lightColor: Color(0xFF000000),
+  darkColor: Color(0xFFFFFFFF),
 );
 
 const Duration _kToolbarTransitionDuration = Duration(milliseconds: 125);
@@ -64,10 +74,10 @@ const Duration _kToolbarTransitionDuration = Duration(milliseconds: 125);
 ///
 /// See also:
 ///
-///   * [CupertinoTextSelectionToolbar.toolbarBuilder], which is of this type.
-///   * [TextSelectionToolbar.toolbarBuilder], which is similar, but for an
+///   * [AppleTextSelectionToolbar.toolbarBuilder], which is of this type.
+///   * [AndroidTextSelectionToolbar.toolbarBuilder], which is similar, but for an
 ///     Material-style toolbar.
-typedef CupertinoToolbarBuilder =
+typedef AppleToolbarBuilder =
     Widget Function(BuildContext context, Offset anchorAbove, Offset anchorBelow, Widget child);
 
 /// An iOS-style text selection toolbar.
@@ -85,11 +95,11 @@ typedef CupertinoToolbarBuilder =
 ///
 ///  * [AdaptiveTextSelectionToolbar], which builds the toolbar for the current
 ///    platform.
-///  * [TextSelectionToolbar], which is similar, but builds an Android-style
+///  * [AndroidTextSelectionToolbar], which is similar, but builds an Android-style
 ///    toolbar.
-class CupertinoTextSelectionToolbar extends StatelessWidget {
+class AppleTextSelectionToolbar extends StatelessWidget {
   /// Creates an instance of CupertinoTextSelectionToolbar.
-  const CupertinoTextSelectionToolbar({
+  const AppleTextSelectionToolbar({
     super.key,
     required this.anchorAbove,
     required this.anchorBelow,
@@ -106,7 +116,7 @@ class CupertinoTextSelectionToolbar extends StatelessWidget {
   /// {@macro flutter.material.TextSelectionToolbar.children}
   ///
   /// See also:
-  ///   * [CupertinoTextSelectionToolbarButton], which builds a default
+  ///   * [AppleTextSelectionToolbarButton], which builds a default
   ///     Cupertino-style text selection toolbar text button.
   final List<Widget> children;
 
@@ -114,7 +124,7 @@ class CupertinoTextSelectionToolbar extends StatelessWidget {
   ///
   /// The given anchor and isAbove can be used to position an arrow, as in the
   /// default Cupertino toolbar.
-  final CupertinoToolbarBuilder toolbarBuilder;
+  final AppleToolbarBuilder toolbarBuilder;
 
   /// Minimal padding from all edges of the selection toolbar to all edges of the
   /// viewport.
@@ -123,7 +133,7 @@ class CupertinoTextSelectionToolbar extends StatelessWidget {
   ///
   ///  * [SpellCheckSuggestionsToolbar], which uses this same value for its
   ///    padding from the edges of the viewport.
-  ///  * [TextSelectionToolbar], which uses this same value as well.
+  ///  * [AndroidTextSelectionToolbar], which uses this same value as well.
   static const double kToolbarScreenPadding = 8.0;
 
   // Builds a toolbar just like the default iOS toolbar, with the right color
@@ -137,11 +147,21 @@ class CupertinoTextSelectionToolbar extends StatelessWidget {
     return _CupertinoTextSelectionToolbarShape(
       anchorAbove: anchorAbove,
       anchorBelow: anchorBelow,
-      shadowColor: CupertinoTheme.brightnessOf(context) == Brightness.light
-          ? CupertinoColors.black.withOpacity(0.2)
+      shadowColor: MediaQuery.platformBrightnessOf(context) == Brightness.light
+          ? const Color(0xFF000000).withOpacity(0.2)
           : null,
-      child: ColoredBox(color: _kToolbarBackgroundColor.resolveFrom(context), child: child),
+      child: ColoredBox(color: _resolveColor(context,_kToolbarBackgroundColor), child: child),
     );
+  }
+
+  static Color _resolveColor(BuildContext context, _CupertinoDynamicColor color) {
+    final Brightness brightness = color.lightColor != color.darkColor
+        ? MediaQuery.maybePlatformBrightnessOf(context) ?? Brightness.light
+        : Brightness.light;
+    if (brightness == Brightness.light) {
+      return color.lightColor;
+    }
+    return color.darkColor;
   }
 
   @override
@@ -473,10 +493,10 @@ class _RenderCupertinoTextSelectionToolbarShape extends RenderShiftedBox {
           Offset.zero,
           const Offset(10.0, 10.0),
           const <Color>[
-            CupertinoColors.transparent,
+            Color(0x00000000),
             Color(0xFFFF00FF),
             Color(0xFFFF00FF),
-            CupertinoColors.transparent,
+            Color(0x00000000)
           ],
           const <double>[0.25, 0.25, 0.75, 0.75],
           TileMode.repeated,
@@ -531,7 +551,7 @@ class _CupertinoTextSelectionToolbarContent extends StatefulWidget {
   final Offset anchorAbove;
   final Offset anchorBelow;
   final List<Widget> children;
-  final CupertinoToolbarBuilder toolbarBuilder;
+  final AppleToolbarBuilder toolbarBuilder;
 
   @override
   _CupertinoTextSelectionToolbarContentState createState() =>
@@ -627,7 +647,7 @@ class _CupertinoTextSelectionToolbarContentState
 
   @override
   Widget build(BuildContext context) {
-    final Color chevronColor = _kToolbarTextColor.resolveFrom(context);
+    final Color chevronColor = AppleTextSelectionToolbar._resolveColor(context, _kToolbarTextColor);
 
     // Wrap the children and the chevron painters in Center with widthFactor
     // and heightFactor of 1.0 so _CupertinoTextSelectionToolbarItems can get
@@ -635,7 +655,7 @@ class _CupertinoTextSelectionToolbarContentState
     final Widget backButton = Center(
       widthFactor: 1.0,
       heightFactor: 1.0,
-      child: CupertinoTextSelectionToolbarButton(
+      child: AppleTextSelectionToolbarButton(
         onPressed: _handlePreviousPage,
         child: IgnorePointer(
           child: CustomPaint(
@@ -648,7 +668,7 @@ class _CupertinoTextSelectionToolbarContentState
     final Widget nextButton = Center(
       widthFactor: 1.0,
       heightFactor: 1.0,
-      child: CupertinoTextSelectionToolbarButton(
+      child: AppleTextSelectionToolbarButton(
         onPressed: _handleNextPage,
         child: IgnorePointer(
           child: CustomPaint(
@@ -677,7 +697,7 @@ class _CupertinoTextSelectionToolbarContentState
               key: _toolbarItemsKey,
               page: _page,
               backButton: backButton,
-              dividerColor: _kToolbarDividerColor.resolveFrom(context),
+              dividerColor: AppleTextSelectionToolbar._resolveColor(context, _kToolbarDividerColor),
               dividerWidth: 1.0 / MediaQuery.devicePixelRatioOf(context),
               nextButton: nextButton,
               children: children,

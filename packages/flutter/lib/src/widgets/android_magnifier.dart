@@ -5,9 +5,9 @@
 import 'dart:async';
 import 'dart:ui';
 
-// import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 
+import 'apple_magnifier.dart';
 import 'basic.dart';
 import 'framework.dart';
 import 'implicit_animations.dart';
@@ -15,7 +15,7 @@ import 'magnifier.dart';
 import 'media_query.dart';
 
 
-/// A [Magnifier] positioned by rules dictated by the native Android magnifier.
+/// A [AndroidMagnifier] positioned by rules dictated by the native Android magnifier.
 ///
 /// The positioning rules are based on [magnifierInfo], as follows:
 ///
@@ -34,15 +34,15 @@ import 'media_query.dart';
 ///
 /// This behavior was based on the Android 12 source code, where possible, and
 /// on eyeballing a Pixel 6 running Android 12 otherwise.
-class TextMagnifier extends StatefulWidget {
-  /// Creates a [TextMagnifier].
+class AndroidTextMagnifier extends StatefulWidget {
+  /// Creates a [AndroidTextMagnifier].
   ///
   /// The [magnifierInfo] must be provided, and must be updated with new values
   /// as the user's touch changes.
-  const TextMagnifier({super.key, required this.magnifierInfo});
+  const AndroidTextMagnifier({super.key, required this.magnifierInfo});
 
-  /// A [TextMagnifierConfiguration] that returns a [CupertinoTextMagnifier] on
-  /// iOS, [TextMagnifier] on Android, and null on all other platforms, and
+  /// A [TextMagnifierConfiguration] that returns a [AppleTextMagnifier] on
+  /// iOS, [AndroidTextMagnifier] on Android, and null on all other platforms, and
   /// shows the editing handles only on iOS.
   static TextMagnifierConfiguration adaptiveMagnifierConfiguration = TextMagnifierConfiguration(
     shouldDisplayHandlesInMagnifier: defaultTargetPlatform == TargetPlatform.iOS,
@@ -54,9 +54,9 @@ class TextMagnifier extends StatefulWidget {
         ) {
           switch (defaultTargetPlatform) {
             case TargetPlatform.iOS:
-              return CupertinoTextMagnifier(controller: controller, magnifierInfo: magnifierInfo);
+              return AppleTextMagnifier(controller: controller, magnifierInfo: magnifierInfo);
             case TargetPlatform.android:
-              return TextMagnifier(magnifierInfo: magnifierInfo);
+              return AndroidTextMagnifier(magnifierInfo: magnifierInfo);
             case TargetPlatform.fuchsia:
             case TargetPlatform.linux:
             case TargetPlatform.macOS:
@@ -66,7 +66,7 @@ class TextMagnifier extends StatefulWidget {
         },
   );
 
-  /// The duration that the position is animated if [TextMagnifier] just switched
+  /// The duration that the position is animated if [AndroidTextMagnifier] just switched
   /// between lines.
   static const Duration jumpBetweenLinesAnimationDuration = Duration(milliseconds: 70);
 
@@ -74,14 +74,14 @@ class TextMagnifier extends StatefulWidget {
   ///
   /// As the value of the [magnifierInfo] changes, the position of the loupe is
   /// adjusted automatically, according to the rules described in the
-  /// [TextMagnifier] class description.
+  /// [AndroidTextMagnifier] class description.
   final ValueNotifier<MagnifierInfo> magnifierInfo;
 
   @override
-  State<TextMagnifier> createState() => _TextMagnifierState();
+  State<AndroidTextMagnifier> createState() => _AndroidTextMagnifierState();
 }
 
-class _TextMagnifierState extends State<TextMagnifier> {
+class _AndroidTextMagnifierState extends State<AndroidTextMagnifier> {
   // Should _only_ be null on construction. This is because of the animation logic.
   //
   // Animations are added when `last_build_y != current_build_y`. This condition
@@ -119,7 +119,7 @@ class _TextMagnifierState extends State<TextMagnifier> {
   }
 
   @override
-  void didUpdateWidget(TextMagnifier oldWidget) {
+  void didUpdateWidget(AndroidTextMagnifier oldWidget) {
     if (oldWidget.magnifierInfo != widget.magnifierInfo) {
       oldWidget.magnifierInfo.removeListener(_determineMagnifierPositionAndFocalPoint);
       widget.magnifierInfo.addListener(_determineMagnifierPositionAndFocalPoint);
@@ -135,8 +135,8 @@ class _TextMagnifierState extends State<TextMagnifier> {
     // shifts the magnifier so we draw at the center, and then also includes
     // the "above touch point" shift.
     final Offset basicMagnifierOffset = Offset(
-      Magnifier.kDefaultMagnifierSize.width / 2,
-      Magnifier.kDefaultMagnifierSize.height + Magnifier.kStandardVerticalFocalPointShift,
+      AndroidMagnifier.kDefaultMagnifierSize.width / 2,
+      AndroidMagnifier.kDefaultMagnifierSize.height + AndroidMagnifier.kStandardVerticalFocalPointShift,
     );
 
     // Since the magnifier should not go past the edges of the line,
@@ -152,7 +152,7 @@ class _TextMagnifierState extends State<TextMagnifier> {
     // exactly at the center of the handle.
     final Rect unadjustedMagnifierRect =
         Offset(magnifierX, selectionInfo.caretRect.center.dy) - basicMagnifierOffset &
-        Magnifier.kDefaultMagnifierSize;
+        AndroidMagnifier.kDefaultMagnifierSize;
 
     // Shift the magnifier so that, if we are ever out of the screen, we become in bounds.
     // This probably won't have much of an effect on the X, since it is already bound
@@ -168,7 +168,7 @@ class _TextMagnifierState extends State<TextMagnifier> {
     // The insets, from either edge, that the focal point should not point
     // past lest the magnifier displays something out of bounds.
     final double horizontalMaxFocalPointEdgeInsets =
-        (Magnifier.kDefaultMagnifierSize.width / 2) / Magnifier._magnification;
+        (AndroidMagnifier.kDefaultMagnifierSize.width / 2) / AndroidMagnifier._magnification;
 
     // Adjust the focal point horizontally such that none of the magnifier
     // ever points to anything out of bounds.
@@ -213,7 +213,7 @@ class _TextMagnifierState extends State<TextMagnifier> {
       // Create a timer that deletes itself when the timer is complete.
       // This is `mounted` safe, since the timer is canceled in `dispose`.
       positionShouldBeAnimated = Timer(
-        TextMagnifier.jumpBetweenLinesAnimationDuration,
+        AndroidTextMagnifier.jumpBetweenLinesAnimationDuration,
         () => setState(() {
           _positionShouldBeAnimatedTimer = null;
         }),
@@ -240,9 +240,9 @@ class _TextMagnifierState extends State<TextMagnifier> {
       // Material magnifier typically does not animate, unless we jump between lines,
       // in which case we animate between lines.
       duration: _positionShouldBeAnimated
-          ? TextMagnifier.jumpBetweenLinesAnimationDuration
+          ? AndroidTextMagnifier.jumpBetweenLinesAnimationDuration
           : Duration.zero,
-      child: Magnifier(additionalFocalPointOffset: _extraFocalPointOffset),
+      child: AndroidMagnifier(additionalFocalPointOffset: _extraFocalPointOffset),
     );
   }
 }
@@ -253,14 +253,14 @@ class _TextMagnifierState extends State<TextMagnifier> {
 ///
 /// This widget focuses on mimicking the _style_ of the magnifier on material.
 /// For a widget that is focused on mimicking the _behavior_ of a material
-/// magnifier, see [TextMagnifier], which uses [Magnifier].
+/// magnifier, see [AndroidTextMagnifier], which uses [AndroidMagnifier].
 ///
 /// The styles implemented in this widget were based on the Android 12 source
 /// code, where possible, and on eyeballing a Pixel 6 running Android 12
 /// otherwise.
-class Magnifier extends StatelessWidget {
+class AndroidMagnifier extends StatelessWidget {
   /// Creates a [RawMagnifier] in the Material style.
-  const Magnifier({
+  const AndroidMagnifier({
     super.key,
     this.additionalFocalPointOffset = Offset.zero,
     this.borderRadius = const BorderRadius.all(Radius.circular(_borderRadius)),
@@ -274,20 +274,20 @@ class Magnifier extends StatelessWidget {
       ),
     ],
     this.clipBehavior = Clip.hardEdge,
-    this.size = Magnifier.kDefaultMagnifierSize,
+    this.size = AndroidMagnifier.kDefaultMagnifierSize,
   });
 
-  /// The default size of this [Magnifier].
+  /// The default size of this [AndroidMagnifier].
   ///
   /// The size of the magnifier may be modified through the constructor;
   /// [kDefaultMagnifierSize] is extracted from the default parameter of
-  /// [Magnifier]'s constructor so that positioners may depend on it.
+  /// [AndroidMagnifier]'s constructor so that positioners may depend on it.
   static const Size kDefaultMagnifierSize = Size(77.37, 37.9);
 
   /// The vertical distance that the magnifier should be above the focal point.
   ///
   /// The [kStandardVerticalFocalPointShift] value is a constant so that
-  /// positioning of this [Magnifier] can be done with a guaranteed size, as
+  /// positioning of this [AndroidMagnifier] can be done with a guaranteed size, as
   /// opposed to an estimate.
   static const double kStandardVerticalFocalPointShift = 22.0;
 
@@ -309,17 +309,18 @@ class Magnifier extends StatelessWidget {
   /// The magnifier's shape is a [RoundedRectangleBorder] with this radius.
   final BorderRadius borderRadius;
 
-  /// The color to tint the image in this [Magnifier].
+  /// The color to tint the image in this [AndroidMagnifier].
   ///
   /// On native Android, there is a almost transparent gray tint to the
   /// magnifier, in order to better distinguish the contents of the lens from
   /// the background.
   final Color filmColor;
 
-  /// A list of shadows cast by the [Magnifier].
+  /// A list of shadows cast by the [AndroidMagnifier].
   ///
   /// If the shadows use a [BlurStyle] that paints inside the shape, or if they
   /// are offset, then a [clipBehavior] that enables clipping (such as the
+  //
   /// default [Clip.hardEdge]) is recommended, otherwise the shadow will occlude
   /// the magnifier (the shadow is drawn above the magnifier so as to not be
   /// included in the magnified image).
@@ -342,7 +343,7 @@ class Magnifier extends StatelessWidget {
   /// See the discussion at [shadows].
   final Clip clipBehavior;
 
-  /// The [Size] of this [Magnifier].
+  /// The [Size] of this [AndroidMagnifier].
   ///
   /// The [shadows] are drawn outside of the [size].
   final Size size;
