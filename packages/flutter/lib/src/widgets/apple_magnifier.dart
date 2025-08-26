@@ -7,23 +7,26 @@ library;
 
 import 'dart:math' as math;
 
-import 'package:flutter/widgets.dart';
+import 'basic.dart';
+import 'framework.dart';
+import 'implicit_animations.dart';
+import 'magnifier.dart';
+import 'media_query.dart';
+import 'ticker_provider.dart';
 
-import 'theme.dart';
-
-/// A [CupertinoMagnifier] used for magnifying text in cases where a user's
+/// A [AppleMagnifier] used for magnifying text in cases where a user's
 /// finger may be blocking the point of interest, like a selection handle.
 ///
 /// {@tool dartpad}
-/// This sample demonstrates how to use [CupertinoTextMagnifier].
+/// This sample demonstrates how to use [AppleTextMagnifier].
 ///
 /// ** See code in examples/api/lib/widgets/magnifier/cupertino_text_magnifier.0.dart **
 /// {@end-tool}
 ///
-/// Delegates styling to [CupertinoMagnifier] with its position depending on
+/// Delegates styling to [AppleMagnifier] with its position depending on
 /// [magnifierInfo].
 ///
-/// Specifically, the [CupertinoTextMagnifier] follows the following rules.
+/// Specifically, the [AppleTextMagnifier] follows the following rules.
 /// [CupertinoTextMagnifier]:
 /// - is positioned horizontally inside the screen width, with [horizontalScreenEdgePadding] padding.
 /// - is hidden if a gesture is detected [hideBelowThreshold] units below the line
@@ -31,19 +34,20 @@ import 'theme.dart';
 /// - follows the x coordinate of the gesture directly (with respect to rule 1).
 /// - has some vertical drag resistance; i.e. if a gesture is detected k units below the field,
 ///   then has vertical offset [dragResistance] * k.
-class CupertinoTextMagnifier extends StatefulWidget {
+class AppleTextMagnifier extends StatefulWidget {
   /// Constructs a [RawMagnifier] in the Cupertino style, positioning with respect to
   /// [magnifierInfo].
   ///
   /// The default constructor parameters and constants were eyeballed on
   /// an iPhone XR iOS v15.5.
-  const CupertinoTextMagnifier({
+  const AppleTextMagnifier({
     super.key,
     this.animationCurve = Curves.easeOut,
     required this.controller,
     this.dragResistance = 10.0,
     this.hideBelowThreshold = 48.0,
     this.horizontalScreenEdgePadding = 10.0,
+    this.border,
     required this.magnifierInfo,
   });
 
@@ -52,7 +56,7 @@ class CupertinoTextMagnifier extends StatefulWidget {
 
   /// This magnifier's controller.
   ///
-  /// The [CupertinoTextMagnifier] requires a [MagnifierController]
+  /// The [AppleTextMagnifier] requires a [MagnifierController]
   /// in order to show / hide itself without removing itself from the
   /// overlay.
   final MagnifierController controller;
@@ -74,18 +78,25 @@ class CupertinoTextMagnifier extends StatefulWidget {
   /// `_kHorizontalScreenEdgePadding, w - _kHorizontalScreenEdgePadding`.
   final double horizontalScreenEdgePadding;
 
-  /// [CupertinoTextMagnifier] will determine its own positioning
+  /// [AppleTextMagnifier] will determine its own positioning
   /// based on the [MagnifierInfo] of this notifier.
   final ValueNotifier<MagnifierInfo> magnifierInfo;
+
+  /// The border, or "rim", of this magnifier.
+  ///
+  /// This border is drawn on a [RoundedRectangleBorder] with radius
+  /// [borderRadius], and increases the [size] of the magnifier by the
+  /// [BorderSide.width].
+  final BorderSide? border;
 
   /// The duration that the magnifier drags behind its final position.
   static const Duration _kDragAnimationDuration = Duration(milliseconds: 45);
 
   @override
-  State<CupertinoTextMagnifier> createState() => _CupertinoTextMagnifierState();
+  State<AppleTextMagnifier> createState() => _AppleTextMagnifierState();
 }
 
-class _CupertinoTextMagnifierState extends State<CupertinoTextMagnifier>
+class _AppleTextMagnifierState extends State<AppleTextMagnifier>
     with SingleTickerProviderStateMixin {
   // Initialize to dummy values for the event that the initial call to
   // _determineMagnifierPositionAndFocalPoint calls hide, and thus does not
@@ -102,7 +113,7 @@ class _CupertinoTextMagnifierState extends State<CupertinoTextMagnifier>
     _ioAnimationController = AnimationController(
       value: 0,
       vsync: this,
-      duration: CupertinoMagnifier._kInOutAnimationDuration,
+      duration: AppleMagnifier._kInOutAnimationDuration,
     )..addListener(() => setState(() {}));
 
     widget.controller.animationController = _ioAnimationController;
@@ -124,7 +135,7 @@ class _CupertinoTextMagnifierState extends State<CupertinoTextMagnifier>
   }
 
   @override
-  void didUpdateWidget(CupertinoTextMagnifier oldWidget) {
+  void didUpdateWidget(AppleTextMagnifier oldWidget) {
     if (oldWidget.magnifierInfo != widget.magnifierInfo) {
       oldWidget.magnifierInfo.removeListener(_determineMagnifierPositionAndFocalPoint);
       widget.magnifierInfo.addListener(_determineMagnifierPositionAndFocalPoint);
@@ -171,9 +182,9 @@ class _CupertinoTextMagnifierState extends State<CupertinoTextMagnifier>
 
     // The raw position, tracking the gesture directly.
     final Offset rawMagnifierPosition = Offset(
-      textEditingContext.globalGesturePosition.dx - CupertinoMagnifier.kDefaultSize.width / 2,
+      textEditingContext.globalGesturePosition.dx - AppleMagnifier.kDefaultSize.width / 2,
       verticalPositionOfLens -
-          (CupertinoMagnifier.kDefaultSize.height - CupertinoMagnifier.kMagnifierAboveFocalPoint),
+          (AppleMagnifier.kDefaultSize.height - AppleMagnifier.kMagnifierAboveFocalPoint),
     );
 
     final Rect screenRect = Offset.zero & MediaQuery.sizeOf(context);
@@ -186,12 +197,12 @@ class _CupertinoTextMagnifierState extends State<CupertinoTextMagnifier>
         // iOS doesn't reposition for Y, so we should expand the threshold
         // so we can send the whole magnifier out of bounds if need be.
         screenRect.top -
-            (CupertinoMagnifier.kDefaultSize.height + CupertinoMagnifier.kMagnifierAboveFocalPoint),
+            (AppleMagnifier.kDefaultSize.height + AppleMagnifier.kMagnifierAboveFocalPoint),
         screenRect.right - widget.horizontalScreenEdgePadding,
         screenRect.bottom +
-            (CupertinoMagnifier.kDefaultSize.height + CupertinoMagnifier.kMagnifierAboveFocalPoint),
+            (AppleMagnifier.kDefaultSize.height + AppleMagnifier.kMagnifierAboveFocalPoint),
       ),
-      rect: rawMagnifierPosition & CupertinoMagnifier.kDefaultSize,
+      rect: rawMagnifierPosition & AppleMagnifier.kDefaultSize,
     ).topLeft;
 
     setState(() {
@@ -203,16 +214,16 @@ class _CupertinoTextMagnifierState extends State<CupertinoTextMagnifier>
 
   @override
   Widget build(BuildContext context) {
-    final CupertinoThemeData themeData = CupertinoTheme.of(context);
     return AnimatedPositioned(
-      duration: CupertinoTextMagnifier._kDragAnimationDuration,
+      duration: AppleTextMagnifier._kDragAnimationDuration,
       curve: widget.animationCurve,
       left: _currentAdjustedMagnifierPosition.dx,
       top: _currentAdjustedMagnifierPosition.dy,
-      child: CupertinoMagnifier(
+      child: AppleMagnifier(
         inOutAnimation: _ioAnimation,
         additionalFocalPointOffset: Offset(0, _verticalFocalPointAdjustment),
-        borderSide: BorderSide(color: themeData.primaryColor, width: 2.0),
+        borderSide:
+            widget.border ?? const BorderSide(color: Color.fromARGB(255, 0, 124, 255), width: 2.0),
       ),
     );
   }
@@ -222,12 +233,12 @@ class _CupertinoTextMagnifierState extends State<CupertinoTextMagnifier>
 /// finger may be blocking the point of interest, like a selection handle.
 ///
 /// {@tool dartpad}
-/// This sample demonstrates how to use [CupertinoMagnifier].
+/// This sample demonstrates how to use [AppleMagnifier].
 ///
 /// ** See code in examples/api/lib/widgets/magnifier/cupertino_magnifier.0.dart **
 /// {@end-tool}
 ///
-/// [CupertinoMagnifier] is a wrapper around [RawMagnifier] that handles styling
+/// [AppleMagnifier] is a wrapper around [RawMagnifier] that handles styling
 /// and transitions.
 ///
 /// {@macro flutter.widgets.magnifier.intro}
@@ -235,15 +246,15 @@ class _CupertinoTextMagnifierState extends State<CupertinoTextMagnifier>
 /// See also:
 ///
 /// * [RawMagnifier], the backing implementation.
-/// * [CupertinoTextMagnifier], a widget that positions [CupertinoMagnifier] based on
+/// * [CupertinoTextMagnifier], a widget that positions [AppleMagnifier] based on
 /// [MagnifierInfo].
 /// * [MagnifierController], the controller for this magnifier.
-class CupertinoMagnifier extends StatelessWidget {
+class AppleMagnifier extends StatelessWidget {
   /// Creates a [RawMagnifier] in the Cupertino style.
   ///
   /// The default constructor parameters and constants were eyeballed on
   /// an iPhone 16 iOS v18.1.
-  const CupertinoMagnifier({
+  const AppleMagnifier({
     super.key,
     this.size = kDefaultSize,
     this.borderRadius = const BorderRadius.all(Radius.elliptical(60, 50)),
@@ -283,7 +294,7 @@ class CupertinoMagnifier extends StatelessWidget {
   /// where the magnified image appears, or if doing so is intentional (e.g. to
   /// blur the edges of the magnified image).
   ///
-  /// The default configuration of [CupertinoMagnifier] does not render inside
+  /// The default configuration of [AppleMagnifier] does not render inside
   /// the loupe (the shadows are not offset and use [BlurStyle.outer]).
   ///
   /// Other values (e.g. [Clip.hardEdge]) are recommended when the [shadows]
@@ -328,7 +339,7 @@ class CupertinoMagnifier extends StatelessWidget {
 
   /// This [RawMagnifier]'s controller.
   ///
-  /// Since [CupertinoMagnifier] has no knowledge of shown / hidden state,
+  /// Since [AppleMagnifier] has no knowledge of shown / hidden state,
   /// this animation should be driven by an external actor.
   final Animation<double>? inOutAnimation;
 

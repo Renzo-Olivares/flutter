@@ -5,7 +5,6 @@
 import 'package:flutter/widgets.dart';
 
 import 'colors.dart';
-import 'constants.dart';
 import 'text_button.dart';
 import 'theme.dart';
 
@@ -15,8 +14,6 @@ const TextStyle _kToolbarButtonFontStyle = TextStyle(
   letterSpacing: -0.15,
   fontWeight: FontWeight.w400,
 );
-
-const EdgeInsets _kToolbarButtonPadding = EdgeInsets.fromLTRB(20.0, 0.0, 20.0, 3.0);
 
 /// A [TextButton] for the Material desktop text selection toolbar.
 class DesktopTextSelectionToolbarButton extends StatelessWidget {
@@ -57,21 +54,10 @@ class DesktopTextSelectionToolbarButton extends StatelessWidget {
     final bool isDark = theme.colorScheme.brightness == Brightness.dark;
     final Color foregroundColor = isDark ? Colors.white : Colors.black87;
 
-    return SizedBox(
-      width: double.infinity,
-      child: TextButton(
-        style: TextButton.styleFrom(
-          alignment: Alignment.centerLeft,
-          enabledMouseCursor: SystemMouseCursors.basic,
-          disabledMouseCursor: SystemMouseCursors.basic,
-          foregroundColor: foregroundColor,
-          shape: const RoundedRectangleBorder(),
-          minimumSize: const Size(kMinInteractiveDimension, 36.0),
-          padding: _kToolbarButtonPadding,
-        ),
-        onPressed: onPressed,
-        child: child,
-      ),
+    return AndroidDesktopTextSelectionToolbarButton(
+      foregroundColor: foregroundColor,
+      onPressed: onPressed,
+      child: child,
     );
   }
 }

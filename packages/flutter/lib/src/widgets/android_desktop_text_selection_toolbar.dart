@@ -2,14 +2,16 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-/// @docImport 'adaptive_text_selection_toolbar.dart';
-/// @docImport 'desktop_text_selection_toolbar_button.dart';
+/// @docImport 'android_adaptive_text_selection_toolbar.dart';
+/// @docImport 'android_desktop_text_selection_toolbar_button.dart';
 library;
 
-import 'package:flutter/widgets.dart';
-
-import 'material.dart';
-import 'material_text_selection_toolbar.dart';
+import 'android_text_selection_toolbar.dart';
+import 'basic.dart';
+import 'debug.dart';
+import 'desktop_text_selection_toolbar_layout_delegate.dart';
+import 'framework.dart';
+import 'media_query.dart';
 
 // These values were measured from a screenshot of TextEdit on macOS 10.15.7 on
 // a Macbook Pro.
@@ -26,13 +28,13 @@ const double _kToolbarWidth = 222.0;
 ///
 /// See also:
 ///
-///  * [AdaptiveTextSelectionToolbar], which builds the toolbar for the current
+///  * [AndroidAdaptiveTextSelectionToolbar], which builds the toolbar for the current
 ///    platform.
-///  * [TextSelectionToolbar], which is similar, but builds an Android-style
+///  * [AndroidTextSelectionToolbar], which is similar, but builds an Android-style
 ///    toolbar.
-class DesktopTextSelectionToolbar extends StatelessWidget {
-  /// Creates a const instance of DesktopTextSelectionToolbar.
-  const DesktopTextSelectionToolbar({super.key, required this.anchor, required this.children})
+class AndroidDesktopTextSelectionToolbar extends StatelessWidget {
+  /// Creates a const instance of AndroidDesktopTextSelectionToolbar.
+  const AndroidDesktopTextSelectionToolbar({super.key, required this.anchor, required this.children})
     : assert(children.length > 0);
 
   /// {@template flutter.material.DesktopTextSelectionToolbar.anchor}
@@ -44,7 +46,7 @@ class DesktopTextSelectionToolbar extends StatelessWidget {
   /// {@macro flutter.material.TextSelectionToolbar.children}
   ///
   /// See also:
-  ///   * [DesktopTextSelectionToolbarButton], which builds a default
+  ///   * [AndroidDesktopTextSelectionToolbarButton], which builds a default
   ///     Material-style desktop text selection toolbar text button.
   final List<Widget> children;
 

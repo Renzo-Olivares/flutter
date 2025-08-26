@@ -2,95 +2,101 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-/// @docImport 'package:flutter/material.dart';
+/// @docImport 'android_adaptive_text_selection_toolbar.dart';
 library;
 
-import 'package:flutter/foundation.dart' show defaultTargetPlatform;
+import 'package:flutter/foundation.dart';
 import 'package:flutter/rendering.dart';
-import 'package:flutter/widgets.dart';
 
-import 'cupertino_desktop_text_selection_toolbar.dart';
-import 'cupertino_desktop_text_selection_toolbar_button.dart';
-import 'cupertino_text_selection_toolbar.dart';
-import 'cupertino_text_selection_toolbar_button.dart';
+import 'apple_desktop_text_selection_toolbar.dart';
+import 'apple_desktop_text_selection_toolbar_button.dart';
+import 'apple_text_selection_toolbar.dart';
+import 'apple_text_selection_toolbar_button.dart';
+import 'basic.dart';
+import 'context_menu_button_item.dart';
+import 'editable_text.dart';
+import 'framework.dart';
+import 'selectable_region.dart';
+import 'text_selection.dart';
+import 'text_selection_toolbar_anchors.dart';
 
 /// The default Cupertino context menu for text selection for the current
 /// platform with the given children.
 ///
-/// {@template flutter.cupertino.CupertinoAdaptiveTextSelectionToolbar.platforms}
+/// {@template flutter.cupertino.AppleAdaptiveTextSelectionToolbar.platforms}
 /// Builds the mobile Cupertino context menu on all mobile platforms, not just
 /// iOS, and builds the desktop Cupertino context menu on all desktop platforms,
 /// not just MacOS. For a widget that builds the native-looking context menu for
-/// all platforms, see [AdaptiveTextSelectionToolbar].
+/// all platforms, see [AndroidAdaptiveTextSelectionToolbar].
 /// {@endtemplate}
 ///
 /// See also:
 ///
-/// * [AdaptiveTextSelectionToolbar], which does the same thing as this widget
+/// * [AndroidAdaptiveTextSelectionToolbar], which does the same thing as this widget
 ///   but for all platforms, not just the Cupertino-styled platforms.
-/// * [CupertinoAdaptiveTextSelectionToolbar.getAdaptiveButtons], which builds
+/// * [AppleAdaptiveTextSelectionToolbar.getAdaptiveButtons], which builds
 ///   the Cupertino button Widgets for the current platform given
 ///   [ContextMenuButtonItem]s.
-class CupertinoAdaptiveTextSelectionToolbar extends StatelessWidget {
-  /// Create an instance of [CupertinoAdaptiveTextSelectionToolbar] with the
+class AppleAdaptiveTextSelectionToolbar extends StatelessWidget {
+  /// Create an instance of [AppleAdaptiveTextSelectionToolbar] with the
   /// given [children].
   ///
   /// See also:
   ///
-  /// {@template flutter.cupertino.CupertinoAdaptiveTextSelectionToolbar.buttonItems}
-  /// * [CupertinoAdaptiveTextSelectionToolbar.buttonItems], which takes a list
+  /// {@template flutter.cupertino.AppleAdaptiveTextSelectionToolbar.buttonItems}
+  /// * [AppleAdaptiveTextSelectionToolbar.buttonItems], which takes a list
   ///   of [ContextMenuButtonItem]s instead of [children] widgets.
   /// {@endtemplate}
-  /// {@template flutter.cupertino.CupertinoAdaptiveTextSelectionToolbar.editable}
-  /// * [CupertinoAdaptiveTextSelectionToolbar.editable], which builds the
+  /// {@template flutter.cupertino.AppleAdaptiveTextSelectionToolbar.editable}
+  /// * [AppleAdaptiveTextSelectionToolbar.editable], which builds the
   ///   default Cupertino children for an editable field.
   /// {@endtemplate}
-  /// {@template flutter.cupertino.CupertinoAdaptiveTextSelectionToolbar.editableText}
-  /// * [CupertinoAdaptiveTextSelectionToolbar.editableText], which builds the
+  /// {@template flutter.cupertino.AppleAdaptiveTextSelectionToolbar.editableText}
+  /// * [AppleAdaptiveTextSelectionToolbar.editableText], which builds the
   ///   default Cupertino children for an [EditableText].
   /// {@endtemplate}
-  /// {@template flutter.cupertino.CupertinoAdaptiveTextSelectionToolbar.selectable}
-  /// * [CupertinoAdaptiveTextSelectionToolbar.selectable], which builds the
+  /// {@template flutter.cupertino.AppleAdaptiveTextSelectionToolbar.selectable}
+  /// * [AppleAdaptiveTextSelectionToolbar.selectable], which builds the
   ///   Cupertino children for content that is selectable but not editable.
   /// {@endtemplate}
-  const CupertinoAdaptiveTextSelectionToolbar({
+  const AppleAdaptiveTextSelectionToolbar({
     super.key,
     required this.children,
     required this.anchors,
   }) : buttonItems = null;
 
-  /// Create an instance of [CupertinoAdaptiveTextSelectionToolbar] whose
+  /// Create an instance of [AppleAdaptiveTextSelectionToolbar] whose
   /// children will be built from the given [buttonItems].
   ///
   /// See also:
   ///
-  /// {@template flutter.cupertino.CupertinoAdaptiveTextSelectionToolbar.new}
-  /// * [CupertinoAdaptiveTextSelectionToolbar.new], which takes the children
+  /// {@template flutter.cupertino.AppleAdaptiveTextSelectionToolbar.new}
+  /// * [AppleAdaptiveTextSelectionToolbar.new], which takes the children
   ///   directly as a list of widgets.
   /// {@endtemplate}
-  /// {@macro flutter.cupertino.CupertinoAdaptiveTextSelectionToolbar.editable}
-  /// {@macro flutter.cupertino.CupertinoAdaptiveTextSelectionToolbar.editableText}
-  /// {@macro flutter.cupertino.CupertinoAdaptiveTextSelectionToolbar.selectable}
-  const CupertinoAdaptiveTextSelectionToolbar.buttonItems({
+  /// {@macro flutter.cupertino.AppleAdaptiveTextSelectionToolbar.editable}
+  /// {@macro flutter.cupertino.AppleAdaptiveTextSelectionToolbar.editableText}
+  /// {@macro flutter.cupertino.AppleAdaptiveTextSelectionToolbar.selectable}
+  const AppleAdaptiveTextSelectionToolbar.buttonItems({
     super.key,
     required this.buttonItems,
     required this.anchors,
   }) : children = null;
 
-  /// Create an instance of [CupertinoAdaptiveTextSelectionToolbar] with the
+  /// Create an instance of [AppleAdaptiveTextSelectionToolbar] with the
   /// default children for an editable field.
   ///
   /// If a callback is null, then its corresponding button will not be built.
   ///
   /// See also:
   ///
-  /// * [AdaptiveTextSelectionToolbar.editable], which is similar to this but
+  /// * [AndroidAdaptiveTextSelectionToolbar.editable], which is similar to this but
   ///   includes Material and Cupertino toolbars.
-  /// {@macro flutter.cupertino.CupertinoAdaptiveTextSelectionToolbar.new}
-  /// {@macro flutter.cupertino.CupertinoAdaptiveTextSelectionToolbar.editableText}
-  /// {@macro flutter.cupertino.CupertinoAdaptiveTextSelectionToolbar.buttonItems}
-  /// {@macro flutter.cupertino.CupertinoAdaptiveTextSelectionToolbar.selectable}
-  CupertinoAdaptiveTextSelectionToolbar.editable({
+  /// {@macro flutter.cupertino.AppleAdaptiveTextSelectionToolbar.new}
+  /// {@macro flutter.cupertino.AppleAdaptiveTextSelectionToolbar.editableText}
+  /// {@macro flutter.cupertino.AppleAdaptiveTextSelectionToolbar.buttonItems}
+  /// {@macro flutter.cupertino.AppleAdaptiveTextSelectionToolbar.selectable}
+  AppleAdaptiveTextSelectionToolbar.editable({
     super.key,
     required ClipboardStatus clipboardStatus,
     required VoidCallback? onCopy,
@@ -115,36 +121,36 @@ class CupertinoAdaptiveTextSelectionToolbar extends StatelessWidget {
          onLiveTextInput: onLiveTextInput,
        );
 
-  /// Create an instance of [CupertinoAdaptiveTextSelectionToolbar] with the
+  /// Create an instance of [AppleAdaptiveTextSelectionToolbar] with the
   /// default children for an [EditableText].
   ///
   /// See also:
   ///
-  /// * [AdaptiveTextSelectionToolbar.editableText], which is similar to this
+  /// * [AndroidAdaptiveTextSelectionToolbar.editableText], which is similar to this
   ///   but includes Material and Cupertino toolbars.
-  /// {@macro flutter.cupertino.CupertinoAdaptiveTextSelectionToolbar.new}
-  /// {@macro flutter.cupertino.CupertinoAdaptiveTextSelectionToolbar.editable}
-  /// {@macro flutter.cupertino.CupertinoAdaptiveTextSelectionToolbar.buttonItems}
-  /// {@macro flutter.cupertino.CupertinoAdaptiveTextSelectionToolbar.selectable}
-  CupertinoAdaptiveTextSelectionToolbar.editableText({
+  /// {@macro flutter.cupertino.AppleAdaptiveTextSelectionToolbar.new}
+  /// {@macro flutter.cupertino.AppleAdaptiveTextSelectionToolbar.editable}
+  /// {@macro flutter.cupertino.AppleAdaptiveTextSelectionToolbar.buttonItems}
+  /// {@macro flutter.cupertino.AppleAdaptiveTextSelectionToolbar.selectable}
+  AppleAdaptiveTextSelectionToolbar.editableText({
     super.key,
     required EditableTextState editableTextState,
   }) : children = null,
        buttonItems = editableTextState.contextMenuButtonItems,
        anchors = editableTextState.contextMenuAnchors;
 
-  /// Create an instance of [CupertinoAdaptiveTextSelectionToolbar] with the
+  /// Create an instance of [AppleAdaptiveTextSelectionToolbar] with the
   /// default children for selectable, but not editable, content.
   ///
   /// See also:
   ///
-  /// * [AdaptiveTextSelectionToolbar.selectable], which is similar to this but
+  /// * [AndroidAdaptiveTextSelectionToolbar.selectable], which is similar to this but
   ///   includes Material and Cupertino toolbars.
-  /// {@macro flutter.cupertino.CupertinoAdaptiveTextSelectionToolbar.new}
-  /// {@macro flutter.cupertino.CupertinoAdaptiveTextSelectionToolbar.buttonItems}
-  /// {@macro flutter.cupertino.CupertinoAdaptiveTextSelectionToolbar.editable}
-  /// {@macro flutter.cupertino.CupertinoAdaptiveTextSelectionToolbar.editableText}
-  CupertinoAdaptiveTextSelectionToolbar.selectable({
+  /// {@macro flutter.cupertino.AppleAdaptiveTextSelectionToolbar.new}
+  /// {@macro flutter.cupertino.AppleAdaptiveTextSelectionToolbar.buttonItems}
+  /// {@macro flutter.cupertino.AppleAdaptiveTextSelectionToolbar.editable}
+  /// {@macro flutter.cupertino.AppleAdaptiveTextSelectionToolbar.editableText}
+  AppleAdaptiveTextSelectionToolbar.selectable({
     super.key,
     required VoidCallback onCopy,
     required VoidCallback onSelectAll,
@@ -178,12 +184,12 @@ class CupertinoAdaptiveTextSelectionToolbar extends StatelessWidget {
   /// Does not build Material buttons. On non-Apple platforms, Cupertino buttons
   /// will still be used, because the Cupertino library does not access the
   /// Material library. To get the native-looking buttons on every platform,
-  /// use [AdaptiveTextSelectionToolbar.getAdaptiveButtons] in the Material
+  /// use [AndroidAdaptiveTextSelectionToolbar.getAdaptiveButtons] in the Material
   /// library.
   ///
   /// See also:
   ///
-  /// * [AdaptiveTextSelectionToolbar.getAdaptiveButtons], which is the Material
+  /// * [AndroidAdaptiveTextSelectionToolbar.getAdaptiveButtons], which is the Material
   ///   equivalent of this class and builds only the Material buttons. It
   ///   includes a live example of using `getAdaptiveButtons`.
   static Iterable<Widget> getAdaptiveButtons(
@@ -195,13 +201,13 @@ class CupertinoAdaptiveTextSelectionToolbar extends StatelessWidget {
       case TargetPlatform.fuchsia:
       case TargetPlatform.iOS:
         return buttonItems.map((ContextMenuButtonItem buttonItem) {
-          return CupertinoTextSelectionToolbarButton.buttonItem(buttonItem: buttonItem);
+          return AppleTextSelectionToolbarButton.buttonItem(buttonItem: buttonItem);
         });
       case TargetPlatform.linux:
       case TargetPlatform.windows:
       case TargetPlatform.macOS:
         return buttonItems.map((ContextMenuButtonItem buttonItem) {
-          return CupertinoDesktopTextSelectionToolbarButton.buttonItem(buttonItem: buttonItem);
+          return AppleDesktopTextSelectionToolbarButton.buttonItem(buttonItem: buttonItem);
         });
     }
   }
@@ -220,7 +226,7 @@ class CupertinoAdaptiveTextSelectionToolbar extends StatelessWidget {
       case TargetPlatform.android:
       case TargetPlatform.iOS:
       case TargetPlatform.fuchsia:
-        return CupertinoTextSelectionToolbar(
+        return AppleTextSelectionToolbar(
           anchorAbove: anchors.primaryAnchor,
           anchorBelow: anchors.secondaryAnchor ?? anchors.primaryAnchor,
           children: resultChildren,
@@ -228,7 +234,7 @@ class CupertinoAdaptiveTextSelectionToolbar extends StatelessWidget {
       case TargetPlatform.linux:
       case TargetPlatform.windows:
       case TargetPlatform.macOS:
-        return CupertinoDesktopTextSelectionToolbar(
+        return AppleDesktopTextSelectionToolbar(
           anchor: anchors.primaryAnchor,
           children: resultChildren,
         );

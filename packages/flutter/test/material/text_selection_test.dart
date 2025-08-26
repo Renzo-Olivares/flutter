@@ -672,6 +672,7 @@ void main() {
                       child: materialTextSelectionControls.buildHandle(
                         context,
                         TextSelectionHandleType.right,
+                        null,
                         10.0,
                       ),
                     ),
@@ -706,6 +707,7 @@ void main() {
                     child: materialTextSelectionControls.buildHandle(
                       context,
                       TextSelectionHandleType.right,
+                      null,
                       10.0,
                     ),
                   ),

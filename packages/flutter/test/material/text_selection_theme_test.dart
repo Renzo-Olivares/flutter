@@ -97,6 +97,7 @@ void main() {
               return materialTextSelectionControls.buildHandle(
                 context,
                 TextSelectionHandleType.left,
+                null,
                 10.0,
               );
             },
@@ -146,6 +147,7 @@ void main() {
               return materialTextSelectionControls.buildHandle(
                 context,
                 TextSelectionHandleType.left,
+                null,
                 10.0,
               );
             },
@@ -195,6 +197,7 @@ void main() {
               return materialTextSelectionControls.buildHandle(
                 context,
                 TextSelectionHandleType.left,
+                null,
                 10.0,
               );
             },
@@ -258,6 +261,7 @@ void main() {
                 return materialTextSelectionControls.buildHandle(
                   context,
                   TextSelectionHandleType.left,
+                  null,
                   10.0,
                 );
               },

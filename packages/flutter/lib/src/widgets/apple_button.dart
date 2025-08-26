@@ -2,24 +2,32 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-/// @docImport 'nav_bar.dart';
+/// @docImport '../cupertino/nav_bar.dart';
 library;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/semantics.dart';
-import 'package:flutter/widgets.dart';
 
-import 'colors.dart';
-import 'constants.dart';
-import 'text_theme.dart';
-import 'theme.dart';
+import 'actions.dart';
+import 'basic.dart';
+import 'container.dart';
+import 'focus_manager.dart';
+import 'framework.dart';
+import 'gesture_detector.dart';
+import 'icon_theme.dart';
+import 'icon_theme_data.dart';
+import 'media_query.dart';
+import 'text.dart';
+import 'ticker_provider.dart';
+import 'transitions.dart';
+import 'widget_state.dart';
 
 // Measured against iOS (17) [Human Interface Guidelines](https://developer.apple.com/design/human-interface-guidelines/buttons#iOS-iPadOS).
 
-/// The size of a [CupertinoButton].
+/// The size of a [AppleButton].
 /// Based on the iOS (17) [Human Interface Guidelines](https://developer.apple.com/design/human-interface-guidelines/buttons#iOS-iPadOS).
-enum CupertinoButtonSize {
+enum AppleButtonSize {
   /// Displays a smaller button with round sides and smaller text (uses [CupertinoTextThemeData.actionSmallTextStyle]).
   small,
 
@@ -30,10 +38,10 @@ enum CupertinoButtonSize {
   large,
 }
 
-/// The style of a [CupertinoButton] that changes the style of the button's background.
+/// The style of a [AppleButton] that changes the style of the button's background.
 ///
 /// Based on the iOS Human Interface Guidelines (https://developer.apple.com/design/human-interface-guidelines/buttons#iOS-iPadOS).
-enum _CupertinoButtonStyle {
+enum _AppleButtonStyle {
   /// No background or border, primary foreground color.
   plain,
 
@@ -49,7 +57,7 @@ enum _CupertinoButtonStyle {
 /// Takes in a text or an icon that fades out and in on touch. May optionally have a
 /// background.
 ///
-/// The [padding] defaults to 16.0 pixels. When using a [CupertinoButton] within
+/// The [padding] defaults to 16.0 pixels. When using a [AppleButton] within
 /// a fixed height parent, like a [CupertinoNavigationBar], a smaller, or even
 /// [EdgeInsets.zero], should be used to prevent clipping larger [child]
 /// widgets.
@@ -59,8 +67,8 @@ enum _CupertinoButtonStyle {
 /// [CupertinoThemeData.primaryContrastingColor] if the button is disabled).
 ///
 /// {@tool dartpad}
-/// This sample shows produces an enabled and disabled [CupertinoButton] and
-/// [CupertinoButton.filled].
+/// This sample shows produces an enabled and disabled [AppleButton] and
+/// [AppleButton.filled].
 ///
 /// ** See code in examples/api/lib/cupertino/button/cupertino_button.0.dart **
 /// {@end-tool}
@@ -68,12 +76,12 @@ enum _CupertinoButtonStyle {
 /// See also:
 ///
 ///  * <https://developer.apple.com/design/human-interface-guidelines/buttons/>
-class CupertinoButton extends StatefulWidget {
+class AppleButton extends StatefulWidget {
   /// Creates an iOS-style button.
-  const CupertinoButton({
+  const AppleButton({
     super.key,
     required this.child,
-    this.sizeStyle = CupertinoButtonSize.large,
+    this.sizeStyle = AppleButtonSize.large,
     this.padding,
     this.color,
     this.foregroundColor,
@@ -96,7 +104,7 @@ class CupertinoButton extends StatefulWidget {
     required this.onPressed,
   }) : assert(pressedOpacity == null || (pressedOpacity >= 0.0 && pressedOpacity <= 1.0)),
        assert(minimumSize == null || minSize == null),
-       _style = _CupertinoButtonStyle.plain;
+       _style = _AppleButtonStyle.plain;
 
   /// Creates an iOS-style button with a tinted background.
   ///
@@ -107,10 +115,10 @@ class CupertinoButton extends StatefulWidget {
   /// default constructor.
   ///
   /// To match the iOS "grey" button style, set [color] to [CupertinoColors.systemGrey].
-  const CupertinoButton.tinted({
+  const AppleButton.tinted({
     super.key,
     required this.child,
-    this.sizeStyle = CupertinoButtonSize.large,
+    this.sizeStyle = AppleButtonSize.large,
     this.padding,
     this.color,
     this.foregroundColor,
@@ -132,16 +140,16 @@ class CupertinoButton extends StatefulWidget {
     this.onLongPress,
     required this.onPressed,
   }) : assert(minimumSize == null || minSize == null),
-       _style = _CupertinoButtonStyle.tinted;
+       _style = _AppleButtonStyle.tinted;
 
   /// Creates an iOS-style button with a filled background.
   ///
   /// The background color is derived from the [color] argument.
   /// The foreground color is the [CupertinoTheme]'s `primaryContrastingColor`.
-  const CupertinoButton.filled({
+  const AppleButton.filled({
     super.key,
     required this.child,
-    this.sizeStyle = CupertinoButtonSize.large,
+    this.sizeStyle = AppleButtonSize.large,
     this.padding,
     this.color,
     this.disabledColor = CupertinoColors.tertiarySystemFill,
@@ -164,7 +172,7 @@ class CupertinoButton extends StatefulWidget {
     required this.onPressed,
   }) : assert(pressedOpacity == null || (pressedOpacity >= 0.0 && pressedOpacity <= 1.0)),
        assert(minimumSize == null || minSize == null),
-       _style = _CupertinoButtonStyle.filled;
+       _style = _AppleButtonStyle.filled;
 
   /// The widget below this widget in the tree.
   ///
@@ -181,12 +189,12 @@ class CupertinoButton extends StatefulWidget {
   /// Defaults to null which produces a button with no background or border.
   ///
   /// Defaults to the [CupertinoTheme]'s `primaryColor` when the
-  /// [CupertinoButton.filled] constructor is used.
+  /// [AppleButton.filled] constructor is used.
   final Color? color;
 
   /// The color of the button's background when the button is disabled.
   ///
-  /// Ignored if the [CupertinoButton] doesn't also have a [color].
+  /// Ignored if the [AppleButton] doesn't also have a [color].
   ///
   /// Defaults to [CupertinoColors.quaternarySystemFill] when [color] is
   /// specified.
@@ -195,7 +203,7 @@ class CupertinoButton extends StatefulWidget {
   /// The color of the button's text and icons.
   ///
   /// Defaults to the [CupertinoTheme]'s `primaryColor` when the
-  /// [CupertinoButton.filled] constructor is used.
+  /// [AppleButton.filled] constructor is used.
   final Color? foregroundColor;
 
   /// The callback that is called when the button is tapped or otherwise activated.
@@ -237,8 +245,8 @@ class CupertinoButton extends StatefulWidget {
 
   /// The size of the button.
   ///
-  /// Defaults to [CupertinoButtonSize.large].
-  final CupertinoButtonSize sizeStyle;
+  /// Defaults to [AppleButtonSize.large].
+  final AppleButtonSize sizeStyle;
 
   /// The alignment of the button's [child].
   ///
@@ -289,7 +297,7 @@ class CupertinoButton extends StatefulWidget {
   ///    either a [MouseCursor] or a [WidgetStateProperty].
   final MouseCursor? mouseCursor;
 
-  final _CupertinoButtonStyle _style;
+  final _AppleButtonStyle _style;
 
   /// Whether the button is enabled or disabled. Buttons are disabled by default. To
   /// enable a button, set [onPressed] or [onLongPress] to a non-null value.
@@ -308,7 +316,7 @@ class CupertinoButton extends StatefulWidget {
   }
 
   @override
-  State<CupertinoButton> createState() => _CupertinoButtonState();
+  State<AppleButton> createState() => _AppleButtonState();
 
   @override
   void debugFillProperties(DiagnosticPropertiesBuilder properties) {
@@ -317,7 +325,7 @@ class CupertinoButton extends StatefulWidget {
   }
 }
 
-class _CupertinoButtonState extends State<CupertinoButton> with SingleTickerProviderStateMixin {
+class _AppleButtonState extends State<AppleButton> with SingleTickerProviderStateMixin {
   // Eyeballed values. Feel free to tweak.
   static const Duration kFadeOutDuration = Duration(milliseconds: 120);
   static const Duration kFadeInDuration = Duration(milliseconds: 180);
@@ -351,7 +359,7 @@ class _CupertinoButtonState extends State<CupertinoButton> with SingleTickerProv
   }
 
   @override
-  void didUpdateWidget(CupertinoButton old) {
+  void didUpdateWidget(AppleButton old) {
     super.didUpdateWidget(old);
     _setTween();
   }
@@ -389,7 +397,7 @@ class _CupertinoButtonState extends State<CupertinoButton> with SingleTickerProv
     }
     final RenderBox renderObject = context.findRenderObject()! as RenderBox;
     final Offset localPosition = renderObject.globalToLocal(event.globalPosition);
-    if (renderObject.paintBounds.inflate(CupertinoButton.tapMoveSlop()).contains(localPosition)) {
+    if (renderObject.paintBounds.inflate(AppleButton.tapMoveSlop()).contains(localPosition)) {
       _handleTap();
     }
   }
@@ -408,7 +416,7 @@ class _CupertinoButtonState extends State<CupertinoButton> with SingleTickerProv
     final RenderBox renderObject = context.findRenderObject()! as RenderBox;
     final Offset localPosition = renderObject.globalToLocal(event.globalPosition);
     final bool buttonShouldHeldDown = renderObject.paintBounds
-        .inflate(CupertinoButton.tapMoveSlop())
+        .inflate(AppleButton.tapMoveSlop())
         .contains(localPosition);
     if (_tapInProgress && buttonShouldHeldDown != _buttonHeldDown) {
       _buttonHeldDown = buttonShouldHeldDown;
@@ -468,12 +476,12 @@ class _CupertinoButtonState extends State<CupertinoButton> with SingleTickerProv
     final Color primaryColor = themeData.primaryColor;
     final Color? backgroundColor =
         (widget.color == null
-                ? widget._style != _CupertinoButtonStyle.plain
+                ? widget._style != _AppleButtonStyle.plain
                       ? primaryColor
                       : null
                 : CupertinoDynamicColor.maybeResolve(widget.color, context))
             ?.withOpacity(
-              widget._style == _CupertinoButtonStyle.tinted
+              widget._style == _AppleButtonStyle.tinted
                   ? CupertinoTheme.brightnessOf(context) == Brightness.light
                         ? kCupertinoButtonTintedOpacityLight
                         : kCupertinoButtonTintedOpacityDark
@@ -482,7 +490,7 @@ class _CupertinoButtonState extends State<CupertinoButton> with SingleTickerProv
     final Color effectiveForegroundColor =
         widget.foregroundColor ??
         switch ((widget._style, enabled)) {
-          (_CupertinoButtonStyle.filled, _) => themeData.primaryContrastingColor,
+          (_AppleButtonStyle.filled, _) => themeData.primaryContrastingColor,
           (_, true) => primaryColor,
           (_, false) => CupertinoDynamicColor.resolve(CupertinoColors.tertiaryLabel, context),
         };
@@ -499,7 +507,7 @@ class _CupertinoButtonState extends State<CupertinoButton> with SingleTickerProv
             .toColor();
 
     final TextStyle textStyle =
-        (widget.sizeStyle == CupertinoButtonSize.small
+        (widget.sizeStyle == AppleButtonSize.small
                 ? themeData.textTheme.actionSmallTextStyle
                 : themeData.textTheme.actionTextStyle)
             .copyWith(color: effectiveForegroundColor);
@@ -607,19 +615,3 @@ class _CupertinoButtonState extends State<CupertinoButton> with SingleTickerProv
     );
   }
 }
-
-// CupertinoButton
-// List of the components that make up a CupertinoButton would be:
-//  1. `MouseRegion`: Handles mouse cursor interactions on desktop/web.
-//  2. `FocusableActionDetector`: Manages focus and keyboard interactions.
-//  3. `RawGestureDetector`: Detects taps and long presses for interactivity.
-//  4. `Semantics`: Provides accessibility information to screen readers.
-//  5. `ConstrainedBox`: Enforces minimum size constraints.
-//  6. `FadeTransition`: Animates the opacity on press.
-//  7. `DecoratedBox`: Renders the button's background color and shape.
-//  8. `Padding`: Adds space around the child.
-//  9. `Align`: Positions the child within the button.
-//  10. `DefaultTextStyle`: Styles the button's content.
-//  11. `IconTheme`: Styles the button's content.
-// _CupertinoDynamicColor won't be able to completely solve for CupertinoDynamicColor because
-// of the `resolve` method, likely cupertino will have to do that work at their layer.

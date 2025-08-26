@@ -2,12 +2,9 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-import 'package:flutter/gestures.dart';
 import 'package:flutter/widgets.dart';
 
-import 'button.dart';
 import 'colors.dart';
-import 'text_selection_toolbar_button.dart';
 import 'theme.dart';
 
 // These values were measured from a screenshot of the native context menu on
@@ -18,10 +15,6 @@ const TextStyle _kToolbarButtonFontStyle = TextStyle(
   letterSpacing: -0.15,
   fontWeight: FontWeight.w400,
 );
-
-// This value was measured from a screenshot of the native context menu on
-// macOS 13.2 on a Macbook Pro.
-const EdgeInsets _kToolbarButtonPadding = EdgeInsets.fromLTRB(8.0, 2.0, 8.0, 5.0);
 
 /// A button in the style of the Mac context menu buttons.
 class CupertinoDesktopTextSelectionToolbarButton extends StatefulWidget {
@@ -70,54 +63,54 @@ class CupertinoDesktopTextSelectionToolbarButton extends StatefulWidget {
 
 class _CupertinoDesktopTextSelectionToolbarButtonState
     extends State<CupertinoDesktopTextSelectionToolbarButton> {
-  bool _isHovered = false;
-
-  void _onEnter(PointerEnterEvent event) {
-    setState(() {
-      _isHovered = true;
-    });
-  }
-
-  void _onExit(PointerExitEvent event) {
-    setState(() {
-      _isHovered = false;
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
-    final Widget child =
-        widget.child ??
-        Text(
-          widget.text ??
-              CupertinoTextSelectionToolbarButton.getButtonLabel(context, widget.buttonItem!),
-          overflow: TextOverflow.ellipsis,
-          style: _kToolbarButtonFontStyle.copyWith(
-            color: _isHovered
-                ? CupertinoTheme.of(context).primaryContrastingColor
-                : const CupertinoDynamicColor.withBrightness(
-                    color: CupertinoColors.black,
-                    darkColor: CupertinoColors.white,
-                  ).resolveFrom(context),
-          ),
-        );
-
-    return SizedBox(
-      width: double.infinity,
-      child: MouseRegion(
-        onEnter: _onEnter,
-        onExit: _onExit,
-        child: CupertinoButton(
-          alignment: Alignment.centerLeft,
-          borderRadius: const BorderRadius.all(Radius.circular(4.0)),
-          color: _isHovered ? CupertinoTheme.of(context).primaryColor : null,
-          minSize: 0.0,
-          onPressed: widget.onPressed,
-          padding: _kToolbarButtonPadding,
-          pressedOpacity: 0.7,
-          child: child,
-        ),
-      ),
+    final WidgetStateProperty<Color?> color = WidgetStateProperty<Color?>.fromMap(
+      <WidgetStatesConstraint, Color?>{
+        WidgetState.hovered: CupertinoTheme.of(context).primaryColor,
+        WidgetState.any: null,
+      },
     );
+
+    if (widget.child != null) {
+      return AppleDesktopTextSelectionToolbarButton(
+        color: color,
+        onPressed: widget.onPressed,
+        child: widget.child!,
+      );
+    }
+
+    final WidgetStateProperty<TextStyle> labelStyle =
+        WidgetStateProperty<TextStyle>.fromMap(<WidgetStatesConstraint, TextStyle>{
+          WidgetState.hovered: _kToolbarButtonFontStyle.copyWith(
+            color: CupertinoTheme.of(context).primaryContrastingColor,
+          ),
+          WidgetState.any: _kToolbarButtonFontStyle.copyWith(
+            color: const CupertinoDynamicColor.withBrightness(
+              color: CupertinoColors.black,
+              darkColor: CupertinoColors.white,
+            ).resolveFrom(context),
+          ),
+        });
+
+    if (widget.text != null) {
+      return AppleDesktopTextSelectionToolbarButton.text(
+        color: color,
+        labelStyle: labelStyle,
+        onPressed: widget.onPressed,
+        text: widget.text,
+      );
+    }
+
+    if (widget.buttonItem != null) {
+      return AppleDesktopTextSelectionToolbarButton.buttonItem(
+        color: color,
+        labelStyle: labelStyle,
+        buttonItem: widget.buttonItem!,
+      );
+    }
+    assert(widget.child != null || widget.text != null || widget.buttonItem != null);
+    return const SizedBox.shrink();
   }
 }
+

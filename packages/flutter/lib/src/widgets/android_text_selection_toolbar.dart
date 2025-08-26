@@ -2,24 +2,33 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-/// @docImport 'adaptive_text_selection_toolbar.dart';
+/// @docImport 'android_adaptive_text_selection_toolbar.dart';
+/// @docImport 'android_text_selection_toolbar_text_button.dart';
 /// @docImport 'spell_check_suggestions_toolbar.dart';
-/// @docImport 'text_selection_toolbar_text_button.dart';
 library;
 
 import 'dart:math' as math;
+import 'dart:ui';
 
-import 'package:flutter/cupertino.dart';
-import 'package:flutter/foundation.dart' show listEquals;
+import 'package:flutter/foundation.dart' show UniqueKey, listEquals;
 import 'package:flutter/rendering.dart';
 
+import 'animated_size.dart';
+import 'apple_text_selection_toolbar.dart';
+import 'basic.dart';
 import 'color_scheme.dart';
 import 'debug.dart';
+import 'framework.dart';
 import 'icon_button.dart';
 import 'icons.dart';
-import 'material.dart';
 import 'localizations.dart';
+import 'material.dart';
+import 'media_query.dart';
+import 'standard_component_type.dart';
+import 'text_selection.dart';
+import 'text_selection_toolbar_layout_delegate.dart';
 import 'theme.dart';
+import 'ticker_provider.dart';
 
 const double _kToolbarHeight = 44.0;
 const double _kToolbarContentDistance = 8.0;
@@ -34,13 +43,13 @@ const double _kToolbarContentDistance = 8.0;
 ///
 /// See also:
 ///
-///  * [AdaptiveTextSelectionToolbar], which builds the toolbar for the current
+///  * [AndroidAdaptiveTextSelectionToolbar], which builds the toolbar for the current
 ///    platform.
-///  * [CupertinoTextSelectionToolbar], which is similar, but builds an iOS-
+///  * [AppleTextSelectionToolbar], which is similar, but builds an iOS-
 ///    style toolbar.
-class TextSelectionToolbar extends StatelessWidget {
+class AndroidTextSelectionToolbar extends StatelessWidget {
   /// Creates an instance of TextSelectionToolbar.
-  const TextSelectionToolbar({
+  const AndroidTextSelectionToolbar({
     super.key,
     required this.anchorAbove,
     required this.anchorBelow,
@@ -71,7 +80,7 @@ class TextSelectionToolbar extends StatelessWidget {
   /// {@endtemplate}
   ///
   /// See also:
-  ///   * [TextSelectionToolbarTextButton], which builds a default Material-
+  ///   * [AndroidTextSelectionToolbarTextButton], which builds a default Material-
   ///     style text selection toolbar text button.
   final List<Widget> children;
 
@@ -105,7 +114,7 @@ class TextSelectionToolbar extends StatelessWidget {
     final Offset anchorAbovePadded = anchorAbove - const Offset(0.0, _kToolbarContentDistance);
     final Offset anchorBelowPadded = anchorBelow + const Offset(0.0, kToolbarContentDistanceBelow);
 
-    const double screenPadding = CupertinoTextSelectionToolbar.kToolbarScreenPadding;
+    const double screenPadding = AppleTextSelectionToolbar.kToolbarScreenPadding;
     final double paddingAbove = MediaQuery.paddingOf(context).top + screenPadding;
     final double availableHeight = anchorAbovePadded.dy - _kToolbarContentDistance - paddingAbove;
     final bool fitsAbove = _kToolbarHeight <= availableHeight;
@@ -780,15 +789,8 @@ class _TextSelectionToolbarContainer extends StatelessWidget {
   static const Color _defaultColorLight = Color(0xffffffff);
   static const Color _defaultColorDark = Color(0xff424242);
 
-  static Color _getColor(ColorScheme colorScheme) {
-    final bool isDefaultSurface = switch (colorScheme.brightness) {
-      Brightness.light => identical(ThemeData().colorScheme.surface, colorScheme.surface),
-      Brightness.dark => identical(ThemeData.dark().colorScheme.surface, colorScheme.surface),
-    };
-    if (!isDefaultSurface) {
-      return colorScheme.surface;
-    }
-    return switch (colorScheme.brightness) {
+  static Color _getColor(Brightness brightness) {
+    return switch (brightness) {
       Brightness.light => _defaultColorLight,
       Brightness.dark => _defaultColorDark,
     };
@@ -796,13 +798,13 @@ class _TextSelectionToolbarContainer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
+    final Brightness brightness = MediaQuery.maybePlatformBrightnessOf(context) ?? Brightness.light;
     return Material(
       // This value was eyeballed to match the native text selection menu on
       // a Pixel 6 emulator running Android API level 34.
       borderRadius: const BorderRadius.all(Radius.circular(_kToolbarHeight / 2)),
       clipBehavior: Clip.antiAlias,
-      color: _getColor(theme.colorScheme),
+      color: _getColor(brightness),// TODO: Ideally we could expose this.
       elevation: 1.0,
       type: MaterialType.card,
       child: child,

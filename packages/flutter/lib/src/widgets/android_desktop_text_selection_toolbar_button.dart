@@ -2,10 +2,14 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-import 'package:flutter/widgets.dart';
+import 'dart:ui';
 
+import 'basic.dart';
 import 'colors.dart';
 import 'constants.dart';
+import 'framework.dart';
+import 'media_query.dart';
+import 'text.dart';
 import 'text_button.dart';
 import 'theme.dart';
 
@@ -19,18 +23,20 @@ const TextStyle _kToolbarButtonFontStyle = TextStyle(
 const EdgeInsets _kToolbarButtonPadding = EdgeInsets.fromLTRB(20.0, 0.0, 20.0, 3.0);
 
 /// A [TextButton] for the Material desktop text selection toolbar.
-class DesktopTextSelectionToolbarButton extends StatelessWidget {
-  /// Creates an instance of DesktopTextSelectionToolbarButton.
-  const DesktopTextSelectionToolbarButton({
+class AndroidDesktopTextSelectionToolbarButton extends StatelessWidget {
+  /// Creates an instance of AndroidDesktopTextSelectionToolbarButton.
+  const AndroidDesktopTextSelectionToolbarButton({
     super.key,
+    this.foregroundColor,
     required this.onPressed,
     required this.child,
   });
 
-  /// Create an instance of [DesktopTextSelectionToolbarButton] whose child is
+  /// Create an instance of [AndroidDesktopTextSelectionToolbarButton] whose child is
   /// a [Text] widget in the style of the Material text selection toolbar.
-  DesktopTextSelectionToolbarButton.text({
+  AndroidDesktopTextSelectionToolbarButton.text({
     super.key,
+    this.foregroundColor,
     required BuildContext context,
     required this.onPressed,
     required String text,
@@ -38,11 +44,13 @@ class DesktopTextSelectionToolbarButton extends StatelessWidget {
          text,
          overflow: TextOverflow.ellipsis,
          style: _kToolbarButtonFontStyle.copyWith(
-           color: Theme.of(context).colorScheme.brightness == Brightness.dark
+           color: MediaQuery.maybePlatformBrightnessOf(context) == Brightness.dark
                ? Colors.white
                : Colors.black87,
          ),
        );
+
+  final Color? foregroundColor;
 
   /// {@macro flutter.material.TextSelectionToolbarTextButton.onPressed}
   final VoidCallback? onPressed;
@@ -53,9 +61,11 @@ class DesktopTextSelectionToolbarButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // TODO(hansmuller): Should be colorScheme.onSurface
-    final ThemeData theme = Theme.of(context);
-    final bool isDark = theme.colorScheme.brightness == Brightness.dark;
-    final Color foregroundColor = isDark ? Colors.white : Colors.black87;
+    final Color effectiveForegroundColor =
+        foregroundColor ??
+        (MediaQuery.maybePlatformBrightnessOf(context) == Brightness.dark
+            ? Colors.white
+            : Colors.black87);
 
     return SizedBox(
       width: double.infinity,
@@ -64,7 +74,7 @@ class DesktopTextSelectionToolbarButton extends StatelessWidget {
           alignment: Alignment.centerLeft,
           enabledMouseCursor: SystemMouseCursors.basic,
           disabledMouseCursor: SystemMouseCursors.basic,
-          foregroundColor: foregroundColor,
+          foregroundColor: effectiveForegroundColor,
           shape: const RoundedRectangleBorder(),
           minimumSize: const Size(kMinInteractiveDimension, 36.0),
           padding: _kToolbarButtonPadding,

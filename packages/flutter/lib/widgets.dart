@@ -181,3 +181,27 @@ export 'src/widgets/widget_inspector.dart';
 export 'src/widgets/widget_span.dart';
 export 'src/widgets/widget_state.dart';
 export 'src/widgets/will_pop_scope.dart';
+
+//
+// Android-specific widgets
+//
+export 'src/widgets/android_adaptive_text_selection_toolbar.dart';
+export 'src/widgets/android_desktop_text_selection.dart';
+export 'src/widgets/android_desktop_text_selection_toolbar.dart';
+export 'src/widgets/android_desktop_text_selection_toolbar_button.dart';
+export 'src/widgets/android_magnifier.dart';
+export 'src/widgets/android_text_selection.dart';
+export 'src/widgets/android_text_selection_toolbar.dart';
+export 'src/widgets/android_text_selection_toolbar_text_button.dart';
+
+//
+// iOS-specific widgets
+//
+export 'src/widgets/apple_adaptive_text_selection_toolbar.dart';
+export 'src/widgets/apple_desktop_text_selection.dart';
+export 'src/widgets/apple_desktop_text_selection_toolbar.dart';
+export 'src/widgets/apple_desktop_text_selection_toolbar_button.dart';
+export 'src/widgets/apple_magnifier.dart';
+export 'src/widgets/apple_text_selection.dart';
+export 'src/widgets/apple_text_selection_toolbar.dart';
+export 'src/widgets/apple_text_selection_toolbar_button.dart';

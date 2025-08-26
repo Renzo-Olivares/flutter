@@ -9,8 +9,6 @@ library;
 import 'package:flutter/widgets.dart';
 
 import 'color_scheme.dart';
-import 'constants.dart';
-import 'text_button.dart';
 import 'theme.dart';
 
 enum _TextSelectionToolbarItemPosition {
@@ -139,12 +137,6 @@ class TextSelectionToolbarTextButton extends StatelessWidget {
   static const Color _defaultForegroundColorLight = Color(0xff000000);
   static const Color _defaultForegroundColorDark = Color(0xffffffff);
 
-  // The background color is hardcoded to transparent by default so the buttons
-  // are the color of the container behind them. For example TextSelectionToolbar
-  // hardcodes the color value, and TextSelectionToolbarTextButtons that are its
-  // children become that color.
-  static const Color _defaultBackgroundColorTransparent = Color(0x00000000);
-
   static Color _getForegroundColor(ColorScheme colorScheme) {
     final bool isDefaultOnSurface = switch (colorScheme.brightness) {
       Brightness.light => identical(ThemeData().colorScheme.onSurface, colorScheme.onSurface),
@@ -162,21 +154,12 @@ class TextSelectionToolbarTextButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ColorScheme colorScheme = Theme.of(context).colorScheme;
-    return TextButton(
-      style: TextButton.styleFrom(
-        backgroundColor: _defaultBackgroundColorTransparent,
-        foregroundColor: _getForegroundColor(colorScheme),
-        shape: const RoundedRectangleBorder(),
-        minimumSize: const Size(kMinInteractiveDimension, kMinInteractiveDimension),
-        padding: padding,
-        alignment: alignment,
-        textStyle: const TextStyle(
-          // This value was eyeballed from a screenshot of a Pixel 6 emulator
-          // running Android API level 34.
-          fontWeight: FontWeight.w400,
-        ),
-      ),
+
+    return AndroidTextSelectionToolbarTextButton(
+      alignment: alignment,
+      foregroundColor: _getForegroundColor(colorScheme),
       onPressed: onPressed,
+      padding: padding,
       child: child,
     );
   }

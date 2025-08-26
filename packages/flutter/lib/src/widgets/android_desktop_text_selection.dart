@@ -2,26 +2,34 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-import 'package:flutter/foundation.dart' show ValueListenable, clampDouble;
-import 'package:flutter/widgets.dart';
+/// @docImport 'editable_text.dart';
+library;
 
+import 'package:flutter/foundation.dart' show ValueListenable, clampDouble;
+import 'package:flutter/rendering.dart';
+import 'package:flutter/services.dart';
+
+import 'android_desktop_text_selection_toolbar.dart';
+import 'android_desktop_text_selection_toolbar_button.dart';
+import 'basic.dart';
 import 'debug.dart';
-import 'material_desktop_text_selection_toolbar.dart';
-import 'material_desktop_text_selection_toolbar_button.dart';
+import 'framework.dart';
 import 'localizations.dart';
+import 'media_query.dart';
+import 'text_selection.dart';
 
 /// Desktop Material styled text selection handle controls.
 ///
 /// Specifically does not manage the toolbar, which is left to
 /// [EditableText.contextMenuBuilder].
-class _DesktopTextSelectionHandleControls extends DesktopTextSelectionControls
+class _DesktopTextSelectionHandleControls extends AndroidDesktopTextSelectionControls
     with TextSelectionHandleControls {}
 
 /// Desktop Material styled text selection controls.
 ///
-/// The [desktopTextSelectionControls] global variable has a
+/// The [androidDesktopTextSelectionControls] global variable has a
 /// suitable instance of this class.
-class DesktopTextSelectionControls extends TextSelectionControls {
+class AndroidDesktopTextSelectionControls extends TextSelectionControls {
   /// Desktop has no text selection handles.
   @override
   Size getHandleSize(double textLineHeight) {
@@ -44,7 +52,7 @@ class DesktopTextSelectionControls extends TextSelectionControls {
     ValueListenable<ClipboardStatus>? clipboardStatus,
     Offset? lastSecondaryTapDownPosition,
   ) {
-    return _DesktopTextSelectionControlsToolbar(
+    return _AndroidDesktopTextSelectionControlsToolbar(
       clipboardStatus: clipboardStatus,
       endpoints: endpoints,
       globalEditableRegion: globalEditableRegion,
@@ -63,6 +71,7 @@ class DesktopTextSelectionControls extends TextSelectionControls {
   Widget buildHandle(
     BuildContext context,
     TextSelectionHandleType type,
+    Color? color,
     double textLineHeight, [
     VoidCallback? onTap,
   ]) {
@@ -105,16 +114,16 @@ class DesktopTextSelectionControls extends TextSelectionControls {
 // See https://github.com/flutter/flutter/pull/124262
 /// Desktop text selection handle controls that loosely follow Material design
 /// conventions.
-final TextSelectionControls desktopTextSelectionHandleControls =
+final TextSelectionControls androidDesktopTextSelectionHandleControls =
     _DesktopTextSelectionHandleControls();
 
 /// Desktop text selection controls that loosely follow Material design
 /// conventions.
-final TextSelectionControls desktopTextSelectionControls = DesktopTextSelectionControls();
+final TextSelectionControls androidDesktopTextSelectionControls = AndroidDesktopTextSelectionControls();
 
 // Generates the child that's passed into DesktopTextSelectionToolbar.
-class _DesktopTextSelectionControlsToolbar extends StatefulWidget {
-  const _DesktopTextSelectionControlsToolbar({
+class _AndroidDesktopTextSelectionControlsToolbar extends StatefulWidget {
+  const _AndroidDesktopTextSelectionControlsToolbar({
     required this.clipboardStatus,
     required this.endpoints,
     required this.globalEditableRegion,
@@ -139,12 +148,12 @@ class _DesktopTextSelectionControlsToolbar extends StatefulWidget {
   final double textLineHeight;
 
   @override
-  _DesktopTextSelectionControlsToolbarState createState() =>
-      _DesktopTextSelectionControlsToolbarState();
+  _AndroidDesktopTextSelectionControlsToolbarState createState() =>
+      _AndroidDesktopTextSelectionControlsToolbarState();
 }
 
-class _DesktopTextSelectionControlsToolbarState
-    extends State<_DesktopTextSelectionControlsToolbar> {
+class _AndroidDesktopTextSelectionControlsToolbarState
+    extends State<_AndroidDesktopTextSelectionControlsToolbar> {
   void _onChangedClipboardStatus() {
     setState(() {
       // Inform the widget that the value of clipboardStatus has changed.
@@ -158,7 +167,7 @@ class _DesktopTextSelectionControlsToolbarState
   }
 
   @override
-  void didUpdateWidget(_DesktopTextSelectionControlsToolbar oldWidget) {
+  void didUpdateWidget(_AndroidDesktopTextSelectionControlsToolbar oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.clipboardStatus != widget.clipboardStatus) {
       oldWidget.clipboardStatus?.removeListener(_onChangedClipboardStatus);
@@ -197,7 +206,7 @@ class _DesktopTextSelectionControlsToolbarState
 
     void addToolbarButton(String text, VoidCallback onPressed) {
       items.add(
-        DesktopTextSelectionToolbarButton.text(context: context, onPressed: onPressed, text: text),
+        AndroidDesktopTextSelectionToolbarButton.text(context: context, onPressed: onPressed, text: text),
       );
     }
 
@@ -219,7 +228,7 @@ class _DesktopTextSelectionControlsToolbarState
       return const SizedBox.shrink();
     }
 
-    return DesktopTextSelectionToolbar(
+    return AndroidDesktopTextSelectionToolbar(
       anchor: widget.lastSecondaryTapDownPosition ?? midpointAnchor,
       children: items,
     );

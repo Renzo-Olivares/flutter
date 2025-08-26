@@ -35,6 +35,7 @@ class MockTextSelectionControls extends TextSelectionControls {
   Widget buildHandle(
     BuildContext context,
     TextSelectionHandleType type,
+    Color? color,
     double textLineHeight, [
     VoidCallback? onTap,
   ]) {

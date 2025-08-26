@@ -2,14 +2,17 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-/// @docImport 'button_style.dart';
-/// @docImport 'text_selection_toolbar.dart';
+/// @docImport 'android_text_selection_toolbar.dart';
+/// @docImport 'text.dart';
 library;
 
-import 'package:flutter/widgets.dart';
+import 'package:flutter/foundation.dart';
 
+import 'basic.dart';
 import 'color_scheme.dart';
 import 'constants.dart';
+import 'framework.dart';
+import 'media_query.dart';
 import 'text_button.dart';
 import 'theme.dart';
 
@@ -28,12 +31,13 @@ enum _TextSelectionToolbarItemPosition {
 }
 
 /// A button styled like a Material native Android text selection menu button.
-class TextSelectionToolbarTextButton extends StatelessWidget {
-  /// Creates an instance of TextSelectionToolbarTextButton.
-  const TextSelectionToolbarTextButton({
+class AndroidTextSelectionToolbarTextButton extends StatelessWidget {
+  /// Creates an instance of AndroidTextSelectionToolbarTextButton.
+  const AndroidTextSelectionToolbarTextButton({
     super.key,
     required this.child,
     required this.padding,
+    this.foregroundColor,
     this.onPressed,
     this.alignment,
   });
@@ -43,21 +47,23 @@ class TextSelectionToolbarTextButton extends StatelessWidget {
   static const double _kMiddlePadding = 9.5;
   static const double _kEndPadding = 14.5;
 
-  /// {@template flutter.material.TextSelectionToolbarTextButton.child}
+  final Color? foregroundColor;
+
+  /// {@template flutter.material.AndroidTextSelectionToolbarTextButton.child}
   /// The child of this button.
   ///
   /// Usually a [Text].
   /// {@endtemplate}
   final Widget child;
 
-  /// {@template flutter.material.TextSelectionToolbarTextButton.onPressed}
+  /// {@template flutter.material.AndroidTextSelectionToolbarTextButton.onPressed}
   /// Called when this button is pressed.
   /// {@endtemplate}
   final VoidCallback? onPressed;
 
   /// The padding between the button's edge and its child.
   ///
-  /// In a standard Material [TextSelectionToolbar], the padding depends on the
+  /// In a standard Material [AndroidTextSelectionToolbar], the padding depends on the
   /// button's position within the toolbar.
   ///
   /// See also:
@@ -79,7 +85,7 @@ class TextSelectionToolbarTextButton extends StatelessWidget {
   /// Returns the standard padding for a button at index out of a total number
   /// of buttons.
   ///
-  /// Standard Material [TextSelectionToolbar]s have buttons with different
+  /// Standard Material [AndroidTextSelectionToolbar]s have buttons with different
   /// padding depending on their position in the toolbar.
   static EdgeInsetsGeometry getPadding(int index, int total) {
     assert(total > 0 && index >= 0 && index < total);
@@ -118,15 +124,15 @@ class TextSelectionToolbarTextButton extends StatelessWidget {
     return _TextSelectionToolbarItemPosition.middle;
   }
 
-  /// Returns a copy of the current [TextSelectionToolbarTextButton] instance
+  /// Returns a copy of the current [AndroidTextSelectionToolbarTextButton] instance
   /// with specific overrides.
-  TextSelectionToolbarTextButton copyWith({
+  AndroidTextSelectionToolbarTextButton copyWith({
     Widget? child,
     VoidCallback? onPressed,
     EdgeInsetsGeometry? padding,
     AlignmentGeometry? alignment,
   }) {
-    return TextSelectionToolbarTextButton(
+    return AndroidTextSelectionToolbarTextButton(
       onPressed: onPressed ?? this.onPressed,
       padding: padding ?? this.padding,
       alignment: alignment ?? this.alignment,
@@ -141,19 +147,12 @@ class TextSelectionToolbarTextButton extends StatelessWidget {
 
   // The background color is hardcoded to transparent by default so the buttons
   // are the color of the container behind them. For example TextSelectionToolbar
-  // hardcodes the color value, and TextSelectionToolbarTextButtons that are its
+  // hardcodes the color value, and AndroidTextSelectionToolbarTextButtons that are its
   // children become that color.
   static const Color _defaultBackgroundColorTransparent = Color(0x00000000);
 
-  static Color _getForegroundColor(ColorScheme colorScheme) {
-    final bool isDefaultOnSurface = switch (colorScheme.brightness) {
-      Brightness.light => identical(ThemeData().colorScheme.onSurface, colorScheme.onSurface),
-      Brightness.dark => identical(ThemeData.dark().colorScheme.onSurface, colorScheme.onSurface),
-    };
-    if (!isDefaultOnSurface) {
-      return colorScheme.onSurface;
-    }
-    return switch (colorScheme.brightness) {
+  static Color _getForegroundColor(Brightness brightness) {
+    return switch (brightness) {
       Brightness.light => _defaultForegroundColorLight,
       Brightness.dark => _defaultForegroundColorDark,
     };
@@ -161,11 +160,11 @@ class TextSelectionToolbarTextButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final ColorScheme colorScheme = Theme.of(context).colorScheme;
+    final Brightness brightness = MediaQuery.maybePlatformBrightnessOf(context) ?? Brightness.light;
     return TextButton(
       style: TextButton.styleFrom(
         backgroundColor: _defaultBackgroundColorTransparent,
-        foregroundColor: _getForegroundColor(colorScheme),
+        foregroundColor: foregroundColor ?? _getForegroundColor(brightness),
         shape: const RoundedRectangleBorder(),
         minimumSize: const Size(kMinInteractiveDimension, kMinInteractiveDimension),
         padding: padding,

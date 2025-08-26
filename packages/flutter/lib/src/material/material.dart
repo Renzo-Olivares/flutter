@@ -478,7 +478,10 @@ class _MaterialState extends State<Material> with TickerProviderStateMixin {
         duration: widget.animationDuration,
         child: contents,
       );
-    }
+    }// child is wrapped in AnimatedDefaultTextStyle, then that is wrapped with 
+    // InkFeatures which is wrapped with NotificationListener then a _ShapeBorderPaint and a ClipPath
+    // and finally _MaterialInterior. _MaterialInterior is essentially an animating surface. The biggest
+    // material dependency here is InkFeatures!.
     contents = NotificationListener<LayoutChangedNotification>(
       onNotification: (LayoutChangedNotification notification) {
         final _RenderInkFeatures renderer =
