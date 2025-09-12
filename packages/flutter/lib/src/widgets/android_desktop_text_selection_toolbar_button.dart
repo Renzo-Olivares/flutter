@@ -4,13 +4,13 @@
 
 import 'dart:ui';
 
+import 'android_text_button.dart';
 import 'basic.dart';
 import 'colors.dart';
 import 'constants.dart';
 import 'framework.dart';
 import 'media_query.dart';
 import 'text.dart';
-import 'text_button.dart';
 import 'theme.dart';
 
 const TextStyle _kToolbarButtonFontStyle = TextStyle(
