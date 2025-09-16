@@ -225,11 +225,11 @@ class AndroidAdaptiveTextSelectionToolbar extends StatelessWidget {
           ContextMenuButtonType.copy => localizations.copyButtonLabel,
           ContextMenuButtonType.paste => localizations.pasteButtonLabel,
           ContextMenuButtonType.selectAll => localizations.selectAllButtonLabel,
-          ContextMenuButtonType.delete => localizations.deleteButtonTooltip.toUpperCase(),
+          ContextMenuButtonType.delete => 'delete',// TODO(Renzo-Olivares): add localizations.deleteButtonTooltip.toUpperCase(),
           ContextMenuButtonType.lookUp => localizations.lookUpButtonLabel,
           ContextMenuButtonType.searchWeb => localizations.searchWebButtonLabel,
           ContextMenuButtonType.share => localizations.shareButtonLabel,
-          ContextMenuButtonType.liveTextInput => localizations.scanTextButtonLabel,
+          ContextMenuButtonType.liveTextInput => 'scan',// TODO(Renzo-Olivares): add localizations.scanTextButtonLabel,
           ContextMenuButtonType.custom => '',
         };
     }

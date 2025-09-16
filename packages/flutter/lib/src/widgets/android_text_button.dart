@@ -14,6 +14,9 @@ import 'package:flutter/foundation.dart';
 
 import 'android_button_style.dart';
 import 'android_button_style_button.dart';
+import 'android_button_utilities.dart';
+import 'android_constants.dart';
+import 'android_ink_ripple.dart';
 import 'android_ink_well.dart';// just for docs.
 import 'basic.dart';
 import 'color_scheme.dart';
@@ -21,7 +24,6 @@ import 'colors.dart';
 import 'constants.dart';
 import 'focus_manager.dart';
 import 'framework.dart';
-import 'ink_ripple.dart';
 import 'media_query.dart';
 import 'text_button_theme.dart';
 import 'theme.dart';
@@ -413,8 +415,8 @@ class TextButton extends ButtonStyleButton {
         : styleFrom(
             foregroundColor: colorScheme.primary,
             disabledForegroundColor: colorScheme.onSurface.withOpacity(0.38),
-            backgroundColor: Colors.transparent,
-            disabledBackgroundColor: Colors.transparent,
+            backgroundColor: AndroidMaterialColors.transparent,
+            disabledBackgroundColor: AndroidMaterialColors.transparent,
             shadowColor: theme.shadowColor,
             elevation: 0,
             textStyle: theme.textTheme.labelLarge,
@@ -588,11 +590,11 @@ class _TextButtonDefaultsM3 extends ButtonStyle {
 
   @override
   WidgetStateProperty<Color>? get shadowColor =>
-    const WidgetStatePropertyAll<Color>(Colors.transparent);
+    const WidgetStatePropertyAll<Color>(AndroidMaterialColors.transparent);
 
   @override
   WidgetStateProperty<Color>? get surfaceTintColor =>
-    const WidgetStatePropertyAll<Color>(Colors.transparent);
+    const WidgetStatePropertyAll<Color>(AndroidMaterialColors.transparent);
 
   @override
   WidgetStateProperty<double>? get elevation =>

@@ -2,13 +2,17 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+import 'dart:ui';
+
 import 'package:flutter/gestures.dart';
 
 import 'apple_button.dart';
+import 'apple_constants.dart';
 import 'apple_text_selection_toolbar_button.dart';
 import 'basic.dart';
 import 'context_menu_button_item.dart';
 import 'framework.dart';
+import 'media_query.dart';
 import 'text.dart';
 import 'widget_state.dart';
 
@@ -110,20 +114,24 @@ class _AppleDesktopTextSelectionToolbarButtonState
 
   @override
   Widget build(BuildContext context) {
-    final WidgetStateProperty<Color?> color = WidgetStateProperty<Color?>.fromMap(
+    const WidgetStateProperty<Color?> color = WidgetStateProperty<Color?>.fromMap(
       <WidgetStatesConstraint, Color?>{
-        WidgetState.hovered: CupertinoTheme.of(context).primaryColor,
+        WidgetState.hovered: CupertinoColors
+            .systemBlue, // TODO(Renzo-Olivares): was CupertinoTheme.of(context).primaryColor,
         WidgetState.any: null,
       },
     );
-    final WidgetStateProperty<Color> labelColor =
-        WidgetStateProperty<Color>.fromMap(<WidgetStatesConstraint, Color>{
-          WidgetState.hovered: CupertinoTheme.of(context).primaryContrastingColor,
-          WidgetState.any: const CupertinoDynamicColor.withBrightness(
-            color: CupertinoColors.black,
-            darkColor: CupertinoColors.white,
-          ).resolveFrom(context),
-        });
+    final WidgetStateProperty<Color> labelColor = WidgetStateProperty<Color>.fromMap(
+      <WidgetStatesConstraint, Color>{
+        WidgetState.hovered: CupertinoColors
+            .white, // TODO(Renzo-Olivares): was CupertinoTheme.of(context).primaryContrastingColor,
+        WidgetState.any:
+            (MediaQuery.maybePlatformBrightnessOf(context) ?? Brightness.light) == Brightness.light
+            ? CupertinoColors.black
+            : CupertinoColors
+                  .white, // TODO (Renzo-Olivares): was CupertinoDynamicColor.withBrightness
+      },
+    );
     final Widget child =
         widget.child ??
         Text(

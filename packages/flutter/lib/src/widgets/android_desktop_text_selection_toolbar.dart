@@ -6,6 +6,7 @@
 /// @docImport 'android_desktop_text_selection_toolbar_button.dart';
 library;
 
+import 'android_material.dart';
 import 'android_text_selection_toolbar.dart';
 import 'basic.dart';
 import 'debug.dart';

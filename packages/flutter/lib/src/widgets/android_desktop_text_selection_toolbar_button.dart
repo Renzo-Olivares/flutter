@@ -4,14 +4,15 @@
 
 import 'dart:ui';
 
+import 'android_constants.dart';
 import 'android_text_button.dart';
 import 'basic.dart';
-import 'colors.dart';
+// import 'colors.dart';
 import 'constants.dart';
 import 'framework.dart';
 import 'media_query.dart';
 import 'text.dart';
-import 'theme.dart';
+// import 'theme.dart';
 
 const TextStyle _kToolbarButtonFontStyle = TextStyle(
   inherit: false,
@@ -45,8 +46,8 @@ class AndroidDesktopTextSelectionToolbarButton extends StatelessWidget {
          overflow: TextOverflow.ellipsis,
          style: _kToolbarButtonFontStyle.copyWith(
            color: MediaQuery.maybePlatformBrightnessOf(context) == Brightness.dark
-               ? Colors.white
-               : Colors.black87,
+               ? AndroidMaterialColors.white// From Material library.
+               : AndroidMaterialColors.black87,// From Material library.
          ),
        );
 
@@ -64,8 +65,8 @@ class AndroidDesktopTextSelectionToolbarButton extends StatelessWidget {
     final Color effectiveForegroundColor =
         foregroundColor ??
         (MediaQuery.maybePlatformBrightnessOf(context) == Brightness.dark
-            ? Colors.white
-            : Colors.black87);
+            ? AndroidMaterialColors.white
+            : AndroidMaterialColors.black87);// Colors pulled from Material library.
 
     return SizedBox(
       width: double.infinity,

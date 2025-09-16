@@ -10,6 +10,7 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/semantics.dart';
 
 import 'actions.dart';
+import 'apple_constants.dart';
 import 'basic.dart';
 import 'container.dart';
 import 'focus_manager.dart';
@@ -227,7 +228,7 @@ class AppleButton extends StatefulWidget {
   /// The minimum size of the button.
   ///
   /// Defaults to a button with a height and a width of
-  /// [kMinInteractiveDimensionCupertino], which the iOS Human
+  /// [kMinInteractiveDimensionApple], which the iOS Human
   /// Interface Guidelines recommends as the minimum tappable area.
   final Size? minimumSize;
 
@@ -240,7 +241,7 @@ class AppleButton extends StatefulWidget {
 
   /// The radius of the button's corners when it has a background color.
   ///
-  /// Defaults to [kCupertinoButtonSizeBorderRadius], based on [sizeStyle].
+  /// Defaults to [kAppleButtonSizeBorderRadius], based on [sizeStyle].
   final BorderRadius? borderRadius;
 
   /// The size of the button.
@@ -310,7 +311,7 @@ class AppleButton extends StatefulWidget {
     return switch (defaultTargetPlatform) {
       TargetPlatform.iOS ||
       TargetPlatform.android ||
-      TargetPlatform.fuchsia => kCupertinoButtonTapMoveSlop,
+      TargetPlatform.fuchsia => kAppleButtonTapMoveSlop,
       TargetPlatform.macOS || TargetPlatform.linux || TargetPlatform.windows => 0.0,
     };
   }
@@ -472,50 +473,46 @@ class _AppleButtonState extends State<AppleButton> with SingleTickerProviderStat
               ? null
               : Size(widget.minSize!, widget.minSize!)
         : widget.minimumSize!;
-    final CupertinoThemeData themeData = CupertinoTheme.of(context);
-    final Color primaryColor = themeData.primaryColor;
+    // final CupertinoThemeData themeData = CupertinoTheme.of(context);
+    const Color primaryColor = CupertinoColors.systemBlue; // was theme.primaryColor.
     final Color? backgroundColor =
-        (widget.color == null
-                ? widget._style != _AppleButtonStyle.plain
-                      ? primaryColor
-                      : null
-                : CupertinoDynamicColor.maybeResolve(widget.color, context))
+        (widget.color ??
+                (widget._style != _AppleButtonStyle.plain
+                    ? primaryColor
+                    : null)) // was CupertinoDynamicColor.maybeResolve(widget.color, context))
             ?.withOpacity(
               widget._style == _AppleButtonStyle.tinted
-                  ? CupertinoTheme.brightnessOf(context) == Brightness.light
-                        ? kCupertinoButtonTintedOpacityLight
-                        : kCupertinoButtonTintedOpacityDark
-                  : widget.color?.opacity ?? 1.0,
+                  ? MediaQuery.platformBrightnessOf(context) == Brightness.light
+                        ? kAppleButtonTintedOpacityLight
+                        : kAppleButtonTintedOpacityDark
+                  : widget.color?.opacity ?? 1.0, // Changed CupertinoTheme to MediaQuery.
             );
     final Color effectiveForegroundColor =
         widget.foregroundColor ??
         switch ((widget._style, enabled)) {
-          (_AppleButtonStyle.filled, _) => themeData.primaryContrastingColor,
+          (_AppleButtonStyle.filled, _) =>
+            CupertinoColors.white, // was theme.primaryContrastingColor
           (_, true) => primaryColor,
-          (_, false) => CupertinoDynamicColor.resolve(CupertinoColors.tertiaryLabel, context),
+          (_, false) => CupertinoColors.tertiaryLabel,// was CupertinoDynamicColor.resolve(CupertinoColors.tertiaryLabel, context),
         };
 
     final Color effectiveFocusOutlineColor =
         widget.focusColor ??
         HSLColor.fromColor(
-              (backgroundColor ?? CupertinoColors.activeBlue).withOpacity(
-                kCupertinoFocusColorOpacity,
-              ),
+              (backgroundColor ?? CupertinoColors.activeBlue).withOpacity(kAppleFocusColorOpacity),
             )
-            .withLightness(kCupertinoFocusColorBrightness)
-            .withSaturation(kCupertinoFocusColorSaturation)
+            .withLightness(kAppleFocusColorBrightness)
+            .withSaturation(kAppleFocusColorSaturation)
             .toColor();
 
     final TextStyle textStyle =
         (widget.sizeStyle == AppleButtonSize.small
-                ? themeData.textTheme.actionSmallTextStyle
-                : themeData.textTheme.actionTextStyle)
+                ? kDefaultActionSmallTextStyle// was themeData.textTheme.actionSmallTextStyle
+                : kDefaultActionTextStyle)// was themeData.textTheme.actionTextStyle)
             .copyWith(color: effectiveForegroundColor);
     final IconThemeData iconTheme = IconTheme.of(context).copyWith(
       color: effectiveForegroundColor,
-      size: textStyle.fontSize != null
-          ? textStyle.fontSize! * 1.2
-          : kCupertinoButtonDefaultIconSize,
+      size: textStyle.fontSize != null ? textStyle.fontSize! * 1.2 : kAppleButtonDefaultIconSize,
     );
 
     final DeviceGestureSettings? gestureSettings = MediaQuery.maybeGestureSettingsOf(context);
@@ -538,10 +535,10 @@ class _AppleButtonState extends State<AppleButton> with SingleTickerProviderStat
                 strokeAlign: BorderSide.strokeAlignOutside,
               )
             : BorderSide.none,
-        borderRadius: widget.borderRadius ?? kCupertinoButtonSizeBorderRadius[widget.sizeStyle],
+        borderRadius: widget.borderRadius ?? kAppleButtonSizeBorderRadius[widget.sizeStyle],
       ),
       color: backgroundColor != null && !enabled
-          ? CupertinoDynamicColor.resolve(widget.disabledColor, context)
+          ? widget.disabledColor// was CupertinoDynamicColor.resolve(widget.disabledColor, context)
           : backgroundColor,
     );
 
@@ -583,19 +580,19 @@ class _AppleButtonState extends State<AppleButton> with SingleTickerProviderStat
               constraints: BoxConstraints(
                 minWidth:
                     minimumSize?.width ??
-                    kCupertinoButtonMinSize[widget.sizeStyle] ??
-                    kMinInteractiveDimensionCupertino,
+                    kAppleButtonMinSize[widget.sizeStyle] ??
+                    kMinInteractiveDimensionApple,
                 minHeight:
                     minimumSize?.height ??
-                    kCupertinoButtonMinSize[widget.sizeStyle] ??
-                    kMinInteractiveDimensionCupertino,
+                    kAppleButtonMinSize[widget.sizeStyle] ??
+                    kMinInteractiveDimensionApple,
               ),
               child: FadeTransition(
                 opacity: _opacityAnimation,
                 child: DecoratedBox(
                   decoration: shapeDecoration,
                   child: Padding(
-                    padding: widget.padding ?? kCupertinoButtonPadding[widget.sizeStyle]!,
+                    padding: widget.padding ?? kAppleButtonPadding[widget.sizeStyle]!,
                     child: Align(
                       alignment: widget.alignment,
                       widthFactor: 1.0,
