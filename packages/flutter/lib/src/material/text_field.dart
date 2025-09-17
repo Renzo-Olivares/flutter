@@ -887,9 +887,9 @@ class TextField extends StatefulWidget {
     BuildContext context,
     EditableTextState editableTextState,
   ) {
-    if (SystemContextMenu.isSupportedByField(editableTextState)) {
-      return SystemContextMenu.editableText(editableTextState: editableTextState);
-    }
+    // if (SystemContextMenu.isSupportedByField(editableTextState)) {
+    //   return SystemContextMenu.editableText(editableTextState: editableTextState);
+    // }// TODO(Renzo-Olivares): force flutter rendered menu for now.
     return AdaptiveTextSelectionToolbar.editableText(editableTextState: editableTextState);
   }
 

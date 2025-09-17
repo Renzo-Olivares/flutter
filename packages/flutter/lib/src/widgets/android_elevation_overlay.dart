@@ -10,9 +10,10 @@ import 'dart:math' as math;
 import 'dart:ui';
 
 import 'android_constants.dart';
-import 'colors.dart';
+// import 'colors.dart';
 import 'framework.dart';
-import 'theme.dart';
+import 'media_query.dart';
+// import 'theme.dart';
 
 /// A utility class for dealing with the overlay color needed
 /// to indicate elevation of surfaces.
@@ -98,12 +99,12 @@ abstract final class ElevationOverlay {
   ///  * <https://material.io/design/color/dark-theme.html>, which specifies how
   ///    the overlay should be applied.
   static Color applyOverlay(BuildContext context, Color color, double elevation) {
-    final ThemeData theme = Theme.of(context);
+    // final ThemeData theme = Theme.of(context);
     if (elevation > 0.0 &&
-        theme.applyElevationOverlayColor &&
-        theme.brightness == Brightness.dark &&
-        color.withOpacity(1.0) == theme.colorScheme.surface.withOpacity(1.0)) {
-      return colorWithOverlay(color, theme.colorScheme.onSurface, elevation);
+        true &&// TODO(Renzo-Olivares): was using theme.applyElevationOverlayColor,
+        MediaQuery.maybePlatformBrightnessOf(context) == Brightness.dark && // TODO(Renzo-Olivares): was using theme.brightness,
+        color.withOpacity(1.0) == AndroidMaterialColors.grey700.withOpacity(1.0)) { // TODO(Renzo-Olivares): was using theme.colorScheme.surface.withOpacity(1.0)
+      return colorWithOverlay(color, AndroidMaterialColors.grey700, elevation);// TODO(Renzo-Olivares): was using theme.colorScheme.onSurface.
     }
     return color;
   }
@@ -120,8 +121,8 @@ abstract final class ElevationOverlay {
   ///  * https://material.io/design/color/dark-theme.html#properties which
   ///    specifies the exact overlay values for a given elevation.
   static Color overlayColor(BuildContext context, double elevation) {
-    final ThemeData theme = Theme.of(context);
-    return _overlayColor(theme.colorScheme.onSurface, elevation);
+    // final ThemeData theme = Theme.of(context);
+    return _overlayColor(AndroidMaterialColors.grey700, elevation);// TODO(Renzo-Olivares): was theme.colorScheme.onSurface.
   }
 
   /// Returns a color blended by laying a semi-transparent overlay (using the

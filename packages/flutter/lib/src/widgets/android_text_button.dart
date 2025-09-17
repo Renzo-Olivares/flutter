@@ -19,15 +19,15 @@ import 'android_constants.dart';
 import 'android_ink_ripple.dart';
 import 'android_ink_well.dart';// just for docs.
 import 'basic.dart';
-import 'color_scheme.dart';
-import 'colors.dart';
+// import 'color_scheme.dart';
+// import 'colors.dart';
 import 'constants.dart';
 import 'focus_manager.dart';
 import 'framework.dart';
 import 'media_query.dart';
-import 'text_button_theme.dart';
-import 'theme.dart';
-import 'theme_data.dart';
+// import 'text_button_theme.dart';
+// import 'theme.dart';
+// import 'theme_data.dart';
 import 'widget_state.dart';
 
 /// A Material Design "Text Button".
@@ -407,48 +407,50 @@ class TextButton extends ButtonStyleButton {
   /// {@endtemplate}
   @override
   ButtonStyle defaultStyleOf(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    final ColorScheme colorScheme = theme.colorScheme;
+    // final ThemeData theme = Theme.of(context);
+    // final ColorScheme colorScheme = theme.colorScheme;
 
-    return Theme.of(context).useMaterial3
-        ? _TextButtonDefaultsM3(context)
-        : styleFrom(
-            foregroundColor: colorScheme.primary,
-            disabledForegroundColor: colorScheme.onSurface.withOpacity(0.38),
-            backgroundColor: AndroidMaterialColors.transparent,
-            disabledBackgroundColor: AndroidMaterialColors.transparent,
-            shadowColor: theme.shadowColor,
-            elevation: 0,
-            textStyle: theme.textTheme.labelLarge,
-            padding: _scaledPadding(context),
-            minimumSize: const Size(64, 36),
-            maximumSize: Size.infinite,
-            shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(4))),
-            enabledMouseCursor: SystemMouseCursors.click,
-            disabledMouseCursor: SystemMouseCursors.basic,
-            visualDensity: theme.visualDensity,
-            tapTargetSize: theme.materialTapTargetSize,
-            animationDuration: kThemeChangeDuration,
-            enableFeedback: true,
-            alignment: Alignment.center,
-            splashFactory: InkRipple.splashFactory,
-          );
+    // return Theme.of(context).useMaterial3
+    //     ? _TextButtonDefaultsM3(context)
+    //     : styleFrom(
+    //         foregroundColor: colorScheme.primary,
+    //         disabledForegroundColor: colorScheme.onSurface.withOpacity(0.38),
+    //         backgroundColor: AndroidMaterialColors.transparent,
+    //         disabledBackgroundColor: AndroidMaterialColors.transparent,
+    //         shadowColor: theme.shadowColor,
+    //         elevation: 0,
+    //         textStyle: theme.textTheme.labelLarge,
+    //         padding: _scaledPadding(context),
+    //         minimumSize: const Size(64, 36),
+    //         maximumSize: Size.infinite,
+    //         shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(4))),
+    //         enabledMouseCursor: SystemMouseCursors.click,
+    //         disabledMouseCursor: SystemMouseCursors.basic,
+    //         visualDensity: theme.visualDensity,
+    //         tapTargetSize: theme.materialTapTargetSize,
+    //         animationDuration: kThemeChangeDuration,
+    //         enableFeedback: true,
+    //         alignment: Alignment.center,
+    //         splashFactory: InkRipple.splashFactory,
+    //       );// TODO(Renzo-Olivares): just using _TextButtonDefaultsM3 for now.
+    return _TextButtonDefaultsM3(context);
   }
 
   /// Returns the [TextButtonThemeData.style] of the closest
   /// [TextButtonTheme] ancestor.
   @override
   ButtonStyle? themeStyleOf(BuildContext context) {
-    return TextButtonTheme.of(context).style;
+    return null;
+    // return TextButtonTheme.of(context).style;
   }
 }
 
 EdgeInsetsGeometry _scaledPadding(BuildContext context) {
-  final ThemeData theme = Theme.of(context);
-  final double defaultFontSize = theme.textTheme.labelLarge?.fontSize ?? 14.0;
+  // final ThemeData theme = Theme.of(context);
+  final double defaultFontSize = 14.0;// TODO(Renzo-Olivares): was theme.textTheme.labelLarge?.fontSize ?? 14.0;
   final double effectiveTextScale = MediaQuery.textScalerOf(context).scale(defaultFontSize) / 14.0;
   return ButtonStyleButton.scaledPadding(
-    theme.useMaterial3
+    true // TODO(Renzo-Olivares): was theme.useMaterial3
         ? const EdgeInsets.symmetric(horizontal: 12, vertical: 8)
         : const EdgeInsets.all(8),
     const EdgeInsets.symmetric(horizontal: 8),
@@ -484,7 +486,7 @@ class _TextButtonWithIcon extends TextButton {
 
   @override
   ButtonStyle defaultStyleOf(BuildContext context) {
-    final bool useMaterial3 = Theme.of(context).useMaterial3;
+    final bool useMaterial3 = true;// TODO(Renzo-Olivares): was Theme.of(context).useMaterial3;
     final ButtonStyle buttonStyle = super.defaultStyleOf(context);
     final double defaultFontSize =
         buttonStyle.textStyle?.resolve(const <WidgetState>{})?.fontSize ?? 14.0;
@@ -521,10 +523,10 @@ class _TextButtonWithIconChild extends StatelessWidget {
         buttonStyle?.textStyle?.resolve(const <WidgetState>{})?.fontSize ?? 14.0;
     final double scale =
         clampDouble(MediaQuery.textScalerOf(context).scale(defaultFontSize) / 14.0, 1.0, 2.0) - 1.0;
-    final TextButtonThemeData textButtonTheme = TextButtonTheme.of(context);
+    // final TextButtonThemeData textButtonTheme = TextButtonTheme.of(context);
     final IconAlignment effectiveIconAlignment =
         iconAlignment ??
-        textButtonTheme.style?.iconAlignment ??
+        // TODO(Renzo-Olivares): was textButtonTheme.style?.iconAlignment ??
         buttonStyle?.iconAlignment ??
         IconAlignment.start;
     return Row(
@@ -554,36 +556,39 @@ class _TextButtonDefaultsM3 extends ButtonStyle {
      );
 
   final BuildContext context;
-  late final ColorScheme _colors = Theme.of(context).colorScheme;
+  // late final ColorScheme _colors = Theme.of(context).colorScheme;
 
   @override
   WidgetStateProperty<TextStyle?> get textStyle =>
-    WidgetStatePropertyAll<TextStyle?>(Theme.of(context).textTheme.labelLarge);
+    const WidgetStatePropertyAll<TextStyle?>(TextStyle(fontSize: 24.0, color: AndroidMaterialColors.black));// TODO(Renzo-Olivares): was Theme.of(context).textTheme.labelLarge
 
   @override
   WidgetStateProperty<Color?>? get backgroundColor =>
-    const WidgetStatePropertyAll<Color>(Colors.transparent);
+    const WidgetStatePropertyAll<Color>(AndroidMaterialColors.transparent);
+
+  static const Color _onSurface = AndroidMaterialColors.white;
+  static const Color _primary = AndroidMaterialColors.black;
 
   @override
   WidgetStateProperty<Color?>? get foregroundColor =>
     WidgetStateProperty.resolveWith((Set<WidgetState> states) {
       if (states.contains(WidgetState.disabled)) {
-        return _colors.onSurface.withOpacity(0.38);
+        return _onSurface.withOpacity(0.38);// TODO(Renzo-Olivares): was _colors.onSurface.withOpacity(0.38);
       }
-      return _colors.primary;
+      return _primary;// TODO(Renzo-Olivares): was _colors.primary;
     });
 
   @override
   WidgetStateProperty<Color?>? get overlayColor =>
     WidgetStateProperty.resolveWith((Set<WidgetState> states) {
       if (states.contains(WidgetState.pressed)) {
-        return _colors.primary.withOpacity(0.1);
+        return _primary.withOpacity(0.1);// TODO(Renzo-Olivares): was _colors.primary.withOpacity(0.1);
       }
       if (states.contains(WidgetState.hovered)) {
-        return _colors.primary.withOpacity(0.08);
+        return _primary.withOpacity(0.08);// TODO(Renzo-Olivares): was _colors.primary.withOpacity(0.08);
       }
       if (states.contains(WidgetState.focused)) {
-        return _colors.primary.withOpacity(0.1);
+        return _primary.withOpacity(0.1);// TODO(Renzo-Olivares): was _colors.primary.withOpacity(0.1);
       }
       return null;
     });
@@ -618,18 +623,18 @@ class _TextButtonDefaultsM3 extends ButtonStyle {
   WidgetStateProperty<Color>? get iconColor {
     return WidgetStateProperty.resolveWith((Set<WidgetState> states) {
       if (states.contains(WidgetState.disabled)) {
-        return _colors.onSurface.withOpacity(0.38);
+        return _onSurface.withOpacity(0.38);// TODO(Renzo-Olivares): was _colors.onSurface.withOpacity(0.38);
       }
       if (states.contains(WidgetState.pressed)) {
-        return _colors.primary;
+        return _primary;// TODO(Renzo-Olivares): was _colors.primary;
       }
       if (states.contains(WidgetState.hovered)) {
-        return _colors.primary;
+        return _primary;// TODO(Renzo-Olivares): was _colors.primary;
       }
       if (states.contains(WidgetState.focused)) {
-        return _colors.primary;
+        return _primary;// TODO(Renzo-Olivares): was _colors.primary;
       }
-      return _colors.primary;
+      return _primary;// TODO(Renzo-Olivares): was _colors.primary;
     });
   }
 
@@ -653,13 +658,13 @@ class _TextButtonDefaultsM3 extends ButtonStyle {
     });
 
   @override
-  VisualDensity? get visualDensity => Theme.of(context).visualDensity;
+  VisualDensity? get visualDensity => VisualDensity.defaultDensityForPlatform(defaultTargetPlatform);// TODO(Renzo-Olivares): was Theme.of(context).visualDensity;
 
   @override
-  MaterialTapTargetSize? get tapTargetSize => Theme.of(context).materialTapTargetSize;
+  MaterialTapTargetSize? get tapTargetSize => MaterialTapTargetSize.padded;// TODO(Renzo-Olivares): was Theme.of(context).materialTapTargetSize;
 
   @override
-  InteractiveInkFeatureFactory? get splashFactory => Theme.of(context).splashFactory;
+  InteractiveInkFeatureFactory? get splashFactory => InkRipple.splashFactory;// TODO(Renzo-Olivares): was Theme.of(context).splashFactory;
 }
 // dart format on
 

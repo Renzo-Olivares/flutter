@@ -18,7 +18,7 @@ import 'package:flutter/services.dart';
 import 'android_constants.dart';
 import 'android_tooltip_visibility.dart';
 import 'basic.dart';
-import 'colors.dart';
+// import 'colors.dart';
 import 'container.dart';
 import 'debug.dart';
 import 'feedback.dart';
@@ -27,10 +27,10 @@ import 'media_query.dart';
 import 'overlay.dart';
 import 'selection_container.dart';
 import 'text.dart';
-import 'text_theme.dart';
-import 'theme.dart';
+// import 'text_theme.dart';
+// import 'theme.dart';
 import 'ticker_provider.dart';
-import 'tooltip_theme.dart';
+// import 'tooltip_theme.dart';
 import 'transitions.dart';
 
 /// Signature for when a tooltip is triggered.
@@ -505,18 +505,17 @@ class TooltipState extends State<Tooltip> with SingleTickerProviderStateMixin {
 
   // From InheritedWidgets
   late bool _visible;
-  late TooltipThemeData _tooltipTheme;
 
   Duration get _showDuration =>
-      widget.showDuration ?? _tooltipTheme.showDuration ?? _defaultShowDuration;
+      widget.showDuration ?? _defaultShowDuration;
   Duration get _hoverExitDuration =>
-      widget.exitDuration ?? _tooltipTheme.exitDuration ?? _defaultHoverExitDuration;
+      widget.exitDuration ?? _defaultHoverExitDuration;
   Duration get _waitDuration =>
-      widget.waitDuration ?? _tooltipTheme.waitDuration ?? _defaultWaitDuration;
+      widget.waitDuration ?? _defaultWaitDuration;
   TooltipTriggerMode get _triggerMode =>
-      widget.triggerMode ?? _tooltipTheme.triggerMode ?? _defaultTriggerMode;
+      widget.triggerMode ?? _defaultTriggerMode;
   bool get _enableFeedback =>
-      widget.enableFeedback ?? _tooltipTheme.enableFeedback ?? _defaultEnableFeedback;
+      widget.enableFeedback ?? _defaultEnableFeedback;
 
   /// The plain text message for this tooltip.
   ///
@@ -796,7 +795,6 @@ class TooltipState extends State<Tooltip> with SingleTickerProviderStateMixin {
   void didChangeDependencies() {
     super.didChangeDependencies();
     _visible = TooltipVisibility.of(context);
-    _tooltipTheme = TooltipTheme.of(context);
   }
 
   // https://material.io/components/tooltips#specs
@@ -835,60 +833,50 @@ class TooltipState extends State<Tooltip> with SingleTickerProviderStateMixin {
       layoutInfo.childSize.center(Offset.zero),
     );
 
-    final (TextStyle defaultTextStyle, BoxDecoration defaultDecoration) = switch (Theme.of(
-      context,
-    )) {
-      ThemeData(
-        brightness: Brightness.dark,
-        :final TextTheme textTheme,
-        :final TargetPlatform platform,
-      ) =>
+    final (TextStyle defaultTextStyle, BoxDecoration defaultDecoration) = switch (MediaQuery.maybePlatformBrightnessOf(context)) {
+      Brightness.dark =>
         (
-          textTheme.bodyMedium!.copyWith(
+          TextStyle(
             color: AndroidMaterialColors.black,
-            fontSize: _getDefaultFontSize(platform),
+            fontSize: _getDefaultFontSize(defaultTargetPlatform),
           ),
           BoxDecoration(
             color: AndroidMaterialColors.white.withOpacity(0.9),
             borderRadius: const BorderRadius.all(Radius.circular(4)),
           ),
         ),
-      ThemeData(
-        brightness: Brightness.light,
-        :final TextTheme textTheme,
-        :final TargetPlatform platform,
-      ) =>
+      Brightness.light =>
         (
-          textTheme.bodyMedium!.copyWith(
+          TextStyle(
             color: AndroidMaterialColors.white,
-            fontSize: _getDefaultFontSize(platform),
+            fontSize: _getDefaultFontSize(defaultTargetPlatform),
           ),
           BoxDecoration(
             color: AndroidMaterialColors.grey700.withOpacity(0.9),
             borderRadius: const BorderRadius.all(Radius.circular(4)),
           ),
         ),
-    };
+      null => (const TextStyle(), const BoxDecoration())
+    };// TODO(Renzo-Olivares): was using ThemeData and TextTheme.
 
-    final TooltipThemeData tooltipTheme = _tooltipTheme;
     final BoxConstraints defaultConstraints = BoxConstraints(
-      minHeight: widget.height ?? tooltipTheme.height ?? _getDefaultTooltipHeight(),
+      minHeight: widget.height ?? _getDefaultTooltipHeight(),
     );
     final _TooltipOverlay overlayChild = _TooltipOverlay(
       richMessage: widget.richMessage ?? TextSpan(text: widget.message),
-      constraints: widget.constraints ?? tooltipTheme.constraints ?? defaultConstraints,
-      padding: widget.padding ?? tooltipTheme.padding ?? _getDefaultPadding(),
-      margin: widget.margin ?? tooltipTheme.margin ?? _defaultMargin,
+      constraints: widget.constraints ?? defaultConstraints,
+      padding: widget.padding ?? _getDefaultPadding(),
+      margin: widget.margin ?? _defaultMargin,
       onEnter: _handleMouseEnter,
       onExit: _handleMouseExit,
-      decoration: widget.decoration ?? tooltipTheme.decoration ?? defaultDecoration,
-      textStyle: widget.textStyle ?? tooltipTheme.textStyle ?? defaultTextStyle,
-      textAlign: widget.textAlign ?? tooltipTheme.textAlign ?? _defaultTextAlign,
+      decoration: widget.decoration ?? defaultDecoration,
+      textStyle: widget.textStyle ?? defaultTextStyle,
+      textAlign: widget.textAlign ?? _defaultTextAlign,
       animation: _overlayAnimation,
       target: target,
       verticalOffset:
-          widget.verticalOffset ?? tooltipTheme.verticalOffset ?? _defaultVerticalOffset,
-      preferBelow: widget.preferBelow ?? tooltipTheme.preferBelow ?? _defaultPreferBelow,
+          widget.verticalOffset ?? _defaultVerticalOffset,
+      preferBelow: widget.preferBelow ?? _defaultPreferBelow,
       ignorePointer: widget.ignorePointer ?? widget.message != null,
     );
 
@@ -928,7 +916,6 @@ class TooltipState extends State<Tooltip> with SingleTickerProviderStateMixin {
     assert(debugCheckHasOverlay(context));
     final bool excludeFromSemantics =
         widget.excludeFromSemantics ??
-        _tooltipTheme.excludeFromSemantics ??
         _defaultExcludeFromSemantics;
     Widget result = Semantics(
       tooltip: excludeFromSemantics ? null : _tooltipMessage,
@@ -1075,4 +1062,36 @@ class _TooltipOverlay extends StatelessWidget {
       ),
     );
   }
+}
+
+/// The method of interaction that will trigger a tooltip.
+/// Used in [Tooltip.triggerMode] and [TooltipThemeData.triggerMode].
+///
+/// On desktop, a tooltip will be shown as soon as a pointer hovers over
+/// the widget, regardless of the value of [Tooltip.triggerMode].
+///
+/// See also:
+///
+///   * [Tooltip.waitDuration], which defines the length of time that
+///     a pointer must hover over a tooltip's widget before the tooltip
+///     will be shown.
+enum TooltipTriggerMode {
+  /// Tooltip will only be shown by calling `ensureTooltipVisible`.
+  manual,
+
+  /// Tooltip will be shown after a long press.
+  ///
+  /// See also:
+  ///
+  ///   * [GestureDetector.onLongPress], the event that is used for trigger.
+  ///   * [Feedback.forLongPress], the feedback method called when feedback is enabled.
+  longPress,
+
+  /// Tooltip will be shown after a single tap.
+  ///
+  /// See also:
+  ///
+  ///   * [GestureDetector.onTap], the event that is used for trigger.
+  ///   * [Feedback.forTap], the feedback method called when feedback is enabled.
+  tap,
 }

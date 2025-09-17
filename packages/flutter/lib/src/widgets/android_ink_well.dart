@@ -17,9 +17,11 @@ import 'dart:collection';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/rendering.dart';
+import 'package:flutter/src/widgets/android_constants.dart';
 
 import 'actions.dart';
 import 'android_ink_highlight.dart';
+import 'android_ink_ripple.dart';
 import 'android_material.dart';// For InkFeatures, RectCallback, MaterialInkController, Material.of(context)
 import 'automatic_keep_alive.dart';
 import 'basic.dart';
@@ -32,7 +34,7 @@ import 'framework.dart';
 import 'gesture_detector.dart';
 // import 'material_state.dart'; // can be replaced by WidgetState?
 import 'media_query.dart';
-import 'theme.dart';
+// import 'theme.dart';
 import 'widget_state.dart';
 
 // Examples can assume:
@@ -711,7 +713,7 @@ class InkResponse extends StatelessWidget {
   /// in a table.
   @mustCallSuper
   bool debugCheckContext(BuildContext context) {
-    assert(debugCheckHasMaterial(context));
+    // assert(debugCheckHasMaterial(context)); // TODO(Renzo-Olivares): re-implement this.
     assert(debugCheckHasDirectionality(context));
     return true;
   }
@@ -1025,9 +1027,9 @@ class _InkResponseState extends State<_InkResponseStateWidget>
             widget.overlayColor?.resolve(statesController.value) ??
             switch (type) {
               // Use the backwards compatible defaults
-              _HighlightType.pressed => widget.highlightColor ?? Theme.of(context).highlightColor,
-              _HighlightType.focus => widget.focusColor ?? Theme.of(context).focusColor,
-              _HighlightType.hover => widget.hoverColor ?? Theme.of(context).hoverColor,
+              _HighlightType.pressed => widget.highlightColor ?? AndroidMaterialColors.grey700,// TODO(Renzo-Olivares): fallback was Theme.of(context).highlightColor,
+              _HighlightType.focus => widget.focusColor ?? AndroidMaterialColors.grey700,// TODO(Renzo-Olivares): fallback was Theme.of(context).focusColor,
+              _HighlightType.hover => widget.hoverColor ?? AndroidMaterialColors.grey700,// TODO(Renzo-Olivares): fallback was Theme.of(context).hoverColor,
             };
         final RenderBox referenceBox = context.findRenderObject()! as RenderBox;
         _highlights[type] = InkHighlight(
@@ -1083,8 +1085,7 @@ class _InkResponseState extends State<_InkResponseStateWidget>
     final Offset position = referenceBox.globalToLocal(globalPosition);
     final Color color =
         widget.overlayColor?.resolve(statesController.value) ??
-        widget.splashColor ??
-        Theme.of(context).splashColor;
+        widget.splashColor ?? AndroidMaterialColors.grey700;// TODO(Renzo-Olivares): fallback was Theme.of(context).splashColor
     final RectCallback? rectCallback = widget.containedInkWell
         ? widget.getRectCallback!(referenceBox)
         : null;
@@ -1103,7 +1104,7 @@ class _InkResponseState extends State<_InkResponseStateWidget>
       } // else we're probably in deactivate()
     }
 
-    splash = (widget.splashFactory ?? Theme.of(context).splashFactory).create(
+    splash = (widget.splashFactory ?? InkRipple.splashFactory).create(
       controller: inkController,
       referenceBox: referenceBox,
       position: position,
@@ -1116,6 +1117,20 @@ class _InkResponseState extends State<_InkResponseStateWidget>
       onRemoved: onRemoved,
       textDirection: Directionality.of(context),
     );
+
+    // was splash = (widget.splashFactory ?? Theme.of(context).splashFactory).create(
+    //   controller: inkController,
+    //   referenceBox: referenceBox,
+    //   position: position,
+    //   color: color,
+    //   containedInkWell: widget.containedInkWell,
+    //   rectCallback: rectCallback,
+    //   radius: widget.radius,
+    //   borderRadius: borderRadius,
+    //   customBorder: customBorder,
+    //   onRemoved: onRemoved,
+    //   textDirection: Directionality.of(context),
+    // );
 
     return splash;
   }
@@ -1323,7 +1338,7 @@ class _InkResponseState extends State<_InkResponseStateWidget>
     assert(widget.debugCheckContext(context));
     super.build(context); // See AutomaticKeepAliveClientMixin.
 
-    final ThemeData theme = Theme.of(context);
+    // final ThemeData theme = Theme.of(context);
     const Set<WidgetState> highlightableStates = <WidgetState>{
       WidgetState.focused,
       WidgetState.hovered,
@@ -1353,11 +1368,11 @@ class _InkResponseState extends State<_InkResponseStateWidget>
         // Material Design spec. A separate highlight is no longer used.
         // See https://material.io/design/interaction/states.html#pressed
         _HighlightType.pressed =>
-          widget.overlayColor?.resolve(pressed) ?? widget.highlightColor ?? theme.highlightColor,
+          widget.overlayColor?.resolve(pressed) ?? widget.highlightColor ?? AndroidMaterialColors.grey700,// TODO(Renzo-Olivares): fallback was theme.highlightColor
         _HighlightType.focus =>
-          widget.overlayColor?.resolve(focused) ?? widget.focusColor ?? theme.focusColor,
+          widget.overlayColor?.resolve(focused) ?? widget.focusColor ?? AndroidMaterialColors.grey700,// TODO(Renzo-Olivares): fallback was theme.focusColor
         _HighlightType.hover =>
-          widget.overlayColor?.resolve(hovered) ?? widget.hoverColor ?? theme.hoverColor,
+          widget.overlayColor?.resolve(hovered) ?? widget.hoverColor ?? AndroidMaterialColors.grey700,// TODO(Renzo-Olivares): fallback was theme.hoverColor
       };
     }
 
@@ -1367,8 +1382,7 @@ class _InkResponseState extends State<_InkResponseStateWidget>
 
     _currentSplash?.color =
         widget.overlayColor?.resolve(statesController.value) ??
-        widget.splashColor ??
-        Theme.of(context).splashColor;
+        widget.splashColor ?? AndroidMaterialColors.grey700;// TODO(Renzo-Olivares): fallback theme.splashColor.
 
     final MouseCursor effectiveMouseCursor = WidgetStateProperty.resolveAs<MouseCursor>(
       widget.mouseCursor ?? WidgetStateMouseCursor.clickable,

@@ -25,7 +25,7 @@ import 'framework.dart';
 import 'implicit_animations.dart';
 import 'lookup_boundary.dart';
 import 'notification_listener.dart';
-import 'theme.dart';
+// import 'theme.dart';
 import 'ticker_provider.dart';
 
 // Examples can assume:
@@ -459,16 +459,16 @@ class _MaterialState extends State<Material> with TickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
+    // final ThemeData theme = Theme.of(context);
     final Color? backgroundColor =
         widget.color ??
         switch (widget.type) {
-          MaterialType.canvas => theme.canvasColor,
-          MaterialType.card => theme.cardColor,
+          MaterialType.canvas => AndroidMaterialColors.grey700,// TODO(Renzo-Olivares): was theme.canvasColor,
+          MaterialType.card => AndroidMaterialColors.grey700,// TODO(Renzo-Olivares): was theme.cardColor,
           MaterialType.button || MaterialType.circle || MaterialType.transparency => null,
         };
     final Color modelShadowColor =
-        widget.shadowColor ?? (theme.useMaterial3 ? theme.colorScheme.shadow : theme.shadowColor);
+        widget.shadowColor ?? AndroidMaterialColors.grey700;// TODO(Renzo-Olivares): was (theme.useMaterial3 ? theme.colorScheme.shadow : theme.shadowColor);
     assert(
       backgroundColor != null || widget.type == MaterialType.transparency,
       'If Material type is not MaterialType.transparency, a color must '
@@ -480,7 +480,7 @@ class _MaterialState extends State<Material> with TickerProviderStateMixin {
     Widget? contents = widget.child;
     if (contents != null) {
       contents = AnimatedDefaultTextStyle(
-        style: widget.textStyle ?? Theme.of(context).textTheme.bodyMedium!,
+        style: widget.textStyle ?? const TextStyle(color: AndroidMaterialColors.black),// TODO(Renzo-Olivares): was Theme.of(context).textTheme.bodyMedium!,
         duration: widget.animationDuration,
         child: contents,
       );
@@ -518,7 +518,7 @@ class _MaterialState extends State<Material> with TickerProviderStateMixin {
     // we choose not to as we want the change from the fast-path to the
     // slow-path to be noticeable in the construction site of Material.
     if (widget.type == MaterialType.canvas && shape == null) {
-      final Color color = theme.useMaterial3
+      final Color color = true// TODO(Renzo-Olivares): was theme.useMaterial3
           ? ElevationOverlay.applySurfaceTint(
               backgroundColor!,
               widget.surfaceTintColor,
@@ -924,7 +924,7 @@ class _MaterialInteriorState extends AnimatedWidgetBaseState<_MaterialInterior> 
   Widget build(BuildContext context) {
     final ShapeBorder shape = _border!.evaluate(animation)!;
     final double elevation = _elevation!.evaluate(animation);
-    final Color color = Theme.of(context).useMaterial3
+    final Color color = true // TODO(Renzo-Olivares): was Theme.of(context).useMaterial3
         ? ElevationOverlay.applySurfaceTint(
             widget.color,
             _surfaceTintColor?.evaluate(animation),

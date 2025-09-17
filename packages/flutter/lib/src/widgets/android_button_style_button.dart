@@ -29,8 +29,8 @@ import 'constants.dart';//kMinInteractiveDimension
 import 'focus_manager.dart';
 import 'framework.dart';
 // import 'outlined_button.dart';//for docs
-import 'theme.dart';
-import 'theme_data.dart';
+// import 'theme.dart';
+// import 'theme_data.dart';
 import 'ticker_provider.dart';
 import 'widget_state.dart';// can be replaced with WidgetStates
 
@@ -378,8 +378,8 @@ class _ButtonStyleState extends State<ButtonStyleButton> with TickerProviderStat
 
   @override
   Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    final IconThemeData iconTheme = IconTheme.of(context);
+    // final ThemeData theme = Theme.of(context); // TODO(Renzo-Olivares).
+    // final IconThemeData iconTheme = IconTheme.of(context);
     final ButtonStyle? widgetStyle = widget.style;
     final ButtonStyle? themeStyle = widget.themeStyleOf(context);
     final ButtonStyle defaultStyle = widget.defaultStyleOf(context);
@@ -552,29 +552,46 @@ class _ButtonStyleState extends State<ButtonStyleButton> with TickerProviderStat
       result = resolvedBackgroundBuilder(context, statesController.value, result);
     }
 
-    result = AnimatedTheme(
-      duration: resolvedAnimationDuration,
-      data: theme.copyWith(
-        iconTheme: iconTheme.merge(IconThemeData(color: resolvedIconColor, size: resolvedIconSize)),
-      ),
-      child: InkWell(
-        onTap: widget.onPressed,
-        onLongPress: widget.onLongPress,
-        onHover: widget.onHover,
-        mouseCursor: mouseCursor,
-        enableFeedback: resolvedEnableFeedback,
-        focusNode: widget.focusNode,
-        canRequestFocus: widget.enabled,
-        onFocusChange: widget.onFocusChange,
-        autofocus: widget.autofocus,
-        splashFactory: resolvedSplashFactory,
-        overlayColor: overlayColor,
-        highlightColor: AndroidMaterialColors.transparent,
-        customBorder: resolvedShape!.copyWith(side: resolvedSide),
-        statesController: statesController,
-        child: result,
-      ),
-    );
+    // result = AnimatedTheme(
+    //   duration: resolvedAnimationDuration,
+    //   data: theme.copyWith(
+    //     iconTheme: iconTheme.merge(IconThemeData(color: resolvedIconColor, size: resolvedIconSize)),
+    //   ),
+    //   child: InkWell(
+    //     onTap: widget.onPressed,
+    //     onLongPress: widget.onLongPress,
+    //     onHover: widget.onHover,
+    //     mouseCursor: mouseCursor,
+    //     enableFeedback: resolvedEnableFeedback,
+    //     focusNode: widget.focusNode,
+    //     canRequestFocus: widget.enabled,
+    //     onFocusChange: widget.onFocusChange,
+    //     autofocus: widget.autofocus,
+    //     splashFactory: resolvedSplashFactory,
+    //     overlayColor: overlayColor,
+    //     highlightColor: AndroidMaterialColors.transparent,
+    //     customBorder: resolvedShape!.copyWith(side: resolvedSide),
+    //     statesController: statesController,
+    //     child: result,
+    //   ),
+    // );
+    result = InkWell(
+      onTap: widget.onPressed,
+      onLongPress: widget.onLongPress,
+      onHover: widget.onHover,
+      mouseCursor: mouseCursor,
+      enableFeedback: resolvedEnableFeedback,
+      focusNode: widget.focusNode,
+      canRequestFocus: widget.enabled,
+      onFocusChange: widget.onFocusChange,
+      autofocus: widget.autofocus,
+      splashFactory: resolvedSplashFactory,
+      overlayColor: overlayColor,
+      highlightColor: AndroidMaterialColors.transparent,
+      customBorder: resolvedShape!.copyWith(side: resolvedSide),
+      statesController: statesController,
+      child: result,
+    );// TODO(Renzo-Olivares): removed AnimatedTheme.
 
     if (widget.tooltip != null) {
       result = Tooltip(message: widget.tooltip, child: result);
