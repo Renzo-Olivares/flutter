@@ -915,6 +915,7 @@ class SelectableRegionState extends State<SelectableRegion>
   void _handleMouseTapUp(TapDragUpDetails details) {
     if (defaultTargetPlatform == TargetPlatform.iOS &&
         _positionIsOnActiveSelection(globalPosition: details.globalPosition)) {
+      debugPrint('hello world');
       // On iOS when the tap occurs on the previous selection, instead of
       // moving the selection, the context menu will be toggled.
       final bool toolbarIsVisible = _selectionOverlay?.toolbarIsVisible ?? false;
@@ -1124,18 +1125,13 @@ class SelectableRegionState extends State<SelectableRegion>
         (_selectionOverlay!.isDraggingStartHandle || _selectionOverlay!.isDraggingEndHandle);
     if (widget.selectionControls is! TextSelectionHandleControls) {
       if (!draggingHandles) {
-        _selectionOverlay!.hideMagnifier();
-        _selectionOverlay!.showToolbar();
+        _hideMagnifierIfSupportedByPlatform();
+        _showToolbar();
       }
     } else {
       if (!draggingHandles) {
-        _selectionOverlay!.hideMagnifier();
-        _selectionOverlay!.showToolbar(
-          context: context,
-          contextMenuBuilder: (BuildContext context) {
-            return widget.contextMenuBuilder!(context, this);
-          },
-        );
+        _hideMagnifierIfSupportedByPlatform();
+        _showToolbar();
       }
     }
     _finalizeSelection();
@@ -1201,7 +1197,7 @@ class SelectableRegionState extends State<SelectableRegion>
     final Matrix4 globalTransform = _selectable!.getTransformTo(null);
     _selectionStartHandleDragPosition = MatrixUtils.transformPoint(globalTransform, localPosition);
 
-    _selectionOverlay!.showMagnifier(
+    _showMagnifierIfSupportedByPlatform(
       _buildInfoForMagnifier(details.globalPosition, _selectionDelegate.value.startSelectionPoint!),
     );
     _updateSelectedContentIfNeeded();
@@ -1216,7 +1212,7 @@ class SelectableRegionState extends State<SelectableRegion>
         Offset(0, _selectionDelegate.value.startSelectionPoint!.lineHeight / 2);
     _triggerSelectionStartEdgeUpdate();
 
-    _selectionOverlay!.updateMagnifier(
+    _showMagnifierIfSupportedByPlatform(
       _buildInfoForMagnifier(details.globalPosition, _selectionDelegate.value.startSelectionPoint!),
     );
     _updateSelectedContentIfNeeded();
@@ -1229,8 +1225,8 @@ class SelectableRegionState extends State<SelectableRegion>
     final Matrix4 globalTransform = _selectable!.getTransformTo(null);
     _selectionEndHandleDragPosition = MatrixUtils.transformPoint(globalTransform, localPosition);
 
-    _selectionOverlay!.showMagnifier(
-      _buildInfoForMagnifier(details.globalPosition, _selectionDelegate.value.endSelectionPoint!),
+    _showMagnifierIfSupportedByPlatform(
+      _buildInfoForMagnifier(details.globalPosition, _selectionDelegate.value.startSelectionPoint!),
     );
     _updateSelectedContentIfNeeded();
   }
@@ -1244,7 +1240,7 @@ class SelectableRegionState extends State<SelectableRegion>
         Offset(0, _selectionDelegate.value.endSelectionPoint!.lineHeight / 2);
     _triggerSelectionEndEdgeUpdate();
 
-    _selectionOverlay!.updateMagnifier(
+    _showMagnifierIfSupportedByPlatform(
       _buildInfoForMagnifier(details.globalPosition, _selectionDelegate.value.endSelectionPoint!),
     );
     _updateSelectedContentIfNeeded();
@@ -1380,6 +1376,44 @@ class SelectableRegionState extends State<SelectableRegion>
       },
     );
     return true;
+  }
+
+  // Shows the magnifier on supported platforms at the given offset, currently
+  // only Android and iOS.
+  void _showMagnifierIfSupportedByPlatform(MagnifierInfo magnifierInfo) {
+    if (_selectionOverlay == null || kIsWeb) {
+      return;
+    }
+    switch (defaultTargetPlatform) {
+      case TargetPlatform.android:
+      case TargetPlatform.iOS:
+        _selectionOverlay!.showMagnifier(magnifierInfo);
+        if (_selectionOverlay!.magnifierExists) {
+          _selectionOverlay!.updateMagnifier(magnifierInfo);
+        } else {
+          _selectionOverlay!.showMagnifier(magnifierInfo);
+        }
+      case TargetPlatform.fuchsia:
+      case TargetPlatform.linux:
+      case TargetPlatform.macOS:
+      case TargetPlatform.windows:
+    }
+  }
+
+  // Hides the magnifier on supported platforms, currently only Android and iOS.
+  void _hideMagnifierIfSupportedByPlatform() {
+    if (kIsWeb) {
+      return;
+    }
+    switch (defaultTargetPlatform) {
+      case TargetPlatform.android:
+      case TargetPlatform.iOS:
+        _selectionOverlay?.hideMagnifier();
+      case TargetPlatform.fuchsia:
+      case TargetPlatform.linux:
+      case TargetPlatform.macOS:
+      case TargetPlatform.windows:
+    }
   }
 
   /// Sets or updates selection end edge to the `offset` location.
@@ -1923,7 +1957,7 @@ class SelectableRegionState extends State<SelectableRegion>
     _selectionStatusNotifier.dispose();
     // In case dispose was triggered before gesture end, remove the magnifier
     // so it doesn't remain stuck in the overlay forever.
-    _selectionOverlay?.hideMagnifier();
+    _hideMagnifierIfSupportedByPlatform();
     _selectionOverlay?.dispose();
     _selectionOverlay = null;
     widget.focusNode?.removeListener(_handleFocusChanged);
