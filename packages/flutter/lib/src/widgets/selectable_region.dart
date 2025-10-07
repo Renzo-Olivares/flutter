@@ -504,9 +504,11 @@ class SelectableRegionState extends State<SelectableRegion>
     return Action<T>.overridable(context: context, defaultAction: defaultAction);
   }
 
+  bool get _supportsPlatformContextMenu => kIsWeb && defaultTargetPlatform != TargetPlatform.iOS;
+
   void _handleFocusChanged() {
     if (!_focusNode.hasFocus) {
-      if (kIsWeb) {
+      if (_supportsPlatformContextMenu) {
         PlatformSelectableRegionContextMenu.detach(_selectionDelegate);
       }
       if (SchedulerBinding.instance.lifecycleState == AppLifecycleState.resumed) {
@@ -522,7 +524,7 @@ class SelectableRegionState extends State<SelectableRegion>
         _finalizeSelectableRegionStatus();
       }
     }
-    if (kIsWeb) {
+    if (_supportsPlatformContextMenu) {
       PlatformSelectableRegionContextMenu.attach(_selectionDelegate);
     }
   }
@@ -1353,7 +1355,7 @@ class SelectableRegionState extends State<SelectableRegion>
     // functionality depending on the browser (such as translate). Due to this,
     // we should not show a Flutter toolbar for the editable text elements
     // unless the browser's context menu is explicitly disabled.
-    if (kIsWeb && BrowserContextMenu.enabled) {
+    if (_supportsPlatformContextMenu && BrowserContextMenu.enabled) {
       return false;
     }
 
@@ -1381,7 +1383,7 @@ class SelectableRegionState extends State<SelectableRegion>
   // Shows the magnifier on supported platforms at the given offset, currently
   // only Android and iOS.
   void _showMagnifierIfSupportedByPlatform(MagnifierInfo magnifierInfo) {
-    if (_selectionOverlay == null || kIsWeb) {
+    if (_selectionOverlay == null || _supportsPlatformContextMenu) {
       return;
     }
     switch (defaultTargetPlatform) {
@@ -1402,7 +1404,7 @@ class SelectableRegionState extends State<SelectableRegion>
 
   // Hides the magnifier on supported platforms, currently only Android and iOS.
   void _hideMagnifierIfSupportedByPlatform() {
-    if (kIsWeb) {
+    if (_supportsPlatformContextMenu) {
       return;
     }
     switch (defaultTargetPlatform) {
@@ -1974,7 +1976,7 @@ class SelectableRegionState extends State<SelectableRegion>
       selectionStatusNotifier: _selectionStatusNotifier,
       child: SelectionContainer(registrar: this, delegate: _selectionDelegate, child: widget.child),
     );
-    if (kIsWeb) {
+    if (_supportsPlatformContextMenu) {
       result = PlatformSelectableRegionContextMenu(child: result);
     }
     return CompositedTransformTarget(
