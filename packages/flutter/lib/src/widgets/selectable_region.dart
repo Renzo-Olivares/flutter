@@ -505,7 +505,7 @@ class SelectableRegionState extends State<SelectableRegion>
     return Action<T>.overridable(context: context, defaultAction: defaultAction);
   }
 
-  bool get _supportsPlatformContextMenu => kIsWeb && defaultTargetPlatform != TargetPlatform.iOS;
+  bool get _supportsPlatformContextMenu => kIsWeb;
 
   void _handleFocusChanged() {
     if (!_focusNode.hasFocus) {
@@ -918,7 +918,6 @@ class SelectableRegionState extends State<SelectableRegion>
   void _handleMouseTapUp(TapDragUpDetails details) {
     if (defaultTargetPlatform == TargetPlatform.iOS &&
         _positionIsOnActiveSelection(globalPosition: details.globalPosition)) {
-      debugPrint('hello world');
       // On iOS when the tap occurs on the previous selection, instead of
       // moving the selection, the context menu will be toggled.
       final bool toolbarIsVisible = _selectionOverlay?.toolbarIsVisible ?? false;
@@ -1981,6 +1980,7 @@ class SelectableRegionState extends State<SelectableRegion>
       result = PlatformSelectableRegionContextMenu(child: result);
     }
     return TapRegion(
+      groupId: 'SelectableRegion',
       onTapOutside: (PointerDownEvent event) {
         clearSelection();
       },

@@ -1777,7 +1777,10 @@ class SelectionOverlay {
         dragStartBehavior: dragStartBehavior,
       );
     }
-    return TextFieldTapRegion(child: ExcludeSemantics(child: handle));
+    return TapRegion(
+      groupId: 'SelectableRegion',
+      child: TextFieldTapRegion(child: ExcludeSemantics(child: handle)),
+    );
   }
 
   Widget _buildEndHandle(BuildContext context) {
@@ -1805,7 +1808,10 @@ class SelectionOverlay {
         dragStartBehavior: dragStartBehavior,
       );
     }
-    return TextFieldTapRegion(child: ExcludeSemantics(child: handle));
+    return TapRegion(
+      groupId: 'SelectableRegion',
+      child: TextFieldTapRegion(child: ExcludeSemantics(child: handle)),
+    );
   }
 
   // Build the toolbar via TextSelectionControls.
