@@ -14,6 +14,7 @@ import 'dart:math';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
@@ -1979,18 +1980,23 @@ class SelectableRegionState extends State<SelectableRegion>
     if (_supportsPlatformContextMenu) {
       result = PlatformSelectableRegionContextMenu(child: result);
     }
-    return CompositedTransformTarget(
-      link: _toolbarLayerLink,
-      child: RawGestureDetector(
-        gestures: _gestureRecognizers,
-        behavior: HitTestBehavior.translucent,
-        excludeFromSemantics: true,
-        child: Actions(
-          actions: _actions,
-          child: Focus.withExternalFocusNode(
-            includeSemantics: false,
-            focusNode: _focusNode,
-            child: result,
+    return TapRegion(
+      onTapOutside: (PointerDownEvent event) {
+        clearSelection();
+      },
+      child: CompositedTransformTarget(
+        link: _toolbarLayerLink,
+        child: RawGestureDetector(
+          gestures: _gestureRecognizers,
+          behavior: HitTestBehavior.translucent,
+          excludeFromSemantics: true,
+          child: Actions(
+            actions: _actions,
+            child: Focus.withExternalFocusNode(
+              includeSemantics: false,
+              focusNode: _focusNode,
+              child: result,
+            ),
           ),
         ),
       ),
