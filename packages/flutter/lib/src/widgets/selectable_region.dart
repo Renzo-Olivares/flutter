@@ -505,7 +505,7 @@ class SelectableRegionState extends State<SelectableRegion>
     return Action<T>.overridable(context: context, defaultAction: defaultAction);
   }
 
-  bool get _supportsPlatformContextMenu => kIsWeb;
+  bool get _supportsPlatformContextMenu => kIsWeb && defaultTargetPlatform != TargetPlatform.iOS;
 
   void _handleFocusChanged() {
     if (!_focusNode.hasFocus) {
@@ -1010,6 +1010,9 @@ class SelectableRegionState extends State<SelectableRegion>
     _finalizeSelection();
     _updateSelectedContentIfNeeded();
     _finalizeSelectableRegionStatus();
+    if (_supportsPlatformContextMenu) {
+      PlatformSelectableRegionContextMenu.updateText(_selectionDelegate);
+    }
     _showToolbar();
     if (defaultTargetPlatform == TargetPlatform.android) {
       _showHandles();

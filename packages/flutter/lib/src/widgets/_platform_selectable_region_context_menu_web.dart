@@ -61,10 +61,20 @@ class PlatformSelectableRegionContextMenu extends StatelessWidget {
     }
   }
 
+  /// See `_platform_selectable_region_context_menu_io.dart`.
+  static void updateText(SelectionContainerDelegate client) {
+    if (_activeClient != client) {
+      return;
+    }
+    _updateSelection();
+  }
+
   static SelectionContainerDelegate? _activeClient;
 
   // Keeps track if this widget has already registered its view factories or not.
   static String? _registeredViewType;
+
+  static web.HTMLElement? _element;
 
   static RegisterViewFactory get _registerViewFactory =>
       debugOverrideRegisterViewFactory ?? ui_web.platformViewRegistry.registerViewFactory;
@@ -82,6 +92,25 @@ class PlatformSelectableRegionContextMenu extends StatelessWidget {
     _registeredViewType = null;
   }
 
+  static void _updateSelection() {
+    final SelectionContainerDelegate? client = _activeClient;
+    final web.HTMLElement? element = _element;
+    if (client == null || element == null) {
+      return;
+    }
+    debugPrint('_updateSelection');
+    // The innerText must contain the text in order to be selected by
+    // the browser.
+    element.innerText = client.getSelectedContent()?.plainText ?? '';
+
+    // Programmatically select the dom element in browser.
+    final web.Range range = web.document.createRange()..selectNode(element);
+
+    web.window.getSelection()
+      ?..removeAllRanges()
+      ..addRange(range);
+  }
+
   // Registers the view factories for the interceptor widgets.
   static void _register() {
     assert(_registeredViewType == null);
@@ -90,23 +119,15 @@ class PlatformSelectableRegionContextMenu extends StatelessWidget {
       web.MouseEvent event,
     ) {
       final SelectionContainerDelegate? client = _activeClient;
-      if (client != null) {
-        // Converts the html right click event to flutter coordinate.
-        final Offset localOffset = Offset(event.offsetX.toDouble(), event.offsetY.toDouble());
-        final Matrix4 transform = client.getTransformTo(null);
-        final Offset globalOffset = MatrixUtils.transformPoint(transform, localOffset);
-        client.dispatchSelectionEvent(SelectWordSelectionEvent(globalPosition: globalOffset));
-        // The innerText must contain the text in order to be selected by
-        // the browser.
-        element.innerText = client.getSelectedContent()?.plainText ?? '';
-
-        // Programmatically select the dom element in browser.
-        final web.Range range = web.document.createRange()..selectNode(element);
-
-        web.window.getSelection()
-          ?..removeAllRanges()
-          ..addRange(range);
+      if (client == null) {
+        return;
       }
+      // Converts the html right click event to flutter coordinate.
+      final Offset localOffset = Offset(event.offsetX.toDouble(), event.offsetY.toDouble());
+      final Matrix4 transform = client.getTransformTo(null);
+      final Offset globalOffset = MatrixUtils.transformPoint(transform, localOffset);
+      client.dispatchSelectionEvent(SelectWordSelectionEvent(globalPosition: globalOffset));
+      _updateSelection();
     });
   }
 
@@ -119,8 +140,8 @@ class PlatformSelectableRegionContextMenu extends StatelessWidget {
     sheet.insertRule(_kClassRule, 0);
     sheet.insertRule(_kClassSelectionRule, 1);
 
-    _registerViewFactory(_viewType, (int viewId, {Object? params}) {
-      final web.HTMLElement htmlElement = web.document.createElement('div') as web.HTMLElement;
+    _registerViewFactory(_viewType, (int viewId) {
+      final web.HTMLElement htmlElement = _element = web.document.createElement('div') as web.HTMLElement;
       htmlElement
         ..style.width = '100%'
         ..style.height = '100%'
@@ -146,7 +167,8 @@ class PlatformSelectableRegionContextMenu extends StatelessWidget {
   Widget build(BuildContext context) {
     return Stack(
       children: <Widget>[
-        const Positioned.fill(child: HtmlElementView(viewType: _viewType)),
+        const Positioned.fill(
+          child: HtmlElementView(viewType: _viewType)),
         child,
       ],
     );
