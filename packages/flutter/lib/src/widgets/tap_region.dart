@@ -16,6 +16,7 @@ import 'package:flutter/rendering.dart';
 import 'editable_text.dart';
 import 'framework.dart';
 import 'routes.dart';
+import 'selectable_region.dart';
 
 // Enable if you want verbose logging about tap region changes.
 const bool _kDebugTapRegion = false;
@@ -196,7 +197,6 @@ class TapRegionSurface extends SingleChildRenderObjectWidget {
 ///   [RenderTapRegionSurface], which is a [TapRegionRegistry].
 class RenderTapRegionSurface extends RenderProxyBoxWithHitTestBehavior
     implements TapRegionRegistry {
-  final Expando<BoxHitTestResult> _cachedResults = Expando<BoxHitTestResult>();
   final Set<RenderTapRegion> _registeredRegions = <RenderTapRegion>{};
   final Map<Object?, Set<RenderTapRegion>> _groupIdToRegions = <Object?, Set<RenderTapRegion>>{};
 
@@ -231,15 +231,11 @@ class RenderTapRegionSurface extends RenderProxyBoxWithHitTestBehavior
       return false;
     }
 
-    final bool hitTarget = hitTestChildren(result, position: position) || hitTestSelf(position);
-
-    if (hitTarget) {
-      final BoxHitTestEntry entry = BoxHitTestEntry(this, position);
-      _cachedResults[entry] = result;
-      result.add(entry);
+    if (hitTestChildren(result, position: position) || hitTestSelf(position)) {
+      result.add(BoxHitTestEntry(this, position));
+      return true;
     }
-
-    return hitTarget;
+    return false;
   }
 
   @override
@@ -263,12 +259,8 @@ class RenderTapRegionSurface extends RenderProxyBoxWithHitTestBehavior
       return;
     }
 
-    final BoxHitTestResult? result = _cachedResults[entry];
-
-    if (result == null) {
-      assert(_tapRegionDebug('Ignored tap event because no surface descendants were hit.'));
-      return;
-    }
+    final BoxHitTestResult result = BoxHitTestResult();
+    hitTestChildren(result, position: event.position);
 
     // A child was hit, so we need to call onTapOutside / onTapUpOutside for
     // those regions or groups of regions that were not hit.
@@ -288,10 +280,14 @@ class RenderTapRegionSurface extends RenderProxyBoxWithHitTestBehavior
     };
     // If they're not inside, then they're outside.
     final Set<RenderTapRegion> outsideRegions = _registeredRegions.difference(insideRegions);
+    debugPrint(
+      'handleEvent ${result.path.length} ,$event, ${MatrixUtils.transformPoint(entry.transform!, event.position)}, $hitRegions, $insideRegions, $outsideRegions',
+    );
 
     bool consumeOutsideTaps = false;
     for (final RenderTapRegion region in outsideRegions) {
       if (event is PointerDownEvent) {
+        debugPrint('Calling onTapOutside for $size, $region, with groupID ${region.groupId}');
         assert(_tapRegionDebug('Calling onTapOutside for $region'));
         region.onTapOutside?.call(event);
       } else if (event is PointerUpEvent) {
@@ -331,10 +327,19 @@ class RenderTapRegionSurface extends RenderProxyBoxWithHitTestBehavior
     Set<RenderTapRegion> detectors,
     Iterable<HitTestEntry> hitTestPath,
   ) {
+    debugPrint('get regions hit for regions:');
+    for (final HitTestEntry<HitTestTarget> entry in hitTestPath) {
+      debugPrint('entry: $entry');
+      if (entry.target case final HitTestTarget target) {
+        if (detectors.contains(target)) {
+          debugPrint('target: $target, for entry: $entry in region');
+        }
+      }
+    }
     return <HitTestTarget>{
       for (final HitTestEntry<HitTestTarget> entry in hitTestPath)
         if (entry.target case final HitTestTarget target)
-          if (_registeredRegions.contains(target)) target,
+          if (detectors.contains(target)) target,
     };
   }
 }
@@ -695,6 +700,44 @@ class RenderTapRegion extends RenderProxyBoxWithHitTestBehavior {
       _registry!.registerTapRegion(this);
     }
     _isRegistered = shouldBeRegistered;
+  }
+
+  bool didHits(BoxHitTestResult result, {required Offset position}) {
+    bool hitTarget = false;
+    if (size.contains(position)) {
+      hitTarget = hitTestChildren(result, position: position) || hitTestSelf(position);
+      if (groupId == SelectableRegion) {
+        debugPrint('RenderTapRegion contains positions $hitTarget, $behavior $this');
+      }
+      if (hitTarget || behavior == HitTestBehavior.translucent) {
+        result.add(BoxHitTestEntry(this, position));
+      }
+    } else {
+      if (groupId == SelectableRegion) {
+        debugPrint('RenderTapRegion does not contains positions $this');
+      }
+    }
+    return hitTarget;
+  }
+
+  @override
+  bool hitTest(BoxHitTestResult result, {required Offset position}) {
+    final bool didHit = didHits(result, position: position);
+    if (didHit && groupId == SelectableRegion) {
+      debugPrint('RenderTapRegion HITTested for SelectableRegion: $this');
+    }
+    if (!didHit && groupId == SelectableRegion) {
+      debugPrint('RenderTapRegion MISSED for SelectableRegion: $this');
+    }
+    return didHit;
+  }
+
+  @override
+  void handleEvent(PointerEvent event, BoxHitTestEntry entry) {
+    super.handleEvent(event, entry);
+    if (event is PointerDownEvent && groupId == SelectableRegion) {
+      debugPrint('RenderTapRegion HIT for SelectableRegion: $this');
+    }
   }
 
   @override

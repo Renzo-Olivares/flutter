@@ -1120,6 +1120,7 @@ class SelectableRegionState extends State<SelectableRegion>
   }
 
   void _onAnyDragEnd(DragEndDetails details) {
+    debugPrint('any drag end');
     final bool draggingHandles =
         _selectionOverlay != null &&
         (_selectionOverlay!.isDraggingStartHandle || _selectionOverlay!.isDraggingEndHandle);
@@ -1196,6 +1197,7 @@ class SelectableRegionState extends State<SelectableRegion>
   late Offset _selectionEndHandleDragPosition;
 
   void _handleSelectionStartHandleDragStart(DragStartDetails details) {
+    debugPrint('handle selection start handle drag start');
     assert(_selectionDelegate.value.startSelectionPoint != null);
 
     final Offset localPosition = _selectionDelegate.value.startSelectionPoint!.localPosition;
@@ -1225,6 +1227,7 @@ class SelectableRegionState extends State<SelectableRegion>
   }
 
   void _handleSelectionEndHandleDragStart(DragStartDetails details) {
+    debugPrint('handle selection end handle drag start');
     assert(_selectionDelegate.value.endSelectionPoint != null);
     final Offset localPosition = _selectionDelegate.value.endSelectionPoint!.localPosition;
     final Matrix4 globalTransform = _selectable!.getTransformTo(null);
@@ -1947,6 +1950,7 @@ class SelectableRegionState extends State<SelectableRegion>
     return TapRegion(
       groupId: SelectableRegion,
       onTapOutside: (PointerDownEvent event) {
+        debugPrint('ontapoutside');
         // To match native platforms, the selection is dismissed when tapping outside
         // of the selectable region.
         clearSelection();

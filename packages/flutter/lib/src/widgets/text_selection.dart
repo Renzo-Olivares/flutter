@@ -1256,6 +1256,7 @@ class SelectionOverlay {
   final ValueChanged<DragStartDetails>? onStartHandleDragStart;
 
   void _handleStartHandleDragStart(DragStartDetails details) {
+    debugPrint('selectionoverlay-handlestarthandledragstart');
     assert(!_isDraggingStartHandle);
     // Calling OverlayEntry.remove may not happen until the following frame, so
     // it's possible for the handles to receive a gesture after calling remove.
@@ -1779,6 +1780,9 @@ class SelectionOverlay {
       );
     }
     return TapRegion(
+      onTapOutside: (PointerDownEvent event) {
+        debugPrint('ontapoutside start handle');
+      },
       groupId: SelectableRegion,
       child: TextFieldTapRegion(child: ExcludeSemantics(child: handle)),
     );
@@ -1810,6 +1814,9 @@ class SelectionOverlay {
       );
     }
     return TapRegion(
+      onTapOutside: (PointerDownEvent event) {
+        debugPrint('ontapoutside end handle');
+      },
       groupId: SelectableRegion,
       child: TextFieldTapRegion(child: ExcludeSemantics(child: handle)),
     );
