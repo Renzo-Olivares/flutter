@@ -409,7 +409,8 @@ class SelectableRegionState extends State<SelectableRegion>
   SelectedContent? _lastSelectedContent;
 
   /// Whether the native browser context menu is enabled.
-  bool get _webContextMenuEnabled => kIsWeb && BrowserContextMenu.enabled;
+  bool get _webContextMenuEnabled =>
+      kIsWeb && BrowserContextMenu.enabled && widget.contextMenuBuilder == null;
 
   /// The [SelectionOverlay] that is currently visible on the screen.
   ///

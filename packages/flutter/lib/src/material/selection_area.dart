@@ -8,7 +8,9 @@
 library;
 
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/rendering.dart';
+import 'package:flutter/services.dart';
 
 import 'adaptive_text_selection_toolbar.dart';
 import 'debug.dart';
@@ -51,7 +53,7 @@ class SelectionArea extends StatefulWidget {
     super.key,
     this.focusNode,
     this.selectionControls,
-    this.contextMenuBuilder = _defaultContextMenuBuilder,
+    this.contextMenuBuilder,
     this.magnifierConfiguration,
     this.onSelectionChanged,
     required this.child,
@@ -135,7 +137,9 @@ class SelectionAreaState extends State<SelectionArea> {
       key: _selectableRegionKey,
       selectionControls: controls,
       focusNode: widget.focusNode,
-      contextMenuBuilder: widget.contextMenuBuilder,
+      contextMenuBuilder:
+          widget.contextMenuBuilder ??
+          (kIsWeb && BrowserContextMenu.enabled ? null : SelectionArea._defaultContextMenuBuilder),
       magnifierConfiguration:
           widget.magnifierConfiguration ?? TextMagnifier.adaptiveMagnifierConfiguration,
       onSelectionChanged: widget.onSelectionChanged,
