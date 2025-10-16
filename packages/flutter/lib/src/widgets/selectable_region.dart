@@ -522,17 +522,6 @@ class SelectableRegionState extends State<SelectableRegion>
         if (isDesktop || widget.contextMenuBuilder == null) {
           PlatformSelectableRegionContextMenu.detach(_selectionDelegate);
         }
-        // if (defaultTargetPlatform != TargetPlatform.iOS &&
-        //     defaultTargetPlatform != TargetPlatform.android &&
-        //     defaultTargetPlatform != TargetPlatform.fuchsia) {
-        //   PlatformSelectableRegionContextMenu.detach(_selectionDelegate);
-        // }
-        // if (defaultTargetPlatform == TargetPlatform.iOS &&
-        //     defaultTargetPlatform == TargetPlatform.android &&
-        //     defaultTargetPlatform == TargetPlatform.fuchsia &&
-        //     widget.contextMenuBuilder == null) {
-        //   PlatformSelectableRegionContextMenu.detach(_selectionDelegate);
-        // }
       }
       if (SchedulerBinding.instance.lifecycleState == AppLifecycleState.resumed) {
         // We should only clear the selection when this SelectableRegion loses
@@ -555,17 +544,6 @@ class SelectableRegionState extends State<SelectableRegion>
       if (isDesktop || widget.contextMenuBuilder == null) {
         PlatformSelectableRegionContextMenu.attach(_selectionDelegate);
       }
-      // if (defaultTargetPlatform != TargetPlatform.iOS &&
-      //     defaultTargetPlatform != TargetPlatform.android &&
-      //     defaultTargetPlatform != TargetPlatform.fuchsia) {
-      //   PlatformSelectableRegionContextMenu.attach(_selectionDelegate);
-      // }
-      // if (defaultTargetPlatform == TargetPlatform.iOS &&
-      //     defaultTargetPlatform == TargetPlatform.android &&
-      //     defaultTargetPlatform == TargetPlatform.fuchsia &&
-      //     widget.contextMenuBuilder == null) {
-      //   PlatformSelectableRegionContextMenu.attach(_selectionDelegate);
-      // }
     }
   }
 
@@ -1980,9 +1958,9 @@ class SelectableRegionState extends State<SelectableRegion>
       // On desktop web we can disable the browser context menu
       // on the individual DOM node for PlatformSelectableRegionContextMenu.
       //
-      // On mobile web we cannot do the same so we do not wrap
+      // On mobile web we cannot do the same so we only wrap
       // with PlatformSelectableRegionContextMenu when contextMenuBuilder
-      // takes prescendence.
+      // does not take precendence.
       final bool isDesktop =
           defaultTargetPlatform != TargetPlatform.iOS &&
           defaultTargetPlatform != TargetPlatform.android &&
@@ -1993,23 +1971,6 @@ class SelectableRegionState extends State<SelectableRegion>
           child: result,
         );
       }
-      // if (defaultTargetPlatform != TargetPlatform.iOS &&
-      //     defaultTargetPlatform != TargetPlatform.android &&
-      //     defaultTargetPlatform != TargetPlatform.fuchsia) {
-      //   result = PlatformSelectableRegionContextMenu(
-      //     enabled: widget.contextMenuBuilder == null,
-      //     child: result,
-      //   );
-      // }
-      // if (defaultTargetPlatform == TargetPlatform.iOS &&
-      //     defaultTargetPlatform == TargetPlatform.android &&
-      //     defaultTargetPlatform == TargetPlatform.fuchsia &&
-      //     widget.contextMenuBuilder == null) {
-      //   result = PlatformSelectableRegionContextMenu(
-      //     enabled: widget.contextMenuBuilder == null,
-      //     child: result,
-      //   );
-      // }
     }
     return CompositedTransformTarget(
       link: _toolbarLayerLink,
