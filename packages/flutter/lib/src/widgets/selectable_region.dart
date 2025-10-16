@@ -409,8 +409,7 @@ class SelectableRegionState extends State<SelectableRegion>
   SelectedContent? _lastSelectedContent;
 
   /// Whether the native browser context menu is enabled.
-  bool get _webContextMenuEnabled =>
-      kIsWeb && BrowserContextMenu.enabled && widget.contextMenuBuilder == null;
+  bool get _webContextMenuEnabled => kIsWeb && BrowserContextMenu.enabled;
 
   /// The [SelectionOverlay] that is currently visible on the screen.
   ///
@@ -511,7 +510,29 @@ class SelectableRegionState extends State<SelectableRegion>
   void _handleFocusChanged() {
     if (!_focusNode.hasFocus) {
       if (_webContextMenuEnabled) {
-        PlatformSelectableRegionContextMenu.detach(_selectionDelegate);
+        // On desktop web when the contextMenuBuilder takes presedence we
+        // still wrap it with a PlatformSelectableRegionContextMenu.
+        //
+        // On mobile web when the contextMenuBuilder takes presedence
+        // we don't wrap it with a PlatformSelectableRegionContextMenu.
+        final bool isDesktop =
+            defaultTargetPlatform != TargetPlatform.iOS &&
+            defaultTargetPlatform != TargetPlatform.android &&
+            defaultTargetPlatform != TargetPlatform.fuchsia;
+        if (isDesktop || widget.contextMenuBuilder == null) {
+          PlatformSelectableRegionContextMenu.detach(_selectionDelegate);
+        }
+        // if (defaultTargetPlatform != TargetPlatform.iOS &&
+        //     defaultTargetPlatform != TargetPlatform.android &&
+        //     defaultTargetPlatform != TargetPlatform.fuchsia) {
+        //   PlatformSelectableRegionContextMenu.detach(_selectionDelegate);
+        // }
+        // if (defaultTargetPlatform == TargetPlatform.iOS &&
+        //     defaultTargetPlatform == TargetPlatform.android &&
+        //     defaultTargetPlatform == TargetPlatform.fuchsia &&
+        //     widget.contextMenuBuilder == null) {
+        //   PlatformSelectableRegionContextMenu.detach(_selectionDelegate);
+        // }
       }
       if (SchedulerBinding.instance.lifecycleState == AppLifecycleState.resumed) {
         // We should only clear the selection when this SelectableRegion loses
@@ -527,7 +548,24 @@ class SelectableRegionState extends State<SelectableRegion>
       }
     }
     if (_webContextMenuEnabled) {
-      PlatformSelectableRegionContextMenu.attach(_selectionDelegate);
+      final bool isDesktop =
+          defaultTargetPlatform != TargetPlatform.iOS &&
+          defaultTargetPlatform != TargetPlatform.android &&
+          defaultTargetPlatform != TargetPlatform.fuchsia;
+      if (isDesktop || widget.contextMenuBuilder == null) {
+        PlatformSelectableRegionContextMenu.attach(_selectionDelegate);
+      }
+      // if (defaultTargetPlatform != TargetPlatform.iOS &&
+      //     defaultTargetPlatform != TargetPlatform.android &&
+      //     defaultTargetPlatform != TargetPlatform.fuchsia) {
+      //   PlatformSelectableRegionContextMenu.attach(_selectionDelegate);
+      // }
+      // if (defaultTargetPlatform == TargetPlatform.iOS &&
+      //     defaultTargetPlatform == TargetPlatform.android &&
+      //     defaultTargetPlatform == TargetPlatform.fuchsia &&
+      //     widget.contextMenuBuilder == null) {
+      //   PlatformSelectableRegionContextMenu.attach(_selectionDelegate);
+      // }
     }
   }
 
@@ -1349,7 +1387,10 @@ class SelectableRegionState extends State<SelectableRegion>
     // functionality depending on the browser (such as translate). Due to this,
     // we should not show a Flutter toolbar for the editable text elements
     // unless the browser's context menu is explicitly disabled.
-    if (_webContextMenuEnabled) {
+    //
+    // Even if the web context menu is enabled, if a contextMenuBuilder
+    // is provided it will take prescedence.
+    if (_webContextMenuEnabled && widget.contextMenuBuilder == null) {
       return false;
     }
 
@@ -1936,7 +1977,39 @@ class SelectableRegionState extends State<SelectableRegion>
       child: SelectionContainer(registrar: this, delegate: _selectionDelegate, child: widget.child),
     );
     if (_webContextMenuEnabled) {
-      result = PlatformSelectableRegionContextMenu(child: result);
+      // On desktop web we can disable the browser context menu
+      // on the individual DOM node for PlatformSelectableRegionContextMenu.
+      //
+      // On mobile web we cannot do the same so we do not wrap
+      // with PlatformSelectableRegionContextMenu when contextMenuBuilder
+      // takes prescendence.
+      final bool isDesktop =
+          defaultTargetPlatform != TargetPlatform.iOS &&
+          defaultTargetPlatform != TargetPlatform.android &&
+          defaultTargetPlatform != TargetPlatform.fuchsia;
+      if (isDesktop || widget.contextMenuBuilder == null) {
+        result = PlatformSelectableRegionContextMenu(
+          enabled: widget.contextMenuBuilder == null,
+          child: result,
+        );
+      }
+      // if (defaultTargetPlatform != TargetPlatform.iOS &&
+      //     defaultTargetPlatform != TargetPlatform.android &&
+      //     defaultTargetPlatform != TargetPlatform.fuchsia) {
+      //   result = PlatformSelectableRegionContextMenu(
+      //     enabled: widget.contextMenuBuilder == null,
+      //     child: result,
+      //   );
+      // }
+      // if (defaultTargetPlatform == TargetPlatform.iOS &&
+      //     defaultTargetPlatform == TargetPlatform.android &&
+      //     defaultTargetPlatform == TargetPlatform.fuchsia &&
+      //     widget.contextMenuBuilder == null) {
+      //   result = PlatformSelectableRegionContextMenu(
+      //     enabled: widget.contextMenuBuilder == null,
+      //     child: result,
+      //   );
+      // }
     }
     return CompositedTransformTarget(
       link: _toolbarLayerLink,

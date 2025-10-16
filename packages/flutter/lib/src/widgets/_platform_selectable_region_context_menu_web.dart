@@ -39,14 +39,17 @@ typedef RegisterViewFactory = void Function(String, Object Function(int viewId),
 /// documentation.
 class PlatformSelectableRegionContextMenu extends StatelessWidget {
   /// See `_platform_selectable_region_context_menu_io.dart`.
-  PlatformSelectableRegionContextMenu({required this.child, super.key}) {
+  PlatformSelectableRegionContextMenu({required this.enabled, required this.child, super.key}) {
     if (_registeredViewType == null) {
-      _register();
+      _register(enabled);
     }
   }
 
   /// See `_platform_selectable_region_context_menu_io.dart`.
   final Widget child;
+
+  /// See `_platform_selectable_region_context_menu_io.dart`.
+  final bool enabled;
 
   /// See `_platform_selectable_region_context_menu_io.dart`.
   // ignore: use_setters_to_change_properties
@@ -83,7 +86,7 @@ class PlatformSelectableRegionContextMenu extends StatelessWidget {
   }
 
   // Registers the view factories for the interceptor widgets.
-  static void _register() {
+  static void _register(bool enabled) {
     assert(_registeredViewType == null);
     _registeredViewType = _registerWebSelectionCallback((
       web.HTMLElement element,
@@ -107,10 +110,10 @@ class PlatformSelectableRegionContextMenu extends StatelessWidget {
           ?..removeAllRanges()
           ..addRange(range);
       }
-    });
+    }, enabled);
   }
 
-  static String _registerWebSelectionCallback(_WebSelectionCallBack callback) {
+  static String _registerWebSelectionCallback(_WebSelectionCallBack callback, bool enabled) {
     // Create css style for _kClassName.
     final web.HTMLStyleElement styleElement =
         web.document.createElement('style') as web.HTMLStyleElement;
@@ -135,6 +138,16 @@ class PlatformSelectableRegionContextMenu extends StatelessWidget {
             return;
           }
           callback(htmlElement, mouseEvent);
+        }.toJS,
+      );
+
+      htmlElement.addEventListener(
+        'contextmenu',
+        (web.Event event) {
+          final web.MouseEvent mouseEvent = event as web.MouseEvent;
+          if (!enabled) {
+            mouseEvent.preventDefault();
+          }
         }.toJS,
       );
       return htmlElement;
