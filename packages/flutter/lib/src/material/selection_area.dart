@@ -54,6 +54,8 @@ class SelectionArea extends StatefulWidget {
     this.contextMenuBuilder = _defaultContextMenuBuilder,
     this.magnifierConfiguration,
     this.onSelectionChanged,
+    this.onTapOutside,
+    this.onTapUpOutside,
     required this.child,
   });
 
@@ -93,6 +95,12 @@ class SelectionArea extends StatefulWidget {
 
   /// Called when the selected content changes.
   final ValueChanged<SelectedContent?>? onSelectionChanged;
+
+  /// {@macro flutter.widgets.selectableRegion.onTapOutside}
+  final TapRegionCallback? onTapOutside;
+
+  /// {@macro flutter.widgets.selectableRegion.onTapUpOutside}
+  final TapRegionUpCallback? onTapUpOutside;
 
   /// The child widget this selection area applies to.
   ///
@@ -139,6 +147,8 @@ class SelectionAreaState extends State<SelectionArea> {
       magnifierConfiguration:
           widget.magnifierConfiguration ?? TextMagnifier.adaptiveMagnifierConfiguration,
       onSelectionChanged: widget.onSelectionChanged,
+      onTapOutside: widget.onTapOutside,
+      onTapUpOutside: widget.onTapUpOutside,
       child: widget.child,
     );
   }

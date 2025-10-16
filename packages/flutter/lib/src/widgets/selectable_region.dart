@@ -244,6 +244,8 @@ class SelectableRegion extends StatefulWidget {
     this.focusNode,
     this.magnifierConfiguration = TextMagnifierConfiguration.disabled,
     this.onSelectionChanged,
+    this.onTapOutside,
+    this.onTapUpOutside,
     required this.selectionControls,
     required this.child,
   });
@@ -277,6 +279,59 @@ class SelectableRegion extends StatefulWidget {
 
   /// Called when the selected content changes.
   final ValueChanged<SelectedContent?>? onSelectionChanged;
+
+  /// {@template flutter.widgets.selectableRegion.onTapOutside}
+  /// Called for each tap down that occurs outside of the [SelectableRegionTapRegion]
+  /// group when the selectable region is focused.
+  ///
+  /// If this is null, [SelectableRegionTapOutsideIntent] will be invoked. In the
+  /// default implementation, [FocusNode.unfocus] will be called on the
+  /// [focusNode] for this selectable region when a [PointerDownEvent] is received on
+  /// another part of the UI. To change this behavior, a callback may be
+  /// set here or [SelectableRegionTapOutsideIntent] may be overridden.
+  ///
+  /// When adding additional controls to a selectable region (for example, a
+  /// button that copies the selected text), it is helpful if tapping on that
+  /// doesn't unfocus the selectable region. In order for an external widget
+  /// to be considered as part of the selectable region for the purposes of
+  /// tapping "outside" of the selectable region, wrap the control in a
+  /// [SelectableRegionTapRegion].
+  ///
+  /// The [PointerDownEvent] passed to the function is the event that caused the
+  /// notification. It is possible that the event may occur outside of the
+  /// immediate bounding box defined by the selectable region, although it will be
+  /// within the bounding box of a [SelectableRegionTapRegion] member.
+  /// {@endtemplate}
+  ///
+  /// See also:
+  ///
+  ///  * [TapRegion] for how the region group is determined.
+  ///  * [onTapUpOutside] which is called for each tap up.
+  ///  * [SelectableRegionTapOutsideIntent] for the intent that is invoked if
+  ///  this is null.
+  final TapRegionCallback? onTapOutside;
+
+  /// {@template flutter.widgets.selectableRegion.onTapUpOutside}
+  /// Called for each tap up that occurs outside of the [SelectableRegionTapRegion]
+  /// group when the selectable region is focused.
+  ///
+  /// If this is null, [SelectableRegionTapUpOutsideIntent] will be invoked. In the
+  /// default implementation, this is a no-op. To change this behavior, set a
+  /// callback here or override [SelectableRegionTapUpOutsideIntent].
+  ///
+  /// The [PointerUpEvent] passed to the function is the event that caused the
+  /// notification. It is possible that the event may occur outside of the
+  /// immediate bounding box defined by the selectable region, although it will be
+  /// within the bounding box of a [SelectableRegionTapRegion] member.
+  /// {@endtemplate}
+  ///
+  /// See also:
+  ///
+  ///  * [TapRegion] for how the region group is determined.
+  ///  * [onTapOutside], which is called for each tap down.
+  ///  * [SelectableRegionTapOutsideIntent], the intent that is invoked if
+  ///  this is null.
+  final TapRegionUpCallback? onTapUpOutside;
 
   /// Returns the [ContextMenuButtonItem]s representing the buttons in this
   /// platform's default selection menu.
@@ -390,6 +445,8 @@ class SelectableRegionState extends State<SelectableRegion>
         granularity: TextGranularity.document,
       ),
     ),
+    SelectableRegionTapOutsideIntent: _makeOverridable(_SelectableRegionTapOutsideAction()),
+    SelectableRegionTapUpOutsideIntent: _makeOverridable(_SelectableRegionTapUpOutsideAction()),
   };
 
   final Map<Type, GestureRecognizerFactory> _gestureRecognizers =
@@ -425,6 +482,15 @@ class SelectableRegionState extends State<SelectableRegion>
   FocusNode? _localFocusNode;
   FocusNode get _focusNode =>
       widget.focusNode ?? (_localFocusNode ??= FocusNode(debugLabel: 'SelectableRegion'));
+  bool get _hasFocus => _focusNode.hasFocus;
+
+  /// Flag to track whether this [SelectableRegion] was in focus when [SelectableRegion.onTapOutside]
+  /// was called.
+  ///
+  /// This is used to determine whether [SelectableRegion.onTapUpOutside] should be called.
+  /// The reason [_hasFocus] can't be used directly is because [SelectableRegion.onTapOutside]
+  /// might unfocus this [SelectableRegion] and block the [SelectableRegion.onTapUpOutside] call.
+  bool _hadFocusOnTapDown = false;
 
   /// Notifies its listeners when the selection state in this [SelectableRegion] changes.
   final _SelectableRegionSelectionStatusNotifier _selectionStatusNotifier =
@@ -506,7 +572,7 @@ class SelectableRegionState extends State<SelectableRegion>
   }
 
   void _handleFocusChanged() {
-    if (!_focusNode.hasFocus) {
+    if (!_hasFocus) {
       if (kIsWeb) {
         PlatformSelectableRegionContextMenu.detach(_selectionDelegate);
       }
@@ -526,6 +592,7 @@ class SelectableRegionState extends State<SelectableRegion>
     if (kIsWeb) {
       PlatformSelectableRegionContextMenu.attach(_selectionDelegate);
     }
+    setState(() {});
   }
 
   void _updateSelectionStatus() {
@@ -1933,6 +2000,51 @@ class SelectableRegionState extends State<SelectableRegion>
     super.dispose();
   }
 
+  void _onTapOutside(BuildContext context, PointerDownEvent event) {
+    _hadFocusOnTapDown = true;
+
+    if (widget.onTapOutside != null) {
+      widget.onTapOutside!(event);
+    } else {
+      _defaultOnTapOutside(context, event);
+    }
+  }
+
+  void _onTapUpOutside(BuildContext context, PointerUpEvent event) {
+    if (!_hadFocusOnTapDown) {
+      return;
+    }
+
+    // Reset to false so that subsequent events doesn't trigger the callback based on old information.
+    _hadFocusOnTapDown = false;
+
+    if (widget.onTapUpOutside != null) {
+      widget.onTapUpOutside!(event);
+    } else {
+      _defaultOnTapUpOutside(context, event);
+    }
+  }
+
+  /// The default behavior used if [SelectableRegion.onTapOutside] is null.
+  ///
+  /// The `event` argument is the [PointerDownEvent] that caused the notification.
+  void _defaultOnTapOutside(BuildContext context, PointerDownEvent event) {
+    Actions.invoke(
+      context,
+      SelectableRegionTapOutsideIntent(focusNode: _focusNode, pointerDownEvent: event),
+    );
+  }
+
+  /// The default behavior used if [SelectableRegion.onTapUpOutside] is null.
+  ///
+  /// The `event` argument is the [PointerUpEvent] that caused the notification.
+  void _defaultOnTapUpOutside(BuildContext context, PointerUpEvent event) {
+    Actions.invoke(
+      context,
+      SelectableRegionTapUpOutsideIntent(focusNode: _focusNode, pointerUpEvent: event),
+    );
+  }
+
   @protected
   @override
   Widget build(BuildContext context) {
@@ -1944,30 +2056,30 @@ class SelectableRegionState extends State<SelectableRegion>
     if (kIsWeb) {
       result = PlatformSelectableRegionContextMenu(child: result);
     }
-    return TapRegion(
-      groupId: SelectableRegion,
-      onTapOutside: (PointerDownEvent event) {
-        // To match native platforms, the selection is dismissed when tapping outside
-        // of the selectable region.
-        clearSelection();
-        _selectionStatusNotifier.value = SelectableRegionSelectionStatus.changing;
-        _finalizeSelectableRegionStatus();
-      },
-      child: CompositedTransformTarget(
-        link: _toolbarLayerLink,
-        child: RawGestureDetector(
-          gestures: _gestureRecognizers,
-          behavior: HitTestBehavior.translucent,
-          excludeFromSemantics: true,
-          child: Actions(
-            actions: _actions,
-            child: Focus.withExternalFocusNode(
-              includeSemantics: false,
-              focusNode: _focusNode,
-              child: result,
+    return Actions(
+      actions: _actions,
+      child: Builder(
+        builder: (BuildContext context) {
+          return SelectableRegionTapRegion(
+            onTapOutside: _hasFocus
+                ? (PointerDownEvent event) => _onTapOutside(context, event)
+                : null,
+            onTapUpOutside: (PointerUpEvent event) => _onTapUpOutside(context, event),
+            child: CompositedTransformTarget(
+              link: _toolbarLayerLink,
+              child: RawGestureDetector(
+                gestures: _gestureRecognizers,
+                behavior: HitTestBehavior.translucent,
+                excludeFromSemantics: true,
+                child: Focus.withExternalFocusNode(
+                  includeSemantics: false,
+                  focusNode: _focusNode,
+                  child: result,
+                ),
+              ),
             ),
-          ),
-        ),
+          );
+        },
       ),
     );
   }
@@ -2055,6 +2167,27 @@ class _DirectionallyExtendCaretSelectionAction<T extends DirectionalCaretMovemen
       return;
     }
     state._directionallyExtendSelection(intent.forward);
+  }
+}
+
+class _SelectableRegionTapOutsideAction extends ContextAction<SelectableRegionTapOutsideIntent> {
+  _SelectableRegionTapOutsideAction();
+
+  @override
+  void invoke(SelectableRegionTapOutsideIntent intent, [BuildContext? context]) {
+    // To match native platforms, the selectable region is unfocused which
+    // when tapping outside of the selectable region which dismisses the selection.
+    intent.focusNode.unfocus();
+  }
+}
+
+class _SelectableRegionTapUpOutsideAction
+    extends ContextAction<SelectableRegionTapUpOutsideIntent> {
+  _SelectableRegionTapUpOutsideAction();
+
+  @override
+  void invoke(SelectableRegionTapUpOutsideIntent intent, [BuildContext? context]) {
+    // The default action is a no-op.
   }
 }
 

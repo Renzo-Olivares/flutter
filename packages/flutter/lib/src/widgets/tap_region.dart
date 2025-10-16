@@ -16,6 +16,7 @@ import 'package:flutter/rendering.dart';
 import 'editable_text.dart';
 import 'framework.dart';
 import 'routes.dart';
+import 'selectable_region.dart';
 
 // Enable if you want verbose logging about tap region changes.
 const bool _kDebugTapRegion = false;
@@ -757,5 +758,37 @@ class TextFieldTapRegion extends TapRegion {
     super.consumeOutsideTaps,
     super.debugLabel,
     super.groupId = EditableText,
+  });
+}
+
+/// A [TapRegion] that adds its children to the tap region group for widgets
+/// based on the [SelectableRegion] selection widget, such as [SelectionArea].
+///
+/// Widgets that are wrapped with a [SelectableRegionTapRegion] are considered to be
+/// part of a selectable region for purposes of unfocus behavior. So, when the user
+/// taps on them, the currently focused selectable region won't be unfocused by
+/// default. This allows controls like spinners, copy buttons, and formatting
+/// buttons to be associated with a selectable region without causing it to
+/// lose focus when they are interacted with.
+///
+/// See also:
+///
+///  * [TapRegion], the widget that this widget uses to add widgets to the group
+///    of text fields.
+class SelectableRegionTapRegion extends TapRegion {
+  /// Creates a const [SelectableRegionTapRegion].
+  ///
+  /// The [child] field is required.
+  const SelectableRegionTapRegion({
+    super.key,
+    required super.child,
+    super.enabled,
+    super.onTapOutside,
+    super.onTapInside,
+    super.onTapUpOutside,
+    super.onTapUpInside,
+    super.consumeOutsideTaps,
+    super.debugLabel,
+    super.groupId = SelectableRegion,
   });
 }

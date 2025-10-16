@@ -4,6 +4,7 @@
 
 /// @docImport 'default_text_editing_shortcuts.dart';
 /// @docImport 'editable_text.dart';
+/// @docImport 'selectable_region.dart';
 library;
 
 import 'package:flutter/services.dart';
@@ -442,4 +443,44 @@ class EditableTextTapUpOutsideIntent extends Intent {
 
   /// The [PointerUpEvent] that initiated this [Intent].
   final PointerUpEvent pointerUpEvent;
+}
+
+/// An [Intent] that represents a tap outside the selectable region.
+///
+/// Invoked when the user taps outside the focused [SelectableRegion] if
+/// [SelectableRegion.onTapOutside] is null.
+///
+/// Override this [Intent] to modify the default behavior, which is to unfocus
+/// on a touch event.
+///
+/// See also:
+///
+///  * [Action.overridable] for an example on how to make an [Action]
+///    overridable.
+class SelectableRegionTapOutsideIntent extends EditableTextTapOutsideIntent {
+  /// Creates an [SelectableRegionTapOutsideIntent].
+  const SelectableRegionTapOutsideIntent({
+    required super.focusNode,
+    required super.pointerDownEvent,
+  });
+}
+
+/// An [Intent] that represents a tap outside the selectable region.
+///
+/// Invoked when the user taps up outside the focused [SelectableRegion] if
+/// [SelectableRegion.onTapUpOutside] is null.
+///
+/// Override this [Intent] to modify the default behavior, which is to unfocus
+/// on a touch event.
+///
+/// See also:
+///
+///  * [Action.overridable] for an example on how to make an [Action]
+///    overridable.
+class SelectableRegionTapUpOutsideIntent extends EditableTextTapUpOutsideIntent {
+  /// Creates an [SelectableRegionTapUpOutsideIntent].
+  const SelectableRegionTapUpOutsideIntent({
+    required super.focusNode,
+    required super.pointerUpEvent,
+  });
 }
