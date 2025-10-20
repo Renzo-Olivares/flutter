@@ -311,7 +311,7 @@ class SelectableRegion extends StatefulWidget {
           TargetPlatform.macOS ||
           TargetPlatform.fuchsia ||
           TargetPlatform.linux ||
-          TargetPlatform.windows => false,
+          TargetPlatform.windows ||
           // TODO(bleroux): the share button should be shown on iOS but the share
           // functionality requires some changes on the engine side because, on iPad,
           // it needs an anchor for the popup.
