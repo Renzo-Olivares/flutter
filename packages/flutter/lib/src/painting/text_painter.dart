@@ -610,6 +610,9 @@ class TextPainter {
     StrutStyle? strutStyle,
     TextWidthBasis textWidthBasis = TextWidthBasis.parent,
     TextHeightBehavior? textHeightBehavior,
+    double? lineHeightScaleFactor,
+    double? letterSpacing,
+    double? wordSpacing,
   }) : assert(text == null || text.debugAssertIsValid()),
        assert(maxLines == null || maxLines > 0),
        assert(
@@ -627,7 +630,10 @@ class TextPainter {
        _locale = locale,
        _strutStyle = strutStyle,
        _textWidthBasis = textWidthBasis,
-       _textHeightBehavior = textHeightBehavior {
+       _textHeightBehavior = textHeightBehavior,
+       _lineHeightScaleFactor = lineHeightScaleFactor,
+       _letterSpacing = letterSpacing,
+       _wordSpacing = wordSpacing {
     assert(debugMaybeDispatchCreated('painting', 'TextPainter', this));
   }
 
@@ -1031,6 +1037,36 @@ class TextPainter {
     markNeedsLayout();
   }
 
+  double? get lineHeightScaleFactor => _lineHeightScaleFactor;
+  double? _lineHeightScaleFactor;
+  set lineHeightScaleFactor(double? value) {
+    if (_lineHeightScaleFactor == value) {
+      return;
+    }
+    _lineHeightScaleFactor = value;
+    markNeedsLayout();
+  }
+
+  double? get letterSpacing => _letterSpacing;
+  double? _letterSpacing;
+  set letterSpacing(double? value) {
+    if (_letterSpacing == value) {
+      return;
+    }
+    _letterSpacing = value;
+    markNeedsLayout();
+  }
+
+  double? get wordSpacing => _wordSpacing;
+  double? _wordSpacing;
+  set wordSpacing(double? value) {
+    if (_wordSpacing == value) {
+      return;
+    }
+    _wordSpacing = value;
+    markNeedsLayout();
+  }
+
   /// An ordered list of [TextBox]es that bound the positions of the placeholders
   /// in the paragraph.
   ///
@@ -1095,6 +1131,7 @@ class TextPainter {
       textHeightBehavior: _textHeightBehavior,
       ellipsis: _ellipsis,
       locale: _locale,
+      height: lineHeightScaleFactor,
       strutStyle: _strutStyle,
     );
   }
@@ -1104,7 +1141,12 @@ class TextPainter {
     final ui.ParagraphBuilder builder = ui.ParagraphBuilder(
       _createParagraphStyle(TextAlign.left),
     ); // direction doesn't matter, text is just a space
-    final ui.TextStyle? textStyle = text?.style?.getTextStyle(textScaler: textScaler);
+    final ui.TextStyle? textStyle = text?.style?.getTextStyle(
+      textScaler: textScaler,
+      height: lineHeightScaleFactor,
+      letterSpacing: letterSpacing,
+      wordSpacing: wordSpacing,
+    );
     if (textStyle != null) {
       builder.pushStyle(textStyle);
     }
@@ -1200,7 +1242,14 @@ class TextPainter {
   // assign it to _paragraph.
   ui.Paragraph _createParagraph(InlineSpan text) {
     final ui.ParagraphBuilder builder = ui.ParagraphBuilder(_createParagraphStyle());
-    text.build(builder, textScaler: textScaler, dimensions: _placeholderDimensions);
+    text.build(
+      builder,
+      textScaler: textScaler,
+      dimensions: _placeholderDimensions,
+      lineHeightScaleFactor: lineHeightScaleFactor,
+      letterSpacing: letterSpacing,
+      wordSpacing: wordSpacing,
+    );
     assert(() {
       _debugMarkNeedsLayoutCallStack = null;
       return true;

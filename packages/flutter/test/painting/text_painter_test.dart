@@ -944,6 +944,39 @@ void main() {
     painter.dispose();
   });
 
+  test('TextPainter lineHeightScaleFactor test', () {
+    final TextPainter painter = TextPainter(
+      text: const TextSpan(text: 'X', style: TextStyle(inherit: false, fontSize: 10.0)),
+      textDirection: TextDirection.ltr,
+      lineHeightScaleFactor: 2.0,
+    );
+    painter.layout();
+    expect(painter.size, const Size(10.0, 20.0)); // was 10.0, 10.0
+    painter.dispose();
+  });
+
+  test('TextPainter letterSpacing test', () {
+    final TextPainter painter = TextPainter(
+      text: const TextSpan(text: 'XY', style: TextStyle(inherit: false, fontSize: 10.0)),
+      textDirection: TextDirection.ltr,
+      letterSpacing: 10.0,
+    );
+    painter.layout();
+    expect(painter.size, const Size(40.0, 10.0)); // before was 20.0, 10.0
+    painter.dispose();
+  });
+
+  test('TextPainter wordSpacing test', () {
+    final TextPainter painter = TextPainter(
+      text: const TextSpan(text: 'X Y', style: TextStyle(inherit: false, fontSize: 10.0)),
+      textDirection: TextDirection.ltr,
+      wordSpacing: 10.0,
+    );
+    painter.layout();
+    expect(painter.size, const Size(40.0, 10.0)); // before was 30.0, 10.0
+    painter.dispose();
+  });
+
   test('TextPainter textScaler test', () {
     final TextPainter painter = TextPainter(
       text: const TextSpan(text: 'X', style: TextStyle(inherit: false, fontSize: 10.0)),
