@@ -464,6 +464,46 @@ void main() {
     expect(paragraph.debugNeedsPaint, isFalse);
   });
 
+  test('nested TextSpans in paragraph handle lineHeightScaleFactor correctly.', () {
+    const TextSpan testSpan = TextSpan(
+      text: 'a',
+      style: TextStyle(fontSize: 10.0),
+      children: <TextSpan>[
+        TextSpan(
+          text: 'b',
+          children: <TextSpan>[TextSpan(text: 'c')],
+          style: TextStyle(fontSize: 20.0),
+        ),
+        TextSpan(text: 'd'),
+      ],
+    );
+    final RenderParagraph paragraph = RenderParagraph(
+      testSpan,
+      textDirection: TextDirection.ltr,
+      lineHeightScaleFactor: 2.0,
+    );
+    paragraph.layout(const BoxConstraints());
+    expect(paragraph.size.width, 60.0);
+    expect(paragraph.size.height, 40.0);
+
+    final int length = testSpan.toPlainText().length;
+    // Test the sizes of nested spans.
+    final List<ui.TextBox> boxes = <ui.TextBox>[
+      for (int i = 0; i < length; ++i)
+        ...paragraph.getBoxesForSelection(TextSelection(baseOffset: i, extentOffset: i + 1)),
+    ];
+    expect(boxes, hasLength(4));
+
+    expect(boxes[0].toRect().width, 10.0);
+    expect(boxes[0].toRect().height, 20.0);
+    expect(boxes[1].toRect().width, 20.0);
+    expect(boxes[1].toRect().height, 40.0);
+    expect(boxes[2].toRect().width, 20.0);
+    expect(boxes[2].toRect().height, 40.0);
+    expect(boxes[3].toRect().width, 10.0);
+    expect(boxes[3].toRect().height, 20.0);
+  });
+
   test('nested TextSpans in paragraph handle linear textScaler correctly.', () {
     const TextSpan testSpan = TextSpan(
       text: 'a',

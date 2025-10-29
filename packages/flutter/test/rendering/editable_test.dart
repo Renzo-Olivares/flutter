@@ -4,6 +4,7 @@
 
 import 'dart:math' as math;
 import 'dart:ui';
+import 'dart:ui' as ui;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
@@ -896,6 +897,50 @@ void main() {
     final TextSelectionPoint different = TextSelectionPoint(Offset(2, 2), TextDirection.ltr);
     expect(first == different, isFalse);
     expect(first.hashCode == different.hashCode, isFalse);
+  });
+
+  test('nested TextSpans in editable handle lineHeightScaleFactor correctly.', () {
+    const TextSpan testSpan = TextSpan(
+      text: 'a',
+      style: TextStyle(fontSize: 10.0),
+      children: <TextSpan>[
+        TextSpan(
+          text: 'b',
+          children: <TextSpan>[TextSpan(text: 'c')],
+          style: TextStyle(fontSize: 20.0),
+        ),
+        TextSpan(text: 'd'),
+      ],
+    );
+    final RenderEditable editable = RenderEditable(
+      text: testSpan,
+      textDirection: TextDirection.ltr,
+      lineHeightScaleFactor: 2.0,
+      offset: ViewportOffset.zero(),
+      textSelectionDelegate: _FakeEditableTextState(),
+      startHandleLayerLink: LayerLink(),
+      endHandleLayerLink: LayerLink(),
+    );
+    editable.layout(const BoxConstraints());
+    expect(editable.size.width, 60.0);
+    expect(editable.size.height, 40.0);
+
+    final int length = testSpan.toPlainText().length;
+    // Test the sizes of nested spans.
+    final List<ui.TextBox> boxes = <ui.TextBox>[
+      for (int i = 0; i < length; ++i)
+        ...editable.getBoxesForSelection(TextSelection(baseOffset: i, extentOffset: i + 1)),
+    ];
+    expect(boxes, hasLength(4));
+
+    expect(boxes[0].toRect().width, 10.0);
+    expect(boxes[0].toRect().height, 20.0);
+    expect(boxes[1].toRect().width, 20.0);
+    expect(boxes[1].toRect().height, 40.0);
+    expect(boxes[2].toRect().width, 20.0);
+    expect(boxes[2].toRect().height, 40.0);
+    expect(boxes[3].toRect().width, 10.0);
+    expect(boxes[3].toRect().height, 20.0);
   });
 
   group('getRectForComposingRange', () {

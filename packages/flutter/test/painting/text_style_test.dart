@@ -598,6 +598,30 @@ void main() {
     expect(TextStyle.lerp(redPaintTextStyle, bluePaintTextStyle, .75)!.background!.color, blue);
   });
 
+  test('TextStyle getParagraphStyle height', () {
+    const TextStyle style = TextStyle(fontSize: 10, height: 5.0);
+    final ui.ParagraphStyle paragraphStyle = style.getParagraphStyle(height: 2.0);
+    expect(paragraphStyle, equals(ui.ParagraphStyle(fontSize: 10.0, height: 2.0)));
+  });
+
+  test('TextStyle getTextStyle height', () {
+    const TextStyle style = TextStyle(fontSize: 10, height: 5.0);
+    final ui.TextStyle textStyle = style.getTextStyle(height: 2.0);
+    expect(textStyle, equals(ui.TextStyle(fontSize: 10.0, height: 2.0)));
+  });
+
+  test('TextStyle getTextStyle letterSpacing', () {
+    const TextStyle style = TextStyle(fontSize: 10, letterSpacing: 5.0);
+    final ui.TextStyle textStyle = style.getTextStyle(letterSpacing: 2.0);
+    expect(textStyle, equals(ui.TextStyle(fontSize: 10.0, letterSpacing: 2.0)));
+  });
+
+  test('TextStyle getTextStyle wordSpacing', () {
+    const TextStyle style = TextStyle(fontSize: 10, wordSpacing: 5.0);
+    final ui.TextStyle textStyle = style.getTextStyle(wordSpacing: 2.0);
+    expect(textStyle, equals(ui.TextStyle(fontSize: 10.0, wordSpacing: 2.0)));
+  });
+
   test('TextStyle strut textScaler', () {
     const TextStyle style0 = TextStyle(fontSize: 10);
     final ui.ParagraphStyle paragraphStyle0 = style0.getParagraphStyle(
