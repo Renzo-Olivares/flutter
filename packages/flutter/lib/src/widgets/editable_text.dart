@@ -3241,22 +3241,12 @@ class EditableTextState extends State<EditableText>
 
     // Apply platform settings to text style.
     final double? lineHeightScaleFactor = MediaQuery.maybeLineHeightScaleFactorOverrideOf(context);
-    final double? letterSpacing = MediaQuery.maybeLetterSpacingOverrideOf(context);
-    final double? wordSpacing = MediaQuery.maybeWordSpacingOverrideOf(context);
     final bool boldText = MediaQuery.boldTextOf(context);
-    if (!boldText &&
-        lineHeightScaleFactor == null &&
-        letterSpacing == null &&
-        wordSpacing == null) {
+    if (!boldText && lineHeightScaleFactor == null) {
       _style = widget.style;
     } else {
       _style = widget.style.merge(
-        TextStyle(
-          height: lineHeightScaleFactor,
-          letterSpacing: letterSpacing,
-          wordSpacing: wordSpacing,
-          fontWeight: boldText ? FontWeight.bold : null,
-        ),
+        TextStyle(height: lineHeightScaleFactor, fontWeight: boldText ? FontWeight.bold : null),
       );
     }
 
@@ -3402,22 +3392,12 @@ class EditableTextState extends State<EditableText>
       final double? lineHeightScaleFactor = MediaQuery.maybeLineHeightScaleFactorOverrideOf(
         context,
       );
-      final double? letterSpacing = MediaQuery.maybeLetterSpacingOverrideOf(context);
-      final double? wordSpacing = MediaQuery.maybeWordSpacingOverrideOf(context);
       final bool boldText = MediaQuery.boldTextOf(context);
-      if (!boldText &&
-          lineHeightScaleFactor == null &&
-          letterSpacing == null &&
-          wordSpacing == null) {
+      if (!boldText && lineHeightScaleFactor == null) {
         _style = widget.style;
       } else {
         _style = widget.style.merge(
-          TextStyle(
-            height: lineHeightScaleFactor,
-            letterSpacing: letterSpacing,
-            wordSpacing: wordSpacing,
-            fontWeight: boldText ? FontWeight.bold : null,
-          ),
+          TextStyle(height: lineHeightScaleFactor, fontWeight: boldText ? FontWeight.bold : null),
         );
       }
       // The _textInputConnection will pick up the new style when it attaches in
@@ -4841,6 +4821,9 @@ class EditableTextState extends State<EditableText>
       (null, final double textScaleFactor) => TextScaler.linear(textScaleFactor),
       (null, null) => MediaQuery.textScalerOf(context),
     };
+    // TODO(Renzo-Olivares): Add support for letterSpacing and wordSpacing.
+    // final double? letterSpacing = MediaQuery.maybeLetterSpacingOverrideOf(context);
+    // final double? wordSpacing = MediaQuery.maybeWordSpacingOverrideOf(context);
 
     final _ScribbleCacheKey newCacheKey = _ScribbleCacheKey(
       inlineSpan: inlineSpan,
@@ -5685,6 +5668,8 @@ class EditableTextState extends State<EditableText>
       (null, final double textScaleFactor) => TextScaler.linear(textScaleFactor),
       (null, null) => MediaQuery.textScalerOf(context),
     };
+    final double? letterSpacing = MediaQuery.maybeLetterSpacingOverrideOf(context);
+    final double? wordSpacing = MediaQuery.maybeWordSpacingOverrideOf(context);
     final ui.SemanticsInputType inputType;
     switch (widget.keyboardType) {
       case TextInputType.phone:
@@ -5852,6 +5837,8 @@ class EditableTextState extends State<EditableText>
                                     promptRectRange: _currentPromptRectRange,
                                     promptRectColor: widget.autocorrectionTextRectColor,
                                     clipBehavior: widget.clipBehavior,
+                                    letterSpacing: letterSpacing,
+                                    wordSpacing: wordSpacing,
                                   ),
                                 ),
                               ),
@@ -5989,6 +5976,8 @@ class _Editable extends MultiChildRenderObjectWidget {
     this.promptRectRange,
     this.promptRectColor,
     required this.clipBehavior,
+    this.letterSpacing,
+    this.wordSpacing,
   }) : selectionHeightStyle = selectionHeightStyle ?? EditableText.defaultSelectionHeightStyle,
        selectionWidthStyle = selectionWidthStyle ?? EditableText.defaultSelectionWidthStyle,
        super(children: WidgetSpan.extractFromInlineSpan(inlineSpan, textScaler));
@@ -6031,6 +6020,8 @@ class _Editable extends MultiChildRenderObjectWidget {
   final TextRange? promptRectRange;
   final Color? promptRectColor;
   final Clip clipBehavior;
+  final double? letterSpacing;
+  final double? wordSpacing;
 
   @override
   RenderEditable createRenderObject(BuildContext context) {
@@ -6073,6 +6064,8 @@ class _Editable extends MultiChildRenderObjectWidget {
       promptRectRange: promptRectRange,
       promptRectColor: promptRectColor,
       clipBehavior: clipBehavior,
+      letterSpacing: letterSpacing,
+      wordSpacing: wordSpacing,
     );
   }
 
@@ -6116,7 +6109,9 @@ class _Editable extends MultiChildRenderObjectWidget {
       ..paintCursorAboveText = paintCursorAboveText
       ..promptRectColor = promptRectColor
       ..clipBehavior = clipBehavior
-      ..setPromptRectRange(promptRectRange);
+      ..setPromptRectRange(promptRectRange)
+      ..letterSpacing = letterSpacing
+      ..wordSpacing = wordSpacing;
   }
 }
 

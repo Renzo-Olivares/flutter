@@ -333,6 +333,8 @@ class RenderEditable extends RenderBox
     required this.textSelectionDelegate,
     RenderEditablePainter? painter,
     RenderEditablePainter? foregroundPainter,
+    double? letterSpacing,
+    double? wordSpacing,
     List<RenderBox>? children,
   }) : assert(maxLines == null || maxLines > 0),
        assert(minLines == null || minLines > 0),
@@ -363,6 +365,8 @@ class RenderEditable extends RenderBox
          strutStyle: strutStyle,
          textHeightBehavior: textHeightBehavior,
          textWidthBasis: textWidthBasis,
+         letterSpacing: letterSpacing,
+         wordSpacing: wordSpacing,
        ),
        _showCursor = showCursor ?? ValueNotifier<bool>(false),
        _maxLines = maxLines,
@@ -1049,6 +1053,24 @@ class RenderEditable extends RenderBox
       return;
     }
     _textPainter.textScaler = value;
+    markNeedsLayout();
+  }
+
+  double? get letterSpacing => _textPainter.letterSpacing;
+  set letterSpacing(double? value) {
+    if (_textPainter.letterSpacing == value) {
+      return;
+    }
+    _textPainter.letterSpacing = value;
+    markNeedsLayout();
+  }
+
+  double? get wordSpacing => _textPainter.wordSpacing;
+  set wordSpacing(double? value) {
+    if (_textPainter.wordSpacing == value) {
+      return;
+    }
+    _textPainter.wordSpacing = value;
     markNeedsLayout();
   }
 
