@@ -242,6 +242,7 @@ abstract class InlineSpan extends DiagnosticableTree {
     ui.ParagraphBuilder builder, {
     TextScaler textScaler = TextScaler.noScaling,
     List<PlaceholderDimensions>? dimensions,
+    double? lineHeightScaleFactor,
     double? letterSpacing,
     double? wordSpacing,
   });

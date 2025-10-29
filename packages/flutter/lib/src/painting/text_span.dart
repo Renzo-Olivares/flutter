@@ -287,6 +287,7 @@ class TextSpan extends InlineSpan implements HitTestTarget, MouseTrackerAnnotati
     ui.ParagraphBuilder builder, {
     TextScaler textScaler = TextScaler.noScaling,
     List<PlaceholderDimensions>? dimensions,
+    double? lineHeightScaleFactor,
     double? letterSpacing,
     double? wordSpacing,
   }) {
@@ -296,6 +297,7 @@ class TextSpan extends InlineSpan implements HitTestTarget, MouseTrackerAnnotati
       builder.pushStyle(
         style!.getTextStyle(
           textScaler: textScaler,
+          height: lineHeightScaleFactor,
           letterSpacing: letterSpacing,
           wordSpacing: wordSpacing,
         ),
@@ -325,6 +327,7 @@ class TextSpan extends InlineSpan implements HitTestTarget, MouseTrackerAnnotati
           builder,
           textScaler: textScaler,
           dimensions: dimensions,
+          lineHeightScaleFactor: lineHeightScaleFactor,
           letterSpacing: letterSpacing,
           wordSpacing: wordSpacing,
         );

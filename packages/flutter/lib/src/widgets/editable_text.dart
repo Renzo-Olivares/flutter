@@ -3239,16 +3239,9 @@ class EditableTextState extends State<EditableText>
   void didChangeDependencies() {
     super.didChangeDependencies();
 
-    // Apply platform settings to text style.
-    final double? lineHeightScaleFactor = MediaQuery.maybeLineHeightScaleFactorOverrideOf(context);
-    final bool boldText = MediaQuery.boldTextOf(context);
-    if (!boldText && lineHeightScaleFactor == null) {
-      _style = widget.style;
-    } else {
-      _style = widget.style.merge(
-        TextStyle(height: lineHeightScaleFactor, fontWeight: boldText ? FontWeight.bold : null),
-      );
-    }
+    _style = MediaQuery.boldTextOf(context)
+        ? widget.style.merge(const TextStyle(fontWeight: FontWeight.bold))
+        : widget.style;
 
     final AutofillGroupState? newAutofillGroup = AutofillGroup.maybeOf(context);
     if (currentAutofillScope != newAutofillGroup) {
@@ -3388,20 +3381,11 @@ class EditableTextState extends State<EditableText>
     }
 
     if (widget.style != oldWidget.style) {
-      // Apply platform settings to text style.
-      final double? lineHeightScaleFactor = MediaQuery.maybeLineHeightScaleFactorOverrideOf(
-        context,
-      );
-      final bool boldText = MediaQuery.boldTextOf(context);
-      if (!boldText && lineHeightScaleFactor == null) {
-        _style = widget.style;
-      } else {
-        _style = widget.style.merge(
-          TextStyle(height: lineHeightScaleFactor, fontWeight: boldText ? FontWeight.bold : null),
-        );
-      }
       // The _textInputConnection will pick up the new style when it attaches in
       // _openInputConnection.
+      _style = MediaQuery.boldTextOf(context)
+          ? widget.style.merge(const TextStyle(fontWeight: FontWeight.bold))
+          : widget.style;
       if (_hasInputConnection) {
         _textInputConnection!.setStyle(
           fontFamily: _style.fontFamily,
@@ -5668,6 +5652,7 @@ class EditableTextState extends State<EditableText>
       (null, final double textScaleFactor) => TextScaler.linear(textScaleFactor),
       (null, null) => MediaQuery.textScalerOf(context),
     };
+    final double? lineHeightScaleFactor = MediaQuery.maybeLineHeightScaleFactorOverrideOf(context);
     final double? letterSpacing = MediaQuery.maybeLetterSpacingOverrideOf(context);
     final double? wordSpacing = MediaQuery.maybeWordSpacingOverrideOf(context);
     final ui.SemanticsInputType inputType;
@@ -5837,6 +5822,7 @@ class EditableTextState extends State<EditableText>
                                     promptRectRange: _currentPromptRectRange,
                                     promptRectColor: widget.autocorrectionTextRectColor,
                                     clipBehavior: widget.clipBehavior,
+                                    lineHeightScaleFactor: lineHeightScaleFactor,
                                     letterSpacing: letterSpacing,
                                     wordSpacing: wordSpacing,
                                   ),
@@ -5976,6 +5962,7 @@ class _Editable extends MultiChildRenderObjectWidget {
     this.promptRectRange,
     this.promptRectColor,
     required this.clipBehavior,
+    this.lineHeightScaleFactor,
     this.letterSpacing,
     this.wordSpacing,
   }) : selectionHeightStyle = selectionHeightStyle ?? EditableText.defaultSelectionHeightStyle,
@@ -6020,6 +6007,7 @@ class _Editable extends MultiChildRenderObjectWidget {
   final TextRange? promptRectRange;
   final Color? promptRectColor;
   final Clip clipBehavior;
+  final double? lineHeightScaleFactor;
   final double? letterSpacing;
   final double? wordSpacing;
 
@@ -6064,6 +6052,7 @@ class _Editable extends MultiChildRenderObjectWidget {
       promptRectRange: promptRectRange,
       promptRectColor: promptRectColor,
       clipBehavior: clipBehavior,
+      lineHeightScaleFactor: lineHeightScaleFactor,
       letterSpacing: letterSpacing,
       wordSpacing: wordSpacing,
     );
@@ -6110,6 +6099,7 @@ class _Editable extends MultiChildRenderObjectWidget {
       ..promptRectColor = promptRectColor
       ..clipBehavior = clipBehavior
       ..setPromptRectRange(promptRectRange)
+      ..lineHeightScaleFactor = lineHeightScaleFactor
       ..letterSpacing = letterSpacing
       ..wordSpacing = wordSpacing;
   }
@@ -6285,6 +6275,7 @@ class _ScribblePlaceholder extends WidgetSpan {
     List<PlaceholderDimensions>? dimensions,
     double? letterSpacing,
     double? wordSpacing,
+    double? lineHeightScaleFactor,
   }) {
     assert(debugAssertIsValid());
     final bool hasStyle = style != null;
@@ -6292,6 +6283,7 @@ class _ScribblePlaceholder extends WidgetSpan {
       builder.pushStyle(
         style!.getTextStyle(
           textScaler: textScaler,
+          height: lineHeightScaleFactor,
           letterSpacing: letterSpacing,
           wordSpacing: wordSpacing,
         ),

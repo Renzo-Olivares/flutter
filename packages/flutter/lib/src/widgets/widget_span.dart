@@ -158,6 +158,7 @@ class WidgetSpan extends PlaceholderSpan {
     ui.ParagraphBuilder builder, {
     TextScaler textScaler = TextScaler.noScaling,
     List<PlaceholderDimensions>? dimensions,
+    double? lineHeightScaleFactor,
     double? letterSpacing,
     double? wordSpacing,
   }) {
@@ -168,6 +169,7 @@ class WidgetSpan extends PlaceholderSpan {
       builder.pushStyle(
         style!.getTextStyle(
           textScaler: textScaler,
+          height: lineHeightScaleFactor,
           letterSpacing: letterSpacing,
           wordSpacing: wordSpacing,
         ),

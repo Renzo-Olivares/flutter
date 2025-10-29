@@ -714,14 +714,11 @@ class Text extends StatelessWidget {
     if (style == null || style!.inherit) {
       effectiveTextStyle = defaultTextStyle.style.merge(style);
     }
-    final bool boldText = MediaQuery.boldTextOf(context);
     final double? lineHeightScaleFactor = MediaQuery.maybeLineHeightScaleFactorOverrideOf(context);
     final double? letterSpacing = MediaQuery.maybeLetterSpacingOverrideOf(context);
     final double? wordSpacing = MediaQuery.maybeWordSpacingOverrideOf(context);
-    if (boldText || lineHeightScaleFactor != null) {
-      effectiveTextStyle = effectiveTextStyle!.merge(
-        TextStyle(height: lineHeightScaleFactor, fontWeight: boldText ? FontWeight.bold : null),
-      );
+    if (MediaQuery.boldTextOf(context)) {
+      effectiveTextStyle = effectiveTextStyle!.merge(const TextStyle(fontWeight: FontWeight.bold));
     }
     final SelectionRegistrar? registrar = SelectionContainer.maybeOf(context);
     final TextScaler textScaler = switch ((this.textScaler, textScaleFactor)) {
@@ -754,6 +751,7 @@ class Text extends StatelessWidget {
               selectionColor ??
               DefaultSelectionStyle.of(context).selectionColor ??
               DefaultSelectionStyle.defaultColor,
+          lineHeightScaleFactor: lineHeightScaleFactor,
           letterSpacing: letterSpacing,
           wordSpacing: wordSpacing,
           text: TextSpan(
@@ -784,6 +782,7 @@ class Text extends StatelessWidget {
             selectionColor ??
             DefaultSelectionStyle.of(context).selectionColor ??
             DefaultSelectionStyle.defaultColor,
+        lineHeightScaleFactor: lineHeightScaleFactor,
         letterSpacing: letterSpacing,
         wordSpacing: wordSpacing,
         text: TextSpan(
@@ -863,6 +862,7 @@ class _SelectableTextContainer extends StatefulWidget {
     required this.textWidthBasis,
     this.textHeightBehavior,
     required this.selectionColor,
+    this.lineHeightScaleFactor,
     this.letterSpacing,
     this.wordSpacing,
   });
@@ -879,6 +879,7 @@ class _SelectableTextContainer extends StatefulWidget {
   final TextWidthBasis textWidthBasis;
   final ui.TextHeightBehavior? textHeightBehavior;
   final Color selectionColor;
+  final double? lineHeightScaleFactor;
   final double? letterSpacing;
   final double? wordSpacing;
 
@@ -921,6 +922,7 @@ class _SelectableTextContainerState extends State<_SelectableTextContainer> {
         textWidthBasis: widget.textWidthBasis,
         textHeightBehavior: widget.textHeightBehavior,
         selectionColor: widget.selectionColor,
+        lineHeightScaleFactor: widget.lineHeightScaleFactor,
         letterSpacing: widget.letterSpacing,
         wordSpacing: widget.wordSpacing,
         text: widget.text,
@@ -944,6 +946,7 @@ class _RichText extends StatelessWidget {
     required this.textWidthBasis,
     this.textHeightBehavior,
     required this.selectionColor,
+    this.lineHeightScaleFactor,
     this.letterSpacing,
     this.wordSpacing,
   });
@@ -961,6 +964,7 @@ class _RichText extends StatelessWidget {
   final TextWidthBasis textWidthBasis;
   final ui.TextHeightBehavior? textHeightBehavior;
   final Color selectionColor;
+  final double? lineHeightScaleFactor;
   final double? letterSpacing;
   final double? wordSpacing;
 
@@ -981,6 +985,7 @@ class _RichText extends StatelessWidget {
       textHeightBehavior: textHeightBehavior,
       selectionRegistrar: registrar,
       selectionColor: selectionColor,
+      lineHeightScaleFactor: lineHeightScaleFactor,
       letterSpacing: letterSpacing,
       wordSpacing: wordSpacing,
       text: text,

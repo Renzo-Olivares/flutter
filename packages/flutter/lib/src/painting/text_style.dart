@@ -1338,6 +1338,7 @@ class TextStyle with Diagnosticable {
     )
     double textScaleFactor = 1.0,
     TextScaler textScaler = TextScaler.noScaling,
+    double? height,
     double? letterSpacing,
     double? wordSpacing,
   }) {
@@ -1365,7 +1366,7 @@ class TextStyle with Diagnosticable {
       fontSize: fontSize,
       letterSpacing: letterSpacing ?? this.letterSpacing,
       wordSpacing: wordSpacing ?? this.wordSpacing,
-      height: height,
+      height: height ?? this.height,
       locale: locale,
       foreground: foreground,
       background: switch ((background, backgroundColor)) {

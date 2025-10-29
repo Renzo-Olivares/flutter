@@ -610,6 +610,7 @@ class TextPainter {
     StrutStyle? strutStyle,
     TextWidthBasis textWidthBasis = TextWidthBasis.parent,
     TextHeightBehavior? textHeightBehavior,
+    double? lineHeightScaleFactor,
     double? letterSpacing,
     double? wordSpacing,
   }) : assert(text == null || text.debugAssertIsValid()),
@@ -630,6 +631,7 @@ class TextPainter {
        _strutStyle = strutStyle,
        _textWidthBasis = textWidthBasis,
        _textHeightBehavior = textHeightBehavior,
+       _lineHeightScaleFactor = lineHeightScaleFactor,
        _letterSpacing = letterSpacing,
        _wordSpacing = wordSpacing {
     assert(debugMaybeDispatchCreated('painting', 'TextPainter', this));
@@ -1028,10 +1030,20 @@ class TextPainter {
   TextHeightBehavior? get textHeightBehavior => _textHeightBehavior;
   TextHeightBehavior? _textHeightBehavior;
 
-  double? _letterSpacing;
+  /// {@macro flutter.painting.TextStyle.height}
+  double? get lineHeightScaleFactor => _lineHeightScaleFactor;
+  double? _lineHeightScaleFactor;
+  set lineHeightScaleFactor(double? value) {
+    if (_lineHeightScaleFactor == value) {
+      return;
+    }
+    _lineHeightScaleFactor = value;
+    markNeedsLayout();
+  }
 
   /// {@macro flutter.painting.TextStyle.letterSpacing}
   double? get letterSpacing => _letterSpacing;
+  double? _letterSpacing;
   set letterSpacing(double? value) {
     if (_letterSpacing == value) {
       return;
@@ -1040,10 +1052,9 @@ class TextPainter {
     markNeedsLayout();
   }
 
-  double? _wordSpacing;
-
   /// {@macro flutter.painting.TextStyle.wordSpacing}
   double? get wordSpacing => _wordSpacing;
+  double? _wordSpacing;
   set wordSpacing(double? value) {
     if (_wordSpacing == value) {
       return;
@@ -1124,6 +1135,7 @@ class TextPainter {
       textHeightBehavior: _textHeightBehavior,
       ellipsis: _ellipsis,
       locale: _locale,
+      height: lineHeightScaleFactor,
       strutStyle: _strutStyle,
     );
   }
@@ -1135,6 +1147,7 @@ class TextPainter {
     ); // direction doesn't matter, text is just a space
     final ui.TextStyle? textStyle = text?.style?.getTextStyle(
       textScaler: textScaler,
+      height: lineHeightScaleFactor,
       letterSpacing: letterSpacing,
       wordSpacing: wordSpacing,
     );
@@ -1237,6 +1250,7 @@ class TextPainter {
       builder,
       textScaler: textScaler,
       dimensions: _placeholderDimensions,
+      lineHeightScaleFactor: lineHeightScaleFactor,
       letterSpacing: letterSpacing,
       wordSpacing: wordSpacing,
     );

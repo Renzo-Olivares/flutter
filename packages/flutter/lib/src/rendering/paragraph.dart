@@ -337,6 +337,7 @@ class RenderParagraph extends RenderBox
     List<RenderBox>? children,
     Color? selectionColor,
     SelectionRegistrar? registrar,
+    double? lineHeightScaleFactor,
     double? letterSpacing,
     double? wordSpacing,
   }) : assert(text.debugAssertIsValid()),
@@ -361,6 +362,7 @@ class RenderParagraph extends RenderBox
          strutStyle: strutStyle,
          textWidthBasis: textWidthBasis,
          textHeightBehavior: textHeightBehavior,
+         lineHeightScaleFactor: lineHeightScaleFactor,
          letterSpacing: letterSpacing,
          wordSpacing: wordSpacing,
        ) {
@@ -394,7 +396,8 @@ class RenderParagraph extends RenderBox
       ..textWidthBasis = _textPainter.textWidthBasis
       ..textHeightBehavior = _textPainter.textHeightBehavior
       ..letterSpacing = _textPainter.letterSpacing
-      ..wordSpacing = _textPainter.wordSpacing;
+      ..wordSpacing = _textPainter.wordSpacing
+      ..lineHeightScaleFactor = _textPainter.lineHeightScaleFactor;
   }
 
   List<AttributedString>? _cachedAttributedLabels;
@@ -734,6 +737,16 @@ class RenderParagraph extends RenderBox
         false) {
       markNeedsPaint();
     }
+  }
+
+  /// {@macro flutter.painting.TextStyle.height}
+  double? get lineHeightScaleFactor => _textPainter.lineHeightScaleFactor;
+  set lineHeightScaleFactor(double? value) {
+    if (_textPainter.lineHeightScaleFactor == value) {
+      return;
+    }
+    _textPainter.lineHeightScaleFactor = value;
+    markNeedsLayout();
   }
 
   /// {@macro flutter.painting.TextStyle.letterSpacing}

@@ -333,6 +333,7 @@ class RenderEditable extends RenderBox
     required this.textSelectionDelegate,
     RenderEditablePainter? painter,
     RenderEditablePainter? foregroundPainter,
+    double? lineHeightScaleFactor,
     double? letterSpacing,
     double? wordSpacing,
     List<RenderBox>? children,
@@ -365,6 +366,7 @@ class RenderEditable extends RenderBox
          strutStyle: strutStyle,
          textHeightBehavior: textHeightBehavior,
          textWidthBasis: textWidthBasis,
+         lineHeightScaleFactor: lineHeightScaleFactor,
          letterSpacing: letterSpacing,
          wordSpacing: wordSpacing,
        ),
@@ -816,7 +818,10 @@ class RenderEditable extends RenderBox
       ..locale = _textPainter.locale
       ..strutStyle = _textPainter.strutStyle
       ..textWidthBasis = _textPainter.textWidthBasis
-      ..textHeightBehavior = _textPainter.textHeightBehavior;
+      ..textHeightBehavior = _textPainter.textHeightBehavior
+      ..letterSpacing = _textPainter.letterSpacing
+      ..wordSpacing = _textPainter.wordSpacing
+      ..lineHeightScaleFactor = _textPainter.lineHeightScaleFactor;
   }
 
   /// How the text should be aligned horizontally.
@@ -1053,6 +1058,15 @@ class RenderEditable extends RenderBox
       return;
     }
     _textPainter.textScaler = value;
+    markNeedsLayout();
+  }
+
+  double? get lineHeightScaleFactor => _textPainter.lineHeightScaleFactor;
+  set lineHeightScaleFactor(double? value) {
+    if (_textPainter.lineHeightScaleFactor == value) {
+      return;
+    }
+    _textPainter.lineHeightScaleFactor = value;
     markNeedsLayout();
   }
 
