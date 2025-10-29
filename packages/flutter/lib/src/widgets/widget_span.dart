@@ -158,12 +158,20 @@ class WidgetSpan extends PlaceholderSpan {
     ui.ParagraphBuilder builder, {
     TextScaler textScaler = TextScaler.noScaling,
     List<PlaceholderDimensions>? dimensions,
+    double? letterSpacing,
+    double? wordSpacing,
   }) {
     assert(debugAssertIsValid());
     assert(dimensions != null);
     final bool hasStyle = style != null;
     if (hasStyle) {
-      builder.pushStyle(style!.getTextStyle(textScaler: textScaler));
+      builder.pushStyle(
+        style!.getTextStyle(
+          textScaler: textScaler,
+          letterSpacing: letterSpacing,
+          wordSpacing: wordSpacing,
+        ),
+      );
     }
     assert(builder.placeholderCount < dimensions!.length);
     final PlaceholderDimensions currentDimensions = dimensions![builder.placeholderCount];

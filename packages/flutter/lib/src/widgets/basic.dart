@@ -6551,6 +6551,8 @@ class RichText extends MultiChildRenderObjectWidget {
     this.textHeightBehavior,
     this.selectionRegistrar,
     this.selectionColor,
+    this.letterSpacing,
+    this.wordSpacing,
   }) : assert(maxLines == null || maxLines > 0),
        assert(selectionRegistrar == null || selectionColor != null),
        assert(
@@ -6660,6 +6662,12 @@ class RichText extends MultiChildRenderObjectWidget {
   /// widgets.
   final Color? selectionColor;
 
+  /// {@macro flutter.painting.TextStyle.letterSpacing}
+  final double? letterSpacing;
+
+  /// {@macro flutter.painting.TextStyle.wordSpacing}
+  final double? wordSpacing;
+
   @override
   RenderParagraph createRenderObject(BuildContext context) {
     assert(textDirection != null || debugCheckHasDirectionality(context));
@@ -6677,6 +6685,8 @@ class RichText extends MultiChildRenderObjectWidget {
       locale: locale ?? Localizations.maybeLocaleOf(context),
       registrar: selectionRegistrar,
       selectionColor: selectionColor,
+      letterSpacing: letterSpacing,
+      wordSpacing: wordSpacing,
     );
   }
 
@@ -6696,7 +6706,9 @@ class RichText extends MultiChildRenderObjectWidget {
       ..textHeightBehavior = textHeightBehavior
       ..locale = locale ?? Localizations.maybeLocaleOf(context)
       ..registrar = selectionRegistrar
-      ..selectionColor = selectionColor;
+      ..selectionColor = selectionColor
+      ..letterSpacing = letterSpacing
+      ..wordSpacing = wordSpacing;
   }
 
   @override

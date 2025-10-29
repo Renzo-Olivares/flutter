@@ -337,6 +337,8 @@ class RenderParagraph extends RenderBox
     List<RenderBox>? children,
     Color? selectionColor,
     SelectionRegistrar? registrar,
+    double? letterSpacing,
+    double? wordSpacing,
   }) : assert(text.debugAssertIsValid()),
        assert(maxLines == null || maxLines > 0),
        assert(
@@ -359,6 +361,8 @@ class RenderParagraph extends RenderBox
          strutStyle: strutStyle,
          textWidthBasis: textWidthBasis,
          textHeightBehavior: textHeightBehavior,
+         letterSpacing: letterSpacing,
+         wordSpacing: wordSpacing,
        ) {
     addAll(children);
     this.registrar = registrar;
@@ -388,7 +392,9 @@ class RenderParagraph extends RenderBox
       ..locale = _textPainter.locale
       ..strutStyle = _textPainter.strutStyle
       ..textWidthBasis = _textPainter.textWidthBasis
-      ..textHeightBehavior = _textPainter.textHeightBehavior;
+      ..textHeightBehavior = _textPainter.textHeightBehavior
+      ..letterSpacing = _textPainter.letterSpacing
+      ..wordSpacing = _textPainter.wordSpacing;
   }
 
   List<AttributedString>? _cachedAttributedLabels;
@@ -716,6 +722,7 @@ class RenderParagraph extends RenderBox
   /// Ignored if the text is not selectable (e.g. if [registrar] is null).
   Color? get selectionColor => _selectionColor;
   Color? _selectionColor;
+
   set selectionColor(Color? value) {
     if (_selectionColor == value) {
       return;
@@ -727,6 +734,26 @@ class RenderParagraph extends RenderBox
         false) {
       markNeedsPaint();
     }
+  }
+
+  /// {@macro flutter.painting.TextStyle.letterSpacing}
+  double? get letterSpacing => _textPainter.letterSpacing;
+  set letterSpacing(double? value) {
+    if (_textPainter.letterSpacing == value) {
+      return;
+    }
+    _textPainter.letterSpacing = value;
+    markNeedsLayout();
+  }
+
+  /// {@macro flutter.painting.TextStyle.wordSpacing}
+  double? get wordSpacing => _textPainter.wordSpacing;
+  set wordSpacing(double? value) {
+    if (_textPainter.wordSpacing == value) {
+      return;
+    }
+    _textPainter.wordSpacing = value;
+    markNeedsLayout();
   }
 
   Offset _getOffsetForPosition(TextPosition position) {

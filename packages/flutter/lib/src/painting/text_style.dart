@@ -1338,6 +1338,8 @@ class TextStyle with Diagnosticable {
     )
     double textScaleFactor = 1.0,
     TextScaler textScaler = TextScaler.noScaling,
+    double? letterSpacing,
+    double? wordSpacing,
   }) {
     assert(
       identical(textScaler, TextScaler.noScaling) || textScaleFactor == 1.0,
@@ -1361,8 +1363,8 @@ class TextStyle with Diagnosticable {
       fontFamily: fontFamily,
       fontFamilyFallback: fontFamilyFallback,
       fontSize: fontSize,
-      letterSpacing: letterSpacing,
-      wordSpacing: wordSpacing,
+      letterSpacing: letterSpacing ?? this.letterSpacing,
+      wordSpacing: wordSpacing ?? this.wordSpacing,
       height: height,
       locale: locale,
       foreground: foreground,

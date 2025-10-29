@@ -718,14 +718,9 @@ class Text extends StatelessWidget {
     final double? lineHeightScaleFactor = MediaQuery.maybeLineHeightScaleFactorOverrideOf(context);
     final double? letterSpacing = MediaQuery.maybeLetterSpacingOverrideOf(context);
     final double? wordSpacing = MediaQuery.maybeWordSpacingOverrideOf(context);
-    if (boldText || lineHeightScaleFactor != null || letterSpacing != null || wordSpacing != null) {
+    if (boldText || lineHeightScaleFactor != null) {
       effectiveTextStyle = effectiveTextStyle!.merge(
-        TextStyle(
-          height: lineHeightScaleFactor,
-          letterSpacing: letterSpacing,
-          wordSpacing: wordSpacing,
-          fontWeight: boldText ? FontWeight.bold : null,
-        ),
+        TextStyle(height: lineHeightScaleFactor, fontWeight: boldText ? FontWeight.bold : null),
       );
     }
     final SelectionRegistrar? registrar = SelectionContainer.maybeOf(context);
@@ -759,6 +754,8 @@ class Text extends StatelessWidget {
               selectionColor ??
               DefaultSelectionStyle.of(context).selectionColor ??
               DefaultSelectionStyle.defaultColor,
+          letterSpacing: letterSpacing,
+          wordSpacing: wordSpacing,
           text: TextSpan(
             style: effectiveTextStyle,
             text: data,
@@ -787,6 +784,8 @@ class Text extends StatelessWidget {
             selectionColor ??
             DefaultSelectionStyle.of(context).selectionColor ??
             DefaultSelectionStyle.defaultColor,
+        letterSpacing: letterSpacing,
+        wordSpacing: wordSpacing,
         text: TextSpan(
           style: effectiveTextStyle,
           text: data,
@@ -864,6 +863,8 @@ class _SelectableTextContainer extends StatefulWidget {
     required this.textWidthBasis,
     this.textHeightBehavior,
     required this.selectionColor,
+    this.letterSpacing,
+    this.wordSpacing,
   });
 
   final TextSpan text;
@@ -878,6 +879,8 @@ class _SelectableTextContainer extends StatefulWidget {
   final TextWidthBasis textWidthBasis;
   final ui.TextHeightBehavior? textHeightBehavior;
   final Color selectionColor;
+  final double? letterSpacing;
+  final double? wordSpacing;
 
   @override
   State<_SelectableTextContainer> createState() => _SelectableTextContainerState();
@@ -918,6 +921,8 @@ class _SelectableTextContainerState extends State<_SelectableTextContainer> {
         textWidthBasis: widget.textWidthBasis,
         textHeightBehavior: widget.textHeightBehavior,
         selectionColor: widget.selectionColor,
+        letterSpacing: widget.letterSpacing,
+        wordSpacing: widget.wordSpacing,
         text: widget.text,
       ),
     );
@@ -939,6 +944,8 @@ class _RichText extends StatelessWidget {
     required this.textWidthBasis,
     this.textHeightBehavior,
     required this.selectionColor,
+    this.letterSpacing,
+    this.wordSpacing,
   });
 
   final GlobalKey? textKey;
@@ -954,6 +961,8 @@ class _RichText extends StatelessWidget {
   final TextWidthBasis textWidthBasis;
   final ui.TextHeightBehavior? textHeightBehavior;
   final Color selectionColor;
+  final double? letterSpacing;
+  final double? wordSpacing;
 
   @override
   Widget build(BuildContext context) {
@@ -972,6 +981,8 @@ class _RichText extends StatelessWidget {
       textHeightBehavior: textHeightBehavior,
       selectionRegistrar: registrar,
       selectionColor: selectionColor,
+      letterSpacing: letterSpacing,
+      wordSpacing: wordSpacing,
       text: text,
     );
   }

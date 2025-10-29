@@ -610,6 +610,8 @@ class TextPainter {
     StrutStyle? strutStyle,
     TextWidthBasis textWidthBasis = TextWidthBasis.parent,
     TextHeightBehavior? textHeightBehavior,
+    double? letterSpacing,
+    double? wordSpacing,
   }) : assert(text == null || text.debugAssertIsValid()),
        assert(maxLines == null || maxLines > 0),
        assert(
@@ -627,7 +629,9 @@ class TextPainter {
        _locale = locale,
        _strutStyle = strutStyle,
        _textWidthBasis = textWidthBasis,
-       _textHeightBehavior = textHeightBehavior {
+       _textHeightBehavior = textHeightBehavior,
+       _letterSpacing = letterSpacing,
+       _wordSpacing = wordSpacing {
     assert(debugMaybeDispatchCreated('painting', 'TextPainter', this));
   }
 
@@ -1023,6 +1027,31 @@ class TextPainter {
   /// {@macro dart.ui.textHeightBehavior}
   TextHeightBehavior? get textHeightBehavior => _textHeightBehavior;
   TextHeightBehavior? _textHeightBehavior;
+
+  double? _letterSpacing;
+
+  /// {@macro flutter.painting.TextStyle.letterSpacing}
+  double? get letterSpacing => _letterSpacing;
+  set letterSpacing(double? value) {
+    if (_letterSpacing == value) {
+      return;
+    }
+    _letterSpacing = value;
+    markNeedsLayout();
+  }
+
+  double? _wordSpacing;
+
+  /// {@macro flutter.painting.TextStyle.wordSpacing}
+  double? get wordSpacing => _wordSpacing;
+  set wordSpacing(double? value) {
+    if (_wordSpacing == value) {
+      return;
+    }
+    _wordSpacing = value;
+    markNeedsLayout();
+  }
+
   set textHeightBehavior(TextHeightBehavior? value) {
     if (_textHeightBehavior == value) {
       return;
@@ -1104,7 +1133,11 @@ class TextPainter {
     final ui.ParagraphBuilder builder = ui.ParagraphBuilder(
       _createParagraphStyle(TextAlign.left),
     ); // direction doesn't matter, text is just a space
-    final ui.TextStyle? textStyle = text?.style?.getTextStyle(textScaler: textScaler);
+    final ui.TextStyle? textStyle = text?.style?.getTextStyle(
+      textScaler: textScaler,
+      letterSpacing: letterSpacing,
+      wordSpacing: wordSpacing,
+    );
     if (textStyle != null) {
       builder.pushStyle(textStyle);
     }
@@ -1200,7 +1233,13 @@ class TextPainter {
   // assign it to _paragraph.
   ui.Paragraph _createParagraph(InlineSpan text) {
     final ui.ParagraphBuilder builder = ui.ParagraphBuilder(_createParagraphStyle());
-    text.build(builder, textScaler: textScaler, dimensions: _placeholderDimensions);
+    text.build(
+      builder,
+      textScaler: textScaler,
+      dimensions: _placeholderDimensions,
+      letterSpacing: letterSpacing,
+      wordSpacing: wordSpacing,
+    );
     assert(() {
       _debugMarkNeedsLayoutCallStack = null;
       return true;
