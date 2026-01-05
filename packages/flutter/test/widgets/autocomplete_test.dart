@@ -7,6 +7,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'editable_text_utils.dart';
+
 class User {
   const User({required this.email, required this.name});
 
@@ -69,7 +71,7 @@ void main() {
                 ) {
                   focusNode = fieldFocusNode;
                   textEditingController = fieldTextEditingController;
-                  return TextField(
+                  return BasicTestTextField(
                     key: fieldKey,
                     focusNode: focusNode,
                     controller: textEditingController,
