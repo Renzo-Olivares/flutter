@@ -491,7 +491,7 @@ class SelectableRegionState extends State<SelectableRegion>
     }
     if (orientation != _lastOrientation) {
       _lastOrientation = orientation;
-      hideToolbar(defaultTargetPlatform == TargetPlatform.android);
+      hideToolbar(hideHandles: defaultTargetPlatform == TargetPlatform.android);
     }
   }
 
@@ -933,7 +933,7 @@ class SelectableRegionState extends State<SelectableRegion>
       // moving the selection, the context menu will be toggled.
       final bool toolbarIsVisible = _selectionOverlay?.toolbarIsVisible ?? false;
       if (toolbarIsVisible) {
-        hideToolbar(false);
+        hideToolbar(hideHandles: false);
       } else {
         _showToolbar();
       }
@@ -1708,7 +1708,7 @@ class SelectableRegionState extends State<SelectableRegion>
             _selectionStatusNotifier.value = SelectableRegionSelectionStatus.changing;
             _finalizeSelectableRegionStatus();
           case TargetPlatform.iOS:
-            hideToolbar(false);
+            hideToolbar(hideHandles: false);
           case TargetPlatform.linux:
           case TargetPlatform.macOS:
           case TargetPlatform.windows:
@@ -1739,7 +1739,7 @@ class SelectableRegionState extends State<SelectableRegion>
             _selectionStatusNotifier.value = SelectableRegionSelectionStatus.changing;
             _finalizeSelectableRegionStatus();
           case TargetPlatform.iOS:
-            hideToolbar(false);
+            hideToolbar(hideHandles: false);
           case TargetPlatform.linux:
           case TargetPlatform.macOS:
           case TargetPlatform.windows:
@@ -1824,7 +1824,7 @@ class SelectableRegionState extends State<SelectableRegion>
   bool get pasteEnabled => false;
 
   @override
-  void hideToolbar([bool hideHandles = true]) {
+  void hideToolbar({bool hideHandles = true}) {
     _selectionOverlay?.hideToolbar();
     if (hideHandles) {
       _selectionOverlay?.hideHandles();

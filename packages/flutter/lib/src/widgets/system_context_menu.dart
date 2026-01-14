@@ -85,9 +85,14 @@ class SystemContextMenu extends StatefulWidget {
         ),
       ),
       items: items ?? getDefaultItems(editableTextState),
-      onSystemHide: () => editableTextState.hideToolbar(false),
+      onSystemHide: () => editableTextState.hideToolbar(
+        hideHandles: false,
+        toggleDebounceThreshold: _kSystemToolbarToggleDebounceThreshold,
+      ),
     );
   }
+
+  static const Duration _kSystemToolbarToggleDebounceThreshold = Duration(milliseconds: 100);
 
   /// The [Rect] that the context menu should point to.
   final Rect anchor;

@@ -4775,7 +4775,7 @@ void main() {
 
       // On Mac, the toolbar blocks the drag on the right handle, so hide it.
       final EditableTextState editableTextState = tester.state(find.byType(EditableText));
-      editableTextState.hideToolbar(false);
+      editableTextState.hideToolbar(hideHandles: false);
       await tester.pumpAndSettle();
 
       // Drag the right handle until there's only 1 char selected.
@@ -4850,7 +4850,7 @@ void main() {
 
       // On Mac, the toolbar blocks the drag on the right handle, so hide it.
       final EditableTextState editableTextState = tester.state(find.byType(EditableText));
-      editableTextState.hideToolbar(false);
+      editableTextState.hideToolbar(hideHandles: false);
       await tester.pumpAndSettle();
 
       // Drag the right handle until there's only 1 char selected.
@@ -9398,6 +9398,70 @@ void main() {
           ),
         );
         expect(boxes.length, 2);
+      },
+      skip: kIsWeb, // [intended] on web the browser handles the context menu.
+      variant: TargetPlatformVariant.only(TargetPlatform.iOS),
+    );
+
+    testWidgets(
+      'iOS system context menu, tapping the selection toggles the toolbar',
+      (WidgetTester tester) async {
+        tester.platformDispatcher.supportsShowingSystemContextMenu = true;
+        addTearDown(() {
+          tester.platformDispatcher.resetSupportsShowingSystemContextMenu();
+          tester.view.reset();
+        });
+
+        final TextEditingController controller = TextEditingController(text: 'one two three');
+        addTearDown(controller.dispose);
+
+        await tester.pumpWidget(
+          // Don't wrap with the global View so that the change to
+          // platformDispatcher is read.
+          wrapWithView: false,
+          View(
+            view: tester.view,
+            child: CupertinoApp(home: CupertinoTextField(controller: controller)),
+          ),
+        );
+
+        // No context menu shown.
+        expect(find.byType(SystemContextMenu), findsNothing);
+
+        // Double tap to select the first word and show the menu.
+        await tester.tapAt(textOffsetToPosition(tester, 1));
+        await tester.pump(const Duration(milliseconds: 50));
+        await tester.tapAt(textOffsetToPosition(tester, 1));
+        await tester.pumpAndSettle(kDoubleTapTimeout);
+
+        expect(find.byType(SystemContextMenu), findsOneWidget);
+
+        // Simulate system hiding the menu as a result of tapping outside of it.
+        final ByteData? messageBytes = const JSONMessageCodec().encodeMessage(<String, dynamic>{
+          'method': 'ContextMenu.onDismissSystemContextMenu',
+        });
+        Object? error;
+        try {
+          await tester.binding.defaultBinaryMessenger.handlePlatformMessage(
+            'flutter/platform',
+            messageBytes,
+            (ByteData? data) {},
+          );
+        } catch (e) {
+          error = e;
+        }
+        // Tap the selection to toggle the toolbar (hide).
+        await tester.tapAt(textOffsetToPosition(tester, 1));
+        await tester.pumpAndSettle();
+
+        expect(error, isNull);
+        expect(find.byType(SystemContextMenu), findsNothing);
+
+        // Tap again to show the context menu.
+        await tester.pumpAndSettle(kDoubleTapTimeout);
+        await tester.tapAt(textOffsetToPosition(tester, 1));
+        await tester.pumpAndSettle();
+        expect(find.byType(SystemContextMenu), findsOneWidget);
       },
       skip: kIsWeb, // [intended] on web the browser handles the context menu.
       variant: TargetPlatformVariant.only(TargetPlatform.iOS),

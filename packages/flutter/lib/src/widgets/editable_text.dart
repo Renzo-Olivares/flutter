@@ -2756,7 +2756,7 @@ class EditableTextState extends State<EditableText>
     Clipboard.setData(ClipboardData(text: selection.textInside(text)));
     if (cause == SelectionChangedCause.toolbar) {
       bringIntoView(textEditingValue.selection.extent);
-      hideToolbar(false);
+      hideToolbar(hideHandles: false);
 
       switch (defaultTargetPlatform) {
         case TargetPlatform.iOS:
@@ -3315,7 +3315,7 @@ class EditableTextState extends State<EditableText>
     if (orientation != _lastOrientation) {
       _lastOrientation = orientation;
       if (defaultTargetPlatform == TargetPlatform.iOS) {
-        hideToolbar(false);
+        hideToolbar(hideHandles: false);
       }
       if (defaultTargetPlatform == TargetPlatform.android) {
         hideToolbar();
@@ -3534,7 +3534,7 @@ class EditableTextState extends State<EditableText>
         // Hide the toolbar if the text was changed, but only hide the toolbar
         // overlay; the selection handle's visibility will be handled
         // by `_handleSelectionChanged`. https://github.com/flutter/flutter/issues/108673
-        hideToolbar(false);
+        hideToolbar(hideHandles: false);
       }
       _currentPromptRectRange = null;
 
@@ -5024,8 +5024,28 @@ class EditableTextState extends State<EditableText>
     return true;
   }
 
+  // The time when the last call to [hideSystemToolbar] was made.
+  Duration? _hideSystemToolbarLastTimestamp;
+  // The threshold that should be exceeded since the last
+  // `_hideSystemToolbarLastTimestamp` to show the toolbar
+  // in a subsequent call to [toggleToolbar].
+  Duration? _toolbarToggleDebounceThreshold;
+
+  /// Hides the text selection toolbar.
+  ///
+  /// By default, [hideHandles] is true, and the toolbar is hidden along with its
+  /// handles. If [hideHandles] is set to false, then the toolbar will be hidden
+  /// but the handles will remain.
+  ///
+  /// When [toggleDebounceThreshold] is non-null, a subsequent call to [toggleToolbar]
+  /// should not show the toolbar unless a duration threshold of [toggleDebounceThreshold]
+  /// has been exceeded.
   @override
-  void hideToolbar([bool hideHandles = true]) {
+  void hideToolbar({bool hideHandles = true, Duration? toggleDebounceThreshold}) {
+    if (toggleDebounceThreshold != null) {
+      _toolbarToggleDebounceThreshold = toggleDebounceThreshold;
+      _hideSystemToolbarLastTimestamp = SchedulerBinding.instance.currentSystemFrameTimeStamp;
+    }
     // Stop listening to parent scroll events when toolbar is hidden.
     _disposeScrollNotificationObserver();
     if (hideHandles) {
@@ -5041,8 +5061,33 @@ class EditableTextState extends State<EditableText>
   void toggleToolbar([bool hideHandles = true]) {
     final TextSelectionOverlay selectionOverlay = _selectionOverlay ??= _createSelectionOverlay();
     if (selectionOverlay.toolbarIsVisible) {
-      hideToolbar(hideHandles);
+      hideToolbar(hideHandles: hideHandles);
     } else {
+      if (_hideSystemToolbarLastTimestamp != null &&
+          _toolbarToggleDebounceThreshold != null &&
+          (SchedulerBinding.instance.currentSystemFrameTimeStamp -
+                  _hideSystemToolbarLastTimestamp!) <
+              _toolbarToggleDebounceThreshold!) {
+        // Do not show the system toolbar if it was only just hidden. This is
+        // needed to prevent the system toolbar from being shown again when tapping
+        // the selection to toggle the toolbar on iOS.
+        //
+        // More context:
+        //
+        // The framework implements a feature on iOS that toggles the toolbar whenever
+        // the selection is tapped on. The system context menu on iOS dismisses itself
+        // whenever a tap happens outside of it. In this scenario the framework first
+        // handles the dismiss event from the platform as a result of the tap and hides
+        // the toolbar. Then the framework handles the same tap and attempts to toggle
+        // the toolbar. Since the toolbar is hidden at the time when the framework handles
+        // the tap it attempts to show the toolbar again. The expected behavior would be
+        // for it to keep the toolbar hidden on that same tap, and only with a subsequent
+        // tap should it show the toolbar again. To prevent this, we debounce the toggle.
+        return;
+      } else {
+        _hideSystemToolbarLastTimestamp = null;
+        _toolbarToggleDebounceThreshold = null;
+      }
       showToolbar();
     }
   }
@@ -5501,7 +5546,7 @@ class EditableTextState extends State<EditableText>
 
   Object? _hideToolbarIfVisible(DismissIntent intent) {
     if (_selectionOverlay?.toolbarIsVisible ?? false) {
-      hideToolbar(false);
+      hideToolbar(hideHandles: false);
       return null;
     }
     return Actions.invoke(context, intent);
@@ -6403,7 +6448,7 @@ class _DeleteTextAction<T extends DirectionalTextEditingIntent> extends ContextA
       // Hide the toolbar if the text was changed, but only hide the toolbar
       // overlay; the selection handle's visibility will be handled
       // by `_handleSelectionChanged`.
-      state.hideToolbar(false);
+      state.hideToolbar(hideHandles: false);
     }
   }
 
