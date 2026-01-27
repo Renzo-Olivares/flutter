@@ -418,7 +418,7 @@ class RenderParagraph extends RenderBox
         _cachedCombinedSemanticsInfos = null;
         markNeedsLayout();
         _removeSelectionRegistrarSubscription();
-        _disposeSelectableFragments();
+        _disposeSelectableFragments(preserveSelection: true);
         _updateSelectionRegistrarSubscription();
     }
   }
@@ -450,6 +450,9 @@ class RenderParagraph extends RenderBox
   // paragraph splits on [PlaceholderSpan.placeholderCodeUnit], and stores each
   // fragment in this list.
   List<_SelectableFragment>? _lastSelectableFragments;
+  // This is used to temporarily store the selection state of the fragments
+  // when the text changes.
+  List<_SelectableFragment>? _stashedSelectableFragments;
 
   /// The [SelectionRegistrar] this paragraph will be, or is, registered to.
   SelectionRegistrar? get registrar => _registrar;
@@ -469,6 +472,29 @@ class RenderParagraph extends RenderBox
       return;
     }
     _lastSelectableFragments ??= _getSelectableFragments();
+
+    if (_stashedSelectableFragments != null) {
+      final List<_SelectableFragment> newFragments = _lastSelectableFragments!;
+      final List<_SelectableFragment> oldFragments = _stashedSelectableFragments!;
+      if (newFragments.length == oldFragments.length) {
+        for (int i = 0; i < newFragments.length; i += 1) {
+          final _SelectableFragment newFragment = newFragments[i];
+          final _SelectableFragment oldFragment = oldFragments[i];
+          if (newFragment.range != oldFragment.range) {
+            continue;
+          }
+          newFragment._textSelectionStart = oldFragment._textSelectionStart;
+          newFragment._textSelectionEnd = oldFragment._textSelectionEnd;
+          // We don't need to call _didChangeSelection here because the selection
+          // is not changed, only the fragment is recreated.
+        }
+      }
+      for (final _SelectableFragment fragment in oldFragments) {
+        fragment.dispose();
+      }
+      _stashedSelectableFragments = null;
+    }
+
     _lastSelectableFragments!.forEach(_registrar!.add);
     if (_lastSelectableFragments!.isNotEmpty) {
       markNeedsCompositingBitsUpdate();
@@ -518,12 +544,16 @@ class RenderParagraph extends RenderBox
     return _lastSelectableFragments!.contains(selectable);
   }
 
-  void _disposeSelectableFragments() {
+  void _disposeSelectableFragments({bool preserveSelection = false}) {
     if (_lastSelectableFragments == null) {
       return;
     }
-    for (final _SelectableFragment fragment in _lastSelectableFragments!) {
-      fragment.dispose();
+    if (preserveSelection) {
+      _stashedSelectableFragments = _lastSelectableFragments;
+    } else {
+      for (final _SelectableFragment fragment in _lastSelectableFragments!) {
+        fragment.dispose();
+      }
     }
     _lastSelectableFragments = null;
   }
