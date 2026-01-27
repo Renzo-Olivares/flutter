@@ -1584,6 +1584,9 @@ class _SelectableFragment
           directionallyExtendSelection.direction,
         );
     }
+    debugPrint(
+      'dispatchSelectionEvent: $event,\n result: $result,\n for ${range.textInside(fullText)},\n fulltext: $fullText\n',
+    );
 
     if (existingSelectionStart != _textSelectionStart ||
         existingSelectionEnd != _textSelectionEnd) {

@@ -2435,7 +2435,6 @@ abstract class MultiSelectableSelectionContainerDelegate extends SelectionContai
         _scheduledSelectableUpdate = false;
         _updateSelectables();
       }
-
       if (SchedulerBinding.instance.schedulerPhase == SchedulerPhase.postFrameCallbacks) {
         // A new task can be scheduled as a result of running the scheduled task
         // from another MultiSelectableSelectionContainerDelegate. This can
@@ -2452,11 +2451,28 @@ abstract class MultiSelectableSelectionContainerDelegate extends SelectionContai
   }
 
   void _updateSelectables() {
-    // Remove offScreen selectable.
-    if (_additions.isNotEmpty) {
-      _flushAdditions();
+    try {
+      // Remove offScreen selectable.
+      if (_additions.isNotEmpty) {
+        // print('Flushing additions: ${_additions.length}');
+        _flushAdditions();
+        // print('Flush success');
+      }
+      didChangeSelectables();
+    } on AssertionError catch (e) {
+      if (e.message != null && e.message.toString().contains('RenderBox was not laid out')) {
+        // print('Caught layout error, retrying...');
+        // If the layout is not ready, retry in the next frame.
+        // If the layout is not ready, retry in the next frame.
+        // If we are already in the post frame callbacks, we need to schedule
+        // a new post frame callback to retry in the next frame.
+        SchedulerBinding.instance.addPostFrameCallback((Duration timeStamp) {
+          _scheduleSelectableUpdate();
+        }, debugLabel: 'SelectionContainer.retryUpdateSelectables');
+        return;
+      }
+      rethrow;
     }
-    didChangeSelectables();
   }
 
   void _flushAdditions() {
@@ -2487,11 +2503,11 @@ abstract class MultiSelectableSelectionContainerDelegate extends SelectionContai
       // If the merging selectable falls in the selection range, their selection
       // needs to be updated.
       final Selectable mergingSelectable = mergingSelectables[mergingIndex];
+      mergingSelectable.addListener(_handleSelectableGeometryChange);
       if (existingIndex < max(currentSelectionStartIndex, currentSelectionEndIndex) &&
           existingIndex > min(currentSelectionStartIndex, currentSelectionEndIndex)) {
         ensureChildUpdated(mergingSelectable);
       }
-      mergingSelectable.addListener(_handleSelectableGeometryChange);
       selectables.add(mergingSelectable);
       mergingIndex += 1;
     }
@@ -2511,7 +2527,9 @@ abstract class MultiSelectableSelectionContainerDelegate extends SelectionContai
   }
 
   void _removeSelectable(Selectable selectable) {
-    assert(selectables.contains(selectable), 'The selectable is not in this registrar.');
+    if (!selectables.contains(selectable)) {
+      return;
+    }
     final int index = selectables.indexOf(selectable);
     selectables.removeAt(index);
     if (index <= currentSelectionEndIndex) {
