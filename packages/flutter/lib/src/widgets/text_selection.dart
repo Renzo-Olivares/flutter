@@ -2607,7 +2607,7 @@ class TextSelectionGestureDetectorBuilder {
         break;
       // On desktop platforms the selection is set on tap down.
       case TargetPlatform.android:
-        editableText.hideToolbar(false);
+        editableText.hideToolbar(hideHandles: false);
         if (isShiftPressedValid) {
           _extendSelection(details.globalPosition, SelectionChangedCause.tap);
           return;
@@ -2615,7 +2615,7 @@ class TextSelectionGestureDetectorBuilder {
         renderEditable.selectPosition(cause: SelectionChangedCause.tap);
         editableText.showSpellCheckSuggestionsToolbar();
       case TargetPlatform.fuchsia:
-        editableText.hideToolbar(false);
+        editableText.hideToolbar(hideHandles: false);
         if (isShiftPressedValid) {
           _extendSelection(details.globalPosition, SelectionChangedCause.tap);
           return;
@@ -2691,7 +2691,7 @@ class TextSelectionGestureDetectorBuilder {
                   !renderEditable.readOnly) {
                 editableText.toggleToolbar(false);
               } else {
-                editableText.hideToolbar(false);
+                editableText.hideToolbar(hideHandles: false);
               }
             }
         }
