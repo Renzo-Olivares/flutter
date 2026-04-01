@@ -2495,6 +2495,9 @@ class EditableTextState extends State<EditableText>
   late final Simulation _iosBlinkCursorSimulation = _DiscreteKeyFrameSimulation.iOSBlinkingCaret();
 
   final ValueNotifier<bool> _cursorVisibilityNotifier = ValueNotifier<bool>(true);
+
+  final ValueNotifier<bool> _startHandleVisibleInExternalViewport = ValueNotifier<bool>(true);
+  final ValueNotifier<bool> _endHandleVisibleInExternalViewport = ValueNotifier<bool>(true);
   final GlobalKey _editableKey = GlobalKey();
 
   /// Detects whether the clipboard can paste.
@@ -4174,8 +4177,11 @@ class EditableTextState extends State<EditableText>
   }
 
   void _handleContextMenuOnParentScroll(ScrollNotification notification) {
+    print('=== _handleContextMenuOnParentScroll === notification: $notification');
     // Do some preliminary checks to avoid expensive subtree traversal.
-    if (notification is! ScrollStartNotification && notification is! ScrollEndNotification) {
+    if (notification is! ScrollStartNotification &&
+        notification is! ScrollEndNotification &&
+        notification is! ScrollUpdateNotification) {
       return;
     }
     switch (notification) {
@@ -4188,7 +4194,11 @@ class EditableTextState extends State<EditableText>
       case ScrollNotification(:final BuildContext? context)
           when !_isInternalScrollableNotification(context) &&
               _scrollableNotificationIsFromSameSubtree(context):
-        _handleContextMenuOnScroll(notification);
+        if (notification is ScrollUpdateNotification) {
+          _updateHandlesVisibilityInExternalViewport();
+        } else {
+          _handleContextMenuOnScroll(notification);
+        }
     }
   }
 
@@ -4213,6 +4223,7 @@ class EditableTextState extends State<EditableText>
 
   bool _showToolbarOnScreenScheduled = false;
   void _handleContextMenuOnScroll(ScrollNotification notification) {
+    debugPrint('handleContextMenuOnScroll');
     if (_webContextMenuEnabled) {
       return;
     }
@@ -4283,6 +4294,18 @@ class EditableTextState extends State<EditableText>
         final bool selectionOverlapsWithDeviceRect =
             !selectionBounds.hasNaN && deviceRect.overlaps(selectionBounds);
 
+        // Update handle visibilities in external viewport
+        if (_value.selection.isValid) {
+          final Rect startLocal = renderEditable.getLocalRectForCaret(
+            TextPosition(offset: _value.selection.start),
+          );
+          final Rect endLocal = renderEditable.getLocalRectForCaret(
+            TextPosition(offset: _value.selection.end),
+          );
+          _startHandleVisibleInExternalViewport.value = _selectionInViewport(startLocal);
+          _endHandleVisibleInExternalViewport.value = _selectionInViewport(endLocal);
+        }
+
         if (selectionVisibleInEditable &&
             selectionOverlapsWithDeviceRect &&
             _selectionInViewport(_dataWhenToolbarShowScheduled!.selectionBounds)) {
@@ -4293,6 +4316,20 @@ class EditableTextState extends State<EditableText>
     }
   }
 
+  void _updateHandlesVisibilityInExternalViewport() {
+    if (_value.selection.isValid) {
+      final Rect startLocal = renderEditable.getLocalRectForCaret(
+        TextPosition(offset: _value.selection.start),
+      );
+      final Rect endLocal = renderEditable.getLocalRectForCaret(
+        TextPosition(offset: _value.selection.end),
+      );
+      _startHandleVisibleInExternalViewport.value = _selectionInViewport(startLocal);
+      _endHandleVisibleInExternalViewport.value = _selectionInViewport(endLocal);
+    }
+  }
+
+
   bool _selectionInViewport(Rect selectionBounds) {
     RenderAbstractViewport? closestViewport = RenderAbstractViewport.maybeOf(renderEditable);
     while (closestViewport != null) {
@@ -4300,11 +4337,28 @@ class EditableTextState extends State<EditableText>
         renderEditable.getTransformTo(closestViewport),
         selectionBounds,
       );
+      final Rect paintBounds = closestViewport.paintBounds;
+      print('=== _selectionInViewport ===');
+      print('  selectionBoundsLocalToViewport: $selectionBoundsLocalToViewport');
+      print('  paintBounds: $paintBounds');
+
+      // if (selectionBoundsLocalToViewport.left < paintBounds.left ||
+      //     selectionBoundsLocalToViewport.top < paintBounds.top ||
+      //     selectionBoundsLocalToViewport.right > paintBounds.right ||
+      //     selectionBoundsLocalToViewport.bottom > paintBounds.bottom) {
+      // if (selectionBoundsLocalToViewport.hasNaN ||
+      //     closestViewport.paintBounds.hasNaN ||
+      //     !closestViewport.paintBounds.overlaps(selectionBoundsLocalToViewport)) {
       if (selectionBoundsLocalToViewport.hasNaN ||
           closestViewport.paintBounds.hasNaN ||
-          !closestViewport.paintBounds.overlaps(selectionBoundsLocalToViewport)) {
+          (selectionBoundsLocalToViewport.left < paintBounds.left ||
+              selectionBoundsLocalToViewport.top < paintBounds.top ||
+              selectionBoundsLocalToViewport.right > paintBounds.right ||
+              selectionBoundsLocalToViewport.bottom > paintBounds.bottom)) {
+        print('  -> HIDING! (Outside bounds)');
         return false;
       }
+      print('  -> SHOWING! (Within bounds)');
       closestViewport = RenderAbstractViewport.maybeOf(closestViewport.parent);
     }
     return true;
@@ -4331,6 +4385,8 @@ class EditableTextState extends State<EditableText>
               return contextMenuBuilder(context, this);
             },
       magnifierConfiguration: widget.magnifierConfiguration,
+      startHandleVisibleInExternalViewport: _startHandleVisibleInExternalViewport,
+      endHandleVisibleInExternalViewport: _endHandleVisibleInExternalViewport,
     );
 
     return selectionOverlay;
@@ -4376,6 +4432,12 @@ class EditableTextState extends State<EditableText>
       }
       _selectionOverlay!.handlesVisible = widget.showSelectionHandles;
       _selectionOverlay!.showHandles();
+      if (_platformSupportsFadeOnScroll && !_listeningToScrollNotificationObserver) {
+        _listeningToScrollNotificationObserver = true;
+        _scrollNotificationObserver?.removeListener(_handleContextMenuOnParentScroll);
+        _scrollNotificationObserver = ScrollNotificationObserver.maybeOf(context);
+        _scrollNotificationObserver?.addListener(_handleContextMenuOnParentScroll);
+      }
     }
     // TODO(chunhtai): we should make sure selection actually changed before
     // we call the onSelectionChanged.

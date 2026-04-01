@@ -17966,6 +17966,123 @@ void main() {
     controller.selection = const TextSelection.collapsed(offset: 0);
     await tester.pump();
   });
+
+  testWidgets('Handles hide when scrolled out of external viewport', (WidgetTester tester) async {
+    final controller = TextEditingController(text: ('Hello world ' * 100) + '\n' * 100);
+    final focusNode = FocusNode();
+
+    final selectionControls = _SimpleTextSelectionControls();
+
+    await tester.pumpWidget(
+      WidgetsApp(
+        color: const Color(0xFF112233),
+        onGenerateRoute: (RouteSettings settings) {
+          return PageRouteBuilder<void>(
+            pageBuilder:
+                (
+                  BuildContext context,
+                  Animation<double> animation,
+                  Animation<double> secondaryAnimation,
+                ) {
+                  return CustomScrollView(
+                    slivers: [
+                      SliverToBoxAdapter(
+                        child: SizedBox(
+                          height: 2000,
+                          child: EditableText(
+                            controller: controller,
+                            focusNode: focusNode,
+                            style: const TextStyle(fontSize: 20),
+                            cursorColor: const Color(0xFFFF0000),
+                            backgroundCursorColor: const Color(0xFF888888),
+                            maxLines: null,
+                            selectionControls: selectionControls,
+                          ),
+                        ),
+                      ),
+                    ],
+                  );
+                },
+          );
+        },
+      ),
+    );
+
+    // Tap at the top to focus and show handles
+    await tester.tapAt(const Offset(400, 100));
+    await tester.pumpAndSettle();
+
+    // Select all text
+    controller.selection = TextSelection(baseOffset: 0, extentOffset: controller.text.length);
+    await tester.pumpAndSettle();
+
+    // Verify handles are visible
+    final Finder handleFinder = find.byWidgetPredicate(
+      (widget) => widget.runtimeType.toString().contains('SelectionHandleOverlay'),
+    );
+    expect(handleFinder, findsNWidgets(2)); // Start and end handles
+
+    // Drag to scroll down by 1000 pixels (scrolling the top selection off-screen)
+    final TestGesture gesture = await tester.startGesture(const Offset(400, 300));
+    await gesture.moveBy(const Offset(0, -1000));
+    await gesture.up();
+    await tester.pumpAndSettle();
+
+    // The handles fade out when scrolled out of view.
+    final Finder fadeTransitionFinder = find.descendant(
+      of: handleFinder,
+      matching: find.byType(FadeTransition),
+    );
+    expect(fadeTransitionFinder, findsNWidgets(2)); // Still in tree
+
+    for (final Element element in fadeTransitionFinder.evaluate()) {
+      final fadeTransition = element.widget as FadeTransition;
+      expect(fadeTransition.opacity.value, 0.0);
+    }
+  });
+}
+
+class _SimpleTextSelectionControls extends TextSelectionControls {
+  @override
+  Widget buildToolbar(
+    BuildContext context,
+    Rect globalEditableRegion,
+    double textLineHeight,
+    Offset position,
+    List<TextSelectionPoint> endpoints,
+    TextSelectionDelegate delegate,
+    ValueListenable<ClipboardStatus>? clipboardStatus,
+    Offset? lastSecondaryTapDownPosition,
+  ) {
+    return const SizedBox();
+  }
+
+  @override
+  Widget buildHandle(
+    BuildContext context,
+    TextSelectionHandleType type,
+    double textLineHeight, [
+    VoidCallback? onTap,
+  ]) {
+    return const SizedBox(width: 10, height: 10);
+  }
+
+  @override
+  Size getHandleSize(double textLineHeight) {
+    return const Size(10, 10);
+  }
+
+  @override
+  Offset getHandleAnchor(TextSelectionHandleType type, double textLineHeight) {
+    return Offset.zero;
+  }
+
+  @override
+  bool canCut(TextSelectionDelegate delegate) => true;
+  @override
+  bool canCopy(TextSelectionDelegate delegate) => true;
+  @override
+  bool canPaste(TextSelectionDelegate delegate) => true;
 }
 
 class UnsettableController extends TextEditingController {

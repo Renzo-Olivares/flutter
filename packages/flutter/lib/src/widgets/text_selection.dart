@@ -347,11 +347,15 @@ class TextSelectionOverlay {
     ClipboardStatusNotifier? clipboardStatus,
     this.contextMenuBuilder,
     required TextMagnifierConfiguration magnifierConfiguration,
+    this.startHandleVisibleInExternalViewport,
+    this.endHandleVisibleInExternalViewport,
   }) : _handlesVisible = handlesVisible,
        _value = value {
     assert(debugMaybeDispatchCreated('widgets', 'TextSelectionOverlay', this));
     renderObject.selectionStartInViewport.addListener(_updateTextSelectionOverlayVisibilities);
     renderObject.selectionEndInViewport.addListener(_updateTextSelectionOverlayVisibilities);
+    startHandleVisibleInExternalViewport?.addListener(_updateTextSelectionOverlayVisibilities);
+    endHandleVisibleInExternalViewport?.addListener(_updateTextSelectionOverlayVisibilities);
     _updateTextSelectionOverlayVisibilities();
     _selectionOverlay = SelectionOverlay(
       magnifierConfiguration: magnifierConfiguration,
@@ -410,6 +414,12 @@ class TextSelectionOverlay {
   /// If not provided, no context menu will be built.
   final WidgetBuilder? contextMenuBuilder;
 
+  /// External visibility signal for start handle.
+  final ValueListenable<bool>? startHandleVisibleInExternalViewport;
+
+  /// External visibility signal for end handle.
+  final ValueListenable<bool>? endHandleVisibleInExternalViewport;
+
   /// Retrieve current value.
   @visibleForTesting
   TextEditingValue get value => _value;
@@ -424,9 +434,9 @@ class TextSelectionOverlay {
 
   void _updateTextSelectionOverlayVisibilities() {
     _effectiveStartHandleVisibility.value =
-        _handlesVisible && renderObject.selectionStartInViewport.value;
+        _handlesVisible && renderObject.selectionStartInViewport.value && (startHandleVisibleInExternalViewport?.value ?? true);
     _effectiveEndHandleVisibility.value =
-        _handlesVisible && renderObject.selectionEndInViewport.value;
+        _handlesVisible && renderObject.selectionEndInViewport.value && (endHandleVisibleInExternalViewport?.value ?? true);
     _effectiveToolbarVisibility.value =
         renderObject.selectionStartInViewport.value || renderObject.selectionEndInViewport.value;
   }
@@ -607,6 +617,8 @@ class TextSelectionOverlay {
     _selectionOverlay.dispose();
     renderObject.selectionStartInViewport.removeListener(_updateTextSelectionOverlayVisibilities);
     renderObject.selectionEndInViewport.removeListener(_updateTextSelectionOverlayVisibilities);
+    startHandleVisibleInExternalViewport?.removeListener(_updateTextSelectionOverlayVisibilities);
+    endHandleVisibleInExternalViewport?.removeListener(_updateTextSelectionOverlayVisibilities);
     _effectiveToolbarVisibility.dispose();
     _effectiveStartHandleVisibility.dispose();
     _effectiveEndHandleVisibility.dispose();
