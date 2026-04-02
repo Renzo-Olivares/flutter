@@ -3330,15 +3330,7 @@ class EditableTextState extends State<EditableText>
       }
     }
 
-    if (_listeningToScrollNotificationObserver) {
-      // Only update subscription when we have previously subscribed to the
-      // scroll notification observer. We only subscribe to the scroll
-      // notification observer when the context menu is shown on platforms that
-      // support _platformSupportsFadeOnScroll.
-      _scrollNotificationObserver?.removeListener(_handleContextMenuOnParentScroll);
-      _scrollNotificationObserver = ScrollNotificationObserver.maybeOf(context);
-      _scrollNotificationObserver?.addListener(_handleContextMenuOnParentScroll);
-    }
+    _updateScrollNotificationObserverSubscription();
   }
 
   @protected
@@ -3436,6 +3428,21 @@ class EditableTextState extends State<EditableText>
         : widget.selectionControls?.canPaste(this) ?? false;
     if (widget.selectionEnabled && pasteEnabled && canPaste) {
       clipboardStatus.update();
+    }
+  }
+
+  void _updateScrollNotificationObserverSubscription() {
+    final bool shouldListen = _selectionOverlay != null;
+
+    if (shouldListen) {
+      if (!_listeningToScrollNotificationObserver) {
+        _listeningToScrollNotificationObserver = true;
+        _scrollNotificationObserver?.removeListener(_handleContextMenuOnParentScroll);
+        _scrollNotificationObserver = ScrollNotificationObserver.maybeOf(context);
+        _scrollNotificationObserver?.addListener(_handleContextMenuOnParentScroll);
+      }
+    } else {
+      _disposeScrollNotificationObserver();
     }
   }
 
@@ -4167,7 +4174,9 @@ class EditableTextState extends State<EditableText>
 
   void _handleContextMenuOnParentScroll(ScrollNotification notification) {
     // Do some preliminary checks to avoid expensive subtree traversal.
-    if (notification is! ScrollStartNotification && notification is! ScrollEndNotification) {
+    if (notification is! ScrollStartNotification &&
+        notification is! ScrollUpdateNotification &&
+        notification is! ScrollEndNotification) {
       return;
     }
     switch (notification) {
@@ -4208,8 +4217,8 @@ class EditableTextState extends State<EditableText>
     if (_webContextMenuEnabled) {
       return;
     }
+    _selectionOverlay?.updateForScroll();
     if (!_platformSupportsFadeOnScroll) {
-      _selectionOverlay?.updateForScroll();
       return;
     }
     // When the scroll begins and the toolbar is visible, hide it
@@ -4238,6 +4247,8 @@ class EditableTextState extends State<EditableText>
                 .reduce((Rect result, Rect rect) => result.expandToInclude(rect));
       _dataWhenToolbarShowScheduled = (value: _value, selectionBounds: selectionBounds);
       _selectionOverlay?.hideToolbar();
+    } else if (notification is ScrollUpdateNotification) {
+      _selectionOverlay?.updateForScroll();
     } else if (notification is ScrollEndNotification) {
       if (_dataWhenToolbarShowScheduled == null) {
         return;
@@ -4368,6 +4379,7 @@ class EditableTextState extends State<EditableText>
       }
       _selectionOverlay!.handlesVisible = widget.showSelectionHandles;
       _selectionOverlay!.showHandles();
+      _updateScrollNotificationObserverSubscription();
     }
     // TODO(chunhtai): we should make sure selection actually changed before
     // we call the onSelectionChanged.
@@ -5039,19 +5051,12 @@ class EditableTextState extends State<EditableText>
     _selectionOverlay!.showToolbar();
     // Listen to parent scroll events when the toolbar is visible so it can be
     // hidden during a scroll on supported platforms.
-    if (_platformSupportsFadeOnScroll) {
-      _listeningToScrollNotificationObserver = true;
-      _scrollNotificationObserver?.removeListener(_handleContextMenuOnParentScroll);
-      _scrollNotificationObserver = ScrollNotificationObserver.maybeOf(context);
-      _scrollNotificationObserver?.addListener(_handleContextMenuOnParentScroll);
-    }
+    _updateScrollNotificationObserverSubscription();
     return true;
   }
 
   @override
   void hideToolbar([bool hideHandles = true]) {
-    // Stop listening to parent scroll events when toolbar is hidden.
-    _disposeScrollNotificationObserver();
     if (hideHandles) {
       // Hide the handles and the toolbar.
       _selectionOverlay?.hide();
@@ -5059,6 +5064,7 @@ class EditableTextState extends State<EditableText>
       // Hide only the toolbar but not the handles.
       _selectionOverlay?.hideToolbar();
     }
+    _updateScrollNotificationObserverSubscription();
   }
 
   /// Toggles the visibility of the toolbar.

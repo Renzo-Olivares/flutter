@@ -422,11 +422,43 @@ class TextSelectionOverlay {
   final ValueNotifier<bool> _effectiveEndHandleVisibility = ValueNotifier<bool>(false);
   final ValueNotifier<bool> _effectiveToolbarVisibility = ValueNotifier<bool>(false);
 
+  bool _isEndpointInExternalViewport(bool isStart) {
+    if (!renderObject.attached) {
+      return false;
+    }
+    final List<TextSelectionPoint> endpoints = renderObject.getEndpointsForSelection(_selection);
+    if (endpoints.isEmpty) {
+      return false;
+    }
+    final TextSelectionPoint endpoint = isStart ? endpoints.first : endpoints.last;
+
+    RenderAbstractViewport? closestViewport = RenderAbstractViewport.maybeOf(renderObject);
+    while (closestViewport != null) {
+      final Rect viewportBounds = closestViewport.paintBounds;
+      if (viewportBounds.hasNaN) {
+        return false;
+      }
+      final Offset endpointInViewport = MatrixUtils.transformPoint(
+        renderObject.getTransformTo(closestViewport),
+        endpoint.point,
+      );
+      if (!viewportBounds.contains(endpointInViewport)) {
+        return false;
+      }
+      closestViewport = RenderAbstractViewport.maybeOf(closestViewport.parent);
+    }
+    return true;
+  }
+
   void _updateTextSelectionOverlayVisibilities() {
     _effectiveStartHandleVisibility.value =
-        _handlesVisible && renderObject.selectionStartInViewport.value;
+        _handlesVisible &&
+        renderObject.selectionStartInViewport.value &&
+        _isEndpointInExternalViewport(true);
     _effectiveEndHandleVisibility.value =
-        _handlesVisible && renderObject.selectionEndInViewport.value;
+        _handlesVisible &&
+        renderObject.selectionEndInViewport.value &&
+        _isEndpointInExternalViewport(false);
     _effectiveToolbarVisibility.value =
         renderObject.selectionStartInViewport.value || renderObject.selectionEndInViewport.value;
   }
@@ -565,6 +597,7 @@ class TextSelectionOverlay {
   /// text metrics (e.g. because the text was scrolled).
   void updateForScroll() {
     _updateSelectionOverlay();
+    _updateTextSelectionOverlayVisibilities();
     // This method may be called due to windows metrics changes. In that case,
     // non of the properties in _selectionOverlay will change, but a rebuild is
     // still needed.
@@ -2089,8 +2122,17 @@ class _SelectionHandleOverlayState extends State<_SelectionHandleOverlay>
       // Put the handle's anchor point on the leader's anchor point.
       offset: -handleAnchor - Offset(padding.left, padding.top),
       showWhenUnlinked: false,
-      child: FadeTransition(
-        opacity: _opacity,
+      child: AnimatedBuilder(
+        animation: _opacity,
+        builder: (BuildContext context, Widget? child) {
+          return IgnorePointer(
+            ignoring: _opacity.value == 0.0,
+            child: FadeTransition(
+              opacity: _opacity,
+              child: child!,
+            ),
+          );
+        },
         child: SizedBox(
           width: interactiveRect.width,
           height: interactiveRect.height,

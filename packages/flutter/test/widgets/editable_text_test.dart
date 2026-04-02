@@ -18173,6 +18173,176 @@ void main() {
     controller.selection = const TextSelection.collapsed(offset: 0);
     await tester.pump();
   });
+
+  testWidgets('Handles hide when scrolled out of external viewport', (WidgetTester tester) async {
+    final controller = TextEditingController(text: ('Hello world ' * 100) + '\n' * 100);
+    final focusNode = FocusNode();
+
+    final selectionControls = _SimpleTextSelectionControls();
+    final ScrollController scrollController = ScrollController();
+    addTearDown(scrollController.dispose);
+
+    await tester.pumpWidget(
+      WidgetsApp(
+        color: const Color(0xFF112233),
+        onGenerateRoute: (RouteSettings settings) {
+          return PageRouteBuilder<void>(
+            pageBuilder:
+                (
+                  BuildContext context,
+                  Animation<double> animation,
+                  Animation<double> secondaryAnimation,
+                ) {
+                  return ScrollNotificationObserver(
+                    child: CustomScrollView(
+                      controller: scrollController,
+                      slivers: [
+                        SliverToBoxAdapter(
+                          child: SizedBox(
+                            height: 2000,
+                            child: EditableText(
+                              controller: controller,
+                              focusNode: focusNode,
+                              style: const TextStyle(fontSize: 20),
+                              cursorColor: const Color(0xFFFF0000),
+                              backgroundCursorColor: const Color(0xFF888888),
+                              maxLines: null,
+                              selectionControls: selectionControls,
+                              showSelectionHandles: true,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+          );
+        },
+      ),
+    );
+
+    await tester.tapAt(const Offset(400, 100));
+    await tester.pumpAndSettle();
+
+    controller.selection = const TextSelection(baseOffset: 0, extentOffset: 11);
+    await tester.pumpAndSettle();
+
+    final Finder handleFinder = find.byWidgetPredicate(
+      (widget) => widget.runtimeType.toString().contains('SelectionHandleOverlay'),
+    );
+    expect(handleFinder, findsNWidgets(2));
+
+    final Finder initialFadeFinder = find.descendant(
+      of: handleFinder,
+      matching: find.byType(FadeTransition),
+    );
+    expect(initialFadeFinder, findsNWidgets(2));
+    for (final Element element in initialFadeFinder.evaluate()) {
+      final fadeTransition = element.widget as FadeTransition;
+      expect(fadeTransition.opacity.value, 1.0);
+    }
+
+    scrollController.jumpTo(1000.0);
+    await tester.pumpAndSettle();
+
+    final Finder afterScrollFadeFinder = find.descendant(
+      of: handleFinder,
+      matching: find.byType(FadeTransition),
+    );
+    expect(afterScrollFadeFinder, findsNWidgets(2));
+
+    for (final Element element in afterScrollFadeFinder.evaluate()) {
+      final fadeTransition = element.widget as FadeTransition;
+      expect(fadeTransition.opacity.value, 0.0);
+    }
+  });
+
+  testWidgets('Collapsed handle hides when scrolled out of external viewport', (WidgetTester tester) async {
+    final controller = TextEditingController(text: ('Hello world ' * 100) + '\n' * 100);
+    final focusNode = FocusNode();
+
+    final selectionControls = _SimpleTextSelectionControls();
+    final ScrollController scrollController = ScrollController();
+    addTearDown(scrollController.dispose);
+
+    await tester.pumpWidget(
+      WidgetsApp(
+        color: const Color(0xFF112233),
+        onGenerateRoute: (RouteSettings settings) {
+          return PageRouteBuilder<void>(
+            pageBuilder:
+                (
+                  BuildContext context,
+                  Animation<double> animation,
+                  Animation<double> secondaryAnimation,
+                ) {
+                  return ScrollNotificationObserver(
+                    child: CustomScrollView(
+                      controller: scrollController,
+                      slivers: [
+                        SliverToBoxAdapter(
+                          child: SizedBox(
+                            height: 2000,
+                            child: EditableText(
+                              controller: controller,
+                              focusNode: focusNode,
+                              style: const TextStyle(fontSize: 20),
+                              cursorColor: const Color(0xFFFF0000),
+                              backgroundCursorColor: const Color(0xFF888888),
+                              maxLines: null,
+                              selectionControls: selectionControls,
+                              showSelectionHandles: true,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+          );
+        },
+      ),
+    );
+
+    await tester.tapAt(const Offset(400, 100));
+    await tester.pumpAndSettle();
+
+    controller.selection = const TextSelection.collapsed(offset: 0);
+    await tester.pumpAndSettle();
+
+    final EditableTextState editableTextState = tester.state<EditableTextState>(find.byType(EditableText));
+    editableTextState.showToolbar();
+    await tester.pumpAndSettle();
+
+    final Finder handleFinder = find.byWidgetPredicate(
+      (widget) => widget.runtimeType.toString().contains('SelectionHandleOverlay'),
+    );
+    expect(handleFinder, findsWidgets);
+
+    final Finder initialFadeFinder = find.descendant(
+      of: handleFinder,
+      matching: find.byType(FadeTransition),
+    );
+    expect(initialFadeFinder, findsWidgets);
+    for (final Element element in initialFadeFinder.evaluate()) {
+      final fadeTransition = element.widget as FadeTransition;
+      expect(fadeTransition.opacity.value, 1.0);
+    }
+
+    scrollController.jumpTo(1000.0);
+    await tester.pumpAndSettle();
+
+    final Finder fadeTransitionFinder = find.descendant(
+      of: handleFinder,
+      matching: find.byType(FadeTransition),
+    );
+    expect(fadeTransitionFinder, findsWidgets);
+
+    for (final Element element in fadeTransitionFinder.evaluate()) {
+      final fadeTransition = element.widget as FadeTransition;
+      expect(fadeTransition.opacity.value, 0.0);
+    }
+  });
 }
 
 class UnsettableController extends TextEditingController {
@@ -18597,6 +18767,49 @@ class _TestScrollController extends ScrollController {
 }
 
 class FakeSpellCheckService extends DefaultSpellCheckService {}
+
+class _SimpleTextSelectionControls extends TextSelectionControls {
+  @override
+  Widget buildToolbar(
+    BuildContext context,
+    Rect globalEditableRegion,
+    double textLineHeight,
+    Offset position,
+    List<TextSelectionPoint> endpoints,
+    TextSelectionDelegate delegate,
+    ValueListenable<ClipboardStatus>? clipboardStatus,
+    Offset? lastSecondaryTapDownPosition,
+  ) {
+    return const SizedBox();
+  }
+
+  @override
+  Widget buildHandle(
+    BuildContext context,
+    TextSelectionHandleType type,
+    double textLineHeight, [
+    VoidCallback? onTap,
+  ]) {
+    return const SizedBox(width: 10, height: 10);
+  }
+
+  @override
+  Size getHandleSize(double textLineHeight) {
+    return const Size(10, 10);
+  }
+
+  @override
+  Offset getHandleAnchor(TextSelectionHandleType type, double textLineHeight) {
+    return Offset.zero;
+  }
+
+  @override
+  bool canCut(TextSelectionDelegate delegate) => true;
+  @override
+  bool canCopy(TextSelectionDelegate delegate) => true;
+  @override
+  bool canPaste(TextSelectionDelegate delegate) => true;
+}
 
 class FakeFlutterView extends TestFlutterView {
   FakeFlutterView(TestFlutterView view, {required this.viewId})
