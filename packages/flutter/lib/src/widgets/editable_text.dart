@@ -4217,8 +4217,8 @@ class EditableTextState extends State<EditableText>
     if (_webContextMenuEnabled) {
       return;
     }
-    _selectionOverlay?.updateForScroll();
     if (!_platformSupportsFadeOnScroll) {
+      _selectionOverlay?.updateForScroll();
       return;
     }
     // When the scroll begins and the toolbar is visible, hide it
