@@ -2532,8 +2532,6 @@ class EditableTextState extends State<EditableText>
   ScrollNotificationObserverState? _scrollNotificationObserver;
   ({TextEditingValue value, Rect selectionBounds})? _dataWhenToolbarShowScheduled;
   bool _listeningToScrollNotificationObserver = false;
-
-  ScrollNotificationObserverState? _handleScrollNotificationObserver;
   bool _listeningToHandleScrollNotifications = false;
 
   bool get _webContextMenuEnabled => kIsWeb && BrowserContextMenu.enabled;
@@ -3361,19 +3359,16 @@ class EditableTextState extends State<EditableText>
       }
     }
 
-    if (_listeningToScrollNotificationObserver) {
-      // Only update subscription when we have previously subscribed to the
-      // scroll notification observer. We only subscribe to the scroll
-      // notification observer when the context menu is shown on platforms that
-      // support _platformSupportsFadeOnScroll.
+    if (_listeningToScrollNotificationObserver || _listeningToHandleScrollNotifications) {
       _scrollNotificationObserver?.removeListener(_handleContextMenuOnParentScroll);
+      _scrollNotificationObserver?.removeListener(_handleSelectionHandlesOnParentScroll);
       _scrollNotificationObserver = ScrollNotificationObserver.maybeOf(context);
-      _scrollNotificationObserver?.addListener(_handleContextMenuOnParentScroll);
-    }
-    if (_listeningToHandleScrollNotifications) {
-      _handleScrollNotificationObserver?.removeListener(_handleSelectionHandlesOnParentScroll);
-      _handleScrollNotificationObserver = ScrollNotificationObserver.maybeOf(context);
-      _handleScrollNotificationObserver?.addListener(_handleSelectionHandlesOnParentScroll);
+      if (_listeningToScrollNotificationObserver) {
+        _scrollNotificationObserver?.addListener(_handleContextMenuOnParentScroll);
+      }
+      if (_listeningToHandleScrollNotifications) {
+        _scrollNotificationObserver?.addListener(_handleSelectionHandlesOnParentScroll);
+      }
     }
   }
 
@@ -3486,7 +3481,9 @@ class EditableTextState extends State<EditableText>
     _listeningToScrollNotificationObserver = false;
     if (_scrollNotificationObserver != null) {
       _scrollNotificationObserver!.removeListener(_handleContextMenuOnParentScroll);
-      _scrollNotificationObserver = null;
+      if (!_listeningToHandleScrollNotifications) {
+        _scrollNotificationObserver = null;
+      }
     }
   }
 
@@ -3534,8 +3531,11 @@ class EditableTextState extends State<EditableText>
     _appLifecycleListener.dispose();
     FocusManager.instance.removeListener(_unflagInternalFocus);
     FocusManager.instance.removeListener(_resetJustResumed);
-    _disposeScrollNotificationObserver();
-    _stopListeningToHandleScrollNotifications();
+    _listeningToScrollNotificationObserver = false;
+    _listeningToHandleScrollNotifications = false;
+    _scrollNotificationObserver?.removeListener(_handleContextMenuOnParentScroll);
+    _scrollNotificationObserver?.removeListener(_handleSelectionHandlesOnParentScroll);
+    _scrollNotificationObserver = null;
     super.dispose();
     assert(_batchEditDepth <= 0, 'unfinished batch edits: $_batchEditDepth');
   }
@@ -4223,9 +4223,8 @@ class EditableTextState extends State<EditableText>
       return;
     }
     _listeningToHandleScrollNotifications = true;
-    _handleScrollNotificationObserver?.removeListener(_handleSelectionHandlesOnParentScroll);
-    _handleScrollNotificationObserver = ScrollNotificationObserver.maybeOf(context);
-    _handleScrollNotificationObserver?.addListener(_handleSelectionHandlesOnParentScroll);
+    _scrollNotificationObserver ??= ScrollNotificationObserver.maybeOf(context);
+    _scrollNotificationObserver?.addListener(_handleSelectionHandlesOnParentScroll);
   }
 
   void _stopListeningToHandleScrollNotifications() {
@@ -4233,8 +4232,10 @@ class EditableTextState extends State<EditableText>
       return;
     }
     _listeningToHandleScrollNotifications = false;
-    _handleScrollNotificationObserver?.removeListener(_handleSelectionHandlesOnParentScroll);
-    _handleScrollNotificationObserver = null;
+    _scrollNotificationObserver?.removeListener(_handleSelectionHandlesOnParentScroll);
+    if (!_listeningToScrollNotificationObserver) {
+      _scrollNotificationObserver = null;
+    }
   }
 
   bool _isInternalScrollableNotification(BuildContext? notificationContext) {
@@ -5147,7 +5148,7 @@ class EditableTextState extends State<EditableText>
     if (_platformSupportsFadeOnScroll) {
       _listeningToScrollNotificationObserver = true;
       _scrollNotificationObserver?.removeListener(_handleContextMenuOnParentScroll);
-      _scrollNotificationObserver = ScrollNotificationObserver.maybeOf(context);
+      _scrollNotificationObserver ??= ScrollNotificationObserver.maybeOf(context);
       _scrollNotificationObserver?.addListener(_handleContextMenuOnParentScroll);
     }
     return true;
