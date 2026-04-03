@@ -26,6 +26,7 @@ import 'editable_text_tester.dart';
 import 'editable_text_utils.dart';
 import 'live_text_utils.dart';
 import 'semantics_tester.dart';
+import 'widgets_app_tester.dart';
 
 Matcher matchesMethodCall(String method, {dynamic args}) =>
     _MatchesMethodCall(method, arguments: args == null ? null : wrapMatcher(args));
@@ -6863,10 +6864,12 @@ void main() {
     final ScrollController scrollController = ScrollController();
     addTearDown(scrollController.dispose);
 
+    // ScrollNotificationObserver is required for EditableTextState to receive
+    // parent scroll notifications and update handle visibility.
     await tester.pumpWidget(
-      MaterialApp(
-        home: Scaffold(
-          body: CustomScrollView(
+      TestWidgetsApp(
+        home: ScrollNotificationObserver(
+          child: CustomScrollView(
             controller: scrollController,
             slivers: <Widget>[
               SliverToBoxAdapter(
@@ -6875,10 +6878,10 @@ void main() {
                   showSelectionHandles: true,
                   controller: controller,
                   focusNode: focusNode,
-                  style: Typography.material2018().black.titleMedium!,
-                  cursorColor: Colors.blue,
-                  backgroundCursorColor: Colors.grey,
-                  selectionControls: materialTextSelectionControls,
+                  style: const TextStyle(fontSize: 16.0),
+                  cursorColor: const Color(0xFF0000FF),
+                  backgroundCursorColor: const Color(0xFF808080),
+                  selectionControls: testTextSelectionHandleControls,
                   keyboardType: TextInputType.text,
                 ),
               ),
@@ -6954,9 +6957,9 @@ void main() {
     addTearDown(scrollController.dispose);
 
     await tester.pumpWidget(
-      MaterialApp(
-        home: Scaffold(
-          body: CustomScrollView(
+      TestWidgetsApp(
+        home: ScrollNotificationObserver(
+          child: CustomScrollView(
             controller: scrollController,
             slivers: <Widget>[
               SliverToBoxAdapter(
@@ -6965,10 +6968,10 @@ void main() {
                   showSelectionHandles: true,
                   controller: controller,
                   focusNode: focusNode,
-                  style: Typography.material2018().black.titleMedium!,
-                  cursorColor: Colors.blue,
-                  backgroundCursorColor: Colors.grey,
-                  selectionControls: materialTextSelectionControls,
+                  style: const TextStyle(fontSize: 16.0),
+                  cursorColor: const Color(0xFF0000FF),
+                  backgroundCursorColor: const Color(0xFF808080),
+                  selectionControls: testTextSelectionHandleControls,
                   keyboardType: TextInputType.text,
                 ),
               ),
