@@ -6854,6 +6854,165 @@ void main() {
     // toolbar. Until we change that, this test should remain skipped.
   }, skip: kIsWeb); // [intended]
 
+  testWidgets('selection handles hide when scrolled out of external viewport and reappear when scrolled back', (WidgetTester tester) async {
+    // Use multiline text so the EditableText is tall enough to remain
+    // partially painted when scrolled, which triggers the paint-time
+    // ancestor viewport visibility check.
+    controller.text = 'Line 1\nLine 2\nLine 3\nLine 4\nLine 5\nLine 6\nLine 7\nLine 8';
+
+    final ScrollController scrollController = ScrollController();
+    addTearDown(scrollController.dispose);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: CustomScrollView(
+          controller: scrollController,
+          slivers: <Widget>[
+            SliverToBoxAdapter(
+              child: EditableText(
+                maxLines: null,
+                showSelectionHandles: true,
+                controller: controller,
+                focusNode: focusNode,
+                style: Typography.material2018().black.titleMedium!,
+                cursorColor: Colors.blue,
+                backgroundCursorColor: Colors.grey,
+                selectionControls: materialTextSelectionControls,
+                keyboardType: TextInputType.text,
+              ),
+            ),
+            const SliverToBoxAdapter(child: SizedBox(height: 2000)),
+          ],
+        ),
+      ),
+    );
+
+    final EditableTextState state = tester.state<EditableTextState>(find.byType(EditableText));
+    final RenderEditable renderEditable = state.renderEditable;
+    final double lineHeight = renderEditable.preferredLineHeight;
+
+    // Tap to focus the field, then select the first line.
+    await tester.tap(find.byType(EditableText));
+    await tester.pump();
+    controller.selection = const TextSelection(baseOffset: 0, extentOffset: 6);
+    state.updateEditingValue(controller.value);
+    await tester.pump();
+    state.selectionOverlay!.showHandles();
+    await tester.pump();
+    await tester.pump(SelectionOverlay.fadeDuration);
+
+    expect(renderEditable.selectionStartInViewport.value, isTrue);
+    expect(renderEditable.selectionEndInViewport.value, isTrue);
+    expect(state.selectionOverlay!.handlesAreVisible, isTrue);
+
+    final List<FadeTransition> transitions = find
+        .descendant(
+          of: find.byWidgetPredicate(
+            (Widget w) => '${w.runtimeType}' == '_SelectionHandleOverlay',
+          ),
+          matching: find.byType(FadeTransition),
+        )
+        .evaluate()
+        .map((Element e) => e.widget)
+        .cast<FadeTransition>()
+        .toList();
+    expect(transitions.length, 2);
+    expect(transitions[0].opacity.value, 1.0);
+    expect(transitions[1].opacity.value, 1.0);
+
+    // Scroll so that the first line (with the selection) is above the viewport,
+    // but the EditableText is still partially visible (lower lines remain).
+    // The selection handles for line 1 should now be hidden.
+    scrollController.jumpTo(lineHeight * 3);
+    await tester.pump();
+    await tester.pump(SelectionOverlay.fadeDuration);
+
+    expect(renderEditable.selectionStartInViewport.value, isFalse);
+    expect(renderEditable.selectionEndInViewport.value, isFalse);
+    expect(transitions[0].opacity.value, 0.0);
+    expect(transitions[1].opacity.value, 0.0);
+
+    // Scroll back so the EditableText is fully visible. Handles should reappear.
+    scrollController.jumpTo(0.0);
+    await tester.pump();
+    await tester.pump(SelectionOverlay.fadeDuration);
+
+    expect(renderEditable.selectionStartInViewport.value, isTrue);
+    expect(renderEditable.selectionEndInViewport.value, isTrue);
+    expect(transitions[0].opacity.value, 1.0);
+    expect(transitions[1].opacity.value, 1.0);
+
+    // On web, we don't show the Flutter toolbar and instead rely on the browser
+    // toolbar. Until we change that, this test should remain skipped.
+  }, skip: kIsWeb); // [intended]
+
+  testWidgets('collapsed selection handle hides when scrolled out of external viewport and reappears when scrolled back', (WidgetTester tester) async {
+    controller.text = 'Line 1\nLine 2\nLine 3\nLine 4\nLine 5\nLine 6\nLine 7\nLine 8';
+
+    final ScrollController scrollController = ScrollController();
+    addTearDown(scrollController.dispose);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: CustomScrollView(
+          controller: scrollController,
+          slivers: <Widget>[
+            SliverToBoxAdapter(
+              child: EditableText(
+                maxLines: null,
+                showSelectionHandles: true,
+                controller: controller,
+                focusNode: focusNode,
+                style: Typography.material2018().black.titleMedium!,
+                cursorColor: Colors.blue,
+                backgroundCursorColor: Colors.grey,
+                selectionControls: materialTextSelectionControls,
+                keyboardType: TextInputType.text,
+              ),
+            ),
+            const SliverToBoxAdapter(child: SizedBox(height: 2000)),
+          ],
+        ),
+      ),
+    );
+
+    final EditableTextState state = tester.state<EditableTextState>(find.byType(EditableText));
+    final RenderEditable renderEditable = state.renderEditable;
+    final double lineHeight = renderEditable.preferredLineHeight;
+
+    // Tap to focus, then create a collapsed selection at the start.
+    await tester.tap(find.byType(EditableText));
+    await tester.pump();
+    controller.selection = const TextSelection.collapsed(offset: 0);
+    state.updateEditingValue(controller.value);
+    await tester.pump();
+    state.selectionOverlay!.showHandles();
+    await tester.pump();
+    await tester.pump(SelectionOverlay.fadeDuration);
+
+    expect(renderEditable.selectionStartInViewport.value, isTrue);
+    expect(renderEditable.selectionEndInViewport.value, isTrue);
+
+    // Scroll the first line out of the viewport. The handle should be hidden.
+    scrollController.jumpTo(lineHeight * 3);
+    await tester.pump();
+    await tester.pump(SelectionOverlay.fadeDuration);
+
+    expect(renderEditable.selectionStartInViewport.value, isFalse);
+    expect(renderEditable.selectionEndInViewport.value, isFalse);
+
+    // Scroll back. The handle should reappear.
+    scrollController.jumpTo(0.0);
+    await tester.pump();
+    await tester.pump(SelectionOverlay.fadeDuration);
+
+    expect(renderEditable.selectionStartInViewport.value, isTrue);
+    expect(renderEditable.selectionEndInViewport.value, isTrue);
+
+    // On web, we don't show the Flutter toolbar and instead rely on the browser
+    // toolbar. Until we change that, this test should remain skipped.
+  }, skip: kIsWeb); // [intended]
+
   const testText =
       'Now is the time for\n' // 20
       'all good people\n' // 20 + 16 => 36

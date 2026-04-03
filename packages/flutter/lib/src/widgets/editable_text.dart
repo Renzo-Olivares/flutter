@@ -2533,6 +2533,9 @@ class EditableTextState extends State<EditableText>
   ({TextEditingValue value, Rect selectionBounds})? _dataWhenToolbarShowScheduled;
   bool _listeningToScrollNotificationObserver = false;
 
+  ScrollNotificationObserverState? _handleScrollNotificationObserver;
+  bool _listeningToHandleScrollNotifications = false;
+
   bool get _webContextMenuEnabled => kIsWeb && BrowserContextMenu.enabled;
 
   final GlobalKey _scrollableKey = GlobalKey();
@@ -3367,6 +3370,11 @@ class EditableTextState extends State<EditableText>
       _scrollNotificationObserver = ScrollNotificationObserver.maybeOf(context);
       _scrollNotificationObserver?.addListener(_handleContextMenuOnParentScroll);
     }
+    if (_listeningToHandleScrollNotifications) {
+      _handleScrollNotificationObserver?.removeListener(_handleSelectionHandlesOnParentScroll);
+      _handleScrollNotificationObserver = ScrollNotificationObserver.maybeOf(context);
+      _handleScrollNotificationObserver?.addListener(_handleSelectionHandlesOnParentScroll);
+    }
   }
 
   @protected
@@ -3520,6 +3528,7 @@ class EditableTextState extends State<EditableText>
     FocusManager.instance.removeListener(_unflagInternalFocus);
     FocusManager.instance.removeListener(_resetJustResumed);
     _disposeScrollNotificationObserver();
+    _stopListeningToHandleScrollNotifications();
     super.dispose();
     assert(_batchEditDepth <= 0, 'unfinished batch edits: $_batchEditDepth');
   }
@@ -4163,6 +4172,47 @@ class EditableTextState extends State<EditableText>
     TargetPlatform.windows => false,
   };
 
+  // Selection handle visibility during external scroll.
+  //
+  // RenderEditable is a repaint boundary, so when a parent viewport scrolls,
+  // RenderEditable is repositioned via paint offsets but NOT repainted. This
+  // means the ancestor viewport visibility check in _paintHandleLayers never
+  // runs. We force a repaint by calling markNeedsPaint() when a parent
+  // scrollable scrolls and selection handles are visible.
+  void _handleSelectionHandlesOnParentScroll(ScrollNotification notification) {
+    if (notification is! ScrollUpdateNotification) {
+      return;
+    }
+    if (_selectionOverlay == null || !_selectionOverlay!.handlesAreVisible) {
+      return;
+    }
+    final BuildContext? notificationContext = notification.context;
+    if (notificationContext != null &&
+        !_isInternalScrollableNotification(notificationContext) &&
+        _scrollableNotificationIsFromSameSubtree(notificationContext)) {
+      renderEditable.markNeedsPaint();
+    }
+  }
+
+  void _startListeningToHandleScrollNotifications() {
+    if (_listeningToHandleScrollNotifications) {
+      return;
+    }
+    _listeningToHandleScrollNotifications = true;
+    _handleScrollNotificationObserver?.removeListener(_handleSelectionHandlesOnParentScroll);
+    _handleScrollNotificationObserver = ScrollNotificationObserver.maybeOf(context);
+    _handleScrollNotificationObserver?.addListener(_handleSelectionHandlesOnParentScroll);
+  }
+
+  void _stopListeningToHandleScrollNotifications() {
+    if (!_listeningToHandleScrollNotifications) {
+      return;
+    }
+    _listeningToHandleScrollNotifications = false;
+    _handleScrollNotificationObserver?.removeListener(_handleSelectionHandlesOnParentScroll);
+    _handleScrollNotificationObserver = null;
+  }
+
   bool _isInternalScrollableNotification(BuildContext? notificationContext) {
     final ScrollableState? scrollableState = notificationContext
         ?.findAncestorStateOfType<ScrollableState>();
@@ -4396,6 +4446,9 @@ class EditableTextState extends State<EditableText>
       }
       _selectionOverlay!.handlesVisible = widget.showSelectionHandles;
       _selectionOverlay!.showHandles();
+      if (widget.showSelectionHandles) {
+        _startListeningToHandleScrollNotifications();
+      }
     }
     // TODO(chunhtai): we should make sure selection actually changed before
     // we call the onSelectionChanged.
@@ -5083,6 +5136,7 @@ class EditableTextState extends State<EditableText>
     if (hideHandles) {
       // Hide the handles and the toolbar.
       _selectionOverlay?.hide();
+      _stopListeningToHandleScrollNotifications();
     } else if (_selectionOverlay?.toolbarIsVisible ?? false) {
       // Hide only the toolbar but not the handles.
       _selectionOverlay?.hideToolbar();
