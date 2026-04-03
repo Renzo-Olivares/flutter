@@ -3435,11 +3435,14 @@ class EditableTextState extends State<EditableText>
     final bool shouldListen = _selectionOverlay != null;
 
     if (shouldListen) {
-      if (!_listeningToScrollNotificationObserver) {
-        _listeningToScrollNotificationObserver = true;
+      final ScrollNotificationObserverState? newObserver = ScrollNotificationObserver.maybeOf(
+        context,
+      );
+      if (newObserver != _scrollNotificationObserver || !_listeningToScrollNotificationObserver) {
         _scrollNotificationObserver?.removeListener(_handleContextMenuOnParentScroll);
-        _scrollNotificationObserver = ScrollNotificationObserver.maybeOf(context);
+        _scrollNotificationObserver = newObserver;
         _scrollNotificationObserver?.addListener(_handleContextMenuOnParentScroll);
+        _listeningToScrollNotificationObserver = true;
       }
     } else {
       _disposeScrollNotificationObserver();
@@ -4214,11 +4217,8 @@ class EditableTextState extends State<EditableText>
 
   bool _showToolbarOnScreenScheduled = false;
   void _handleContextMenuOnScroll(ScrollNotification notification) {
-    if (_webContextMenuEnabled) {
-      return;
-    }
-    if (!_platformSupportsFadeOnScroll) {
-      _selectionOverlay?.updateForScroll();
+    _selectionOverlay?.updateForScroll();
+    if (_webContextMenuEnabled || !_platformSupportsFadeOnScroll) {
       return;
     }
     // When the scroll begins and the toolbar is visible, hide it
@@ -4247,8 +4247,6 @@ class EditableTextState extends State<EditableText>
                 .reduce((Rect result, Rect rect) => result.expandToInclude(rect));
       _dataWhenToolbarShowScheduled = (value: _value, selectionBounds: selectionBounds);
       _selectionOverlay?.hideToolbar();
-    } else if (notification is ScrollUpdateNotification) {
-      _selectionOverlay?.updateForScroll();
     } else if (notification is ScrollEndNotification) {
       if (_dataWhenToolbarShowScheduled == null) {
         return;
@@ -5049,8 +5047,6 @@ class EditableTextState extends State<EditableText>
     _liveTextInputStatus?.update();
     clipboardStatus.update();
     _selectionOverlay!.showToolbar();
-    // Listen to parent scroll events when the toolbar is visible so it can be
-    // hidden during a scroll on supported platforms.
     _updateScrollNotificationObserverSubscription();
     return true;
   }
