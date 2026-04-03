@@ -20,7 +20,6 @@ import 'layer.dart';
 import 'layout_helper.dart';
 import 'object.dart';
 import 'paragraph.dart';
-import 'viewport.dart';
 import 'viewport_offset.dart';
 
 const double _kCaretGap = 1.0; // pixels
@@ -408,8 +407,7 @@ class RenderEditable extends RenderBox
 
   @override
   void dispose() {
-    _startHandleLayerHandler.layer = null;
-    _endHandleLayerHandler.layer = null;
+    _leaderLayerHandler.layer = null;
     _foregroundRenderObject?.dispose();
     _foregroundRenderObject = null;
     _backgroundRenderObject?.dispose();
@@ -620,31 +618,29 @@ class RenderEditable extends RenderBox
   /// set [TextSelectionDelegate].
   TextSelectionDelegate textSelectionDelegate;
 
-  /// Track whether position of the start of the selected text is within the
-  /// text field viewport and all ancestor viewports.
+  /// Track whether position of the start of the selected text is within the viewport.
   ///
   /// For example, if the text contains "Hello World", and the user selects
   /// "Hello", then scrolls so only "World" is visible, this will become false.
   /// If the user scrolls back so that the "H" is visible again, this will
   /// become true.
   ///
-  /// This also becomes false if the text field itself is scrolled out of an
-  /// ancestor viewport (e.g. a [CustomScrollView]), even if the selection
-  /// position is within the text field's own visible area.
+  /// This bool indicates whether the text is scrolled so that the handle is
+  /// inside the text field viewport, as opposed to whether it is actually
+  /// visible on the screen.
   ValueListenable<bool> get selectionStartInViewport => _selectionStartInViewport;
   final ValueNotifier<bool> _selectionStartInViewport = ValueNotifier<bool>(true);
 
-  /// Track whether position of the end of the selected text is within the
-  /// text field viewport and all ancestor viewports.
+  /// Track whether position of the end of the selected text is within the viewport.
   ///
   /// For example, if the text contains "Hello World", and the user selects
   /// "World", then scrolls so only "Hello" is visible, this will become
   /// 'false'. If the user scrolls back so that the "d" is visible again, this
   /// will become 'true'.
   ///
-  /// This also becomes false if the text field itself is scrolled out of an
-  /// ancestor viewport (e.g. a [CustomScrollView]), even if the selection
-  /// position is within the text field's own visible area.
+  /// This bool indicates whether the text is scrolled so that the handle is
+  /// inside the text field viewport, as opposed to whether it is actually
+  /// visible on the screen.
   ValueListenable<bool> get selectionEndInViewport => _selectionEndInViewport;
   final ValueNotifier<bool> _selectionEndInViewport = ValueNotifier<bool>(true);
 
@@ -729,24 +725,6 @@ class RenderEditable extends RenderBox
     _selectionEndInViewport.value = visibleRegion
         .inflate(visibleRegionSlop)
         .contains(endOffset + effectiveOffset);
-  }
-
-  /// Returns true if [localPoint] (in this object's local coordinate space)
-  /// is within the paint bounds of every ancestor [RenderAbstractViewport].
-  bool _isPointInAncestorViewports(Offset localPoint) {
-    RenderAbstractViewport? viewport = RenderAbstractViewport.maybeOf(this);
-    while (viewport != null) {
-      final Matrix4 transform = getTransformTo(viewport);
-      final Offset pointInViewport = MatrixUtils.transformPoint(transform, localPoint);
-      if (pointInViewport.dx.isNaN ||
-          pointInViewport.dy.isNaN ||
-          viewport.paintBounds.hasNaN ||
-          !viewport.paintBounds.inflate(0.5).contains(pointInViewport)) {
-        return false;
-      }
-      viewport = RenderAbstractViewport.maybeOf(viewport.parent);
-    }
-    return true;
   }
 
   void _setTextEditingValue(TextEditingValue newValue, SelectionChangedCause cause) {
@@ -2654,8 +2632,7 @@ class RenderEditable extends RenderBox
     }
   }
 
-  final LayerHandle<LeaderLayer> _startHandleLayerHandler = LayerHandle<LeaderLayer>();
-  final LayerHandle<LeaderLayer> _endHandleLayerHandler = LayerHandle<LeaderLayer>();
+  final LayerHandle<LeaderLayer> _leaderLayerHandler = LayerHandle<LeaderLayer>();
 
   void _paintHandleLayers(
     PaintingContext context,
@@ -2667,59 +2644,28 @@ class RenderEditable extends RenderBox
       clampDouble(startPoint.dx, 0.0, size.width),
       clampDouble(startPoint.dy, 0.0, size.height),
     );
-
-    // Only push leader layers when the endpoint is within all ancestor
-    // viewports. When a leader is absent, the CompositedTransformFollower in
-    // the selection overlay hides instantly (showWhenUnlinked: false), which
-    // prevents handles from appearing over app bars and other UI when the
-    // text field is scrolled out of an external viewport.
-    //
-    // The ancestor viewport check is done here (rather than in
-    // _updateSelectionExtentsVisibility) so that the same endpoint positions
-    // are used for both the leader layer push and the visibility notifiers.
-    // _updateSelectionExtentsVisibility uses the caret top position, but the
-    // handle is positioned at the endpoint (bottom of the text line). Using
-    // consistent positions avoids a gap where the leader is pushed but the
-    // notifier says invisible, which would leave the handle stuck at opacity 0.
-    final bool startInAncestorViewports = _isPointInAncestorViewports(startPoint);
-    if (startInAncestorViewports) {
-      _startHandleLayerHandler.layer = LeaderLayer(
-        link: startHandleLayerLink,
-        offset: startPoint + offset,
-      );
-      context.pushLayer(_startHandleLayerHandler.layer!, super.paint, Offset.zero);
-    } else {
-      _startHandleLayerHandler.layer = null;
-      _selectionStartInViewport.value = false;
-    }
-
+    _leaderLayerHandler.layer = LeaderLayer(
+      link: startHandleLayerLink,
+      offset: startPoint + offset,
+    );
+    context.pushLayer(_leaderLayerHandler.layer!, super.paint, Offset.zero);
     if (endpoints.length == 2) {
       Offset endPoint = endpoints[1].point;
       endPoint = Offset(
         clampDouble(endPoint.dx, 0.0, size.width),
         clampDouble(endPoint.dy, 0.0, size.height),
       );
-      if (_isPointInAncestorViewports(endPoint)) {
-        _endHandleLayerHandler.layer = LeaderLayer(
-          link: endHandleLayerLink,
-          offset: endPoint + offset,
-        );
-        context.pushLayer(_endHandleLayerHandler.layer!, super.paint, Offset.zero);
-      } else {
-        _endHandleLayerHandler.layer = null;
-        _selectionEndInViewport.value = false;
-      }
+      context.pushLayer(
+        LeaderLayer(link: endHandleLayerLink, offset: endPoint + offset),
+        super.paint,
+        Offset.zero,
+      );
     } else if (selection!.isCollapsed) {
-      if (startInAncestorViewports) {
-        _endHandleLayerHandler.layer = LeaderLayer(
-          link: endHandleLayerLink,
-          offset: startPoint + offset,
-        );
-        context.pushLayer(_endHandleLayerHandler.layer!, super.paint, Offset.zero);
-      } else {
-        _endHandleLayerHandler.layer = null;
-        _selectionEndInViewport.value = false;
-      }
+      context.pushLayer(
+        LeaderLayer(link: endHandleLayerLink, offset: startPoint + offset),
+        super.paint,
+        Offset.zero,
+      );
     }
   }
 

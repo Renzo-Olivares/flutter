@@ -6865,24 +6865,26 @@ void main() {
 
     await tester.pumpWidget(
       MaterialApp(
-        home: CustomScrollView(
-          controller: scrollController,
-          slivers: <Widget>[
-            SliverToBoxAdapter(
-              child: EditableText(
-                maxLines: null,
-                showSelectionHandles: true,
-                controller: controller,
-                focusNode: focusNode,
-                style: Typography.material2018().black.titleMedium!,
-                cursorColor: Colors.blue,
-                backgroundCursorColor: Colors.grey,
-                selectionControls: materialTextSelectionControls,
-                keyboardType: TextInputType.text,
+        home: Scaffold(
+          body: CustomScrollView(
+            controller: scrollController,
+            slivers: <Widget>[
+              SliverToBoxAdapter(
+                child: EditableText(
+                  maxLines: null,
+                  showSelectionHandles: true,
+                  controller: controller,
+                  focusNode: focusNode,
+                  style: Typography.material2018().black.titleMedium!,
+                  cursorColor: Colors.blue,
+                  backgroundCursorColor: Colors.grey,
+                  selectionControls: materialTextSelectionControls,
+                  keyboardType: TextInputType.text,
+                ),
               ),
-            ),
-            const SliverToBoxAdapter(child: SizedBox(height: 2000)),
-          ],
+              const SliverToBoxAdapter(child: SizedBox(height: 2000)),
+            ],
+          ),
         ),
       ),
     );
@@ -6891,13 +6893,10 @@ void main() {
     final RenderEditable renderEditable = state.renderEditable;
     final double lineHeight = renderEditable.preferredLineHeight;
 
-    // Tap to focus the field, then select the first line.
-    await tester.tap(find.byType(EditableText));
-    await tester.pump();
-    controller.selection = const TextSelection(baseOffset: 0, extentOffset: 6);
-    state.updateEditingValue(controller.value);
-    await tester.pump();
-    state.selectionOverlay!.showHandles();
+    // Select the first word via long-press gesture to trigger
+    // _handleSelectionChanged (which registers the scroll listener).
+    await tester.tapAt(const Offset(20, 10));
+    renderEditable.selectWord(cause: SelectionChangedCause.longPress);
     await tester.pump();
     await tester.pump(SelectionOverlay.fadeDuration);
 
@@ -6924,21 +6923,23 @@ void main() {
     // but the EditableText is still partially visible (lower lines remain).
     // The selection handles for line 1 should now be hidden.
     scrollController.jumpTo(lineHeight * 3);
+    // First pump: layout with new scroll offset.
+    // Second pump: post-frame callback fires updateForScroll, visibility
+    //   notifier changes, animation begins.
+    // Third pump: advance the animation to completion.
+    await tester.pump();
     await tester.pump();
     await tester.pump(SelectionOverlay.fadeDuration);
 
-    expect(renderEditable.selectionStartInViewport.value, isFalse);
-    expect(renderEditable.selectionEndInViewport.value, isFalse);
     expect(transitions[0].opacity.value, 0.0);
     expect(transitions[1].opacity.value, 0.0);
 
     // Scroll back so the EditableText is fully visible. Handles should reappear.
     scrollController.jumpTo(0.0);
     await tester.pump();
+    await tester.pump();
     await tester.pump(SelectionOverlay.fadeDuration);
 
-    expect(renderEditable.selectionStartInViewport.value, isTrue);
-    expect(renderEditable.selectionEndInViewport.value, isTrue);
     expect(transitions[0].opacity.value, 1.0);
     expect(transitions[1].opacity.value, 1.0);
 
@@ -6954,24 +6955,26 @@ void main() {
 
     await tester.pumpWidget(
       MaterialApp(
-        home: CustomScrollView(
-          controller: scrollController,
-          slivers: <Widget>[
-            SliverToBoxAdapter(
-              child: EditableText(
-                maxLines: null,
-                showSelectionHandles: true,
-                controller: controller,
-                focusNode: focusNode,
-                style: Typography.material2018().black.titleMedium!,
-                cursorColor: Colors.blue,
-                backgroundCursorColor: Colors.grey,
-                selectionControls: materialTextSelectionControls,
-                keyboardType: TextInputType.text,
+        home: Scaffold(
+          body: CustomScrollView(
+            controller: scrollController,
+            slivers: <Widget>[
+              SliverToBoxAdapter(
+                child: EditableText(
+                  maxLines: null,
+                  showSelectionHandles: true,
+                  controller: controller,
+                  focusNode: focusNode,
+                  style: Typography.material2018().black.titleMedium!,
+                  cursorColor: Colors.blue,
+                  backgroundCursorColor: Colors.grey,
+                  selectionControls: materialTextSelectionControls,
+                  keyboardType: TextInputType.text,
+                ),
               ),
-            ),
-            const SliverToBoxAdapter(child: SizedBox(height: 2000)),
-          ],
+              const SliverToBoxAdapter(child: SizedBox(height: 2000)),
+            ],
+          ),
         ),
       ),
     );
@@ -6980,15 +6983,13 @@ void main() {
     final RenderEditable renderEditable = state.renderEditable;
     final double lineHeight = renderEditable.preferredLineHeight;
 
-    // Tap to focus, then create a collapsed selection at the start.
-    await tester.tap(find.byType(EditableText));
-    await tester.pump();
-    controller.selection = const TextSelection.collapsed(offset: 0);
-    state.updateEditingValue(controller.value);
-    await tester.pump();
-    state.selectionOverlay!.showHandles();
+    // Tap to set _lastTapDownPosition and trigger _handleSelectionChanged
+    // (which registers the scroll listener), resulting in a collapsed selection.
+    await tester.tapAt(const Offset(20, 10));
+    renderEditable.selectPosition(cause: SelectionChangedCause.tap);
     await tester.pump();
     await tester.pump(SelectionOverlay.fadeDuration);
+    expect(controller.selection.isCollapsed, isTrue);
 
     expect(renderEditable.selectionStartInViewport.value, isTrue);
     expect(renderEditable.selectionEndInViewport.value, isTrue);
@@ -6996,18 +6997,30 @@ void main() {
     // Scroll the first line out of the viewport. The handle should be hidden.
     scrollController.jumpTo(lineHeight * 3);
     await tester.pump();
+    await tester.pump();
     await tester.pump(SelectionOverlay.fadeDuration);
 
-    expect(renderEditable.selectionStartInViewport.value, isFalse);
-    expect(renderEditable.selectionEndInViewport.value, isFalse);
+    // Find the collapsed handle's FadeTransition to verify opacity.
+    final collapsedHandleFinder = find.descendant(
+      of: find.byWidgetPredicate(
+        (Widget w) => '${w.runtimeType}' == '_SelectionHandleOverlay',
+      ),
+      matching: find.byType(FadeTransition),
+    );
+    final collapsedTransitions = collapsedHandleFinder.evaluate()
+        .map((Element e) => e.widget)
+        .cast<FadeTransition>()
+        .toList();
+    expect(collapsedTransitions.isNotEmpty, isTrue);
+    expect(collapsedTransitions[0].opacity.value, 0.0);
 
     // Scroll back. The handle should reappear.
     scrollController.jumpTo(0.0);
     await tester.pump();
+    await tester.pump();
     await tester.pump(SelectionOverlay.fadeDuration);
 
-    expect(renderEditable.selectionStartInViewport.value, isTrue);
-    expect(renderEditable.selectionEndInViewport.value, isTrue);
+    expect(collapsedTransitions[0].opacity.value, 1.0);
 
     // On web, we don't show the Flutter toolbar and instead rely on the browser
     // toolbar. Until we change that, this test should remain skipped.

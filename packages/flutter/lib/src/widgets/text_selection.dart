@@ -423,12 +423,52 @@ class TextSelectionOverlay {
   final ValueNotifier<bool> _effectiveToolbarVisibility = ValueNotifier<bool>(false);
 
   void _updateTextSelectionOverlayVisibilities() {
+    final bool startInAncestorViewports =
+        _selectionEndpointInAncestorViewports(isStart: true);
+    final bool endInAncestorViewports =
+        _selectionEndpointInAncestorViewports(isStart: false);
     _effectiveStartHandleVisibility.value =
-        _handlesVisible && renderObject.selectionStartInViewport.value;
+        _handlesVisible &&
+        renderObject.selectionStartInViewport.value &&
+        startInAncestorViewports;
     _effectiveEndHandleVisibility.value =
-        _handlesVisible && renderObject.selectionEndInViewport.value;
+        _handlesVisible &&
+        renderObject.selectionEndInViewport.value &&
+        endInAncestorViewports;
+    // Toolbar visibility does not depend on _handlesVisible.
     _effectiveToolbarVisibility.value =
-        renderObject.selectionStartInViewport.value || renderObject.selectionEndInViewport.value;
+        (renderObject.selectionStartInViewport.value && startInAncestorViewports) ||
+        (renderObject.selectionEndInViewport.value && endInAncestorViewports);
+  }
+
+  /// Returns whether the selection endpoint is within all ancestor viewports.
+  ///
+  /// This prevents selection handles in the [Overlay] from appearing over app
+  /// bars and other UI elements when the text field is scrolled out of an
+  /// external viewport (e.g. a [CustomScrollView]).
+  bool _selectionEndpointInAncestorViewports({required bool isStart}) {
+    final List<TextSelectionPoint> endpoints =
+        renderObject.getEndpointsForSelection(_selection);
+    if (endpoints.isEmpty) {
+      return false;
+    }
+    final Offset localPoint =
+        isStart ? endpoints.first.point : endpoints.last.point;
+    RenderAbstractViewport? viewport =
+        RenderAbstractViewport.maybeOf(renderObject);
+    while (viewport != null) {
+      final Matrix4 transform = renderObject.getTransformTo(viewport);
+      final Offset pointInViewport =
+          MatrixUtils.transformPoint(transform, localPoint);
+      if (pointInViewport.dx.isNaN ||
+          pointInViewport.dy.isNaN ||
+          viewport.paintBounds.hasNaN ||
+          !viewport.paintBounds.inflate(0.5).contains(pointInViewport)) {
+        return false;
+      }
+      viewport = RenderAbstractViewport.maybeOf(viewport.parent);
+    }
+    return true;
   }
 
   /// Whether selection handles are visible.
@@ -565,6 +605,7 @@ class TextSelectionOverlay {
   /// text metrics (e.g. because the text was scrolled).
   void updateForScroll() {
     _updateSelectionOverlay();
+    _updateTextSelectionOverlayVisibilities();
     // This method may be called due to windows metrics changes. In that case,
     // non of the properties in _selectionOverlay will change, but a rebuild is
     // still needed.

@@ -3411,6 +3411,13 @@ class EditableTextState extends State<EditableText>
       _selectionOverlay?.update(_value);
     }
     _selectionOverlay?.handlesVisible = widget.showSelectionHandles;
+    if (widget.showSelectionHandles != oldWidget.showSelectionHandles) {
+      if (widget.showSelectionHandles) {
+        _startListeningToHandleScrollNotifications();
+      } else {
+        _stopListeningToHandleScrollNotifications();
+      }
+    }
 
     if (widget.autofillClient != oldWidget.autofillClient) {
       _currentAutofillScope?.unregister(oldWidget.autofillClient?.autofillId ?? autofillId);
@@ -4175,10 +4182,13 @@ class EditableTextState extends State<EditableText>
   // Selection handle visibility during external scroll.
   //
   // RenderEditable is a repaint boundary, so when a parent viewport scrolls,
-  // RenderEditable is repositioned via paint offsets but NOT repainted. This
-  // means the ancestor viewport visibility check in _paintHandleLayers never
-  // runs. We force a repaint by calling markNeedsPaint() when a parent
-  // scrollable scrolls and selection handles are visible.
+  // RenderEditable is repositioned via paint offsets but NOT repainted. The
+  // selection handles are in the Overlay and follow their leader layers via
+  // CompositedTransformFollower, so they track position correctly, but their
+  // visibility is not re-evaluated. Calling updateForScroll triggers the
+  // ancestor viewport visibility check in TextSelectionOverlay without
+  // requiring a full repaint of RenderEditable.
+  bool _handleScrollUpdateScheduled = false;
   void _handleSelectionHandlesOnParentScroll(ScrollNotification notification) {
     if (notification is! ScrollUpdateNotification) {
       return;
@@ -4186,11 +4196,25 @@ class EditableTextState extends State<EditableText>
     if (_selectionOverlay == null || !_selectionOverlay!.handlesAreVisible) {
       return;
     }
+    if (_handleScrollUpdateScheduled) {
+      return;
+    }
     final BuildContext? notificationContext = notification.context;
     if (notificationContext != null &&
         !_isInternalScrollableNotification(notificationContext) &&
         _scrollableNotificationIsFromSameSubtree(notificationContext)) {
-      renderEditable.markNeedsPaint();
+      // Schedule the visibility check as a post-frame callback so it runs
+      // after layout. Scroll notifications fire before the viewport has
+      // re-laid out, so getTransformTo would return stale transforms if
+      // called synchronously.
+      _handleScrollUpdateScheduled = true;
+      SchedulerBinding.instance.addPostFrameCallback((_) {
+        _handleScrollUpdateScheduled = false;
+        if (!mounted || _selectionOverlay == null) {
+          return;
+        }
+        _selectionOverlay!.updateForScroll();
+      }, debugLabel: 'EditableText.handleScrollUpdate');
     }
   }
 
