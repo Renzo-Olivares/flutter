@@ -2532,6 +2532,8 @@ class EditableTextState extends State<EditableText>
   ScrollNotificationObserverState? _scrollNotificationObserver;
   ({TextEditingValue value, Rect selectionBounds})? _dataWhenToolbarShowScheduled;
   bool _listeningToScrollNotificationObserver = false;
+
+  ScrollNotificationObserverState? _handleScrollNotificationObserver;
   bool _listeningToHandleScrollNotifications = false;
 
   bool get _webContextMenuEnabled => kIsWeb && BrowserContextMenu.enabled;
@@ -3359,22 +3361,19 @@ class EditableTextState extends State<EditableText>
       }
     }
 
-    if (_listeningToScrollNotificationObserver || _listeningToHandleScrollNotifications) {
-      // Re-subscribe to the scroll notification observer when dependencies
-      // change and we have active listeners.
-      if (_listeningToScrollNotificationObserver) {
-        _scrollNotificationObserver?.removeListener(_handleContextMenuOnParentScroll);
-      }
-      if (_listeningToHandleScrollNotifications) {
-        _scrollNotificationObserver?.removeListener(_handleSelectionHandlesOnParentScroll);
-      }
+    if (_listeningToScrollNotificationObserver) {
+      // Only update subscription when we have previously subscribed to the
+      // scroll notification observer. We only subscribe to the scroll
+      // notification observer when the context menu is shown on platforms that
+      // support _platformSupportsFadeOnScroll.
+      _scrollNotificationObserver?.removeListener(_handleContextMenuOnParentScroll);
       _scrollNotificationObserver = ScrollNotificationObserver.maybeOf(context);
-      if (_listeningToScrollNotificationObserver) {
-        _scrollNotificationObserver?.addListener(_handleContextMenuOnParentScroll);
-      }
-      if (_listeningToHandleScrollNotifications) {
-        _scrollNotificationObserver?.addListener(_handleSelectionHandlesOnParentScroll);
-      }
+      _scrollNotificationObserver?.addListener(_handleContextMenuOnParentScroll);
+    }
+    if (_listeningToHandleScrollNotifications) {
+      _handleScrollNotificationObserver?.removeListener(_handleSelectionHandlesOnParentScroll);
+      _handleScrollNotificationObserver = ScrollNotificationObserver.maybeOf(context);
+      _handleScrollNotificationObserver?.addListener(_handleSelectionHandlesOnParentScroll);
     }
   }
 
@@ -3487,9 +3486,7 @@ class EditableTextState extends State<EditableText>
     _listeningToScrollNotificationObserver = false;
     if (_scrollNotificationObserver != null) {
       _scrollNotificationObserver!.removeListener(_handleContextMenuOnParentScroll);
-      if (!_listeningToHandleScrollNotifications) {
-        _scrollNotificationObserver = null;
-      }
+      _scrollNotificationObserver = null;
     }
   }
 
@@ -4226,8 +4223,9 @@ class EditableTextState extends State<EditableText>
       return;
     }
     _listeningToHandleScrollNotifications = true;
-    _scrollNotificationObserver ??= ScrollNotificationObserver.maybeOf(context);
-    _scrollNotificationObserver?.addListener(_handleSelectionHandlesOnParentScroll);
+    _handleScrollNotificationObserver?.removeListener(_handleSelectionHandlesOnParentScroll);
+    _handleScrollNotificationObserver = ScrollNotificationObserver.maybeOf(context);
+    _handleScrollNotificationObserver?.addListener(_handleSelectionHandlesOnParentScroll);
   }
 
   void _stopListeningToHandleScrollNotifications() {
@@ -4235,10 +4233,8 @@ class EditableTextState extends State<EditableText>
       return;
     }
     _listeningToHandleScrollNotifications = false;
-    _scrollNotificationObserver?.removeListener(_handleSelectionHandlesOnParentScroll);
-    if (!_listeningToScrollNotificationObserver) {
-      _scrollNotificationObserver = null;
-    }
+    _handleScrollNotificationObserver?.removeListener(_handleSelectionHandlesOnParentScroll);
+    _handleScrollNotificationObserver = null;
   }
 
   bool _isInternalScrollableNotification(BuildContext? notificationContext) {
@@ -5150,7 +5146,8 @@ class EditableTextState extends State<EditableText>
     // hidden during a scroll on supported platforms.
     if (_platformSupportsFadeOnScroll) {
       _listeningToScrollNotificationObserver = true;
-      _scrollNotificationObserver ??= ScrollNotificationObserver.maybeOf(context);
+      _scrollNotificationObserver?.removeListener(_handleContextMenuOnParentScroll);
+      _scrollNotificationObserver = ScrollNotificationObserver.maybeOf(context);
       _scrollNotificationObserver?.addListener(_handleContextMenuOnParentScroll);
     }
     return true;
