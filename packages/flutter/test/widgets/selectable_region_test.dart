@@ -4356,6 +4356,107 @@ void main() {
       await gesture.up();
     });
 
+    testWidgets('long press and drag starting from empty padding in scrollable does not crash', (
+      WidgetTester tester,
+    ) async {
+      await tester.pumpWidget(
+        TestWidgetsApp(
+          home: SelectableRegion(
+            selectionControls: emptyTextSelectionControls,
+            child: SingleChildScrollView(
+              child: Padding(
+                padding: const EdgeInsets.all(100.0),
+                child: const Column(
+                  children: <Widget>[
+                    Text('How are you?'),
+                    Text('Good, and you?'),
+                    Text('Fine, thank you.'),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final RenderParagraph paragraph1 = tester.renderObject<RenderParagraph>(
+        find.descendant(of: find.text('How are you?'), matching: find.byType(RichText)),
+      );
+
+      // Long press in the empty padding area above all text content.
+      final Rect textRect = tester.getRect(find.text('How are you?'));
+      final Offset paddingAboveText = Offset(textRect.center.dx, textRect.top - 50.0);
+      final TestGesture gesture = await tester.startGesture(paddingAboveText);
+      addTearDown(gesture.removePointer);
+      await tester.pump(const Duration(milliseconds: 500));
+
+      // The nearest word should be selected (clamped from the empty space).
+      expect(paragraph1.selections, isNotEmpty);
+
+      // Drag into the text area — this previously crashed because internal
+      // selection state was not initialized when the gesture started in padding.
+      await gesture.moveTo(textOffsetToPosition(paragraph1, 6));
+      await tester.pump();
+      await gesture.up();
+      await tester.pumpAndSettle();
+
+      expect(tester.takeException(), isNull);
+      expect(paragraph1.selections, isNotEmpty);
+    });
+
+    testWidgets('double tap and drag starting from empty padding in scrollable does not crash', (
+      WidgetTester tester,
+    ) async {
+      await tester.pumpWidget(
+        TestWidgetsApp(
+          home: SelectableRegion(
+            selectionControls: emptyTextSelectionControls,
+            child: SingleChildScrollView(
+              child: Padding(
+                padding: const EdgeInsets.all(100.0),
+                child: const Column(
+                  children: <Widget>[
+                    Text('How are you?'),
+                    Text('Good, and you?'),
+                    Text('Fine, thank you.'),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final RenderParagraph paragraph1 = tester.renderObject<RenderParagraph>(
+        find.descendant(of: find.text('How are you?'), matching: find.byType(RichText)),
+      );
+
+      // Double tap in the empty padding area above all text content.
+      final Rect textRect = tester.getRect(find.text('How are you?'));
+      final Offset paddingAboveText = Offset(textRect.center.dx, textRect.top - 50.0);
+      final TestGesture gesture = await tester.startGesture(paddingAboveText);
+      addTearDown(gesture.removePointer);
+      await tester.pump();
+      await gesture.up();
+      await tester.pump();
+      await gesture.down(paddingAboveText);
+      await tester.pumpAndSettle();
+
+      // The nearest word should be selected.
+      expect(paragraph1.selections, isNotEmpty);
+
+      // Drag into the text area — this previously crashed.
+      await gesture.moveTo(textOffsetToPosition(paragraph1, 6));
+      await tester.pump();
+      await gesture.up();
+      await tester.pumpAndSettle();
+
+      expect(tester.takeException(), isNull);
+      expect(paragraph1.selections, isNotEmpty);
+    });
+
     testWidgets('can drag end handle when not covering entire screen', (WidgetTester tester) async {
       // Regression test for https://github.com/flutter/flutter/issues/104620.
 
