@@ -21,7 +21,6 @@ import 'adaptive_text_selection_toolbar.dart';
 import 'color_scheme.dart';
 import 'colors.dart';
 import 'debug.dart';
-import 'desktop_text_selection.dart';
 import 'input_decorator.dart';
 import 'magnifier.dart';
 import 'material_localizations.dart';
@@ -1608,7 +1607,6 @@ class _TextFieldState extends State<TextField>
       case TargetPlatform.macOS:
         final CupertinoThemeData cupertinoTheme = CupertinoTheme.of(context);
         forcePressEnabled = false;
-        textSelectionControls ??= cupertinoDesktopTextSelectionHandleControls;
         paintCursorAboveText = true;
         cursorOpacityAnimates ??= false;
         cursorColor = _hasError
@@ -1642,7 +1640,6 @@ class _TextFieldState extends State<TextField>
 
       case TargetPlatform.linux:
         forcePressEnabled = false;
-        textSelectionControls ??= desktopTextSelectionHandleControls;
         paintCursorAboveText = false;
         cursorOpacityAnimates ??= false;
         cursorColor = _hasError
@@ -1662,7 +1659,6 @@ class _TextFieldState extends State<TextField>
 
       case TargetPlatform.windows:
         forcePressEnabled = false;
-        textSelectionControls ??= desktopTextSelectionHandleControls;
         paintCursorAboveText = false;
         cursorOpacityAnimates ??= false;
         cursorColor = _hasError

@@ -501,6 +501,25 @@ class TextSelectionOverlay {
     _updateSelectionOverlay();
 
     if (selectionControls != null && selectionControls is! TextSelectionHandleControls) {
+      assert(() {
+        if (contextMenuBuilder != null) {
+          FlutterError.reportError(
+            FlutterErrorDetails(
+              exception: FlutterError(
+                'A contextMenuBuilder was provided to EditableText along with a '
+                'selectionControls instance that does not mix in '
+                'TextSelectionHandleControls.\n'
+                'The contextMenuBuilder will be ignored in favor of the toolbar '
+                'built by the selectionControls. To use contextMenuBuilder, either '
+                'mix TextSelectionHandleControls into your selectionControls '
+                'implementation or pass selectionControls as null.',
+              ),
+              library: 'widgets',
+            ),
+          );
+        }
+        return true;
+      }());
       _selectionOverlay.showToolbar();
       return;
     }
@@ -1041,7 +1060,7 @@ class TextSelectionOverlay {
     _dragStartSelection = null;
     final bool draggingHandles =
         _selectionOverlay.isDraggingStartHandle || _selectionOverlay.isDraggingEndHandle;
-    if (selectionControls is! TextSelectionHandleControls) {
+    if (selectionControls != null && selectionControls is! TextSelectionHandleControls) {
       if (!draggingHandles) {
         _selectionOverlay.hideMagnifier();
         if (!_selection.isCollapsed) {
@@ -1161,7 +1180,7 @@ class SelectionOverlay {
   /// Includes both the text selection toolbar and the spell check menu.
   /// {@endtemplate}
   bool get toolbarIsVisible {
-    return selectionControls is TextSelectionHandleControls
+    return (selectionControls == null || selectionControls is TextSelectionHandleControls)
         ? _contextMenuController.isShown || _spellCheckToolbarController.isShown
         : _toolbar != null || _spellCheckToolbarController.isShown;
   }

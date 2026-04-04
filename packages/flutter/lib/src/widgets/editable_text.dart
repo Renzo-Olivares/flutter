@@ -935,7 +935,7 @@ class EditableText extends StatefulWidget {
        assert(!obscureText || maxLines == 1, 'Obscured fields cannot be multiline.'),
        enableInteractiveSelection = enableInteractiveSelection ?? (!readOnly || !obscureText),
        selectAllOnFocus = selectAllOnFocus ?? _defaultSelectAllOnFocus,
-       toolbarOptions = selectionControls is TextSelectionHandleControls && toolbarOptions == null
+       toolbarOptions = (selectionControls == null || selectionControls is TextSelectionHandleControls) && toolbarOptions == null
            ? ToolbarOptions.empty
            : toolbarOptions ??
                  (obscureText
@@ -2643,7 +2643,7 @@ class EditableTextState extends State<EditableText>
 
   @override
   bool get cutEnabled {
-    if (widget.selectionControls is! TextSelectionHandleControls) {
+    if (widget.selectionControls != null && widget.selectionControls is! TextSelectionHandleControls) {
       return widget.toolbarOptions.cut && !widget.readOnly && !widget.obscureText;
     }
     return !widget.readOnly && !widget.obscureText && !textEditingValue.selection.isCollapsed;
@@ -2651,7 +2651,7 @@ class EditableTextState extends State<EditableText>
 
   @override
   bool get copyEnabled {
-    if (widget.selectionControls is! TextSelectionHandleControls) {
+    if (widget.selectionControls != null && widget.selectionControls is! TextSelectionHandleControls) {
       return widget.toolbarOptions.copy && !widget.obscureText;
     }
     return !widget.obscureText && !textEditingValue.selection.isCollapsed;
@@ -2659,7 +2659,7 @@ class EditableTextState extends State<EditableText>
 
   @override
   bool get pasteEnabled {
-    if (widget.selectionControls is! TextSelectionHandleControls) {
+    if (widget.selectionControls != null && widget.selectionControls is! TextSelectionHandleControls) {
       return widget.toolbarOptions.paste && !widget.readOnly;
     }
     return !widget.readOnly && (clipboardStatus.value == ClipboardStatus.pasteable);
@@ -2667,7 +2667,7 @@ class EditableTextState extends State<EditableText>
 
   @override
   bool get selectAllEnabled {
-    if (widget.selectionControls is! TextSelectionHandleControls) {
+    if (widget.selectionControls != null && widget.selectionControls is! TextSelectionHandleControls) {
       return widget.toolbarOptions.selectAll &&
           (!widget.readOnly || !widget.obscureText) &&
           widget.enableInteractiveSelection;
@@ -3407,7 +3407,7 @@ class EditableTextState extends State<EditableText>
     }
     _selectionOverlay?.handlesVisible = widget.showSelectionHandles;
     if (widget.showSelectionHandles != oldWidget.showSelectionHandles) {
-      if (widget.showSelectionHandles) {
+      if (widget.showSelectionHandles && widget.selectionControls != null) {
         _startListeningToHandleScrollNotifications();
       } else {
         _stopListeningToHandleScrollNotifications();
@@ -3469,9 +3469,9 @@ class EditableTextState extends State<EditableText>
     if (widget.showCursor != oldWidget.showCursor) {
       _startOrStopCursorTimerIfNeeded();
     }
-    final bool canPaste = widget.selectionControls is TextSelectionHandleControls
+    final bool canPaste = (widget.selectionControls == null || widget.selectionControls is TextSelectionHandleControls)
         ? pasteEnabled
-        : widget.selectionControls?.canPaste(this) ?? false;
+        : widget.selectionControls!.canPaste(this);
     if (widget.selectionEnabled && pasteEnabled && canPaste) {
       clipboardStatus.update();
     }
@@ -4470,9 +4470,11 @@ class EditableTextState extends State<EditableText>
         _selectionOverlay!.update(_value);
       }
       _selectionOverlay!.handlesVisible = widget.showSelectionHandles;
-      _selectionOverlay!.showHandles();
-      if (widget.showSelectionHandles) {
-        _startListeningToHandleScrollNotifications();
+      if (widget.selectionControls != null) {
+        _selectionOverlay!.showHandles();
+        if (widget.showSelectionHandles) {
+          _startListeningToHandleScrollNotifications();
+        }
       }
     }
     // TODO(chunhtai): we should make sure selection actually changed before
@@ -5343,9 +5345,9 @@ class EditableTextState extends State<EditableText>
   VoidCallback? _semanticsOnCopy(TextSelectionControls? controls) {
     return widget.selectionEnabled &&
             _hasFocus &&
-            (widget.selectionControls is TextSelectionHandleControls
+            ((widget.selectionControls == null || widget.selectionControls is TextSelectionHandleControls)
                 ? copyEnabled
-                : copyEnabled && (widget.selectionControls?.canCopy(this) ?? false))
+                : copyEnabled && widget.selectionControls!.canCopy(this))
         ? () {
             controls?.handleCopy(this);
             copySelection(SelectionChangedCause.toolbar);
@@ -5356,9 +5358,9 @@ class EditableTextState extends State<EditableText>
   VoidCallback? _semanticsOnCut(TextSelectionControls? controls) {
     return widget.selectionEnabled &&
             _hasFocus &&
-            (widget.selectionControls is TextSelectionHandleControls
+            ((widget.selectionControls == null || widget.selectionControls is TextSelectionHandleControls)
                 ? cutEnabled
-                : cutEnabled && (widget.selectionControls?.canCut(this) ?? false))
+                : cutEnabled && widget.selectionControls!.canCut(this))
         ? () {
             controls?.handleCut(this);
             cutSelection(SelectionChangedCause.toolbar);
@@ -5369,9 +5371,9 @@ class EditableTextState extends State<EditableText>
   VoidCallback? _semanticsOnPaste(TextSelectionControls? controls) {
     return widget.selectionEnabled &&
             _hasFocus &&
-            (widget.selectionControls is TextSelectionHandleControls
+            ((widget.selectionControls == null || widget.selectionControls is TextSelectionHandleControls)
                 ? pasteEnabled
-                : pasteEnabled && (widget.selectionControls?.canPaste(this) ?? false)) &&
+                : pasteEnabled && widget.selectionControls!.canPaste(this)) &&
             (clipboardStatus.value == ClipboardStatus.pasteable)
         ? () async {
             await controls?.handlePaste(this);

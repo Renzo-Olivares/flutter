@@ -17,7 +17,6 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter/scheduler.dart';
 
 import 'adaptive_text_selection_toolbar.dart';
-import 'desktop_text_selection.dart';
 import 'magnifier.dart';
 import 'text_selection.dart';
 import 'theme.dart';
@@ -711,7 +710,6 @@ class _SelectableTextState extends State<SelectableText>
       case TargetPlatform.macOS:
         final CupertinoThemeData cupertinoTheme = CupertinoTheme.of(context);
         forcePressEnabled = false;
-        textSelectionControls ??= cupertinoDesktopTextSelectionHandleControls;
         paintCursorAboveText = true;
         cursorOpacityAnimates = true;
         cursorColor =
@@ -734,7 +732,6 @@ class _SelectableTextState extends State<SelectableText>
       case TargetPlatform.linux:
       case TargetPlatform.windows:
         forcePressEnabled = false;
-        textSelectionControls ??= desktopTextSelectionHandleControls;
         paintCursorAboveText = false;
         cursorOpacityAnimates = false;
         cursorColor = widget.cursorColor ?? selectionStyle.cursorColor ?? theme.colorScheme.primary;

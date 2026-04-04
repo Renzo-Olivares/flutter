@@ -16,7 +16,6 @@ import 'package:flutter/widgets.dart';
 
 import 'adaptive_text_selection_toolbar.dart';
 import 'colors.dart';
-import 'desktop_text_selection.dart';
 import 'icons.dart';
 import 'localizations.dart';
 import 'magnifier.dart';
@@ -1458,7 +1457,6 @@ class _CupertinoTextFieldState extends State<CupertinoTextField>
       case TargetPlatform.linux:
       case TargetPlatform.macOS:
       case TargetPlatform.windows:
-        textSelectionControls ??= cupertinoDesktopTextSelectionHandleControls;
         handleDidGainAccessibilityFocus = () {
           // Automatically activate the TextField when it receives accessibility focus.
           if (!_effectiveFocusNode.hasFocus && _effectiveFocusNode.canRequestFocus) {
