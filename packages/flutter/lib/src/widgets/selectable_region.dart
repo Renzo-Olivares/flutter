@@ -3032,6 +3032,7 @@ abstract class MultiSelectableSelectionContainerDelegate extends SelectionContai
     // contained the position. Clamp to the nearest selectable so that a
     // selection gesture starting in padding or whitespace still produces
     // a valid selection and properly initializes internal state.
+    assert(lastSelectionResult == null);
     if (selectables.isNotEmpty) {
       final SelectionGeometry existingGeometry = selectables[closestIndex].value;
       dispatchSelectionEventToChild(selectables[closestIndex], event);
