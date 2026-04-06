@@ -3222,37 +3222,61 @@ abstract class MultiSelectableSelectionContainerDelegate extends SelectionContai
     assert(
       (isEnd && currentSelectionEndIndex == -1) || (!isEnd && currentSelectionStartIndex == -1),
     );
-    var newIndex = -1;
-    var hasFoundEdgeIndex = false;
-    SelectionResult? result;
-    for (var index = 0; index < selectables.length && !hasFoundEdgeIndex; index += 1) {
-      final Selectable child = selectables[index];
-      final SelectionResult childResult = dispatchSelectionEventToChild(child, event);
-      switch (childResult) {
-        case SelectionResult.next:
-        case SelectionResult.none:
-          newIndex = index;
-        case SelectionResult.end:
-          newIndex = index;
-          result = SelectionResult.end;
-          hasFoundEdgeIndex = true;
-        case SelectionResult.previous:
-          hasFoundEdgeIndex = true;
-          if (index == 0) {
-            newIndex = 0;
-            result = SelectionResult.previous;
-          }
-          result ??= SelectionResult.end;
-        case SelectionResult.pending:
-          newIndex = index;
-          result = SelectionResult.pending;
-          hasFoundEdgeIndex = true;
-      }
-    }
-
-    if (newIndex == -1) {
-      assert(selectables.isEmpty);
+    if (selectables.isEmpty) {
       return SelectionResult.none;
+    }
+    SelectionResult? finalResult;
+    // Begin the search for the selection edge at the opposite edge if it exists.
+    final hasOppositeEdge =
+        isEnd ? currentSelectionStartIndex != -1 : currentSelectionEndIndex != -1;
+    int newIndex = switch ((isEnd, hasOppositeEdge)) {
+      (true, true) => currentSelectionStartIndex,
+      (true, false) => 0,
+      (false, true) => currentSelectionEndIndex,
+      (false, false) => 0,
+    };
+    bool? forward;
+    late SelectionResult currentSelectableResult;
+    // This loop sends the selection event to one of the following to determine
+    // the direction of the search.
+    //  - The opposite edge index if it exists.
+    //  - Index 0 if the opposite edge index does not exist.
+    //
+    // If the result is `SelectionResult.next`, this loop looks forward.
+    // Otherwise, it looks backward.
+    //
+    // The terminate conditions are:
+    // 1. the selectable returns end, pending, none.
+    // 2. the selectable returns previous when looking forward.
+    // 3. the selectable returns next when looking backward.
+    while (newIndex < selectables.length && newIndex >= 0 && finalResult == null) {
+      currentSelectableResult = dispatchSelectionEventToChild(selectables[newIndex], event);
+      switch (currentSelectableResult) {
+        case SelectionResult.end:
+        case SelectionResult.pending:
+        case SelectionResult.none:
+          finalResult = currentSelectableResult;
+        case SelectionResult.next:
+          if (forward == false) {
+            newIndex += 1;
+            finalResult = SelectionResult.end;
+          } else if (newIndex == selectables.length - 1) {
+            finalResult = currentSelectableResult;
+          } else {
+            forward = true;
+            newIndex += 1;
+          }
+        case SelectionResult.previous:
+          if (forward ?? false) {
+            newIndex -= 1;
+            finalResult = SelectionResult.end;
+          } else if (newIndex == 0) {
+            finalResult = currentSelectableResult;
+          } else {
+            forward = false;
+            newIndex -= 1;
+          }
+      }
     }
     if (isEnd) {
       currentSelectionEndIndex = newIndex;
@@ -3260,10 +3284,7 @@ abstract class MultiSelectableSelectionContainerDelegate extends SelectionContai
       currentSelectionStartIndex = newIndex;
     }
     _flushInactiveSelections();
-    // The result can only be null if the loop went through the entire list
-    // without any of the selection returned end or previous. In this case, the
-    // caller of this method needs to find the next selectable in their list.
-    return result ?? SelectionResult.next;
+    return finalResult!;
   }
 
   /// Adjusts the selection based on the drag selection update event if there
