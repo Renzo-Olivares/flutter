@@ -1645,17 +1645,13 @@ class SelectionOverlay {
     }
 
     final renderBox = context.findRenderObject()! as RenderBox;
-    final overlayRenderBox = Overlay.of(
-      context,
-      rootOverlay: true,
-    ).context.findRenderObject()! as RenderBox;
     _contextMenuController.show(
       context: context,
       contextMenuBuilder: (BuildContext context) {
         return _SelectionToolbarWrapper(
           visibility: toolbarVisible,
           layerLink: toolbarLayerLink,
-          offset: -renderBox.localToGlobal(Offset.zero, ancestor: overlayRenderBox),
+          offset: -renderBox.localToGlobal(Offset.zero),
           child: contextMenuBuilder(context),
         );
       },
@@ -1670,16 +1666,12 @@ class SelectionOverlay {
     }
 
     final renderBox = context.findRenderObject()! as RenderBox;
-    final overlayRenderBox = Overlay.of(
-      context,
-      rootOverlay: true,
-    ).context.findRenderObject()! as RenderBox;
     _spellCheckToolbarController.show(
       context: context,
       contextMenuBuilder: (BuildContext context) {
         return _SelectionToolbarWrapper(
           layerLink: toolbarLayerLink,
-          offset: -renderBox.localToGlobal(Offset.zero, ancestor: overlayRenderBox),
+          offset: -renderBox.localToGlobal(Offset.zero),
           child: builder(context),
         );
       },
@@ -1833,14 +1825,10 @@ class SelectionOverlay {
     );
 
     final renderBox = this.context.findRenderObject()! as RenderBox;
-    final overlayRenderBox = Overlay.of(
-      this.context,
-      rootOverlay: true,
-    ).context.findRenderObject()! as RenderBox;
 
     final editingRegion = Rect.fromPoints(
-      renderBox.localToGlobal(Offset.zero, ancestor: overlayRenderBox),
-      renderBox.localToGlobal(renderBox.size.bottomRight(Offset.zero), ancestor: overlayRenderBox),
+      renderBox.localToGlobal(Offset.zero),
+      renderBox.localToGlobal(renderBox.size.bottomRight(Offset.zero)),
     );
 
     final bool isMultiline =
@@ -1858,11 +1846,6 @@ class SelectionOverlay {
       selectionEndpoints.first.point.dy - lineHeightAtStart,
     );
 
-    // Convert toolbarLocation from global to overlay-local coordinates.
-    final Offset? overlayLocalToolbarLocation = toolbarLocation != null
-        ? overlayRenderBox.globalToLocal(toolbarLocation!)
-        : null;
-
     return _SelectionToolbarWrapper(
       visibility: toolbarVisible,
       layerLink: toolbarLayerLink,
@@ -1877,7 +1860,7 @@ class SelectionOverlay {
             selectionEndpoints,
             selectionDelegate!,
             clipboardStatus,
-            overlayLocalToolbarLocation,
+            toolbarLocation,
           );
         },
       ),

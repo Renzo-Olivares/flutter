@@ -24,30 +24,23 @@ class TextSelectionToolbarAnchors {
   const TextSelectionToolbarAnchors({required this.primaryAnchor, this.secondaryAnchor});
 
   /// Creates an instance of [TextSelectionToolbarAnchors] for some selection.
-  ///
-  /// When [ancestor] is provided, the returned anchors are in [ancestor]'s
-  /// coordinate space. When null, they are in global (screen) coordinates.
-  /// Passing the [Overlay]'s [RenderBox] as [ancestor] is recommended so that
-  /// anchors are relative to the overlay the toolbar is painted in.
   factory TextSelectionToolbarAnchors.fromSelection({
     required RenderBox renderBox,
     required double startGlyphHeight,
     required double endGlyphHeight,
     required List<TextSelectionPoint> selectionEndpoints,
-    RenderObject? ancestor,
   }) {
     final Rect selectionRect = getSelectionRect(
       renderBox,
       startGlyphHeight,
       endGlyphHeight,
       selectionEndpoints,
-      ancestor: ancestor,
     );
     if (selectionRect == Rect.zero) {
       return const TextSelectionToolbarAnchors(primaryAnchor: Offset.zero);
     }
 
-    final Rect editingRegion = _getEditingRegion(renderBox, ancestor: ancestor);
+    final Rect editingRegion = _getEditingRegion(renderBox);
     return TextSelectionToolbarAnchors(
       primaryAnchor: Offset(
         selectionRect.left + selectionRect.width / 2,
@@ -60,26 +53,23 @@ class TextSelectionToolbarAnchors {
     );
   }
 
-  /// Returns the [Rect] of the [RenderBox] in the coordinate space of
-  /// [ancestor], or in global coordinates if [ancestor] is null.
-  static Rect _getEditingRegion(RenderBox renderBox, {RenderObject? ancestor}) {
+  /// Returns the [Rect] of the [RenderBox] in global coordinates.
+  static Rect _getEditingRegion(RenderBox renderBox) {
     return Rect.fromPoints(
-      renderBox.localToGlobal(Offset.zero, ancestor: ancestor),
-      renderBox.localToGlobal(renderBox.size.bottomRight(Offset.zero), ancestor: ancestor),
+      renderBox.localToGlobal(Offset.zero),
+      renderBox.localToGlobal(renderBox.size.bottomRight(Offset.zero)),
     );
   }
 
   /// Returns the [Rect] covering the given selection in the given [RenderBox]
-  /// in the coordinate space of [ancestor], or in global coordinates if
-  /// [ancestor] is null.
+  /// in global coordinates.
   static Rect getSelectionRect(
     RenderBox renderBox,
     double startGlyphHeight,
     double endGlyphHeight,
-    List<TextSelectionPoint> selectionEndpoints, {
-    RenderObject? ancestor,
-  }) {
-    final Rect editingRegion = _getEditingRegion(renderBox, ancestor: ancestor);
+    List<TextSelectionPoint> selectionEndpoints,
+  ) {
+    final Rect editingRegion = _getEditingRegion(renderBox);
 
     if (editingRegion.left.isNaN ||
         editingRegion.top.isNaN ||

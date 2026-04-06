@@ -46,7 +46,6 @@ import 'localizations.dart';
 import 'magnifier.dart';
 import 'media_query.dart';
 import 'notification_listener.dart';
-import 'overlay.dart';
 import 'scroll_configuration.dart';
 import 'scroll_controller.dart';
 import 'scroll_notification.dart';
@@ -3153,17 +3152,9 @@ class EditableTextState extends State<EditableText>
   ///  * [contextMenuButtonItems], which provides the [ContextMenuButtonItem]s
   ///    for the default context menu buttons.
   TextSelectionToolbarAnchors get contextMenuAnchors {
-    final overlayRenderBox = Overlay.of(
-      context,
-      rootOverlay: true,
-    ).context.findRenderObject()! as RenderBox;
     if (renderEditable.lastSecondaryTapDownPosition != null) {
-      // Convert the global tap position to overlay-local coordinates so it is
-      // consistent with the coordinate space the toolbar is rendered in.
       return TextSelectionToolbarAnchors(
-        primaryAnchor: overlayRenderBox.globalToLocal(
-          renderEditable.lastSecondaryTapDownPosition!,
-        ),
+        primaryAnchor: renderEditable.lastSecondaryTapDownPosition!,
       );
     }
 
@@ -3176,7 +3167,6 @@ class EditableTextState extends State<EditableText>
       startGlyphHeight: startGlyphHeight,
       endGlyphHeight: endGlyphHeight,
       selectionEndpoints: points,
-      ancestor: overlayRenderBox,
     );
   }
 
