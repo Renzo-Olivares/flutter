@@ -996,6 +996,7 @@ class _SelectableTextContainerDelegate extends StaticSelectionContainerDelegate 
   SelectionResult handleSelectParagraph(SelectParagraphSelectionEvent event) {
     final SelectionResult result = _handleSelectParagraph(event);
     super.didReceiveSelectionBoundaryEvents();
+    captureOriginSelectables();
     return result;
   }
 
@@ -1457,7 +1458,10 @@ class _SelectableTextContainerDelegate extends StaticSelectionContainerDelegate 
           ? currentSelectionEndIndex
           : currentSelectionStartIndex;
       selectables
-          .where((Selectable target) => target != selectables[skipIndex])
+          .where(
+            (Selectable target) =>
+                target != selectables[skipIndex] && !isOriginSelectable(target),
+          )
           .forEach(
             (Selectable target) =>
                 dispatchSelectionEventToChild(target, const ClearSelectionEvent()),
@@ -1468,6 +1472,9 @@ class _SelectableTextContainerDelegate extends StaticSelectionContainerDelegate 
     final int skipEnd = max(currentSelectionStartIndex, currentSelectionEndIndex);
     for (var index = 0; index < selectables.length; index += 1) {
       if (index >= skipStart && index <= skipEnd) {
+        continue;
+      }
+      if (isOriginSelectable(selectables[index])) {
         continue;
       }
       dispatchSelectionEventToChild(selectables[index], const ClearSelectionEvent());
