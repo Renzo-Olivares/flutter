@@ -2527,8 +2527,7 @@ abstract class MultiSelectableSelectionContainerDelegate extends SelectionContai
 
   /// Whether the given [selectable] is part of the origin text boundary.
   @protected
-  bool isOriginSelectable(Selectable selectable) =>
-      _originSelectables.contains(selectable);
+  bool isOriginSelectable(Selectable selectable) => _originSelectables.contains(selectable);
 
   /// Clears all origin text boundary tracking state.
   @protected
@@ -3010,15 +3009,13 @@ abstract class MultiSelectableSelectionContainerDelegate extends SelectionContai
     final SelectionPoint? startPoint = startSelectable.value.startSelectionPoint;
     if (startPoint != null) {
       _originStartSelectable = startSelectable;
-      _originStartLocalPosition =
-          startPoint.localPosition + Offset(0, -startPoint.lineHeight / 2);
+      _originStartLocalPosition = startPoint.localPosition + Offset(0, -startPoint.lineHeight / 2);
     }
     final Selectable endSelectable = selectables[end];
     final SelectionPoint? endPoint = endSelectable.value.endSelectionPoint;
     if (endPoint != null) {
       _originEndSelectable = endSelectable;
-      _originEndLocalPosition =
-          endPoint.localPosition + Offset(0, -endPoint.lineHeight / 2);
+      _originEndLocalPosition = endPoint.localPosition + Offset(0, -endPoint.lineHeight / 2);
     }
     // Capture the content-relative offsets of the origin boundary.
     final SelectedContentRange? startRange = startSelectable.getSelection();
@@ -3339,8 +3336,10 @@ abstract class MultiSelectableSelectionContainerDelegate extends SelectionContai
     if (range == null) {
       return;
     }
-    if (_originStartSelectable == null || _originStartLocalPosition == null ||
-        _originEndSelectable == null || _originEndLocalPosition == null) {
+    if (_originStartSelectable == null ||
+        _originStartLocalPosition == null ||
+        _originEndSelectable == null ||
+        _originEndLocalPosition == null) {
       return;
     }
     final bool isEndEdge = event.type == SelectionEventType.endEdgeUpdate;
