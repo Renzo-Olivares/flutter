@@ -1860,7 +1860,20 @@ class _SelectableFragment
     transform.invert();
     final Offset localPosition = MatrixUtils.transformPoint(transform, globalPosition);
     if (_rect.isEmpty) {
-      return SelectionUtils.getResultBasedOnRect(_rect, localPosition);
+      // Snap the selection edge to the appropriate boundary so that this
+      // fragment's internal state is consistent with the SelectionResult it
+      // reports. Without this, the edge stays null and the fragment creates a
+      // gap in the selection range. This mirrors Chromium's handling where
+      // "zero-inline-size objects such as newline always return the start
+      // offset" rather than relying on geometric heuristics.
+      final SelectionResult result = SelectionUtils.getResultBasedOnRect(_rect, localPosition);
+      _setSelectionPosition(
+        result == SelectionResult.next
+            ? TextPosition(offset: range.end)
+            : TextPosition(offset: range.start),
+        isEnd: isEnd,
+      );
+      return result;
     }
     final Offset adjustedOffset = SelectionUtils.adjustDragOffset(
       _rect,
@@ -1926,7 +1939,18 @@ class _SelectableFragment
     transform.invert();
     final Offset localPosition = MatrixUtils.transformPoint(transform, globalPosition);
     if (_rect.isEmpty) {
-      return SelectionUtils.getResultBasedOnRect(_rect, localPosition);
+      // Snap the selection edge to the appropriate boundary so that this
+      // fragment's internal state is consistent with the SelectionResult it
+      // reports. Without this, the edge stays null and the fragment creates a
+      // gap in the selection range.
+      final SelectionResult result = SelectionUtils.getResultBasedOnRect(_rect, localPosition);
+      _setSelectionPosition(
+        result == SelectionResult.next
+            ? TextPosition(offset: range.end)
+            : TextPosition(offset: range.start),
+        isEnd: isEnd,
+      );
+      return result;
     }
     final Offset adjustedOffset = SelectionUtils.adjustDragOffset(
       _rect,
@@ -2834,7 +2858,18 @@ class _SelectableFragment
     transform.invert();
     final Offset localPosition = MatrixUtils.transformPoint(transform, globalPosition);
     if (_rect.isEmpty) {
-      return SelectionUtils.getResultBasedOnRect(_rect, localPosition);
+      // Snap the selection edge to the appropriate boundary so that this
+      // fragment's internal state is consistent with the SelectionResult it
+      // reports. Without this, the edge stays null and the fragment creates a
+      // gap in the selection range.
+      final SelectionResult result = SelectionUtils.getResultBasedOnRect(_rect, localPosition);
+      _setSelectionPosition(
+        result == SelectionResult.next
+            ? TextPosition(offset: range.end)
+            : TextPosition(offset: range.start),
+        isEnd: isEnd,
+      );
+      return result;
     }
     final Offset adjustedOffset = SelectionUtils.adjustDragOffset(
       _rect,
