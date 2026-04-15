@@ -1192,108 +1192,6 @@ class _SelectableTextContainerDelegate extends StaticSelectionContainerDelegate 
     return finalResult!;
   }
 
-  SelectionResult _adjustSelection(SelectionEdgeUpdateEvent event, {required bool isEnd}) {
-    assert(() {
-      if (isEnd) {
-        assert(currentSelectionEndIndex < selectables.length && currentSelectionEndIndex >= 0);
-        return true;
-      }
-      assert(currentSelectionStartIndex < selectables.length && currentSelectionStartIndex >= 0);
-      return true;
-    }());
-    SelectionResult? finalResult;
-    // Determines if the edge being adjusted is within the current viewport.
-    //  - If so, we begin the search for the new selection edge position at the
-    //    currentSelectionEndIndex/currentSelectionStartIndex.
-    //  - If not, we attempt to locate the new selection edge starting from
-    //    the opposite end.
-    //  - If neither edge is in the current viewport, the search for the new
-    //    selection edge position begins at 0.
-    //
-    // This can happen when there is a scrollable child and the edge being adjusted
-    // has been scrolled out of view.
-    final isCurrentEdgeWithinViewport = isEnd
-        ? value.endSelectionPoint != null
-        : value.startSelectionPoint != null;
-    final isOppositeEdgeWithinViewport = isEnd
-        ? value.startSelectionPoint != null
-        : value.endSelectionPoint != null;
-    int newIndex = switch ((isEnd, isCurrentEdgeWithinViewport, isOppositeEdgeWithinViewport)) {
-      (true, true, true) => currentSelectionEndIndex,
-      (true, true, false) => currentSelectionEndIndex,
-      (true, false, true) => currentSelectionStartIndex,
-      (true, false, false) => 0,
-      (false, true, true) => currentSelectionStartIndex,
-      (false, true, false) => currentSelectionStartIndex,
-      (false, false, true) => currentSelectionEndIndex,
-      (false, false, false) => 0,
-    };
-    bool? forward;
-    late SelectionResult currentSelectableResult;
-    // This loop sends the selection event to one of the following to determine
-    // the direction of the search.
-    //  - currentSelectionEndIndex/currentSelectionStartIndex if the current edge
-    //    is in the current viewport.
-    //  - The opposite edge index if the current edge is not in the current viewport.
-    //  - Index 0 if neither edge is in the current viewport.
-    //
-    // If the result is `SelectionResult.next`, this loop look backward.
-    // Otherwise, it looks forward.
-    //
-    // The terminate condition are:
-    // 1. the selectable returns end, pending, none.
-    // 2. the selectable returns previous when looking forward.
-    // 2. the selectable returns next when looking backward.
-    while (newIndex < selectables.length && newIndex >= 0 && finalResult == null) {
-      currentSelectableResult = dispatchSelectionEventToChild(selectables[newIndex], event);
-      switch (currentSelectableResult) {
-        case SelectionResult.end:
-        case SelectionResult.pending:
-        case SelectionResult.none:
-          finalResult = currentSelectableResult;
-        case SelectionResult.next:
-          if (forward == false) {
-            newIndex += 1;
-            finalResult = SelectionResult.end;
-          } else if (newIndex == selectables.length - 1) {
-            finalResult = currentSelectableResult;
-          } else {
-            forward = true;
-            newIndex += 1;
-          }
-        case SelectionResult.previous:
-          if (forward ?? false) {
-            newIndex -= 1;
-            finalResult = SelectionResult.end;
-          } else if (newIndex == 0) {
-            finalResult = currentSelectableResult;
-          } else {
-            forward = false;
-            newIndex -= 1;
-          }
-      }
-    }
-    if (isEnd) {
-      final bool forwardSelection = currentSelectionEndIndex >= currentSelectionStartIndex;
-      if (forward != null &&
-          ((!forwardSelection && forward && newIndex >= currentSelectionStartIndex) ||
-              (forwardSelection && !forward && newIndex <= currentSelectionStartIndex))) {
-        currentSelectionStartIndex = currentSelectionEndIndex;
-      }
-      currentSelectionEndIndex = newIndex;
-    } else {
-      final bool forwardSelection = currentSelectionEndIndex >= currentSelectionStartIndex;
-      if (forward != null &&
-          ((!forwardSelection && !forward && newIndex <= currentSelectionEndIndex) ||
-              (forwardSelection && forward && newIndex >= currentSelectionEndIndex))) {
-        currentSelectionEndIndex = currentSelectionStartIndex;
-      }
-      currentSelectionStartIndex = newIndex;
-    }
-    _flushInactiveSelections();
-    return finalResult!;
-  }
-
   /// The compare function this delegate used for determining the selection
   /// order of the [Selectable]s.
   ///
@@ -1458,8 +1356,7 @@ class _SelectableTextContainerDelegate extends StaticSelectionContainerDelegate 
           : currentSelectionStartIndex;
       selectables
           .where(
-            (Selectable target) =>
-                target != selectables[skipIndex] && !isOriginSelectable(target),
+            (Selectable target) => target != selectables[skipIndex] && !isOriginSelectable(target),
           )
           .forEach(
             (Selectable target) =>
@@ -1492,11 +1389,11 @@ class _SelectableTextContainerDelegate extends StaticSelectionContainerDelegate 
     if (event.type == SelectionEventType.endEdgeUpdate) {
       return currentSelectionEndIndex == -1
           ? _initSelection(event, isEnd: true)
-          : _adjustSelection(event, isEnd: true);
+          : super.handleSelectionEdgeUpdate(event);
     }
     return currentSelectionStartIndex == -1
         ? _initSelection(event, isEnd: false)
-        : _adjustSelection(event, isEnd: false);
+        : super.handleSelectionEdgeUpdate(event);
   }
 }
 
