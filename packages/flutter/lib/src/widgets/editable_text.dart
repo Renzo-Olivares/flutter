@@ -4315,7 +4315,7 @@ class EditableTextState extends State<EditableText>
         return;
       }
       _showToolbarOnScreenScheduled = true;
-      SchedulerBinding.instance.scheduleFrameCallback((Duration _) {
+      void toolbarShowCallback(Duration _) {
         _showToolbarOnScreenScheduled = false;
         if (!mounted || _dataWhenToolbarShowScheduled == null) {
           return;
@@ -4343,7 +4343,25 @@ class EditableTextState extends State<EditableText>
           showToolbar();
           _dataWhenToolbarShowScheduled = null;
         }
-      });
+      }
+      // Use scheduleFrameCallback when the scheduler is idle or in
+      // postFrameCallbacks, since addPostFrameCallback does not schedule
+      // a frame and no other mechanism may do so (e.g. on devices without
+      // accessibility services). During an active frame, use
+      // addPostFrameCallback to run after layout/paint with up-to-date
+      // values and avoid requesting an unnecessary extra frame.
+      switch (SchedulerBinding.instance.schedulerPhase) {
+        case SchedulerPhase.idle:
+        case SchedulerPhase.postFrameCallbacks:
+          SchedulerBinding.instance.scheduleFrameCallback(toolbarShowCallback);
+        case SchedulerPhase.transientCallbacks:
+        case SchedulerPhase.midFrameMicrotasks:
+        case SchedulerPhase.persistentCallbacks:
+          SchedulerBinding.instance.addPostFrameCallback(
+            toolbarShowCallback,
+            debugLabel: 'EditableText.scheduleToolbar',
+          );
+      }
     }
   }
 

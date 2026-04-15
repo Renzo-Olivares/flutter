@@ -18561,6 +18561,389 @@ void main() {
     // [intended] only applies to platforms where we supply the context menu.
     skip: kIsWeb,
   );
+
+  testWidgets(
+    'scheduleFrameCallback ensures a frame is scheduled after non-fling scroll ends without semantics',
+    (WidgetTester tester) async {
+      // Verifies that scheduleFrameCallback (unlike addPostFrameCallback)
+      // calls scheduleFrame(), so the toolbar re-show callback fires even
+      // when no other mechanism requests a frame. Without semantics,
+      // setIgnorePointer's markNeedsSemanticsUpdate does not schedule a
+      // frame — this is the exact on-device condition that exposed the bug.
+      controller.text = 'Lorem ipsum dolor sit amet ' * 200;
+      await tester.pumpWidget(
+        TestWidgetsApp(
+          home: Center(
+            child: EditableText(
+              maxLines: null,
+              style: textStyle,
+              cursorColor: cursorColor,
+              backgroundCursorColor: const Color(0xFF424242),
+              focusNode: focusNode,
+              selectionControls: testTextSelectionHandleControls,
+              contextMenuBuilder: (context, editableTextState) {
+                return const SizedBox.shrink();
+              },
+              controller: controller,
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final Finder editableText = find.byType(EditableText);
+      final EditableTextState editableTextState = tester.state<EditableTextState>(editableText);
+
+      // Show the toolbar.
+      await tester.longPressAt(tester.getCenter(editableText));
+      await tester.pumpAndSettle();
+      expect(editableTextState.showToolbar(), true);
+      await tester.pumpAndSettle();
+      expect(editableTextState.selectionOverlay?.toolbarIsVisible, true);
+
+      // Drag a small amount and release.
+      final TestGesture gesture = await tester.startGesture(tester.getCenter(editableText));
+      await gesture.moveBy(const Offset(0.0, -20.0));
+      await tester.pump();
+      await gesture.up();
+      // After gesture.up(), ScrollEndNotification is dispatched and the
+      // scheduleFrameCallback is registered. Verify that pumpAndSettle
+      // completes — this requires hasScheduledFrame to become true, which
+      // is the key property that addPostFrameCallback lacks.
+      // pumpAndSettle pumps frames while hasScheduledFrame is true. If
+      // scheduleFrameCallback did not call scheduleFrame(), pumpAndSettle
+      // would return immediately and the callback would never fire.
+      await tester.pumpAndSettle();
+
+      // The toolbar should be visible after settling.
+      expect(editableTextState.selectionOverlay?.toolbarIsVisible, true);
+    },
+    semanticsEnabled: false,
+    variant: const TargetPlatformVariant(<TargetPlatform>{
+      TargetPlatform.android,
+      TargetPlatform.iOS,
+    }),
+    skip: kIsWeb,
+  );
+
+  testWidgets(
+    'toolbar does not flash during fling scroll - no ScrollEnd/ScrollStart pair during drag-to-ballistic transition',
+    (WidgetTester tester) async {
+      // Verifies the claim that transitioning from DragScrollActivity to
+      // BallisticScrollActivity does NOT dispatch a ScrollEnd/ScrollStart
+      // pair. Both activities have isScrolling == true, so beginActivity
+      // skips the didEndScroll/didStartScroll calls. This means the toolbar
+      // stays hidden throughout the entire fling.
+      controller.text = 'Lorem ipsum dolor sit amet ' * 200;
+      final List<Type> scrollNotifications = <Type>[];
+      await tester.pumpWidget(
+        TestWidgetsApp(
+          home: Center(
+            child: NotificationListener<ScrollNotification>(
+              onNotification: (ScrollNotification notification) {
+                scrollNotifications.add(notification.runtimeType);
+                return false;
+              },
+              child: EditableText(
+                maxLines: null,
+                style: textStyle,
+                cursorColor: cursorColor,
+                backgroundCursorColor: const Color(0xFF424242),
+                focusNode: focusNode,
+                selectionControls: testTextSelectionHandleControls,
+                contextMenuBuilder: (context, editableTextState) {
+                  return const SizedBox.shrink();
+                },
+                controller: controller,
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final Finder editableText = find.byType(EditableText);
+      final EditableTextState editableTextState = tester.state<EditableTextState>(editableText);
+
+      // Show the toolbar.
+      await tester.longPressAt(tester.getCenter(editableText));
+      await tester.pumpAndSettle();
+      expect(editableTextState.showToolbar(), true);
+      await tester.pumpAndSettle();
+      expect(editableTextState.selectionOverlay?.toolbarIsVisible, true);
+
+      // Clear any scroll notifications from setup.
+      scrollNotifications.clear();
+
+      // Fling: this triggers a drag that ends with velocity, causing a
+      // DragScrollActivity → BallisticScrollActivity transition.
+      await tester.fling(editableText, const Offset(0.0, -200.0), 1500.0);
+
+      // Pump a few frames to allow the fling to be in progress. The
+      // ballistic animation should be running.
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 50));
+
+      // During the active fling, the toolbar must remain hidden.
+      expect(editableTextState.selectionOverlay?.toolbarIsVisible, false);
+
+      // Capture the notifications seen so far (during drag + transition
+      // to ballistic). Verify: there should be exactly one
+      // ScrollStartNotification (from the drag start), then
+      // ScrollUpdateNotifications, but NO ScrollEndNotification followed
+      // by another ScrollStartNotification. This confirms that the
+      // drag→ballistic transition does not produce a spurious
+      // ScrollEnd/ScrollStart pair.
+      final List<Type> duringFling = List<Type>.of(scrollNotifications);
+      bool sawEndThenStart = false;
+      for (int i = 0; i < duringFling.length; i++) {
+        if (duringFling[i] == ScrollEndNotification) {
+          if (i + 1 < duringFling.length && duringFling[i + 1] == ScrollStartNotification) {
+            sawEndThenStart = true;
+          }
+        }
+      }
+      expect(
+        sawEndThenStart,
+        false,
+        reason: 'Drag-to-ballistic transition should not produce a '
+            'ScrollEnd/ScrollStart pair because both activities have isScrolling == true',
+      );
+
+      // Let the fling settle.
+      await tester.pumpAndSettle();
+    },
+    semanticsEnabled: false,
+    variant: const TargetPlatformVariant(<TargetPlatform>{
+      TargetPlatform.android,
+      TargetPlatform.iOS,
+    }),
+    skip: kIsWeb,
+  );
+
+  testWidgets(
+    'toolbar re-shows after fling scroll completes with selection in view',
+    (WidgetTester tester) async {
+      // Verifies the fling end-to-end: the toolbar hides during fling,
+      // and re-appears after the ballistic animation completes and the
+      // selection is still in view.
+      controller.text = 'Lorem ipsum dolor sit amet ' * 200;
+      await tester.pumpWidget(
+        TestWidgetsApp(
+          home: Center(
+            child: EditableText(
+              maxLines: null,
+              style: textStyle,
+              cursorColor: cursorColor,
+              backgroundCursorColor: const Color(0xFF424242),
+              focusNode: focusNode,
+              selectionControls: testTextSelectionHandleControls,
+              contextMenuBuilder: (context, editableTextState) {
+                return const SizedBox.shrink();
+              },
+              controller: controller,
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final Finder editableText = find.byType(EditableText);
+      final EditableTextState editableTextState = tester.state<EditableTextState>(editableText);
+
+      // Select text near the middle of the viewport so a moderate fling
+      // won't scroll it out of view.
+      await tester.longPressAt(tester.getCenter(editableText));
+      await tester.pumpAndSettle();
+      expect(editableTextState.showToolbar(), true);
+      await tester.pumpAndSettle();
+      expect(editableTextState.selectionOverlay?.toolbarIsVisible, true);
+
+      // Fling with enough offset and speed to trigger scrolling and a
+      // ballistic animation, but not so much that the selection goes
+      // out of view. The selection is near the center of a large text
+      // field so a moderate upward fling keeps it visible.
+      await tester.fling(editableText, const Offset(0.0, -50.0), 500.0);
+
+      // During the fling, the toolbar should be hidden.
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 16));
+      expect(editableTextState.selectionOverlay?.toolbarIsVisible, false);
+
+      // Let the fling animation settle completely.
+      await tester.pumpAndSettle();
+
+      // The toolbar should re-appear since the selection is still in view.
+      expect(editableTextState.selectionOverlay?.toolbarIsVisible, true);
+    },
+    semanticsEnabled: false,
+    variant: const TargetPlatformVariant(<TargetPlatform>{
+      TargetPlatform.android,
+      TargetPlatform.iOS,
+    }),
+    skip: kIsWeb,
+  );
+
+  testWidgets(
+    'layout-dependent values in scheduleFrameCallback are valid for non-fling scroll',
+    (WidgetTester tester) async {
+      // Verifies that selectionStartInViewport, selectionEndInViewport,
+      // and getTransformTo return correct values when read from a
+      // scheduleFrameCallback (transient callback phase, before the next
+      // layout). After a non-fling scroll, no layout changes occur between
+      // ScrollEnd and the next frame, so previous-frame values are still
+      // accurate.
+      controller.text = 'Lorem ipsum dolor sit amet ' * 200;
+      await tester.pumpWidget(
+        TestWidgetsApp(
+          home: Center(
+            child: EditableText(
+              maxLines: null,
+              style: textStyle,
+              cursorColor: cursorColor,
+              backgroundCursorColor: const Color(0xFF424242),
+              focusNode: focusNode,
+              selectionControls: testTextSelectionHandleControls,
+              contextMenuBuilder: (context, editableTextState) {
+                return const SizedBox.shrink();
+              },
+              controller: controller,
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final Finder editableText = find.byType(EditableText);
+      final EditableTextState editableTextState = tester.state<EditableTextState>(editableText);
+      final RenderEditable renderEditable = editableTextState.renderEditable;
+
+      // Select a word near the center.
+      await tester.longPressAt(tester.getCenter(editableText));
+      await tester.pumpAndSettle();
+      expect(editableTextState.showToolbar(), true);
+      await tester.pumpAndSettle();
+      expect(editableTextState.selectionOverlay?.toolbarIsVisible, true);
+
+      // Record the selection viewport values and transform after layout.
+      final bool startInViewportBeforeScroll = renderEditable.selectionStartInViewport.value;
+      final bool endInViewportBeforeScroll = renderEditable.selectionEndInViewport.value;
+      expect(startInViewportBeforeScroll, true);
+      expect(endInViewportBeforeScroll, true);
+
+      // Perform a small scroll that keeps the selection in view.
+      final TestGesture gesture = await tester.startGesture(tester.getCenter(editableText));
+      await gesture.moveBy(const Offset(0.0, -10.0));
+      await tester.pump();
+      await gesture.up();
+      await tester.pumpAndSettle();
+
+      // After the scroll settles, the selection is still in view and the
+      // layout-dependent values correctly reflect this.
+      expect(renderEditable.selectionStartInViewport.value, true);
+      expect(renderEditable.selectionEndInViewport.value, true);
+
+      // getTransformTo should produce a valid (non-NaN) transform.
+      final Matrix4 transform = renderEditable.getTransformTo(null);
+      expect(transform.storage.any((double v) => v.isNaN), false,
+        reason: 'getTransformTo should return a valid transform after scroll settles');
+
+      // The toolbar should have re-appeared, confirming the callback read
+      // valid layout values.
+      expect(editableTextState.selectionOverlay?.toolbarIsVisible, true);
+    },
+    semanticsEnabled: false,
+    variant: const TargetPlatformVariant(<TargetPlatform>{
+      TargetPlatform.android,
+      TargetPlatform.iOS,
+    }),
+    skip: kIsWeb,
+  );
+
+  testWidgets(
+    'toolbar does not re-show when selection scrolls out of view during non-fling scroll',
+    (WidgetTester tester) async {
+      // Verifies that when a scroll moves the selection out of view, the
+      // scheduleFrameCallback correctly reads the updated layout values
+      // and does NOT re-show the toolbar.
+      controller.value = TextEditingValue(text: 'text ' * 10000);
+      final Widget editable = EditableText(
+        maxLines: null,
+        style: textStyle,
+        cursorColor: cursorColor,
+        backgroundCursorColor: const Color(0xFF424242),
+        focusNode: focusNode,
+        selectionControls: testTextSelectionHandleControls,
+        contextMenuBuilder: (context, editableTextState) {
+          return const SizedBox.shrink();
+        },
+        controller: controller,
+      );
+      final entry = OverlayEntry(
+        builder: (BuildContext context) {
+          return Center(child: editable);
+        },
+      );
+      addTearDown(
+        () => entry
+          ..remove()
+          ..dispose(),
+      );
+      await tester.pumpWidget(
+        Directionality(
+          textDirection: TextDirection.ltr,
+          child: MediaQuery(
+            data: const MediaQueryData(size: Size(800.0, 600.0)),
+            child: Overlay(initialEntries: <OverlayEntry>[entry]),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final Finder editableText = find.byType(EditableText);
+      final EditableTextState editableTextState = tester.state<EditableTextState>(editableText);
+
+      // Select the first word (near the top of content).
+      await tester.longPressAt(textOffsetToPosition(tester, 0));
+      await tester.pumpAndSettle();
+      expect(editableTextState.showToolbar(), true);
+      await tester.pumpAndSettle();
+      expect(editableTextState.selectionOverlay?.toolbarIsVisible, true);
+      expect(controller.selection, const TextSelection(baseOffset: 0, extentOffset: 4));
+
+      // Verify the selection is initially in view.
+      final RenderEditable renderEditable = editableTextState.renderEditable;
+      expect(renderEditable.selectionStartInViewport.value, true);
+
+      // Scroll far enough to move the selection completely out of view.
+      // The selection is at offset 0 (top of text), so scrolling down
+      // moves it above the viewport.
+      final TestGesture gesture = await tester.startGesture(tester.getCenter(editableText));
+      // Scroll in multiple steps to avoid gesture velocity triggering a fling.
+      for (int i = 0; i < 10; i++) {
+        await gesture.moveBy(const Offset(0.0, -100.0));
+        await tester.pump();
+      }
+
+      // Verify the selection is now out of view.
+      expect(renderEditable.selectionStartInViewport.value, false);
+      expect(renderEditable.selectionEndInViewport.value, false);
+
+      await gesture.up();
+      await tester.pumpAndSettle();
+
+      // The toolbar should NOT re-appear since the selection was scrolled
+      // out of view. This confirms the callback correctly evaluates
+      // layout-dependent values even from the transient callback phase.
+      expect(editableTextState.selectionOverlay?.toolbarIsVisible, false);
+    },
+    semanticsEnabled: false,
+    variant: const TargetPlatformVariant(<TargetPlatform>{
+      TargetPlatform.android,
+      TargetPlatform.iOS,
+    }),
+    skip: kIsWeb,
+  );
 }
 
 class UnsettableController extends TextEditingController {
