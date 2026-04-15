@@ -3245,13 +3245,11 @@ abstract class MultiSelectableSelectionContainerDelegate extends SelectionContai
       final SelectionResult childResult = dispatchSelectionEventToChild(child, event);
       switch (childResult) {
         case SelectionResult.next:
-          if (forward == null) {
-            forward = true;
-            newIndex = index;
-          } else if (!forward) {
+          if (forward == false) {
             hasFoundEdgeIndex = true;
             result = SelectionResult.end;
           } else {
+            forward = true;
             newIndex = index;
           }
         case SelectionResult.none:
@@ -3267,13 +3265,11 @@ abstract class MultiSelectableSelectionContainerDelegate extends SelectionContai
             result = SelectionResult.previous;
             break;
           }
-          if (forward == null) {
-            forward = false;
-            newIndex = index;
-          } else if (forward) {
+          if (forward ?? false) {
             hasFoundEdgeIndex = true;
             result = SelectionResult.end;
           } else {
+            forward = false;
             newIndex = index;
           }
         case SelectionResult.pending:
@@ -3284,7 +3280,7 @@ abstract class MultiSelectableSelectionContainerDelegate extends SelectionContai
       if (hasFoundEdgeIndex) {
         break;
       }
-      index += forward == null ? 1 : (forward ? 1 : -1);
+      index += (forward ?? true) ? 1 : -1;
     }
 
     if (newIndex == -1) {
