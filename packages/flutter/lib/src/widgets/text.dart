@@ -1405,14 +1405,41 @@ class _SelectableTextContainerDelegate extends StaticSelectionContainerDelegate 
       globalSelectionEdgeLocation: event.globalPosition,
       forEnd: event.type == SelectionEventType.endEdgeUpdate,
     );
+    final SelectionResult result;
     if (event.type == SelectionEventType.endEdgeUpdate) {
-      return currentSelectionEndIndex == -1
+      result = currentSelectionEndIndex == -1
           ? super.handleSelectionEdgeUpdate(event)
           : _adjustSelection(event, isEnd: true);
+    } else {
+      result = currentSelectionStartIndex == -1
+          ? super.handleSelectionEdgeUpdate(event)
+          : _adjustSelection(event, isEnd: false);
     }
-    return currentSelectionStartIndex == -1
-        ? super.handleSelectionEdgeUpdate(event)
-        : _adjustSelection(event, isEnd: false);
+    _selectUnselectedParagraphFragmentsWithinRange();
+    return result;
+  }
+
+  /// Selects paragraph fragments within the active selection range that have no
+  /// current selection.
+  ///
+  /// During paragraph-granularity selection edge updates, the sweep through
+  /// selectables clears and re-evaluates each fragment's selection. Fragments
+  /// with empty bounding rects (e.g. '\n' characters between [WidgetSpan]s)
+  /// have their selection cleared but never restored, because the method returns
+  /// early when the fragment rect is empty. This method selects those fragments
+  /// so they are included in the final selection.
+  void _selectUnselectedParagraphFragmentsWithinRange() {
+    if (currentSelectionStartIndex == -1 || currentSelectionEndIndex == -1) {
+      return;
+    }
+    final int start = min(currentSelectionStartIndex, currentSelectionEndIndex);
+    final int end = max(currentSelectionStartIndex, currentSelectionEndIndex);
+    for (var index = start; index <= end; index += 1) {
+      if (paragraph.selectableBelongsToParagraph(selectables[index]) &&
+          !selectables[index].value.hasSelection) {
+        dispatchSelectionEventToChild(selectables[index], const SelectAllSelectionEvent());
+      }
+    }
   }
 }
 
