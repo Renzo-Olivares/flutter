@@ -1047,6 +1047,9 @@ class RenderParagraph extends RenderBox
     _lastSelectableFragments?.forEach(
       (_SelectableFragment element) => element.didChangeParagraphLayout(),
     );
+    for (final _TextDelegateImpl delegate in _pluginDelegates.values) {
+      delegate.didChangeParagraphLayout();
+    }
     final BoxConstraints constraints = this.constraints;
     _placeholderDimensions = layoutInlineChildren(
       constraints.maxWidth,
