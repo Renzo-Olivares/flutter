@@ -606,9 +606,10 @@ class RenderParagraph extends RenderBox
   List<TextPluginRegistrar> get pluginRegistrars => _pluginRegistrars;
   List<TextPluginRegistrar> _pluginRegistrars = const <TextPluginRegistrar>[];
 
-  // Per-registrar delegate bookkeeping. Order of iteration when painting
-  // follows [_pluginRegistrars] (outermost-first → innermost paints last,
-  // which is the leaf-first ordering resolved in the doc).
+  // Per-registrar delegate bookkeeping. [_pluginRegistrars] is
+  // outermost-first; painting iterates it in reverse so the outermost
+  // scope's painter draws last, on top (leaf-first ordering: the leaf
+  // scope's painter is drawn first / at the back).
   final Map<TextPluginRegistrar, _TextDelegateImpl> _pluginDelegates =
       <TextPluginRegistrar, _TextDelegateImpl>{};
 
@@ -1147,11 +1148,14 @@ class RenderParagraph extends RenderBox
       }
     }
 
-    // Plugin background painters: outermost → innermost iteration order so
-    // that the innermost scope's painter draws on top (leaf-first). All
-    // below the glyph layer.
-    for (final TextPluginRegistrar registrar in _pluginRegistrars) {
-      final CustomPainter? bg = _pluginDelegates[registrar]!.backgroundPainter;
+    // Plugin background painters: leaf-first — the innermost (leaf) scope
+    // paints first / at the back, the outermost paints last / on top. This
+    // matches the natural wrapping where broad, app-wide plugins like
+    // SelectableRegion sit near the root and expect to paint above inner
+    // feature plugins (search-in-page, linkify, etc.). All below the glyph
+    // layer.
+    for (int i = _pluginRegistrars.length - 1; i >= 0; i -= 1) {
+      final CustomPainter? bg = _pluginDelegates[_pluginRegistrars[i]]!.backgroundPainter;
       if (bg != null) {
         _paintPluginPainter(context.canvas, offset, bg);
       }
@@ -1165,11 +1169,11 @@ class RenderParagraph extends RenderBox
     _textPainter.paint(context.canvas, offset);
 
     // Plugin foreground painters: same leaf-first order as background. Above
-    // the glyph layer but below inline children, per the design doc's
-    // inferred-3 (opaque inline children are never fully covered by an outer
-    // plugin's foreground painter).
-    for (final TextPluginRegistrar registrar in _pluginRegistrars) {
-      final CustomPainter? fg = _pluginDelegates[registrar]!.foregroundPainter;
+    // the glyph layer but below inline children, so that opaque inline
+    // children are never fully covered by an outer plugin's foreground
+    // decoration.
+    for (int i = _pluginRegistrars.length - 1; i >= 0; i -= 1) {
+      final CustomPainter? fg = _pluginDelegates[_pluginRegistrars[i]]!.foregroundPainter;
       if (fg != null) {
         _paintPluginPainter(context.canvas, offset, fg);
       }

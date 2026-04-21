@@ -121,7 +121,10 @@ abstract base class TextPlugin {
 /// plugin on mount and unregistered on removal. Plugins compose by nesting
 /// scopes: each scope contributes one `TextDelegate` per descendant
 /// paragraph, and painters from different scopes stack in leaf-first order
-/// (innermost scope's painter on top).
+/// (the innermost scope's painter draws first / at the back; the outermost
+/// scope's painter draws last / on top). This matches the natural wrapping
+/// where broad, app-wide plugins like `SelectableRegion` sit near the root
+/// and paint above narrowly-scoped feature plugins nested inside.
 ///
 /// ```dart
 /// TextPluginScope(

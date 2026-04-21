@@ -1720,7 +1720,7 @@ void main() {
       expect(fg.paintCalls, 1);
     });
 
-    test('nested scopes paint innermost last (leaf-first)', () {
+    test('nested scopes paint outermost last (leaf-first)', () {
       final outer = _TestTextPluginRegistrar();
       final inner = _TestTextPluginRegistrar();
       final paragraph = RenderParagraph(
@@ -1747,7 +1747,10 @@ void main() {
         onPaint: order.add,
       );
       paragraph.paint(MockPaintingContext(), Offset.zero);
-      expect(order, <String>['outer-bg', 'inner-bg', 'outer-fg', 'inner-fg']);
+      // Leaf-first: the innermost (leaf) scope paints first / at the back,
+      // and the outermost scope paints last / on top — for background and
+      // foreground pairs independently.
+      expect(order, <String>['inner-bg', 'outer-bg', 'inner-fg', 'outer-fg']);
     });
 
     test('painter repaint Listenable triggers markNeedsPaint', () {
