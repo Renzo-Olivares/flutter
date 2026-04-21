@@ -23,6 +23,7 @@ import 'binding.dart';
 import 'debug.dart';
 import 'framework.dart';
 import 'localizations.dart';
+import 'text_plugin.dart';
 import 'visibility.dart';
 import 'widget_span.dart';
 
@@ -6751,6 +6752,9 @@ class RichText extends MultiChildRenderObjectWidget {
       locale: locale ?? Localizations.maybeLocaleOf(context),
       registrar: selectionRegistrar,
       selectionColor: selectionColor,
+      pluginRegistrars:
+          TextPluginScopeMarker.maybeOf(context)?.registrars ??
+          const <TextPluginRegistrar>[],
     );
   }
 
@@ -6770,7 +6774,10 @@ class RichText extends MultiChildRenderObjectWidget {
       ..textHeightBehavior = textHeightBehavior
       ..locale = locale ?? Localizations.maybeLocaleOf(context)
       ..registrar = selectionRegistrar
-      ..selectionColor = selectionColor;
+      ..selectionColor = selectionColor
+      ..pluginRegistrars =
+          TextPluginScopeMarker.maybeOf(context)?.registrars ??
+          const <TextPluginRegistrar>[];
   }
 
   @override

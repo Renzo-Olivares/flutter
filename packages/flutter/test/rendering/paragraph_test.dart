@@ -1572,12 +1572,234 @@ void main() {
       expect(() => paragraph.positionInlineChildren(boxes), returnsNormally);
     });
   });
+
+  group('TextPlugin', () {
+    test('pluginRegistrars setter creates one delegate per registrar', () {
+      final registrarA = _TestTextPluginRegistrar();
+      final registrarB = _TestTextPluginRegistrar();
+      final paragraph = RenderParagraph(
+        const TextSpan(text: 'hello'),
+        textDirection: TextDirection.ltr,
+        pluginRegistrars: <TextPluginRegistrar>[registrarA, registrarB],
+      );
+      layout(paragraph);
+      expect(registrarA.added, hasLength(1));
+      expect(registrarB.added, hasLength(1));
+      expect(
+        identical(registrarA.added.single, registrarB.added.single),
+        isFalse,
+        reason: 'Each registrar gets its own delegate.',
+      );
+    });
+
+    test('pluginRegistrars diff: adding fires didAdd, removing fires didRemove', () {
+      final registrarA = _TestTextPluginRegistrar();
+      final registrarB = _TestTextPluginRegistrar();
+      final paragraph = RenderParagraph(
+        const TextSpan(text: 'hello'),
+        textDirection: TextDirection.ltr,
+        pluginRegistrars: <TextPluginRegistrar>[registrarA],
+      );
+      layout(paragraph);
+      expect(registrarA.added, hasLength(1));
+
+      paragraph.pluginRegistrars = <TextPluginRegistrar>[registrarA, registrarB];
+      pumpFrame();
+      expect(registrarA.added, hasLength(1), reason: 'No churn for an unchanged registrar.');
+      expect(registrarB.added, hasLength(1));
+
+      paragraph.pluginRegistrars = <TextPluginRegistrar>[registrarB];
+      pumpFrame();
+      expect(registrarA.removed, hasLength(1), reason: 'Dropped registrar gets a didRemove.');
+      expect(registrarB.added, hasLength(1), reason: 'Retained registrar is not re-added.');
+    });
+
+    test('delegate.text mirrors the paragraph span', () {
+      final registrar = _TestTextPluginRegistrar();
+      final paragraph = RenderParagraph(
+        const TextSpan(children: <InlineSpan>[TextSpan(text: 'foo '), TextSpan(text: 'bar')]),
+        textDirection: TextDirection.ltr,
+        pluginRegistrars: <TextPluginRegistrar>[registrar],
+      );
+      layout(paragraph);
+      expect(registrar.added.single.text, 'foo bar');
+    });
+
+    test('delegate.placeholderRanges locates placeholder code units in the plain text', () {
+      final registrar = _TestTextPluginRegistrar();
+      // ￼ is the code unit PlaceholderSpan / WidgetSpan emit into the
+      // plain text. Embedding it directly here bypasses the RenderBox wiring
+      // that a real WidgetSpan requires.
+      final paragraph = RenderParagraph(
+        const TextSpan(text: 'a￼b￼c'),
+        textDirection: TextDirection.ltr,
+        pluginRegistrars: <TextPluginRegistrar>[registrar],
+      );
+      layout(paragraph);
+      final TextDelegate delegate = registrar.added.single;
+      expect(delegate.text, 'a￼b￼c');
+      expect(
+        delegate.placeholderRanges,
+        equals(<TextRange>[
+          const TextRange(start: 1, end: 2),
+          const TextRange(start: 3, end: 4),
+        ]),
+      );
+    });
+
+    test('markNeedsLayout notifies attached delegates', () {
+      final registrar = _TestTextPluginRegistrar();
+      final paragraph = RenderParagraph(
+        const TextSpan(text: 'hello'),
+        textDirection: TextDirection.ltr,
+        pluginRegistrars: <TextPluginRegistrar>[registrar],
+      );
+      layout(paragraph);
+      final TextDelegate delegate = registrar.added.single;
+      var notifications = 0;
+      delegate.addListener(() => notifications += 1);
+      paragraph.markNeedsLayout();
+      expect(notifications, 1);
+    });
+
+    test('changing text to a new layout-comparison string fires didUpdate on each registrar', () {
+      final registrar = _TestTextPluginRegistrar();
+      final paragraph = RenderParagraph(
+        const TextSpan(text: 'hello'),
+        textDirection: TextDirection.ltr,
+        pluginRegistrars: <TextPluginRegistrar>[registrar],
+      );
+      layout(paragraph);
+      expect(registrar.updated, isEmpty);
+
+      paragraph.text = const TextSpan(text: 'hello world');
+      pumpFrame();
+      expect(registrar.updated, hasLength(1));
+      expect(
+        identical(registrar.updated.single, registrar.added.single),
+        isTrue,
+        reason: 'Existing delegate is reused across text changes.',
+      );
+      expect(registrar.updated.single.text, 'hello world');
+    });
+
+    test('dispose removes registrations and disposes delegates', () {
+      final registrar = _TestTextPluginRegistrar();
+      final paragraph = RenderParagraph(
+        const TextSpan(text: 'hello'),
+        textDirection: TextDirection.ltr,
+        pluginRegistrars: <TextPluginRegistrar>[registrar],
+      );
+      layout(paragraph);
+      expect(registrar.added, hasLength(1));
+      TestRenderingFlutterBinding.instance.renderView.child = null;
+      paragraph.dispose();
+      expect(registrar.removed, hasLength(1));
+      expect(identical(registrar.removed.single, registrar.added.single), isTrue);
+    });
+
+    test('paint runs background painters, then glyphs, then foreground painters', () {
+      final registrar = _TestTextPluginRegistrar();
+      final paragraph = RenderParagraph(
+        const TextSpan(text: 'hi'),
+        textDirection: TextDirection.ltr,
+        pluginRegistrars: <TextPluginRegistrar>[registrar],
+      );
+      layout(paragraph);
+      final TextDelegate delegate = registrar.added.single;
+      final bg = _SentinelPainter(marker: 'bg');
+      final fg = _SentinelPainter(marker: 'fg');
+      delegate.backgroundPainter = bg;
+      delegate.foregroundPainter = fg;
+      final context = MockPaintingContext();
+      paragraph.paint(context, Offset.zero);
+      // Mock canvas logs `Rect` per drawRect (each SentinelPainter) and
+      // `ui.Paragraph` for the glyph layer.
+      expect(context.canvas.drawnItemTypes, <Type>[Rect, ui.Paragraph, Rect]);
+      expect(bg.paintCalls, 1);
+      expect(fg.paintCalls, 1);
+    });
+
+    test('nested scopes paint innermost last (leaf-first)', () {
+      final outer = _TestTextPluginRegistrar();
+      final inner = _TestTextPluginRegistrar();
+      final paragraph = RenderParagraph(
+        const TextSpan(text: 'hi'),
+        textDirection: TextDirection.ltr,
+        pluginRegistrars: <TextPluginRegistrar>[outer, inner],
+      );
+      layout(paragraph);
+      final order = <String>[];
+      outer.added.single.backgroundPainter = _SentinelPainter(
+        marker: 'outer-bg',
+        onPaint: order.add,
+      );
+      inner.added.single.backgroundPainter = _SentinelPainter(
+        marker: 'inner-bg',
+        onPaint: order.add,
+      );
+      outer.added.single.foregroundPainter = _SentinelPainter(
+        marker: 'outer-fg',
+        onPaint: order.add,
+      );
+      inner.added.single.foregroundPainter = _SentinelPainter(
+        marker: 'inner-fg',
+        onPaint: order.add,
+      );
+      paragraph.paint(MockPaintingContext(), Offset.zero);
+      expect(order, <String>['outer-bg', 'inner-bg', 'outer-fg', 'inner-fg']);
+    });
+
+    test('painter repaint Listenable triggers markNeedsPaint', () {
+      final registrar = _TestTextPluginRegistrar();
+      final paragraph = RenderParagraph(
+        const TextSpan(text: 'hi'),
+        textDirection: TextDirection.ltr,
+        pluginRegistrars: <TextPluginRegistrar>[registrar],
+      );
+      layout(paragraph);
+      final repaint = ChangeNotifier();
+      addTearDown(repaint.dispose);
+      final painter = _SentinelPainter(marker: 'bg', repaint: repaint);
+      registrar.added.single.backgroundPainter = painter;
+      pumpFrame(phase: EnginePhase.paint);
+      expect(paragraph.debugNeedsPaint, isFalse);
+      repaint.notifyListeners();
+      expect(paragraph.debugNeedsPaint, isTrue);
+    });
+
+    test('delegate.compareTo orders sibling paragraphs left-to-right', () {
+      final registrar = _TestTextPluginRegistrar();
+      final left = RenderParagraph(
+        const TextSpan(text: 'L'),
+        textDirection: TextDirection.ltr,
+        pluginRegistrars: <TextPluginRegistrar>[registrar],
+      );
+      final right = RenderParagraph(
+        const TextSpan(text: 'R'),
+        textDirection: TextDirection.ltr,
+        pluginRegistrars: <TextPluginRegistrar>[registrar],
+      );
+      final row = RenderFlex(textDirection: TextDirection.ltr);
+      row.add(left);
+      row.add(right);
+      layout(row, constraints: const BoxConstraints(maxWidth: 400));
+      final List<TextDelegate> delegates = registrar.added;
+      expect(delegates, hasLength(2));
+      final TextDelegate leftDelegate = delegates.singleWhere((d) => d.text == 'L');
+      final TextDelegate rightDelegate = delegates.singleWhere((d) => d.text == 'R');
+      expect(leftDelegate.compareTo(rightDelegate), lessThan(0));
+      expect(rightDelegate.compareTo(leftDelegate), greaterThan(0));
+      expect(leftDelegate.compareTo(leftDelegate), 0);
+    });
+  });
 }
 
 class MockCanvas extends Fake implements Canvas {
   Rect? drawnRect;
   Paint? drawnRectPaint;
   List<Type> drawnItemTypes = <Type>[];
+  int _saveCount = 0;
 
   @override
   void drawRect(Rect rect, Paint paint) {
@@ -1585,6 +1807,22 @@ class MockCanvas extends Fake implements Canvas {
     drawnRectPaint = paint;
     drawnItemTypes.add(Rect);
   }
+
+  @override
+  void save() {
+    _saveCount += 1;
+  }
+
+  @override
+  void restore() {
+    _saveCount -= 1;
+  }
+
+  @override
+  int getSaveCount() => _saveCount;
+
+  @override
+  void translate(double dx, double dy) {}
 
   @override
   void drawParagraph(ui.Paragraph paragraph, Offset offset) {
@@ -1615,4 +1853,40 @@ class TestSelectionRegistrar extends SelectionRegistrar {
   void remove(Selectable selectable) {
     expect(selectables.remove(selectable), isTrue);
   }
+}
+
+class _TestTextPluginRegistrar implements TextPluginRegistrar {
+  final List<TextDelegate> added = <TextDelegate>[];
+  final List<TextDelegate> removed = <TextDelegate>[];
+  final List<TextDelegate> updated = <TextDelegate>[];
+
+  @override
+  void add(TextDelegate delegate) => added.add(delegate);
+
+  @override
+  void remove(TextDelegate delegate) => removed.add(delegate);
+
+  @override
+  void didUpdate(TextDelegate delegate) => updated.add(delegate);
+}
+
+class _SentinelPainter extends CustomPainter {
+  _SentinelPainter({required this.marker, this.onPaint, super.repaint});
+
+  final String marker;
+  final void Function(String marker)? onPaint;
+  int paintCalls = 0;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    paintCalls += 1;
+    onPaint?.call(marker);
+    // Draw something so the mock canvas records a drawRect between the
+    // backgrounds and foregrounds, letting paint-order tests assert the
+    // sequence of item types.
+    canvas.drawRect(Offset.zero & size, Paint());
+  }
+
+  @override
+  bool shouldRepaint(CustomPainter oldDelegate) => false;
 }

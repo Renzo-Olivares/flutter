@@ -20,17 +20,20 @@ import 'dart:ui'
         TextBox,
         TextHeightBehavior;
 
+import 'package:flutter/animation.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/semantics.dart';
 import 'package:flutter/services.dart';
 
 import 'box.dart';
+import 'custom_paint.dart';
 import 'debug.dart';
 import 'layer.dart';
 import 'layout_helper.dart';
 import 'object.dart';
 import 'selection.dart';
+import 'text_plugin.dart';
 
 /// The start and end positions for a text boundary.
 typedef _TextBoundaryRecord = ({TextPosition boundaryStart, TextPosition boundaryEnd});
@@ -353,6 +356,7 @@ class RenderParagraph extends RenderBox
     List<RenderBox>? children,
     Color? selectionColor,
     SelectionRegistrar? registrar,
+    List<TextPluginRegistrar> pluginRegistrars = const <TextPluginRegistrar>[],
   }) : assert(text.debugAssertIsValid()),
        assert(maxLines == null || maxLines > 0),
        assert(
@@ -378,6 +382,7 @@ class RenderParagraph extends RenderBox
        ) {
     addAll(children);
     this.registrar = registrar;
+    this.pluginRegistrars = pluginRegistrars;
   }
 
   static final String _placeholderCharacter = String.fromCharCode(
@@ -438,6 +443,15 @@ class RenderParagraph extends RenderBox
         _removeSelectionRegistrarSubscription();
         _disposeSelectableFragments();
         _updateSelectionRegistrarSubscription();
+        // Plugin delegates are reused across text changes so plugin state
+        // keyed on `identical(delegate, ...)` survives. markNeedsLayout above
+        // has already invalidated each delegate's cached text via
+        // [_TextDelegateImpl.didChangeParagraphLayout], so the next
+        // [delegate.text] read returns the fresh string.
+        for (final MapEntry<TextPluginRegistrar, _TextDelegateImpl> entry
+            in _pluginDelegates.entries) {
+          entry.key.didUpdate(entry.value);
+        }
     }
   }
 
@@ -547,6 +561,64 @@ class RenderParagraph extends RenderBox
     _lastSelectableFragments = null;
   }
 
+  /// The list of [TextPluginRegistrar]s this paragraph is registered with.
+  ///
+  /// One registrar per enclosing `TextPluginScope`, ordered outermost-first.
+  /// Each registrar receives a distinct [TextDelegate] for this paragraph;
+  /// the delegates share the underlying [TextPainter] and differ only in
+  /// their painter slots and [Listenable] plumbing.
+  List<TextPluginRegistrar> get pluginRegistrars => _pluginRegistrars;
+  List<TextPluginRegistrar> _pluginRegistrars = const <TextPluginRegistrar>[];
+
+  // Per-registrar delegate bookkeeping. Order of iteration when painting
+  // follows [_pluginRegistrars] (outermost-first → innermost paints last,
+  // which is the leaf-first ordering resolved in the doc).
+  final Map<TextPluginRegistrar, _TextDelegateImpl> _pluginDelegates =
+      <TextPluginRegistrar, _TextDelegateImpl>{};
+
+  set pluginRegistrars(List<TextPluginRegistrar> value) {
+    if (listEquals(_pluginRegistrars, value)) {
+      return;
+    }
+    // Remove delegates whose registrar is no longer in the incoming list.
+    for (final TextPluginRegistrar old in _pluginRegistrars) {
+      if (value.contains(old)) {
+        continue;
+      }
+      final _TextDelegateImpl delegate = _pluginDelegates[old]!;
+      old.remove(delegate);
+      _pluginDelegates.remove(old);
+      delegate.dispose();
+    }
+    // Create delegates for registrars that are newly present.
+    for (final fresh in value) {
+      if (_pluginRegistrars.contains(fresh)) {
+        continue;
+      }
+      final delegate = _TextDelegateImpl(paragraph: this, registrar: fresh);
+      _pluginDelegates[fresh] = delegate;
+      fresh.add(delegate);
+    }
+    _pluginRegistrars = value;
+    markNeedsPaint();
+  }
+
+  void _disposePluginDelegates() {
+    if (_pluginDelegates.isEmpty) {
+      return;
+    }
+    // Snapshot the entries so we can mutate the map while iterating.
+    final entries = List<MapEntry<TextPluginRegistrar, _TextDelegateImpl>>.of(
+      _pluginDelegates.entries,
+    );
+    for (final entry in entries) {
+      entry.key.remove(entry.value);
+      entry.value.dispose();
+    }
+    _pluginDelegates.clear();
+    _pluginRegistrars = const <TextPluginRegistrar>[];
+  }
+
   @override
   bool get alwaysNeedsCompositing => _lastSelectableFragments?.isNotEmpty ?? false;
 
@@ -555,6 +627,9 @@ class RenderParagraph extends RenderBox
     _lastSelectableFragments?.forEach(
       (_SelectableFragment element) => element.didChangeParagraphLayout(),
     );
+    for (final _TextDelegateImpl delegate in _pluginDelegates.values) {
+      delegate.didChangeParagraphLayout();
+    }
     super.markNeedsLayout();
   }
 
@@ -562,6 +637,7 @@ class RenderParagraph extends RenderBox
   void dispose() {
     _removeSelectionRegistrarSubscription();
     _disposeSelectableFragments();
+    _disposePluginDelegates();
     _textPainter.dispose();
     _textIntrinsicsCache?.dispose();
     super.dispose();
@@ -1035,12 +1111,33 @@ class RenderParagraph extends RenderBox
       }
     }
 
+    // Plugin background painters: outermost → innermost iteration order so
+    // that the innermost scope's painter draws on top (leaf-first). All
+    // below the glyph layer.
+    for (final TextPluginRegistrar registrar in _pluginRegistrars) {
+      final CustomPainter? bg = _pluginDelegates[registrar]!.backgroundPainter;
+      if (bg != null) {
+        _paintPluginPainter(context.canvas, offset, bg);
+      }
+    }
+
     assert(() {
       _textPainter.debugPaintTextLayoutBoxes = debugPaintTextLayoutBoxes;
       return true;
     }());
 
     _textPainter.paint(context.canvas, offset);
+
+    // Plugin foreground painters: same leaf-first order as background. Above
+    // the glyph layer but below inline children, per the design doc's
+    // inferred-3 (opaque inline children are never fully covered by an outer
+    // plugin's foreground painter).
+    for (final TextPluginRegistrar registrar in _pluginRegistrars) {
+      final CustomPainter? fg = _pluginDelegates[registrar]!.foregroundPainter;
+      if (fg != null) {
+        _paintPluginPainter(context.canvas, offset, fg);
+      }
+    }
 
     paintInlineChildren(context, offset);
 
@@ -1054,6 +1151,46 @@ class RenderParagraph extends RenderBox
       }
       context.canvas.restore();
     }
+  }
+
+  // Invokes a plugin's [CustomPainter] with the canvas pre-translated to
+  // this paragraph's local origin. Modeled on
+  // `RenderCustomPaint._paintWithPainter` at
+  // `lib/src/rendering/custom_paint.dart:583`.
+  void _paintPluginPainter(Canvas canvas, Offset offset, CustomPainter painter) {
+    late int debugPreviousCanvasSaveCount;
+    canvas.save();
+    assert(() {
+      debugPreviousCanvasSaveCount = canvas.getSaveCount();
+      return true;
+    }());
+    if (offset != Offset.zero) {
+      canvas.translate(offset.dx, offset.dy);
+    }
+    painter.paint(canvas, size);
+    assert(() {
+      final int debugNewCanvasSaveCount = canvas.getSaveCount();
+      if (debugNewCanvasSaveCount > debugPreviousCanvasSaveCount) {
+        throw FlutterError(
+          'The $painter custom painter called canvas.save() or canvas.saveLayer() '
+          '${debugNewCanvasSaveCount - debugPreviousCanvasSaveCount} more '
+          'time${debugNewCanvasSaveCount - debugPreviousCanvasSaveCount == 1 ? '' : 's'} '
+          'than it called canvas.restore(). '
+          'This leaves the canvas in an inconsistent state and will probably result in a broken display.',
+        );
+      }
+      if (debugNewCanvasSaveCount < debugPreviousCanvasSaveCount) {
+        throw FlutterError(
+          'The $painter custom painter called canvas.restore() '
+          '${debugPreviousCanvasSaveCount - debugNewCanvasSaveCount} more '
+          'time${debugPreviousCanvasSaveCount - debugNewCanvasSaveCount == 1 ? '' : 's'} '
+          'than it called canvas.save() or canvas.saveLayer(). '
+          'This leaves the canvas in an inconsistent state and will result in a broken display.',
+        );
+      }
+      return debugNewCanvasSaveCount == debugPreviousCanvasSaveCount;
+    }());
+    canvas.restore();
   }
 
   /// Returns the offset at which to paint the caret.
@@ -1454,6 +1591,19 @@ class RenderParagraph extends RenderBox
     );
     properties.add(DiagnosticsProperty<Locale>('locale', locale, defaultValue: null));
     properties.add(IntProperty('maxLines', maxLines, ifNull: 'unlimited'));
+    if (_pluginDelegates.isNotEmpty) {
+      final entries = <String>[
+        for (final registrar in _pluginRegistrars)
+          _describePluginDelegate(registrar, _pluginDelegates[registrar]!),
+      ];
+      properties.add(IterableProperty<String>('plugin delegates', entries));
+    }
+  }
+
+  String _describePluginDelegate(TextPluginRegistrar registrar, _TextDelegateImpl delegate) {
+    final bg = delegate.backgroundPainter != null ? 'set' : 'unset';
+    final fg = delegate.foregroundPainter != null ? 'set' : 'unset';
+    return '$registrar (background: $bg, foreground: $fg)';
   }
 }
 
@@ -3621,5 +3771,236 @@ class _SelectableFragment
     properties.add(DiagnosticsProperty<String>('textInsideRange', range.textInside(fullText)));
     properties.add(DiagnosticsProperty<TextRange>('range', range));
     properties.add(DiagnosticsProperty<String>('fullText', fullText));
+  }
+}
+
+// The concrete [TextDelegate] the framework materializes per (plugin scope,
+// RenderParagraph) pair. Shape mirrors [_SelectableFragment]: a private class
+// in this file that holds a back-pointer to its [RenderParagraph], mixes in
+// [ChangeNotifier] (so the delegate is a [Listenable]), and is created and
+// torn down in lockstep with its owning paragraph.
+//
+// Unlike [_SelectableFragment], a paragraph does NOT split this delegate at
+// placeholder code units — there is exactly one delegate per (plugin scope,
+// paragraph) pair. Placeholder-aware geometry is opt-in per call via
+// `includePlaceholders: false` on [getBoxesForSelection].
+class _TextDelegateImpl with TextDelegate, ChangeNotifier {
+  _TextDelegateImpl({required this.paragraph, required this.registrar}) {
+    if (kFlutterMemoryAllocationsEnabled) {
+      ChangeNotifier.maybeDispatchObjectCreation(this);
+    }
+  }
+
+  final RenderParagraph paragraph;
+  final TextPluginRegistrar registrar;
+
+  String? _cachedText;
+
+  @override
+  String get text {
+    return _cachedText ??= paragraph.text.toPlainText(includeSemanticsLabels: false);
+  }
+
+  List<TextRange>? _cachedPlaceholderRanges;
+
+  @override
+  List<TextRange> get placeholderRanges {
+    if (_cachedPlaceholderRanges != null) {
+      return _cachedPlaceholderRanges!;
+    }
+    final String plainText = text;
+    final ranges = <TextRange>[];
+    var start = 0;
+    while (true) {
+      final int index = plainText.indexOf(RenderParagraph._placeholderCharacter, start);
+      if (index < 0) {
+        break;
+      }
+      ranges.add(TextRange(start: index, end: index + 1));
+      start = index + 1;
+    }
+    return _cachedPlaceholderRanges = List<TextRange>.unmodifiable(ranges);
+  }
+
+  // Mirrors [_SelectableFragment.didChangeParagraphLayout] (see this file):
+  // called from [RenderParagraph.markNeedsLayout] so plugins can invalidate
+  // their painter-side geometry caches through the delegate's [Listenable].
+  void didChangeParagraphLayout() {
+    _cachedText = null;
+    _cachedPlaceholderRanges = null;
+    notifyListeners();
+  }
+
+  @override
+  List<ui.TextBox> getBoxesForSelection(
+    TextSelection selection, {
+    ui.BoxHeightStyle boxHeightStyle = ui.BoxHeightStyle.tight,
+    ui.BoxWidthStyle boxWidthStyle = ui.BoxWidthStyle.tight,
+    bool includePlaceholders = true,
+  }) {
+    if (includePlaceholders) {
+      return paragraph.getBoxesForSelection(
+        selection,
+        boxHeightStyle: boxHeightStyle,
+        boxWidthStyle: boxWidthStyle,
+      );
+    }
+    final int start = math.min(selection.baseOffset, selection.extentOffset);
+    final int end = math.max(selection.baseOffset, selection.extentOffset);
+    final boxes = <ui.TextBox>[];
+    var cursor = start;
+    for (final TextRange placeholder in placeholderRanges) {
+      if (placeholder.end <= cursor) {
+        continue;
+      }
+      if (placeholder.start >= end) {
+        break;
+      }
+      if (cursor < placeholder.start) {
+        boxes.addAll(
+          paragraph.getBoxesForSelection(
+            TextSelection(baseOffset: cursor, extentOffset: placeholder.start),
+            boxHeightStyle: boxHeightStyle,
+            boxWidthStyle: boxWidthStyle,
+          ),
+        );
+      }
+      cursor = placeholder.end;
+    }
+    if (cursor < end) {
+      boxes.addAll(
+        paragraph.getBoxesForSelection(
+          TextSelection(baseOffset: cursor, extentOffset: end),
+          boxHeightStyle: boxHeightStyle,
+          boxWidthStyle: boxWidthStyle,
+        ),
+      );
+    }
+    return boxes;
+  }
+
+  CustomPainter? _backgroundPainter;
+  @override
+  CustomPainter? get backgroundPainter => _backgroundPainter;
+  @override
+  set backgroundPainter(CustomPainter? value) {
+    if (identical(value, _backgroundPainter)) {
+      return;
+    }
+    _backgroundPainter?.removeListener(_handlePainterRepaint);
+    _backgroundPainter = value;
+    value?.addListener(_handlePainterRepaint);
+    paragraph.markNeedsPaint();
+  }
+
+  CustomPainter? _foregroundPainter;
+  @override
+  CustomPainter? get foregroundPainter => _foregroundPainter;
+  @override
+  set foregroundPainter(CustomPainter? value) {
+    if (identical(value, _foregroundPainter)) {
+      return;
+    }
+    _foregroundPainter?.removeListener(_handlePainterRepaint);
+    _foregroundPainter = value;
+    value?.addListener(_handlePainterRepaint);
+    paragraph.markNeedsPaint();
+  }
+
+  void _handlePainterRepaint() => paragraph.markNeedsPaint();
+
+  @override
+  int compareTo(TextDelegate other) {
+    if (identical(this, other)) {
+      return 0;
+    }
+    // Two delegates from different plugin scopes but the same paragraph have
+    // the same document position; document order is undefined between them.
+    if (other is! _TextDelegateImpl) {
+      return 0;
+    }
+    // Build ancestor chains for both paragraphs. Walking up is O(depth); the
+    // doc explicitly calls out "do not cache traversal indices" — so we
+    // repeat this work on every comparison.
+    final selfChain = <RenderObject>[];
+    for (RenderObject? n = paragraph; n != null; n = n.parent) {
+      selfChain.add(n);
+    }
+    final otherChain = <RenderObject>[];
+    for (RenderObject? n = other.paragraph; n != null; n = n.parent) {
+      otherChain.add(n);
+    }
+    // Walk from the root (end of each list) downward to find the first
+    // depth at which the chains diverge.
+    int i = selfChain.length - 1;
+    int j = otherChain.length - 1;
+    while (i >= 0 && j >= 0 && identical(selfChain[i], otherChain[j])) {
+      i -= 1;
+      j -= 1;
+    }
+    // Both walked to the end → same paragraph, distinct delegates (different
+    // plugins). No ordering.
+    if (i < 0 && j < 0) {
+      return 0;
+    }
+    // One chain ran out before the other: that delegate's paragraph is an
+    // ancestor of the other delegate's paragraph. The ancestor comes first
+    // in document order (outer wraps inner).
+    if (i < 0) {
+      return -1;
+    }
+    if (j < 0) {
+      return 1;
+    }
+    // Both still have entries → selfChain[i] and otherChain[j] are siblings
+    // under a common parent at selfChain[i + 1] (== otherChain[j + 1]). Walk
+    // the parent's children in order and compare indices.
+    final RenderObject commonParent = selfChain[i + 1];
+    final RenderObject selfChild = selfChain[i];
+    final RenderObject otherChild = otherChain[j];
+    var selfOrder = -1;
+    var otherOrder = -1;
+    var cursor = 0;
+    commonParent.visitChildren((RenderObject child) {
+      if (identical(child, selfChild)) {
+        selfOrder = cursor;
+      }
+      if (identical(child, otherChild)) {
+        otherOrder = cursor;
+      }
+      cursor += 1;
+    });
+    assert(selfOrder >= 0 && otherOrder >= 0);
+    return selfOrder.compareTo(otherOrder);
+  }
+
+  @override
+  void ensureVisible(
+    TextRange range, {
+    Duration duration = Duration.zero,
+    Curve curve = Curves.ease,
+  }) {
+    final List<ui.TextBox> boxes = getBoxesForSelection(
+      TextSelection(baseOffset: range.start, extentOffset: range.end),
+      boxHeightStyle: ui.BoxHeightStyle.max,
+      includePlaceholders: false,
+    );
+    if (boxes.isEmpty) {
+      return;
+    }
+    Rect rect = boxes.first.toRect();
+    for (var i = 1; i < boxes.length; i += 1) {
+      rect = rect.expandToInclude(boxes[i].toRect());
+    }
+    paragraph.showOnScreen(rect: rect, duration: duration, curve: curve);
+  }
+
+  @override
+  void dispose() {
+    _backgroundPainter?.removeListener(_handlePainterRepaint);
+    _foregroundPainter?.removeListener(_handlePainterRepaint);
+    _backgroundPainter = null;
+    _foregroundPainter = null;
+    super.dispose();
   }
 }
