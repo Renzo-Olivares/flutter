@@ -155,19 +155,16 @@ final class TextPluginScope extends StatefulWidget {
   /// {@macro flutter.widgets.ProxyWidget.child}
   final Widget child;
 
-  /// Returns the nearest [TextPluginRegistrar] above [context], or null if
-  /// no enclosing [TextPluginScope] exists.
+  /// Returns the chain of enclosing [TextPluginRegistrar]s above [context],
+  /// ordered from outermost at index 0 to innermost at the last index, or
+  /// `null` if no enclosing [TextPluginScope] exists.
   ///
-  /// Descendants may sit under multiple nested scopes. This method returns
-  /// the innermost one — to reach every enclosing scope, walk the registrar
-  /// chain exposed by [TextPluginScopeMarker].
-  static TextPluginRegistrar? maybeOf(BuildContext context) {
-    final TextPluginScopeMarker? marker = TextPluginScopeMarker.maybeOf(context);
-    final List<TextPluginRegistrar>? registrars = marker?.registrars;
-    if (registrars == null || registrars.isEmpty) {
-      return null;
-    }
-    return registrars.last;
+  /// Registers [context] as a dependent on the scope chain, so the caller
+  /// rebuilds when a scope is inserted, removed, or replaced.
+  static List<TextPluginRegistrar>? maybeRegistrarsOf(BuildContext context) {
+    return context
+        .dependOnInheritedWidgetOfExactType<_TextPluginScopeMarker>()
+        ?.registrars;
   }
 
   @override
@@ -217,9 +214,9 @@ class _TextPluginScopeState extends State<TextPluginScope> implements TextPlugin
 
   @override
   Widget build(BuildContext context) {
-    final TextPluginScopeMarker? outer = TextPluginScopeMarker.maybeOf(context);
-    final registrars = <TextPluginRegistrar>[...?outer?.registrars, this];
-    return TextPluginScopeMarker(registrars: registrars, child: widget.child);
+    final outer = TextPluginScope.maybeRegistrarsOf(context);
+    final registrars = <TextPluginRegistrar>[...?outer, this];
+    return _TextPluginScopeMarker(registrars: registrars, child: widget.child);
   }
 }
 
@@ -227,35 +224,19 @@ class _TextPluginScopeState extends State<TextPluginScope> implements TextPlugin
 /// [TextPluginRegistrar]s down the tree.
 ///
 /// Each [TextPluginScope] builds one of these with a list that appends its
-/// own registrar to the list exposed by the next outer marker. Descendant
-/// `RichText`s that depend on this marker read the list in
-/// `createRenderObject` / `updateRenderObject` and hand it to the underlying
-/// `RenderParagraph`, which materializes one `TextDelegate` per registrar
-/// and forwards lifecycle callbacks through each.
-///
-/// This type is an implementation detail of the plugin wiring between
-/// [TextPluginScope] and `RichText`; it is exported only so that `RichText`
-/// in `basic.dart` can look it up via [maybeOf]. Plugin authors and
-/// application developers should not use this widget directly.
-final class TextPluginScopeMarker extends InheritedWidget {
-  /// Creates a marker carrying the [registrars] chain.
-  const TextPluginScopeMarker({
-    super.key,
-    required this.registrars,
-    required super.child,
-  });
+/// own registrar to the list exposed by the next outer marker. `RichText`
+/// in `basic.dart` reads the chain via [TextPluginScope.maybeRegistrarsOf]
+/// and hands it to the underlying `RenderParagraph`, which materializes one
+/// [TextDelegate] per registrar and forwards lifecycle callbacks through
+/// each.
+final class _TextPluginScopeMarker extends InheritedWidget {
+  const _TextPluginScopeMarker({required this.registrars, required super.child});
 
   /// The chain of enclosing [TextPluginRegistrar]s at this point in the tree,
   /// ordered from outermost at index 0 to innermost at the last index.
   final List<TextPluginRegistrar> registrars;
 
-  /// Returns the nearest ancestor marker above [context], or null if no
-  /// [TextPluginScope] exists in the ancestor chain. Registers [context] as
-  /// a dependent so it rebuilds when the chain changes.
-  static TextPluginScopeMarker? maybeOf(BuildContext context) =>
-      context.dependOnInheritedWidgetOfExactType<TextPluginScopeMarker>();
-
   @override
-  bool updateShouldNotify(TextPluginScopeMarker oldWidget) =>
+  bool updateShouldNotify(_TextPluginScopeMarker oldWidget) =>
       !listEquals(registrars, oldWidget.registrars);
 }

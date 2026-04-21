@@ -9,15 +9,15 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  group('TextPluginScope.maybeOf', () {
+  group('TextPluginScope.maybeRegistrarsOf', () {
     testWidgets('returns null when no scope ancestor exists', (WidgetTester tester) async {
-      TextPluginRegistrar? captured = _sentinel;
+      List<TextPluginRegistrar>? captured = _sentinel;
       await tester.pumpWidget(
         Directionality(
           textDirection: TextDirection.ltr,
           child: Builder(
             builder: (BuildContext context) {
-              captured = TextPluginScope.maybeOf(context);
+              captured = TextPluginScope.maybeRegistrarsOf(context);
               return const SizedBox.shrink();
             },
           ),
@@ -26,12 +26,12 @@ void main() {
       expect(captured, isNull);
     });
 
-    testWidgets('returns the registrar of the innermost scope when nested', (
+    testWidgets('returns the full chain ordered outermost-first across nested scopes', (
       WidgetTester tester,
     ) async {
-      TextPluginRegistrar? captured = _sentinel;
       final outerPlugin = _RecordingPlugin();
       final innerPlugin = _RecordingPlugin();
+      List<TextPluginRegistrar>? captured;
       await tester.pumpWidget(
         Directionality(
           textDirection: TextDirection.ltr,
@@ -41,7 +41,7 @@ void main() {
               plugin: innerPlugin,
               child: Builder(
                 builder: (BuildContext context) {
-                  captured = TextPluginScope.maybeOf(context);
+                  captured = TextPluginScope.maybeRegistrarsOf(context);
                   return const SizedBox.shrink();
                 },
               ),
@@ -49,50 +49,21 @@ void main() {
           ),
         ),
       );
-      // The marker's registrar chain is outermost-first, so maybeOf returns
-      // the last element (the innermost scope's state).
-      expect(captured, isNotNull);
-      final TextPluginScopeMarker marker = TextPluginScopeMarker.maybeOf(
-        tester.element(find.byType(Builder)),
-      )!;
-      expect(marker.registrars, hasLength(2));
-      expect(identical(marker.registrars.last, captured), isTrue);
-    });
-  });
+      expect(captured, hasLength(2));
 
-  group('TextPluginScopeMarker.registrars', () {
-    testWidgets('outermost-first ordering across nested scopes', (WidgetTester tester) async {
-      final outerPlugin = _RecordingPlugin();
-      final innerPlugin = _RecordingPlugin();
-      await tester.pumpWidget(
-        Directionality(
-          textDirection: TextDirection.ltr,
-          child: TextPluginScope(
-            plugin: outerPlugin,
-            child: TextPluginScope(
-              plugin: innerPlugin,
-              child: const SizedBox.shrink(),
-            ),
-          ),
-        ),
-      );
-
-      // Register a delegate with each registrar and verify which plugin fired.
-      final BuildContext ctx = tester.element(find.byType(SizedBox));
-      final TextPluginScopeMarker marker = TextPluginScopeMarker.maybeOf(ctx)!;
-      expect(marker.registrars, hasLength(2));
-
+      // Register a delegate with each registrar and verify that the outermost
+      // plugin sees only registrars[0]'s registration and the innermost sees
+      // only registrars[1]'s.
       final d0 = _FakeTextDelegate();
       final d1 = _FakeTextDelegate();
       addTearDown(d0.dispose);
       addTearDown(d1.dispose);
-      marker.registrars[0].add(d0);
-      marker.registrars[1].add(d1);
+      captured![0].add(d0);
+      captured![1].add(d1);
       expect(outerPlugin.added, equals(<TextDelegate>[d0]));
       expect(innerPlugin.added, equals(<TextDelegate>[d1]));
-
-      marker.registrars[0].remove(d0);
-      marker.registrars[1].remove(d1);
+      captured![0].remove(d0);
+      captured![1].remove(d1);
     });
 
     testWidgets('rebuild without structural change does not notify descendants', (
@@ -107,14 +78,14 @@ void main() {
       final Widget leaf = Builder(
         builder: (BuildContext context) {
           builderCalls += 1;
-          TextPluginScopeMarker.maybeOf(context);
+          TextPluginScope.maybeRegistrarsOf(context);
           return const SizedBox.shrink();
         },
       );
       await tester.pumpWidget(tree(leaf));
       expect(builderCalls, 1);
       await tester.pumpWidget(tree(leaf));
-      // Same plugin instance, same registrar list — marker's
+      // Same plugin instance, same registrar list — the (private) marker's
       // updateShouldNotify returns false, the leaf is not rebuilt.
       expect(builderCalls, 1);
     });
@@ -131,9 +102,9 @@ void main() {
           child: TextPluginScope(plugin: plugin, child: const SizedBox.shrink()),
         ),
       );
-      final TextPluginRegistrar registrar = TextPluginScope.maybeOf(
+      final TextPluginRegistrar registrar = TextPluginScope.maybeRegistrarsOf(
         tester.element(find.byType(SizedBox)),
-      )!;
+      )!.single;
       final delegate = _FakeTextDelegate();
       addTearDown(delegate.dispose);
 
@@ -153,9 +124,9 @@ void main() {
           child: TextPluginScope(plugin: plugin, child: const SizedBox.shrink()),
         ),
       );
-      final TextPluginRegistrar registrar = TextPluginScope.maybeOf(
+      final TextPluginRegistrar registrar = TextPluginScope.maybeRegistrarsOf(
         tester.element(find.byType(SizedBox)),
-      )!;
+      )!.single;
       final delegate = _FakeTextDelegate();
       addTearDown(delegate.dispose);
 
@@ -175,9 +146,9 @@ void main() {
           child: TextPluginScope(plugin: plugin, child: SizedBox.shrink()),
         ),
       );
-      final TextPluginRegistrar registrar = TextPluginScope.maybeOf(
+      final TextPluginRegistrar registrar = TextPluginScope.maybeRegistrarsOf(
         tester.element(find.byType(SizedBox)),
-      )!;
+      )!.single;
       final delegate = _FakeTextDelegate();
       addTearDown(delegate.dispose);
       registrar.add(delegate);
@@ -203,9 +174,9 @@ void main() {
           child: TextPluginScope(plugin: oldPlugin, child: const SizedBox.shrink()),
         ),
       );
-      final TextPluginRegistrar registrar = TextPluginScope.maybeOf(
+      final TextPluginRegistrar registrar = TextPluginScope.maybeRegistrarsOf(
         tester.element(find.byType(SizedBox)),
-      )!;
+      )!.single;
       final delegate = _FakeTextDelegate();
       addTearDown(delegate.dispose);
       registrar.add(delegate);
@@ -236,9 +207,9 @@ void main() {
           child: TextPluginScope(plugin: oldPlugin, child: const SizedBox.shrink()),
         ),
       );
-      final TextPluginRegistrar registrar = TextPluginScope.maybeOf(
+      final TextPluginRegistrar registrar = TextPluginScope.maybeRegistrarsOf(
         tester.element(find.byType(SizedBox)),
-      )!;
+      )!.single;
       final d0 = _FakeTextDelegate();
       final d1 = _FakeTextDelegate();
       addTearDown(d0.dispose);
@@ -560,7 +531,7 @@ void main() {
 
 // Sentinel that we can tell apart from `null` when asserting that the hook
 // actually ran in the body of `testWidgets`.
-const TextPluginRegistrar? _sentinel = null;
+const List<TextPluginRegistrar>? _sentinel = null;
 
 final class _RecordingPlugin extends TextPlugin {
   _RecordingPlugin();

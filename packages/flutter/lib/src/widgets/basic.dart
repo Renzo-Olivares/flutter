@@ -6753,7 +6753,7 @@ class RichText extends MultiChildRenderObjectWidget {
       registrar: selectionRegistrar,
       selectionColor: selectionColor,
       pluginRegistrars:
-          TextPluginScopeMarker.maybeOf(context)?.registrars ??
+          TextPluginScope.maybeRegistrarsOf(context) ??
           const <TextPluginRegistrar>[],
     );
   }
@@ -6776,7 +6776,7 @@ class RichText extends MultiChildRenderObjectWidget {
       ..registrar = selectionRegistrar
       ..selectionColor = selectionColor
       ..pluginRegistrars =
-          TextPluginScopeMarker.maybeOf(context)?.registrars ??
+          TextPluginScope.maybeRegistrarsOf(context) ??
           const <TextPluginRegistrar>[];
   }
 
