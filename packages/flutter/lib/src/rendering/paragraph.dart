@@ -478,6 +478,42 @@ class RenderParagraph extends RenderBox
     return results;
   }
 
+  /// The combined selection across this paragraph as a single [TextSelection],
+  /// or null if no selection is active.
+  ///
+  /// A paragraph internally splits at placeholder code units so that embedded
+  /// widgets are selectable independently; this getter collapses those
+  /// per-fragment selections into a single span (min start → max end) so
+  /// callers do not have to reason about the split. Passing the result to
+  /// [getBoxesForSelection] with `includePlaceholders: false` yields the
+  /// boxes that a plugin painter should highlight.
+  TextSelection? get selection {
+    if (_lastSelectableFragments == null) {
+      return null;
+    }
+    int? minOffset;
+    int? maxOffset;
+    for (final _SelectableFragment fragment in _lastSelectableFragments!) {
+      if (fragment._textSelectionStart == null || fragment._textSelectionEnd == null) {
+        continue;
+      }
+      final int start = math.min(
+        fragment._textSelectionStart!.offset,
+        fragment._textSelectionEnd!.offset,
+      );
+      final int end = math.max(
+        fragment._textSelectionStart!.offset,
+        fragment._textSelectionEnd!.offset,
+      );
+      minOffset = minOffset == null ? start : math.min(minOffset, start);
+      maxOffset = maxOffset == null ? end : math.max(maxOffset, end);
+    }
+    if (minOffset == null) {
+      return null;
+    }
+    return TextSelection(baseOffset: minOffset, extentOffset: maxOffset!);
+  }
+
   // Should be null if selection is not enabled, i.e. _registrar = null. The
   // paragraph splits on [PlaceholderSpan.placeholderCodeUnit], and stores each
   // fragment in this list.
@@ -3710,7 +3746,14 @@ class _SelectableFragment
     if (_textSelectionStart == null || _textSelectionEnd == null) {
       return;
     }
-    if (paragraph.selectionColor != null) {
+    // Skip the legacy highlight draw when any [TextPluginRegistrar] is
+    // attached to the paragraph — a plugin is assumed to be painting the
+    // highlight via its own CustomPainter, and legacy + plugin together
+    // would double-paint for semi-transparent selection colors. The
+    // fallback remains intact for paragraphs with no plugins (e.g., a
+    // custom SelectionRegistrar setup without SelectableRegion).
+    final bool skipLegacyHighlight = paragraph.pluginRegistrars.isNotEmpty;
+    if (paragraph.selectionColor != null && !skipLegacyHighlight) {
       final selection = TextSelection(
         baseOffset: _textSelectionStart!.offset,
         extentOffset: _textSelectionEnd!.offset,
@@ -3800,6 +3843,13 @@ class _TextDelegateImpl with TextDelegate, ChangeNotifier {
   String get text {
     return _cachedText ??= paragraph.text.toPlainText(includeSemanticsLabels: false);
   }
+
+  // Selection is read fresh from the paragraph on every access. Not cached:
+  // the underlying fragment state can change between calls (e.g., during a
+  // drag), and the paragraph already repaints when selection changes so the
+  // plugin painter picks up a fresh read each frame.
+  @override
+  TextSelection? get selection => paragraph.selection;
 
   List<TextRange>? _cachedPlaceholderRanges;
 

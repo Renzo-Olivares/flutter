@@ -59,6 +59,19 @@ mixin TextDelegate implements Listenable, Comparable<TextDelegate> {
   /// query range crosses a placeholder before deciding how to paint.
   List<TextRange> get placeholderRanges;
 
+  /// The current selection covering this paragraph, or null if no selection
+  /// is active.
+  ///
+  /// A paragraph internally splits its content at placeholder code units so
+  /// that embedded widgets are selectable independently; this getter
+  /// collapses the per-fragment selections into a single span (the union)
+  /// so the public API does not leak that splitting detail.
+  ///
+  /// A plugin painter that draws a selection-derived decoration should read
+  /// this from inside `paint()` — the underlying paragraph already repaints
+  /// whenever its selection state changes, so no extra listening is required.
+  TextSelection? get selection;
+
   /// Returns visual bounding boxes for [selection] in the covered widget's
   /// local coordinate space.
   ///

@@ -1768,6 +1768,105 @@ void main() {
       expect(paragraph.debugNeedsPaint, isTrue);
     });
 
+    test('RenderParagraph.selection is null when no selection is attached', () {
+      final paragraph = RenderParagraph(
+        const TextSpan(text: 'hello'),
+        textDirection: TextDirection.ltr,
+      );
+      layout(paragraph);
+      expect(paragraph.selection, isNull);
+    });
+
+    test('RenderParagraph.selection returns the span across selected fragments', () {
+      final selectionRegistrar = TestSelectionRegistrar();
+      final paragraph = RenderParagraph(
+        const TextSpan(text: 'hello'),
+        textDirection: TextDirection.ltr,
+        registrar: selectionRegistrar,
+      );
+      layout(paragraph);
+      expect(paragraph.selection, isNull);
+
+      selectionRegistrar.selectables.single.dispatchSelectionEvent(
+        const SelectAllSelectionEvent(),
+      );
+      expect(paragraph.selection, isNotNull);
+      expect(paragraph.selection!.start, 0);
+      expect(paragraph.selection!.end, 'hello'.length);
+    });
+
+    test('RenderParagraph.selection collapses a multi-fragment span (WidgetSpan split)', () {
+      // Content "a￼c" produces two _SelectableFragments split at the
+      // placeholder. Selecting across the placeholder in both fragments
+      // should collapse to a single TextSelection from the outermost start
+      // to the outermost end.
+      final selectionRegistrar = TestSelectionRegistrar();
+      final paragraph = RenderParagraph(
+        const TextSpan(text: 'a￼c'),
+        textDirection: TextDirection.ltr,
+        registrar: selectionRegistrar,
+      );
+      layout(paragraph);
+      expect(selectionRegistrar.selectables, hasLength(2));
+      for (final Selectable selectable in selectionRegistrar.selectables) {
+        selectable.dispatchSelectionEvent(const SelectAllSelectionEvent());
+      }
+      expect(paragraph.selection, isNotNull);
+      expect(paragraph.selection!.start, 0);
+      expect(paragraph.selection!.end, 'a￼c'.length);
+    });
+
+    test('_SelectableFragment.paint draws the legacy highlight with no plugins', () {
+      final selectionRegistrar = TestSelectionRegistrar();
+      final paragraph = RenderParagraph(
+        const TextSpan(text: 'hello'),
+        textDirection: TextDirection.ltr,
+        registrar: selectionRegistrar,
+        selectionColor: const Color(0xFF00FF00),
+      );
+      layout(paragraph);
+      selectionRegistrar.selectables.single.dispatchSelectionEvent(
+        const SelectAllSelectionEvent(),
+      );
+      final context = MockPaintingContext();
+      paragraph.paint(context, Offset.zero);
+      expect(
+        context.canvas.drawnItemTypes,
+        <Type>[Rect, ui.Paragraph],
+        reason:
+            'Backwards-compat: selectionRegistrar + no plugins still paints '
+            'the legacy highlight rect before the glyphs.',
+      );
+    });
+
+    test(
+      '_SelectableFragment.paint suppresses the legacy highlight when plugins are attached',
+      () {
+        final selectionRegistrar = TestSelectionRegistrar();
+        final pluginRegistrar = _TestTextPluginRegistrar();
+        final paragraph = RenderParagraph(
+          const TextSpan(text: 'hello'),
+          textDirection: TextDirection.ltr,
+          registrar: selectionRegistrar,
+          selectionColor: const Color(0xFF00FF00),
+          pluginRegistrars: <TextPluginRegistrar>[pluginRegistrar],
+        );
+        layout(paragraph);
+        selectionRegistrar.selectables.single.dispatchSelectionEvent(
+          const SelectAllSelectionEvent(),
+        );
+        final context = MockPaintingContext();
+        paragraph.paint(context, Offset.zero);
+        expect(
+          context.canvas.drawnItemTypes,
+          <Type>[ui.Paragraph],
+          reason:
+              'Presence of any TextPluginRegistrar → plugin is assumed to '
+              'handle the highlight; legacy highlight rect is skipped.',
+        );
+      },
+    );
+
     test('delegate.compareTo orders sibling paragraphs left-to-right', () {
       final registrar = _TestTextPluginRegistrar();
       final left = RenderParagraph(

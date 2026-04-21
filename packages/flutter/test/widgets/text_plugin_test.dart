@@ -647,6 +647,9 @@ class _FakeTextDelegate with TextDelegate, ChangeNotifier {
   int compareTo(TextDelegate other) => identical(this, other) ? 0 : -1;
 
   @override
+  TextSelection? get selection => null;
+
+  @override
   void ensureVisible(TextRange range, {Duration duration = Duration.zero, Curve curve = Curves.ease}) {}
 }
 

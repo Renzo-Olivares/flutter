@@ -23,6 +23,7 @@ import 'actions.dart';
 import 'basic.dart';
 import 'context_menu_button_item.dart';
 import 'debug.dart';
+import 'default_selection_style.dart';
 import 'focus_manager.dart';
 import 'focus_scope.dart';
 import 'framework.dart';
@@ -34,6 +35,7 @@ import 'platform_selectable_region_context_menu.dart';
 import 'selection_container.dart';
 import 'tap_region.dart';
 import 'text_editing_intents.dart';
+import 'text_plugin.dart';
 import 'text_selection.dart';
 import 'text_selection_toolbar_anchors.dart';
 
@@ -1948,9 +1950,19 @@ class SelectableRegionState extends State<SelectableRegion>
   @override
   Widget build(BuildContext context) {
     assert(debugCheckHasOverlay(context));
+    final Color highlightColor =
+        DefaultSelectionStyle.of(context).selectionColor ??
+        DefaultSelectionStyle.defaultColor;
     Widget result = SelectableRegionSelectionStatusScope._(
       selectionStatusNotifier: _selectionStatusNotifier,
-      child: SelectionContainer(registrar: this, delegate: _selectionDelegate, child: widget.child),
+      child: SelectionContainer(
+        registrar: this,
+        delegate: _selectionDelegate,
+        child: TextPluginScope(
+          plugin: _SelectionHighlightTextPlugin(color: highlightColor),
+          child: widget.child,
+        ),
+      ),
     );
     if (_webContextMenuEnabled) {
       result = PlatformSelectableRegionContextMenu(child: result);
@@ -3665,5 +3677,84 @@ final class SelectionListenerNotifier extends ChangeNotifier {
   @override
   void addListener(VoidCallback listener) {
     super.addListener(listener);
+  }
+}
+
+// The plugin that [SelectableRegion] installs over its subtree to paint the
+// selection highlight. Each paragraph's [TextDelegate] gets a background
+// painter that reads the delegate's current selection and draws rects for
+// the selected range — SelectableRegion continues to dispatch selection
+// events through the legacy [SelectionRegistrar] path and
+// `_SelectableFragment` continues to own the selection state; this plugin
+// only handles the visual highlight.
+//
+// When this plugin (or any [TextPluginRegistrar]) is attached to a
+// paragraph, `_SelectableFragment.paint` suppresses its own highlight draw
+// to avoid double-painting with semi-transparent selection colors.
+final class _SelectionHighlightTextPlugin extends TextPlugin {
+  const _SelectionHighlightTextPlugin({required this.color});
+
+  final Color color;
+
+  @override
+  void didAddText(TextDelegate delegate) {
+    delegate.backgroundPainter = _SelectionHighlightPainter(
+      delegate: delegate,
+      color: color,
+    );
+  }
+
+  @override
+  void didUpdateText(TextDelegate delegate) {
+    // The painter re-reads delegate.selection every paint, so a text change
+    // does not require swapping painters.
+  }
+
+  @override
+  void didRemoveText(TextDelegate delegate) {
+    delegate.backgroundPainter = null;
+  }
+
+  @override
+  bool shouldUpdate(TextPlugin oldPlugin) {
+    if (oldPlugin is! _SelectionHighlightTextPlugin) {
+      return true;
+    }
+    return oldPlugin.color != color;
+  }
+}
+
+class _SelectionHighlightPainter extends CustomPainter {
+  _SelectionHighlightPainter({required this.delegate, required this.color});
+
+  final TextDelegate delegate;
+  final Color color;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final TextSelection? selection = delegate.selection;
+    if (selection == null || selection.isCollapsed) {
+      return;
+    }
+    final paint = Paint()
+      ..style = PaintingStyle.fill
+      ..color = color;
+    // `includePlaceholders: false` matches the legacy
+    // `_SelectableFragment.paint` semantics: inline children own the area
+    // their `WidgetSpan` reserves, so the highlight should not paint behind
+    // them.
+    for (final TextBox box in delegate.getBoxesForSelection(
+      selection,
+      includePlaceholders: false,
+    )) {
+      canvas.drawRect(box.toRect(), paint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(CustomPainter oldDelegate) {
+    return oldDelegate is! _SelectionHighlightPainter ||
+        oldDelegate.color != color ||
+        !identical(oldDelegate.delegate, delegate);
   }
 }
