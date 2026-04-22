@@ -174,18 +174,44 @@ final class TextPluginScope extends StatefulWidget {
 class _TextPluginScopeState extends State<TextPluginScope> implements TextPluginRegistrar {
   final Set<TextDelegate> _delegates = <TextDelegate>{};
 
+  // Invokes a plugin lifecycle hook, reporting any thrown exception via
+  // [FlutterError] rather than rethrowing. A misbehaving third-party plugin
+  // can otherwise take down the enclosing paragraph — or, for hooks fired
+  // from `set text` / `set pluginRegistrars`, unrelated framework machinery
+  // higher up the call stack.
+  void _dispatchLifecycle(TextPlugin plugin, String method, VoidCallback body) {
+    try {
+      body();
+    } on Object catch (exception, stack) {
+      FlutterError.reportError(
+        FlutterErrorDetails(
+          exception: exception,
+          stack: stack,
+          library: 'widgets library',
+          context: ErrorDescription(
+            'while calling TextPlugin.$method on an instance of ${plugin.runtimeType}',
+          ),
+        ),
+      );
+    }
+  }
+
   @override
   void add(TextDelegate delegate) {
     final bool added = _delegates.add(delegate);
     assert(added, 'TextDelegate was already registered with this scope.');
-    widget.plugin.didAddText(delegate);
+    _dispatchLifecycle(widget.plugin, 'didAddText', () => widget.plugin.didAddText(delegate));
   }
 
   @override
   void remove(TextDelegate delegate) {
     final bool removed = _delegates.remove(delegate);
     assert(removed, 'TextDelegate was not registered with this scope.');
-    widget.plugin.didRemoveText(delegate);
+    _dispatchLifecycle(
+      widget.plugin,
+      'didRemoveText',
+      () => widget.plugin.didRemoveText(delegate),
+    );
   }
 
   @override
@@ -194,7 +220,11 @@ class _TextPluginScopeState extends State<TextPluginScope> implements TextPlugin
       _delegates.contains(delegate),
       'TextDelegate was not registered with this scope.',
     );
-    widget.plugin.didUpdateText(delegate);
+    _dispatchLifecycle(
+      widget.plugin,
+      'didUpdateText',
+      () => widget.plugin.didUpdateText(delegate),
+    );
   }
 
   @override
@@ -203,12 +233,39 @@ class _TextPluginScopeState extends State<TextPluginScope> implements TextPlugin
     if (identical(oldWidget.plugin, widget.plugin)) {
       return;
     }
-    if (!widget.plugin.shouldUpdate(oldWidget.plugin)) {
+    // On an exception from shouldUpdate, default to the safe base-class
+    // behavior (treat as a new plugin and fire the full didRemove/didAdd
+    // cycle).
+    bool shouldTearDown;
+    try {
+      shouldTearDown = widget.plugin.shouldUpdate(oldWidget.plugin);
+    } on Object catch (exception, stack) {
+      FlutterError.reportError(
+        FlutterErrorDetails(
+          exception: exception,
+          stack: stack,
+          library: 'widgets library',
+          context: ErrorDescription(
+            'while calling TextPlugin.shouldUpdate on an instance of ${widget.plugin.runtimeType}',
+          ),
+        ),
+      );
+      shouldTearDown = true;
+    }
+    if (!shouldTearDown) {
       return;
     }
     for (final TextDelegate delegate in _delegates) {
-      oldWidget.plugin.didRemoveText(delegate);
-      widget.plugin.didAddText(delegate);
+      _dispatchLifecycle(
+        oldWidget.plugin,
+        'didRemoveText',
+        () => oldWidget.plugin.didRemoveText(delegate),
+      );
+      _dispatchLifecycle(
+        widget.plugin,
+        'didAddText',
+        () => widget.plugin.didAddText(delegate),
+      );
     }
   }
 
