@@ -3318,6 +3318,9 @@ abstract class MultiSelectableSelectionContainerDelegate extends SelectionContai
         event is SelectionEdgeUpdateEvent &&
         event.granularity != TextGranularity.character &&
         _originSelectables.contains(selectable)) {
+      // TODO (Renzo-Olivares): Consider the scenario where the origin boundary
+      // is potentially skipped over when inverting the selection, essentially
+      // skipping the anchoring logic and losing the anchor.
       _correctOriginSelectable(selectable, event);
     }
     return result;
@@ -3344,6 +3347,9 @@ abstract class MultiSelectableSelectionContainerDelegate extends SelectionContai
     try {
       _correctOriginSelectableImpl(selectable, event);
     } finally {
+      debugPrint(
+        '$currentSelectionStartIndex, $currentSelectionEndIndex setting _isApplyingOriginCorrection to false in $this',
+      );
       _isApplyingOriginCorrection = false;
     }
   }
@@ -3364,20 +3370,72 @@ abstract class MultiSelectableSelectionContainerDelegate extends SelectionContai
         _originEndLocalPosition == null) {
       return;
     }
+    debugPrint(
+      'start of _correctOriginSelectable $this $currentSelectionStartIndex, $currentSelectionEndIndex',
+    );
     final isEndEdge = event.type == SelectionEventType.endEdgeUpdate;
     // Detect inversion: the moving edge has crossed the origin boundary.
     // This includes an "implicit inversion" case where the standard paragraph
     // boundary logic sets the moving edge to a position that coincides with
     // the origin boundary start/end, producing a collapsed selection. In this
     // case the offset comparison catches what the standard < check misses.
-    bool isInverted = range.endOffset < range.startOffset;
-    if (!isInverted && _originStartOffset != null && _originEndOffset != null) {
-      if (isEndEdge && range.endOffset <= _originStartOffset!) {
-        isInverted = true;
-      } else if (!isEndEdge && range.startOffset >= _originEndOffset!) {
-        isInverted = true;
+    bool forwardSelection = currentSelectionEndIndex >= currentSelectionStartIndex;
+    if (currentSelectionStartIndex == currentSelectionEndIndex) {
+      debugPrint('selection contained to only one selectable');
+      forwardSelection = range.endOffset >= range.startOffset;
+    }
+    // TODO (Renzo-Olivares): Consider the scenario where the origin boundary
+    // is potentially skipped over when inverting the selection, essentially
+    // skipping the anchoring logic and losing the anchor.
+    if (forwardSelection && _originStartOffset != null && _originEndOffset != null) {
+      final int originStartIndex = selectables.indexOf(_originStartSelectable!);
+      final int originEndIndex = selectables.indexOf(_originEndSelectable!);
+      if (isEndEdge) {
+        debugPrint(
+          'moving end edge ${currentSelectionEndIndex >= originStartIndex}, ${currentSelectionEndIndex == originStartIndex},$originStartIndex - ${currentSelectionEndIndex}, ${range.endOffset >= _originStartOffset!}. $this',
+        );
+        forwardSelection =
+            currentSelectionEndIndex > originStartIndex ||
+            (currentSelectionEndIndex == originStartIndex && range.endOffset > _originStartOffset!);
+      } else {
+        forwardSelection =
+            currentSelectionStartIndex > originEndIndex ||
+            (currentSelectionStartIndex == originEndIndex && range.startOffset > _originEndOffset!);
       }
     }
+    // Say we have 5 selectables and a boundary that spans 2 of them.
+    // 0 | [1 | 2] | 3 | 4
+    // the boundary starts at the beginning of selectable 1 and ends at the end of selectable 2.
+    // So, originStartIndex = 1 and originEndIndex = 2.
+    // If our currentSelectionEndIndex is at selectable 0 then for sure forward selection is false.
+    // If our currentSelectionStartIndex is at selectable 3 then for sure forward selection is false.
+    //
+    // If we have one selectable and there are many boundaries contained within the one selectable.
+    // 0 : [0.1, 0.2, 0.3, 0.4]
+    // If our currentSelectionStartIndex = 0 and currentSelectionEndIndex = 0
+    // and our originStartIndex = 0 and originEndIndex = 0
+    // and our originStartOffset = 5, originEndOffset = 10
+    // If range.endOffset < originStartOffset then for sure forward selection is false.
+    // If range.startOffset > originEndOffset then for sure forward selection is false.
+    //
+    // If we have 5 selectables and a boundary that spans 1 of them.
+    // 0 | [1] | 2 | 3 | 4
+    // the boundary starts at the beginning of selectable 1 and ends at the end of selectable 1.
+    // So, originStartIndex = 1 and originEndIndex = 1.
+    // If our currentSelectionEndIndex is at selectable 0 then for sure forward selection is false.
+    // If our currentSelectionStartIndex is at selectable 3 then for sure forward selection is false.
+    //
+    // If we have 5 selectables and a boundary that spans 1 of them.
+    // 0 | [1] | 2 | 3 | 4
+    // the boundary starts at the beginning of selectable 1 and ends in the middle of selectable 1.
+    // So, originStartIndex = 1 and originEndIndex = 1.
+    // If our currentSelectionEndIndex is at selectable 0 then for sure forward selection is false.
+    // If our currentSelectionStartIndex is at selectable 3 then for sure forward selection is false.
+    // If our currentSelectionEndIndex is at selectable 1, the same selectable as the origin start boundary,
+    // it depends on the endOffset and the originStartOffset.
+    // If our currentSelectionStartIndex is at selectable 1, the same selectable as the origin start boundary,
+    // it depends on the startOffset and the originEndOffset.
+    debugPrint('forwardSelection: $forwardSelection');
     // Compute the anchor global position on demand (handles scroll).
     final Offset originStartGlobal = MatrixUtils.transformPoint(
       _originStartSelectable!.getTransformTo(null),
@@ -3389,36 +3447,35 @@ abstract class MultiSelectableSelectionContainerDelegate extends SelectionContai
     );
     // The anchor is the origin boundary edge opposite to the drag direction.
     // When moving the END edge:
-    //   - Not inverted (forward): anchor START at originStart
-    //   - Inverted (backward):    anchor START at originEnd
+    //   - Forward selection: anchor START at originStart
+    //   - Backward selection: anchor START at originEnd
     // When moving the START edge:
-    //   - Not inverted (forward): anchor END at originEnd
-    //   - Inverted (backward):    anchor END at originStart
+    //   - Forward selection: anchor END at originEnd
+    //   - Backward selection: anchor END at originStart
     // Use character granularity for the corrective event so the anchor is
     // placed at the exact captured position without word/paragraph boundary
-    // snapping. This avoids the off-by-one issue where the origin boundary
-    // end (e.g., offset 11) sits at a word boundary seam and would resolve
-    // to the NEXT word boundary if using word granularity.
+    // snapping.
     if (isEndEdge) {
-      final anchorGlobal = isInverted ? originEndGlobal : originStartGlobal;
+      final anchorGlobal = forwardSelection ? originStartGlobal : originEndGlobal;
       selectable.dispatchSelectionEvent(
         SelectionEdgeUpdateEvent.forStart(globalPosition: anchorGlobal),
       );
-      if (isInverted) {
+      if (!forwardSelection) {
         // Re-dispatch the original event so the standard boundary logic
         // sees the corrected anchor and computes the correct boundary
         // direction (backward instead of forward).
         selectable.dispatchSelectionEvent(event);
       }
     } else {
-      final anchorGlobal = isInverted ? originStartGlobal : originEndGlobal;
+      final anchorGlobal = forwardSelection ? originEndGlobal : originStartGlobal;
       selectable.dispatchSelectionEvent(
         SelectionEdgeUpdateEvent.forEnd(globalPosition: anchorGlobal),
       );
-      if (isInverted) {
+      if (!forwardSelection) {
         selectable.dispatchSelectionEvent(event);
       }
     }
+    debugPrint('end of _correctOriginSelectable $this');
   }
 
   /// Initializes the selection of the selectable children.
