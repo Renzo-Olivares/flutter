@@ -1846,51 +1846,49 @@ class _SelectableFragment
     TextPosition? existingSelectionEnd,
   ) {
     const isEnd = false;
-    {
-      // A paragraph boundary may not be completely contained within this root
-      // selectable fragment. Keep searching until we find the end of the
-      // boundary. Do not search when the current drag position is on a placeholder
-      // to allow traversal to reach that placeholder.
-      final positionOnPlaceholder =
-          paragraph.getWordBoundary(position).textInside(fullText) == _placeholderCharacter;
-      if (!paragraphContainsPosition || positionOnPlaceholder) {
-        return null;
+    // A paragraph boundary may not be completely contained within this root
+    // selectable fragment. Keep searching until we find the end of the
+    // boundary. Do not search when the current drag position is on a placeholder
+    // to allow traversal to reach that placeholder.
+    final positionOnPlaceholder =
+        paragraph.getWordBoundary(position).textInside(fullText) == _placeholderCharacter;
+    if (!paragraphContainsPosition || positionOnPlaceholder) {
+      return null;
+    }
+    if (existingSelectionEnd != null) {
+      final _TextBoundaryRecord boundaryAtPosition = getTextBoundary(position, fullText);
+      final bool backwardSelection =
+          existingSelectionStart == null && existingSelectionEnd.offset == range.start ||
+          existingSelectionStart == existingSelectionEnd &&
+              existingSelectionEnd.offset == range.start ||
+          existingSelectionStart != null &&
+              existingSelectionStart.offset > existingSelectionEnd.offset;
+      if (boundaryAtPosition.boundaryStart.offset < range.start &&
+          boundaryAtPosition.boundaryEnd.offset < range.start) {
+        _setSelectionPosition(TextPosition(offset: range.start), isEnd: isEnd);
+        return SelectionResult.previous;
       }
-      if (existingSelectionEnd != null) {
-        final _TextBoundaryRecord boundaryAtPosition = getTextBoundary(position, fullText);
-        final bool backwardSelection =
-            existingSelectionStart == null && existingSelectionEnd.offset == range.start ||
-            existingSelectionStart == existingSelectionEnd &&
-                existingSelectionEnd.offset == range.start ||
-            existingSelectionStart != null &&
-                existingSelectionStart.offset > existingSelectionEnd.offset;
-        if (boundaryAtPosition.boundaryStart.offset < range.start &&
-            boundaryAtPosition.boundaryEnd.offset < range.start) {
-          _setSelectionPosition(TextPosition(offset: range.start), isEnd: isEnd);
-          return SelectionResult.previous;
+      if (boundaryAtPosition.boundaryStart.offset > range.end &&
+          boundaryAtPosition.boundaryEnd.offset > range.end) {
+        _setSelectionPosition(TextPosition(offset: range.end), isEnd: isEnd);
+        return SelectionResult.next;
+      }
+      if (backwardSelection) {
+        if (boundaryAtPosition.boundaryEnd.offset <= range.end) {
+          _setSelectionPosition(_clampTextPosition(boundaryAtPosition.boundaryEnd), isEnd: isEnd);
+          return SelectionResult.end;
         }
-        if (boundaryAtPosition.boundaryStart.offset > range.end &&
-            boundaryAtPosition.boundaryEnd.offset > range.end) {
+        if (boundaryAtPosition.boundaryEnd.offset > range.end) {
           _setSelectionPosition(TextPosition(offset: range.end), isEnd: isEnd);
           return SelectionResult.next;
         }
-        if (backwardSelection) {
-          if (boundaryAtPosition.boundaryEnd.offset <= range.end) {
-            _setSelectionPosition(_clampTextPosition(boundaryAtPosition.boundaryEnd), isEnd: isEnd);
-            return SelectionResult.end;
-          }
-          if (boundaryAtPosition.boundaryEnd.offset > range.end) {
-            _setSelectionPosition(TextPosition(offset: range.end), isEnd: isEnd);
-            return SelectionResult.next;
-          }
-        } else {
-          _setSelectionPosition(_clampTextPosition(boundaryAtPosition.boundaryStart), isEnd: isEnd);
-          if (boundaryAtPosition.boundaryStart.offset < range.start) {
-            return SelectionResult.previous;
-          }
-          if (boundaryAtPosition.boundaryStart.offset >= range.start) {
-            return SelectionResult.end;
-          }
+      } else {
+        _setSelectionPosition(_clampTextPosition(boundaryAtPosition.boundaryStart), isEnd: isEnd);
+        if (boundaryAtPosition.boundaryStart.offset < range.start) {
+          return SelectionResult.previous;
+        }
+        if (boundaryAtPosition.boundaryStart.offset >= range.start) {
+          return SelectionResult.end;
         }
       }
     }
@@ -1912,51 +1910,49 @@ class _SelectableFragment
     TextPosition? existingSelectionEnd,
   ) {
     const isEnd = true;
-    {
-      // A paragraph boundary may not be completely contained within this root
-      // selectable fragment. Keep searching until we find the end of the
-      // boundary. Do not search when the current drag position is on a placeholder
-      // to allow traversal to reach that placeholder.
-      final positionOnPlaceholder =
-          paragraph.getWordBoundary(position).textInside(fullText) == _placeholderCharacter;
-      if (!paragraphContainsPosition || positionOnPlaceholder) {
-        return null;
+    // A paragraph boundary may not be completely contained within this root
+    // selectable fragment. Keep searching until we find the end of the
+    // boundary. Do not search when the current drag position is on a placeholder
+    // to allow traversal to reach that placeholder.
+    final positionOnPlaceholder =
+        paragraph.getWordBoundary(position).textInside(fullText) == _placeholderCharacter;
+    if (!paragraphContainsPosition || positionOnPlaceholder) {
+      return null;
+    }
+    if (existingSelectionStart != null) {
+      final _TextBoundaryRecord boundaryAtPosition = getTextBoundary(position, fullText);
+      final bool backwardSelection =
+          existingSelectionEnd == null && existingSelectionStart.offset == range.end ||
+          existingSelectionStart == existingSelectionEnd &&
+              existingSelectionStart.offset == range.end ||
+          existingSelectionEnd != null &&
+              existingSelectionStart.offset > existingSelectionEnd.offset;
+      if (boundaryAtPosition.boundaryStart.offset < range.start &&
+          boundaryAtPosition.boundaryEnd.offset < range.start) {
+        _setSelectionPosition(TextPosition(offset: range.start), isEnd: isEnd);
+        return SelectionResult.previous;
       }
-      if (existingSelectionStart != null) {
-        final _TextBoundaryRecord boundaryAtPosition = getTextBoundary(position, fullText);
-        final bool backwardSelection =
-            existingSelectionEnd == null && existingSelectionStart.offset == range.end ||
-            existingSelectionStart == existingSelectionEnd &&
-                existingSelectionStart.offset == range.end ||
-            existingSelectionEnd != null &&
-                existingSelectionStart.offset > existingSelectionEnd.offset;
-        if (boundaryAtPosition.boundaryStart.offset < range.start &&
-            boundaryAtPosition.boundaryEnd.offset < range.start) {
-          _setSelectionPosition(TextPosition(offset: range.start), isEnd: isEnd);
+      if (boundaryAtPosition.boundaryStart.offset > range.end &&
+          boundaryAtPosition.boundaryEnd.offset > range.end) {
+        _setSelectionPosition(TextPosition(offset: range.end), isEnd: isEnd);
+        return SelectionResult.next;
+      }
+      if (backwardSelection) {
+        _setSelectionPosition(_clampTextPosition(boundaryAtPosition.boundaryStart), isEnd: isEnd);
+        if (boundaryAtPosition.boundaryStart.offset < range.start) {
           return SelectionResult.previous;
         }
-        if (boundaryAtPosition.boundaryStart.offset > range.end &&
-            boundaryAtPosition.boundaryEnd.offset > range.end) {
+        if (boundaryAtPosition.boundaryStart.offset >= range.start) {
+          return SelectionResult.end;
+        }
+      } else {
+        if (boundaryAtPosition.boundaryEnd.offset <= range.end) {
+          _setSelectionPosition(_clampTextPosition(boundaryAtPosition.boundaryEnd), isEnd: isEnd);
+          return SelectionResult.end;
+        }
+        if (boundaryAtPosition.boundaryEnd.offset > range.end) {
           _setSelectionPosition(TextPosition(offset: range.end), isEnd: isEnd);
           return SelectionResult.next;
-        }
-        if (backwardSelection) {
-          _setSelectionPosition(_clampTextPosition(boundaryAtPosition.boundaryStart), isEnd: isEnd);
-          if (boundaryAtPosition.boundaryStart.offset < range.start) {
-            return SelectionResult.previous;
-          }
-          if (boundaryAtPosition.boundaryStart.offset >= range.start) {
-            return SelectionResult.end;
-          }
-        } else {
-          if (boundaryAtPosition.boundaryEnd.offset <= range.end) {
-            _setSelectionPosition(_clampTextPosition(boundaryAtPosition.boundaryEnd), isEnd: isEnd);
-            return SelectionResult.end;
-          }
-          if (boundaryAtPosition.boundaryEnd.offset > range.end) {
-            _setSelectionPosition(TextPosition(offset: range.end), isEnd: isEnd);
-            return SelectionResult.next;
-          }
         }
       }
     }
@@ -1985,91 +1981,89 @@ class _SelectableFragment
     TextPosition? existingSelectionEnd,
   ) {
     const isEnd = false;
-    {
-      // When the drag position is somewhere on the root text and not a placeholder,
-      // traverse the selectable fragments relative to the [RenderParagraph] that
-      // contains the drag position.
-      if (paragraphContainsPosition) {
-        return _updateSelectionStartEdgeByMultiSelectableTextBoundary(
-          getTextBoundary,
-          paragraphContainsPosition,
-          position,
-          existingSelectionStart,
-          existingSelectionEnd,
-        );
+    // When the drag position is somewhere on the root text and not a placeholder,
+    // traverse the selectable fragments relative to the [RenderParagraph] that
+    // contains the drag position.
+    if (paragraphContainsPosition) {
+      return _updateSelectionStartEdgeByMultiSelectableTextBoundary(
+        getTextBoundary,
+        paragraphContainsPosition,
+        position,
+        existingSelectionStart,
+        existingSelectionEnd,
+      );
+    }
+    if (existingSelectionEnd != null) {
+      final ({RenderParagraph paragraph, Offset localPosition})? targetDetails =
+          _getParagraphContainingPosition(globalPosition);
+      if (targetDetails == null) {
+        return null;
       }
-      if (existingSelectionEnd != null) {
-        final ({RenderParagraph paragraph, Offset localPosition})? targetDetails =
-            _getParagraphContainingPosition(globalPosition);
-        if (targetDetails == null) {
-          return null;
+      final RenderParagraph targetParagraph = targetDetails.paragraph;
+      final TextPosition positionRelativeToTargetParagraph = targetParagraph.getPositionForOffset(
+        targetDetails.localPosition,
+      );
+      final String targetText = targetParagraph.text.toPlainText(includeSemanticsLabels: false);
+      final positionOnPlaceholder =
+          targetParagraph
+              .getWordBoundary(positionRelativeToTargetParagraph)
+              .textInside(targetText) ==
+          _placeholderCharacter;
+      if (positionOnPlaceholder) {
+        return null;
+      }
+      final bool backwardSelection =
+          existingSelectionStart == null && existingSelectionEnd.offset == range.start ||
+          existingSelectionStart == existingSelectionEnd &&
+              existingSelectionEnd.offset == range.start ||
+          existingSelectionStart != null &&
+              existingSelectionStart.offset > existingSelectionEnd.offset;
+      final _TextBoundaryRecord boundaryAtPositionRelativeToTargetParagraph = getTextBoundary(
+        positionRelativeToTargetParagraph,
+        targetText,
+      );
+      final TextPosition targetParagraphPlaceholderTextPosition = _getPositionInParagraph(
+        targetParagraph,
+      );
+      final targetParagraphPlaceholderRange = TextRange(
+        start: targetParagraphPlaceholderTextPosition.offset,
+        end: targetParagraphPlaceholderTextPosition.offset + _placeholderLength,
+      );
+      if (boundaryAtPositionRelativeToTargetParagraph.boundaryStart.offset <
+              targetParagraphPlaceholderRange.start &&
+          boundaryAtPositionRelativeToTargetParagraph.boundaryEnd.offset <
+              targetParagraphPlaceholderRange.start) {
+        _setSelectionPosition(TextPosition(offset: range.start), isEnd: isEnd);
+        return SelectionResult.previous;
+      }
+      if (boundaryAtPositionRelativeToTargetParagraph.boundaryStart.offset >
+              targetParagraphPlaceholderRange.end &&
+          boundaryAtPositionRelativeToTargetParagraph.boundaryEnd.offset >
+              targetParagraphPlaceholderRange.end) {
+        _setSelectionPosition(TextPosition(offset: range.end), isEnd: isEnd);
+        return SelectionResult.next;
+      }
+      if (backwardSelection) {
+        if (boundaryAtPositionRelativeToTargetParagraph.boundaryEnd.offset <=
+            targetParagraphPlaceholderRange.end) {
+          _setSelectionPosition(TextPosition(offset: range.end), isEnd: isEnd);
+          return SelectionResult.end;
         }
-        final RenderParagraph targetParagraph = targetDetails.paragraph;
-        final TextPosition positionRelativeToTargetParagraph = targetParagraph.getPositionForOffset(
-          targetDetails.localPosition,
-        );
-        final String targetText = targetParagraph.text.toPlainText(includeSemanticsLabels: false);
-        final positionOnPlaceholder =
-            targetParagraph
-                .getWordBoundary(positionRelativeToTargetParagraph)
-                .textInside(targetText) ==
-            _placeholderCharacter;
-        if (positionOnPlaceholder) {
-          return null;
-        }
-        final bool backwardSelection =
-            existingSelectionStart == null && existingSelectionEnd.offset == range.start ||
-            existingSelectionStart == existingSelectionEnd &&
-                existingSelectionEnd.offset == range.start ||
-            existingSelectionStart != null &&
-                existingSelectionStart.offset > existingSelectionEnd.offset;
-        final _TextBoundaryRecord boundaryAtPositionRelativeToTargetParagraph = getTextBoundary(
-          positionRelativeToTargetParagraph,
-          targetText,
-        );
-        final TextPosition targetParagraphPlaceholderTextPosition = _getPositionInParagraph(
-          targetParagraph,
-        );
-        final targetParagraphPlaceholderRange = TextRange(
-          start: targetParagraphPlaceholderTextPosition.offset,
-          end: targetParagraphPlaceholderTextPosition.offset + _placeholderLength,
-        );
-        if (boundaryAtPositionRelativeToTargetParagraph.boundaryStart.offset <
-                targetParagraphPlaceholderRange.start &&
-            boundaryAtPositionRelativeToTargetParagraph.boundaryEnd.offset <
-                targetParagraphPlaceholderRange.start) {
-          _setSelectionPosition(TextPosition(offset: range.start), isEnd: isEnd);
-          return SelectionResult.previous;
-        }
-        if (boundaryAtPositionRelativeToTargetParagraph.boundaryStart.offset >
-                targetParagraphPlaceholderRange.end &&
-            boundaryAtPositionRelativeToTargetParagraph.boundaryEnd.offset >
-                targetParagraphPlaceholderRange.end) {
+        if (boundaryAtPositionRelativeToTargetParagraph.boundaryEnd.offset >
+            targetParagraphPlaceholderRange.end) {
           _setSelectionPosition(TextPosition(offset: range.end), isEnd: isEnd);
           return SelectionResult.next;
         }
-        if (backwardSelection) {
-          if (boundaryAtPositionRelativeToTargetParagraph.boundaryEnd.offset <=
-              targetParagraphPlaceholderRange.end) {
-            _setSelectionPosition(TextPosition(offset: range.end), isEnd: isEnd);
-            return SelectionResult.end;
-          }
-          if (boundaryAtPositionRelativeToTargetParagraph.boundaryEnd.offset >
-              targetParagraphPlaceholderRange.end) {
-            _setSelectionPosition(TextPosition(offset: range.end), isEnd: isEnd);
-            return SelectionResult.next;
-          }
-        } else {
-          if (boundaryAtPositionRelativeToTargetParagraph.boundaryStart.offset >=
-              targetParagraphPlaceholderRange.start) {
-            _setSelectionPosition(TextPosition(offset: range.start), isEnd: isEnd);
-            return SelectionResult.end;
-          }
-          if (boundaryAtPositionRelativeToTargetParagraph.boundaryStart.offset <
-              targetParagraphPlaceholderRange.start) {
-            _setSelectionPosition(TextPosition(offset: range.start), isEnd: isEnd);
-            return SelectionResult.previous;
-          }
+      } else {
+        if (boundaryAtPositionRelativeToTargetParagraph.boundaryStart.offset >=
+            targetParagraphPlaceholderRange.start) {
+          _setSelectionPosition(TextPosition(offset: range.start), isEnd: isEnd);
+          return SelectionResult.end;
+        }
+        if (boundaryAtPositionRelativeToTargetParagraph.boundaryStart.offset <
+            targetParagraphPlaceholderRange.start) {
+          _setSelectionPosition(TextPosition(offset: range.start), isEnd: isEnd);
+          return SelectionResult.previous;
         }
       }
     }
@@ -2092,91 +2086,89 @@ class _SelectableFragment
     TextPosition? existingSelectionEnd,
   ) {
     const isEnd = true;
-    {
-      // When the drag position is somewhere on the root text and not a placeholder,
-      // traverse the selectable fragments relative to the [RenderParagraph] that
-      // contains the drag position.
-      if (paragraphContainsPosition) {
-        return _updateSelectionEndEdgeByMultiSelectableTextBoundary(
-          getTextBoundary,
-          paragraphContainsPosition,
-          position,
-          existingSelectionStart,
-          existingSelectionEnd,
-        );
+    // When the drag position is somewhere on the root text and not a placeholder,
+    // traverse the selectable fragments relative to the [RenderParagraph] that
+    // contains the drag position.
+    if (paragraphContainsPosition) {
+      return _updateSelectionEndEdgeByMultiSelectableTextBoundary(
+        getTextBoundary,
+        paragraphContainsPosition,
+        position,
+        existingSelectionStart,
+        existingSelectionEnd,
+      );
+    }
+    if (existingSelectionStart != null) {
+      final ({RenderParagraph paragraph, Offset localPosition})? targetDetails =
+          _getParagraphContainingPosition(globalPosition);
+      if (targetDetails == null) {
+        return null;
       }
-      if (existingSelectionStart != null) {
-        final ({RenderParagraph paragraph, Offset localPosition})? targetDetails =
-            _getParagraphContainingPosition(globalPosition);
-        if (targetDetails == null) {
-          return null;
+      final RenderParagraph targetParagraph = targetDetails.paragraph;
+      final TextPosition positionRelativeToTargetParagraph = targetParagraph.getPositionForOffset(
+        targetDetails.localPosition,
+      );
+      final String targetText = targetParagraph.text.toPlainText(includeSemanticsLabels: false);
+      final positionOnPlaceholder =
+          targetParagraph
+              .getWordBoundary(positionRelativeToTargetParagraph)
+              .textInside(targetText) ==
+          _placeholderCharacter;
+      if (positionOnPlaceholder) {
+        return null;
+      }
+      final bool backwardSelection =
+          existingSelectionEnd == null && existingSelectionStart.offset == range.end ||
+          existingSelectionStart == existingSelectionEnd &&
+              existingSelectionStart.offset == range.end ||
+          existingSelectionEnd != null &&
+              existingSelectionStart.offset > existingSelectionEnd.offset;
+      final _TextBoundaryRecord boundaryAtPositionRelativeToTargetParagraph = getTextBoundary(
+        positionRelativeToTargetParagraph,
+        targetText,
+      );
+      final TextPosition targetParagraphPlaceholderTextPosition = _getPositionInParagraph(
+        targetParagraph,
+      );
+      final targetParagraphPlaceholderRange = TextRange(
+        start: targetParagraphPlaceholderTextPosition.offset,
+        end: targetParagraphPlaceholderTextPosition.offset + _placeholderLength,
+      );
+      if (boundaryAtPositionRelativeToTargetParagraph.boundaryStart.offset <
+              targetParagraphPlaceholderRange.start &&
+          boundaryAtPositionRelativeToTargetParagraph.boundaryEnd.offset <
+              targetParagraphPlaceholderRange.start) {
+        _setSelectionPosition(TextPosition(offset: range.start), isEnd: isEnd);
+        return SelectionResult.previous;
+      }
+      if (boundaryAtPositionRelativeToTargetParagraph.boundaryStart.offset >
+              targetParagraphPlaceholderRange.end &&
+          boundaryAtPositionRelativeToTargetParagraph.boundaryEnd.offset >
+              targetParagraphPlaceholderRange.end) {
+        _setSelectionPosition(TextPosition(offset: range.end), isEnd: isEnd);
+        return SelectionResult.next;
+      }
+      if (backwardSelection) {
+        if (boundaryAtPositionRelativeToTargetParagraph.boundaryStart.offset >=
+            targetParagraphPlaceholderRange.start) {
+          _setSelectionPosition(TextPosition(offset: range.start), isEnd: isEnd);
+          return SelectionResult.end;
         }
-        final RenderParagraph targetParagraph = targetDetails.paragraph;
-        final TextPosition positionRelativeToTargetParagraph = targetParagraph.getPositionForOffset(
-          targetDetails.localPosition,
-        );
-        final String targetText = targetParagraph.text.toPlainText(includeSemanticsLabels: false);
-        final positionOnPlaceholder =
-            targetParagraph
-                .getWordBoundary(positionRelativeToTargetParagraph)
-                .textInside(targetText) ==
-            _placeholderCharacter;
-        if (positionOnPlaceholder) {
-          return null;
-        }
-        final bool backwardSelection =
-            existingSelectionEnd == null && existingSelectionStart.offset == range.end ||
-            existingSelectionStart == existingSelectionEnd &&
-                existingSelectionStart.offset == range.end ||
-            existingSelectionEnd != null &&
-                existingSelectionStart.offset > existingSelectionEnd.offset;
-        final _TextBoundaryRecord boundaryAtPositionRelativeToTargetParagraph = getTextBoundary(
-          positionRelativeToTargetParagraph,
-          targetText,
-        );
-        final TextPosition targetParagraphPlaceholderTextPosition = _getPositionInParagraph(
-          targetParagraph,
-        );
-        final targetParagraphPlaceholderRange = TextRange(
-          start: targetParagraphPlaceholderTextPosition.offset,
-          end: targetParagraphPlaceholderTextPosition.offset + _placeholderLength,
-        );
         if (boundaryAtPositionRelativeToTargetParagraph.boundaryStart.offset <
-                targetParagraphPlaceholderRange.start &&
-            boundaryAtPositionRelativeToTargetParagraph.boundaryEnd.offset <
-                targetParagraphPlaceholderRange.start) {
+            targetParagraphPlaceholderRange.start) {
           _setSelectionPosition(TextPosition(offset: range.start), isEnd: isEnd);
           return SelectionResult.previous;
         }
-        if (boundaryAtPositionRelativeToTargetParagraph.boundaryStart.offset >
-                targetParagraphPlaceholderRange.end &&
-            boundaryAtPositionRelativeToTargetParagraph.boundaryEnd.offset >
-                targetParagraphPlaceholderRange.end) {
+      } else {
+        if (boundaryAtPositionRelativeToTargetParagraph.boundaryEnd.offset <=
+            targetParagraphPlaceholderRange.end) {
+          _setSelectionPosition(TextPosition(offset: range.end), isEnd: isEnd);
+          return SelectionResult.end;
+        }
+        if (boundaryAtPositionRelativeToTargetParagraph.boundaryEnd.offset >
+            targetParagraphPlaceholderRange.end) {
           _setSelectionPosition(TextPosition(offset: range.end), isEnd: isEnd);
           return SelectionResult.next;
-        }
-        if (backwardSelection) {
-          if (boundaryAtPositionRelativeToTargetParagraph.boundaryStart.offset >=
-              targetParagraphPlaceholderRange.start) {
-            _setSelectionPosition(TextPosition(offset: range.start), isEnd: isEnd);
-            return SelectionResult.end;
-          }
-          if (boundaryAtPositionRelativeToTargetParagraph.boundaryStart.offset <
-              targetParagraphPlaceholderRange.start) {
-            _setSelectionPosition(TextPosition(offset: range.start), isEnd: isEnd);
-            return SelectionResult.previous;
-          }
-        } else {
-          if (boundaryAtPositionRelativeToTargetParagraph.boundaryEnd.offset <=
-              targetParagraphPlaceholderRange.end) {
-            _setSelectionPosition(TextPosition(offset: range.end), isEnd: isEnd);
-            return SelectionResult.end;
-          }
-          if (boundaryAtPositionRelativeToTargetParagraph.boundaryEnd.offset >
-              targetParagraphPlaceholderRange.end) {
-            _setSelectionPosition(TextPosition(offset: range.end), isEnd: isEnd);
-            return SelectionResult.next;
-          }
         }
       }
     }
