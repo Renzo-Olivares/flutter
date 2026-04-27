@@ -2135,6 +2135,11 @@ class StaticSelectionContainerDelegate extends MultiSelectableSelectionContainer
     }
   }
 
+  // handleSelectAll, handleSelectWord, and handleSelectParagraph are inherited
+  // from MultiSelectableSelectionContainerDelegate, which calls
+  // didReceiveSelectionBoundaryEvents() after each. The override in this class
+  // adds event-receipt tracking and edge location capture on top of the base
+  // origin capture.
   @override
   void didReceiveSelectionBoundaryEvents() {
     super.didReceiveSelectionBoundaryEvents();
@@ -2226,12 +2231,6 @@ class StaticSelectionContainerDelegate extends MultiSelectableSelectionContainer
     clearInternalSelectionStateForSelectable(selectable);
     super.remove(selectable);
   }
-
-  // handleSelectAll, handleSelectWord, and handleSelectParagraph are inherited
-  // from MultiSelectableSelectionContainerDelegate, which calls
-  // didReceiveSelectionBoundaryEvents() after each. The override in this class
-  // adds event-receipt tracking and edge location capture on top of the base
-  // origin capture.
 
   @override
   SelectionResult handleClearSelection(ClearSelectionEvent event) {
