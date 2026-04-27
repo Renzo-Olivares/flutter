@@ -3011,7 +3011,7 @@ abstract class MultiSelectableSelectionContainerDelegate extends SelectionContai
     }
     final int start = min(currentSelectionStartIndex, currentSelectionEndIndex);
     final int end = max(currentSelectionStartIndex, currentSelectionEndIndex);
-    for (int i = start; i <= end; i++) {
+    for (var i = start; i <= end; i++) {
       _originSelectables.add(selectables[i]);
     }
     // Capture the origin boundary edge positions in local coordinates.
