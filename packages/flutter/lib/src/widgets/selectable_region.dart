@@ -2539,8 +2539,7 @@ abstract class MultiSelectableSelectionContainerDelegate extends SelectionContai
   bool isOriginSelectable(Selectable selectable) => _originSelectables.contains(selectable);
 
   /// Clears all origin text boundary tracking state.
-  @protected
-  void clearOriginSelectables() {
+  void _clearOriginSelectables() {
     _originSelectables.clear();
     _originStartSelectable = null;
     _originStartLocalPosition = null;
@@ -3006,7 +3005,7 @@ abstract class MultiSelectableSelectionContainerDelegate extends SelectionContai
   }
 
   void _captureOriginState() {
-    clearOriginSelectables();
+    _clearOriginSelectables();
     if (currentSelectionStartIndex == -1 || currentSelectionEndIndex == -1) {
       return;
     }
@@ -3138,7 +3137,7 @@ abstract class MultiSelectableSelectionContainerDelegate extends SelectionContai
   /// Removes the selection of all [Selectable]s this delegate manages.
   @protected
   SelectionResult handleClearSelection(ClearSelectionEvent event) {
-    clearOriginSelectables();
+    _clearOriginSelectables();
     for (final Selectable selectable in selectables) {
       dispatchSelectionEventToChild(selectable, event);
     }
@@ -3287,7 +3286,7 @@ abstract class MultiSelectableSelectionContainerDelegate extends SelectionContai
 
   @override
   void dispose() {
-    clearOriginSelectables();
+    _clearOriginSelectables();
     for (final Selectable selectable in selectables) {
       selectable.removeListener(_handleSelectableGeometryChange);
     }
