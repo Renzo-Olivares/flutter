@@ -2384,13 +2384,12 @@ abstract class MultiSelectableSelectionContainerDelegate extends SelectionContai
 
   bool _extendSelectionInProgress = false;
 
-  // Origin text boundary tracking.
+  // Origin selection boundary tracking.
   //
-  // When a word or paragraph is selected (e.g. double-click), these fields
-  // record which selectables are part of the origin boundary and the positions
-  // of its edges. During subsequent drag, this enables the container to keep
-  // the origin boundary anchored in the selection — analogous to Chromium's
-  // SelectionModifier::PrepareToModifySelection anchor normalization.
+  // When a word or paragraph is selected, these fields record which selectables
+  // are part of the origin boundary and the positions of its edges. This
+  // boundary is used and maintained in subsequent selection changes as an anchor
+  // point for the selection.
   final Set<Selectable> _originSelectables = <Selectable>{};
   Selectable? _originStartSelectable;
   Offset? _originStartLocalPosition;
@@ -2534,11 +2533,11 @@ abstract class MultiSelectableSelectionContainerDelegate extends SelectionContai
     selectable.removeListener(_handleSelectableGeometryChange);
   }
 
-  /// Whether the given [selectable] is part of the origin text boundary.
+  /// Whether the given [selectable] is part of the origin selection boundary.
   @protected
   bool isOriginSelectable(Selectable selectable) => _originSelectables.contains(selectable);
 
-  /// Clears all origin text boundary tracking state.
+  /// Clears all origin selection boundary tracking state.
   void _clearOriginSelectables() {
     _originSelectables.clear();
     _originStartSelectable = null;
@@ -2995,7 +2994,7 @@ abstract class MultiSelectableSelectionContainerDelegate extends SelectionContai
   /// handled and [currentSelectionStartIndex]/[currentSelectionEndIndex] have
   /// been set.
   ///
-  /// The base implementation captures origin text boundary state for the
+  /// The base implementation captures origin selection boundary state for the
   /// selection anchoring feature. Subclasses that override this method must
   /// call super.
   @protected
@@ -3310,7 +3309,7 @@ abstract class MultiSelectableSelectionContainerDelegate extends SelectionContai
   /// Override this method if subclasses need to generate additional events or
   /// treatments prior to sending the [SelectionEvent].
   ///
-  /// For origin selectables during text boundary drags (word/paragraph
+  /// For origin selectables during selection boundary drags (word/paragraph
   /// granularity), this method dispatches a corrective edge event after the
   /// original event to maintain the origin boundary anchor — analogous to
   /// Chromium's `SelectionModifier::PrepareToModifySelection`.
@@ -3333,7 +3332,7 @@ abstract class MultiSelectableSelectionContainerDelegate extends SelectionContai
   static bool _isApplyingOriginCorrection = false;
 
   /// Dispatches a corrective edge event to an origin selectable to maintain
-  /// the origin text boundary anchor.
+  /// the origin selection boundary anchor.
   ///
   /// After the moving edge is updated normally, this method sets the static
   /// (anchor) edge to the appropriate origin boundary position. Which boundary
