@@ -3311,8 +3311,7 @@ abstract class MultiSelectableSelectionContainerDelegate extends SelectionContai
   ///
   /// For origin selectables during selection boundary drags (word/paragraph
   /// granularity), this method dispatches a corrective edge event after the
-  /// original event to maintain the origin boundary anchor — analogous to
-  /// Chromium's `SelectionModifier::PrepareToModifySelection`.
+  /// original event to maintain the origin boundary anchor.
   @protected
   SelectionResult dispatchSelectionEventToChild(Selectable selectable, SelectionEvent event) {
     final SelectionResult result = selectable.dispatchSelectionEvent(event);
@@ -3326,6 +3325,7 @@ abstract class MultiSelectableSelectionContainerDelegate extends SelectionContai
   }
 
   // Prevents recursive origin correction across nested delegates.
+  //
   // When an outer delegate's corrective event propagates through an inner
   // delegate (e.g., SelectableRegion → Text widget → fragment), the inner
   // delegate must not fire its own correction for the outer's corrective event.
@@ -3340,9 +3340,6 @@ abstract class MultiSelectableSelectionContainerDelegate extends SelectionContai
   ///
   /// * Forward selection (end ≥ start): anchor at origin start
   /// * Inverted selection (end < start): anchor at origin end
-  ///
-  /// This mirrors Chromium's `PrepareToModifySelection`, which picks the
-  /// anchor position (wordStart or wordEnd) based on extension direction.
   void _correctOriginSelectable(Selectable selectable, SelectionEdgeUpdateEvent event) {
     _isApplyingOriginCorrection = true;
     try {
@@ -3368,7 +3365,7 @@ abstract class MultiSelectableSelectionContainerDelegate extends SelectionContai
         _originEndLocalPosition == null) {
       return;
     }
-    final bool isEndEdge = event.type == SelectionEventType.endEdgeUpdate;
+    final isEndEdge = event.type == SelectionEventType.endEdgeUpdate;
     // Detect inversion: the moving edge has crossed the origin boundary.
     // This includes an "implicit inversion" case where the standard paragraph
     // boundary logic sets the moving edge to a position that coincides with
