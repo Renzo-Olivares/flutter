@@ -2400,15 +2400,6 @@ abstract class MultiSelectableSelectionContainerDelegate extends SelectionContai
   int? _originStartOffset;
   int? _originEndOffset;
 
-  // When non-null, [dispatchSelectionEventToChild] appends visited origin
-  // selectables here (paired with the [SelectionResult] each one returned
-  // from the original dispatch) instead of running [_correctOriginSelectable]
-  // inline. [_adjustSelection] and [_initSelection] use this so the
-  // corrective logic runs against the committed selection indices and the
-  // per-selectable geometric direction signal, not the stale values held
-  // while the loop is mid-traversal.
-  List<(Selectable, SelectionResult)>? _pendingOriginCorrections;
-
   @override
   void add(Selectable selectable) {
     assert(!selectables.contains(selectable));
@@ -3327,12 +3318,7 @@ abstract class MultiSelectableSelectionContainerDelegate extends SelectionContai
         event is SelectionEdgeUpdateEvent &&
         event.granularity != TextGranularity.character &&
         _originSelectables.contains(selectable)) {
-      final List<(Selectable, SelectionResult)>? pending = _pendingOriginCorrections;
-      if (pending != null) {
-        pending.add((selectable, result));
-      } else {
-        _correctOriginSelectable(selectable, event, result);
-      }
+      _correctOriginSelectable(selectable, event, result);
     }
     return result;
   }
@@ -3517,21 +3503,6 @@ abstract class MultiSelectableSelectionContainerDelegate extends SelectionContai
     assert(
       (isEnd && currentSelectionEndIndex == -1) || (!isEnd && currentSelectionStartIndex == -1),
     );
-    assert(_pendingOriginCorrections == null);
-    final List<(Selectable, SelectionResult)> pending = _pendingOriginCorrections = <(Selectable, SelectionResult)>[];
-    final SelectionResult initResult;
-    try {
-      initResult = _initSelectionInner(event, isEnd: isEnd);
-    } finally {
-      _pendingOriginCorrections = null;
-    }
-    for (final (Selectable origin, SelectionResult dispatchResult) in pending) {
-      _correctOriginSelectable(origin, event, dispatchResult);
-    }
-    return initResult;
-  }
-
-  SelectionResult _initSelectionInner(SelectionEdgeUpdateEvent event, {required bool isEnd}) {
     var newIndex = -1;
     var hasFoundEdgeIndex = false;
     SelectionResult? result;
@@ -3615,21 +3586,6 @@ abstract class MultiSelectableSelectionContainerDelegate extends SelectionContai
       assert(currentSelectionStartIndex < selectables.length && currentSelectionStartIndex >= 0);
       return true;
     }());
-    assert(_pendingOriginCorrections == null);
-    final List<(Selectable, SelectionResult)> pending = _pendingOriginCorrections = <(Selectable, SelectionResult)>[];
-    final SelectionResult adjustedResult;
-    try {
-      adjustedResult = _adjustSelectionInner(event, isEnd: isEnd);
-    } finally {
-      _pendingOriginCorrections = null;
-    }
-    for (final (Selectable origin, SelectionResult dispatchResult) in pending) {
-      _correctOriginSelectable(origin, event, dispatchResult);
-    }
-    return adjustedResult;
-  }
-
-  SelectionResult _adjustSelectionInner(SelectionEdgeUpdateEvent event, {required bool isEnd}) {
     SelectionResult? finalResult;
     // Determines if the edge being adjusted is within the current viewport.
     //  - If so, we begin the search for the new selection edge position at the
