@@ -2400,6 +2400,13 @@ abstract class MultiSelectableSelectionContainerDelegate extends SelectionContai
   int? _originStartOffset;
   int? _originEndOffset;
 
+  // When non-null, [dispatchSelectionEventToChild] appends visited origin
+  // selectables here instead of running [_correctOriginSelectable] inline.
+  // [_adjustSelection] and [_initSelection] use this so the corrective
+  // forwardSelection check runs against the committed selection indices,
+  // not the stale values held while the loop is mid-traversal.
+  List<Selectable>? _pendingOriginCorrections;
+
   @override
   void add(Selectable selectable) {
     assert(!selectables.contains(selectable));
@@ -3318,10 +3325,12 @@ abstract class MultiSelectableSelectionContainerDelegate extends SelectionContai
         event is SelectionEdgeUpdateEvent &&
         event.granularity != TextGranularity.character &&
         _originSelectables.contains(selectable)) {
-      // TODO (Renzo-Olivares): Consider the scenario where the origin boundary
-      // is potentially skipped over when inverting the selection, essentially
-      // skipping the anchoring logic and losing the anchor.
-      _correctOriginSelectable(selectable, event);
+      final List<Selectable>? pending = _pendingOriginCorrections;
+      if (pending != null) {
+        pending.add(selectable);
+      } else {
+        _correctOriginSelectable(selectable, event);
+      }
     }
     return result;
   }
@@ -3384,9 +3393,6 @@ abstract class MultiSelectableSelectionContainerDelegate extends SelectionContai
       debugPrint('selection contained to only one selectable');
       forwardSelection = range.endOffset >= range.startOffset;
     }
-    // TODO (Renzo-Olivares): Consider the scenario where the origin boundary
-    // is potentially skipped over when inverting the selection, essentially
-    // skipping the anchoring logic and losing the anchor.
     if (forwardSelection && _originStartOffset != null && _originEndOffset != null) {
       final int originStartIndex = selectables.indexOf(_originStartSelectable!);
       final int originEndIndex = selectables.indexOf(_originEndSelectable!);
@@ -3493,6 +3499,21 @@ abstract class MultiSelectableSelectionContainerDelegate extends SelectionContai
     assert(
       (isEnd && currentSelectionEndIndex == -1) || (!isEnd && currentSelectionStartIndex == -1),
     );
+    assert(_pendingOriginCorrections == null);
+    final List<Selectable> pending = _pendingOriginCorrections = <Selectable>[];
+    final SelectionResult initResult;
+    try {
+      initResult = _initSelectionInner(event, isEnd: isEnd);
+    } finally {
+      _pendingOriginCorrections = null;
+    }
+    for (final Selectable origin in pending) {
+      _correctOriginSelectable(origin, event);
+    }
+    return initResult;
+  }
+
+  SelectionResult _initSelectionInner(SelectionEdgeUpdateEvent event, {required bool isEnd}) {
     var newIndex = -1;
     var hasFoundEdgeIndex = false;
     SelectionResult? result;
@@ -3576,6 +3597,21 @@ abstract class MultiSelectableSelectionContainerDelegate extends SelectionContai
       assert(currentSelectionStartIndex < selectables.length && currentSelectionStartIndex >= 0);
       return true;
     }());
+    assert(_pendingOriginCorrections == null);
+    final List<Selectable> pending = _pendingOriginCorrections = <Selectable>[];
+    final SelectionResult adjustedResult;
+    try {
+      adjustedResult = _adjustSelectionInner(event, isEnd: isEnd);
+    } finally {
+      _pendingOriginCorrections = null;
+    }
+    for (final Selectable origin in pending) {
+      _correctOriginSelectable(origin, event);
+    }
+    return adjustedResult;
+  }
+
+  SelectionResult _adjustSelectionInner(SelectionEdgeUpdateEvent event, {required bool isEnd}) {
     SelectionResult? finalResult;
     // Determines if the edge being adjusted is within the current viewport.
     //  - If so, we begin the search for the new selection edge position at the
