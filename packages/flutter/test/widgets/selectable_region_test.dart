@@ -2600,6 +2600,93 @@ void main() {
       await gesture.up();
     });
 
+    testWidgets(
+      'mouse keeps origin paragraph anchored across a fast inverted-to-forward triple-click drag',
+      (WidgetTester tester) async {
+        // Regression test: with the cursor inverted (origin paragraph
+        // selected backwards and the moving end edge above the origin), a
+        // single fast drag forward back across the origin must keep the
+        // origin paragraph fully selected. Previously the corrective
+        // origin anchoring logic ran with stale
+        // currentSelectionEndIndex/StartIndex from the prior event,
+        // computed forwardSelection incorrectly, and anchored the origin's
+        // start edge to its end offset — collapsing the origin paragraph's
+        // selection.
+        await tester.pumpWidget(
+          TestWidgetsApp(
+            home: _selectableRegion(
+              child: const Column(
+                children: <Widget>[
+                  Text('Paragraph One'),
+                  Text('Paragraph Two'),
+                  Text('Paragraph Three'),
+                  Text('Paragraph Four'),
+                  Text('Paragraph Five'),
+                ],
+              ),
+            ),
+          ),
+        );
+
+        final RenderParagraph paragraph1 = tester.renderObject<RenderParagraph>(
+          find.descendant(of: find.text('Paragraph One'), matching: find.byType(RichText)),
+        );
+        final RenderParagraph paragraph2 = tester.renderObject<RenderParagraph>(
+          find.descendant(of: find.text('Paragraph Two'), matching: find.byType(RichText)),
+        );
+        final RenderParagraph paragraph3 = tester.renderObject<RenderParagraph>(
+          find.descendant(of: find.text('Paragraph Three'), matching: find.byType(RichText)),
+        );
+        final RenderParagraph paragraph5 = tester.renderObject<RenderParagraph>(
+          find.descendant(of: find.text('Paragraph Five'), matching: find.byType(RichText)),
+        );
+
+        // Triple-click 'Paragraph Three' to set it as the origin boundary.
+        final TestGesture gesture = await tester.startGesture(
+          textOffsetToPosition(paragraph3, 5),
+          kind: PointerDeviceKind.mouse,
+        );
+        addTearDown(gesture.removePointer);
+        await tester.pump();
+        await gesture.up();
+        await tester.pump();
+        await gesture.down(textOffsetToPosition(paragraph3, 5));
+        await tester.pump();
+        await gesture.up();
+        await tester.pump();
+        await gesture.down(textOffsetToPosition(paragraph3, 5));
+        await tester.pumpAndSettle();
+        expect(paragraph3.selections[0], const TextSelection(baseOffset: 0, extentOffset: 15));
+
+        // Drag forward across the origin to the end of 'Paragraph Five'.
+        await gesture.moveTo(textOffsetToPosition(paragraph5, 14));
+        await tester.pump();
+        expect(paragraph3.selections[0], const TextSelection(baseOffset: 0, extentOffset: 15));
+        expect(paragraph5.selections[0], const TextSelection(baseOffset: 0, extentOffset: 14));
+
+        // Drag backward across the origin to 'Paragraph One' through
+        // intermediate paragraphs so each step correctly anchors the
+        // origin and inverts the selection.
+        await gesture.moveTo(textOffsetToPosition(paragraph3, 5));
+        await tester.pump();
+        await gesture.moveTo(textOffsetToPosition(paragraph2, 5));
+        await tester.pump();
+        await gesture.moveTo(textOffsetToPosition(paragraph1, 5));
+        await tester.pump();
+        expect(paragraph3.selections[0], const TextSelection(baseOffset: 15, extentOffset: 0));
+        expect(paragraph1.selections[0], const TextSelection(baseOffset: 13, extentOffset: 0));
+
+        // Single fast drag back across the origin to the end of 'Paragraph
+        // Five'. The origin paragraph must remain fully selected.
+        await gesture.moveTo(textOffsetToPosition(paragraph5, 14));
+        await tester.pump();
+        expect(paragraph3.selections[0], const TextSelection(baseOffset: 0, extentOffset: 15));
+        expect(paragraph5.selections[0], const TextSelection(baseOffset: 0, extentOffset: 14));
+
+        await gesture.up();
+      },
+    );
+
     testWidgets('mouse can select multiple widgets', (WidgetTester tester) async {
       await tester.pumpWidget(
         TestWidgetsApp(
