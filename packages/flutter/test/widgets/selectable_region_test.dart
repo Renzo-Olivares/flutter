@@ -2687,6 +2687,201 @@ void main() {
       },
     );
 
+    testWidgets(
+      'mouse keeps multi-selectable origin (Text.rich with WidgetSpan) anchored when cursor lands inside trailing origin span',
+      (WidgetTester tester) async {
+        // The origin Text.rich's inner delegate has three selectables:
+        // the leading TextSpan ('Text before '), the WidgetSpan child
+        // ('WIDGET'), and the trailing TextSpan (' text after.').
+        // Triple-clicking the leading TextSpan selects the entire line, so
+        // the inner _originSelectables span all three; _originStartSelectable
+        // is the leading span and _originEndSelectable is the trailing span.
+        //
+        // After dragging forward past the Text.rich, dragging back into the
+        // trailing span exercises the case where the cursor lands inside a
+        // non-origin-start origin selectable. The trailing span returns
+        // SelectionResult.end from the original dispatch; the corrective
+        // logic must still anchor the inner selection at the origin end so
+        // the trailing span stays selected (inverted).
+        await tester.pumpWidget(
+          TestWidgetsApp(
+            home: _selectableRegion(
+              child: const Column(
+                children: <Widget>[
+                  Text('Paragraph One'),
+                  Text.rich(
+                    TextSpan(
+                      children: <InlineSpan>[
+                        TextSpan(text: 'Text before '),
+                        WidgetSpan(child: Text('WIDGET')),
+                        TextSpan(text: ' text after.'),
+                      ],
+                    ),
+                    key: Key('origin'),
+                  ),
+                  Text('Paragraph Five'),
+                ],
+              ),
+            ),
+          ),
+        );
+
+        final RenderParagraph originOuter = tester.renderObject<RenderParagraph>(
+          find.descendant(of: find.byKey(const Key('origin')), matching: find.byType(RichText)).first,
+        );
+        final RenderParagraph originWidgetChild = tester.renderObject<RenderParagraph>(
+          find.descendant(of: find.text('WIDGET'), matching: find.byType(RichText)),
+        );
+        final RenderParagraph paragraph5 = tester.renderObject<RenderParagraph>(
+          find.descendant(of: find.text('Paragraph Five'), matching: find.byType(RichText)),
+        );
+
+        // Triple-click inside the leading TextSpan ('Text before ').
+        final TestGesture gesture = await tester.startGesture(
+          textOffsetToPosition(originOuter, 2),
+          kind: PointerDeviceKind.mouse,
+        );
+        addTearDown(gesture.removePointer);
+        await tester.pump();
+        await gesture.up();
+        await tester.pump();
+        await gesture.down(textOffsetToPosition(originOuter, 2));
+        await tester.pump();
+        await gesture.up();
+        await tester.pump();
+        await gesture.down(textOffsetToPosition(originOuter, 2));
+        await tester.pumpAndSettle();
+
+        // The whole line selected: outer text "Text before ￼ text after."
+        // (25 chars) yields two selection ranges (split by the placeholder),
+        // and the WidgetSpan child 'WIDGET' is fully selected.
+        expect(originOuter.selections, hasLength(2));
+        expect(originOuter.selections[0], const TextSelection(baseOffset: 0, extentOffset: 12));
+        expect(originOuter.selections[1], const TextSelection(baseOffset: 13, extentOffset: 25));
+        expect(originWidgetChild.selections[0], const TextSelection(baseOffset: 0, extentOffset: 6));
+
+        // Forward drag past Text.rich to the end of 'Paragraph Five'.
+        await gesture.moveTo(textOffsetToPosition(paragraph5, 14));
+        await tester.pump();
+        expect(originOuter.selections, hasLength(2));
+        expect(paragraph5.selections[0], const TextSelection(baseOffset: 0, extentOffset: 14));
+
+        // Drag back to land inside the trailing TextSpan. Outer offset 18 is
+        // past 'Text before ' (12) + placeholder (1) = 13, so it falls in
+        // ' text after.' at local offset 5. Because the cursor lands inside
+        // the origin (not past it), the entire Text.rich should remain fully
+        // selected.
+        await gesture.moveTo(textOffsetToPosition(originOuter, 18));
+        await tester.pump();
+        expect(
+          originOuter.selections,
+          hasLength(2),
+          reason: 'Both leading and trailing fragments of the origin Text.rich should remain selected.',
+        );
+        expect(originOuter.selections[0], const TextSelection(baseOffset: 0, extentOffset: 12));
+        expect(originOuter.selections[1], const TextSelection(baseOffset: 13, extentOffset: 25));
+        expect(originWidgetChild.selections[0], const TextSelection(baseOffset: 0, extentOffset: 6));
+
+        await gesture.up();
+      },
+    );
+
+    testWidgets(
+      'mouse keeps multi-selectable origin (Text.rich with WidgetSpan) anchored when dragging forward into a middle origin span after inversion',
+      (WidgetTester tester) async {
+        // The inner delegate of the Text.rich has three selectables: the
+        // leading TextSpan ('Text before '), the WidgetSpan placeholder, and
+        // the trailing TextSpan (' text after.'). Triple-clicking selects
+        // the entire line, so the inner _originSelectables span all three.
+        //
+        // Sequence:
+        //  1. Triple-click → inner selects all three; inner currentSelection
+        //     StartIndex = 0, currentSelectionEndIndex = 2.
+        //  2. Drag backward past the Text.rich into Paragraph One. The inner
+        //     state inverts: corrective forStart on each origin span snaps
+        //     inner currentSelectionStartIndex to 2 (trailing, anchored at
+        //     inner originEnd). End edge is at inner index 0.
+        //  3. Drag forward to land in the WidgetSpan placeholder (inner
+        //     index 1, a middle origin selectable). At this moment, after
+        //     the inner loop commits:
+        //       inner currentSelectionStartIndex = 2 (trailing, originEnd-anchored)
+        //       inner currentSelectionEndIndex = 1 (WidgetSpan, where cursor lands)
+        //     A naive index check `currentSelectionEndIndex >= currentSelection
+        //     StartIndex` reads (1 >= 2) = FALSE and anchors START at
+        //     originEnd, which collapses the leading span at offset 12 — a
+        //     visible gap in the selection where 'Text before ' should be.
+        //     Using the dispatch result instead reads `next` from leading
+        //     (cursor moved past it forward) and anchors leading at
+        //     originStart, keeping it fully selected.
+        await tester.pumpWidget(
+          TestWidgetsApp(
+            home: _selectableRegion(
+              child: const Column(
+                children: <Widget>[
+                  Text('Paragraph One'),
+                  Text.rich(
+                    TextSpan(
+                      children: <InlineSpan>[
+                        TextSpan(text: 'Text before '),
+                        WidgetSpan(child: Text('WIDGET')),
+                        TextSpan(text: ' text after.'),
+                      ],
+                    ),
+                    key: Key('origin'),
+                  ),
+                  Text('Paragraph Five'),
+                ],
+              ),
+            ),
+          ),
+        );
+
+        final RenderParagraph paragraph1 = tester.renderObject<RenderParagraph>(
+          find.descendant(of: find.text('Paragraph One'), matching: find.byType(RichText)),
+        );
+        final RenderParagraph originOuter = tester.renderObject<RenderParagraph>(
+          find.descendant(of: find.byKey(const Key('origin')), matching: find.byType(RichText)).first,
+        );
+
+        // Triple-click in the leading TextSpan to make the entire Text.rich
+        // line the origin boundary.
+        final TestGesture gesture = await tester.startGesture(
+          textOffsetToPosition(originOuter, 2),
+          kind: PointerDeviceKind.mouse,
+        );
+        addTearDown(gesture.removePointer);
+        await tester.pump();
+        await gesture.up();
+        await tester.pump();
+        await gesture.down(textOffsetToPosition(originOuter, 2));
+        await tester.pump();
+        await gesture.up();
+        await tester.pump();
+        await gesture.down(textOffsetToPosition(originOuter, 2));
+        await tester.pumpAndSettle();
+
+        // Backward drag past the Text.rich. Inner state inverts.
+        await gesture.moveTo(textOffsetToPosition(paragraph1, 5));
+        await tester.pump();
+
+        // Forward drag to land in the WidgetSpan placeholder. The leading
+        // fragment must remain fully selected — no visible gap.
+        await gesture.moveTo(textOffsetToPosition(originOuter, 12));
+        await tester.pump();
+        // The leading fragment 'Text before ' (outer offsets 0..12) must be
+        // fully selected. Under a stale-index correction, this collapses at
+        // offset 12.
+        expect(
+          originOuter.selections[0],
+          isNot(const TextSelection.collapsed(offset: 12)),
+          reason: "Leading fragment must remain selected — collapsed selection here means a visible gap before the WidgetSpan.",
+        );
+        expect(originOuter.selections[0].textInside('Text before ￼ text after.'), isNotEmpty);
+
+        await gesture.up();
+      },
+    );
+
     testWidgets('mouse can select multiple widgets', (WidgetTester tester) async {
       await tester.pumpWidget(
         TestWidgetsApp(
