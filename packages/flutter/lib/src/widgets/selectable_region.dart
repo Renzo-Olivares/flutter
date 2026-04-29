@@ -2401,11 +2401,13 @@ abstract class MultiSelectableSelectionContainerDelegate extends SelectionContai
   int? _originEndOffset;
 
   // When non-null, [dispatchSelectionEventToChild] appends visited origin
-  // selectables here instead of running [_correctOriginSelectable] inline.
-  // [_adjustSelection] and [_initSelection] use this so the corrective
-  // forwardSelection check runs against the committed selection indices,
-  // not the stale values held while the loop is mid-traversal.
-  List<Selectable>? _pendingOriginCorrections;
+  // selectables here (paired with the [SelectionResult] each one returned
+  // from the original dispatch) instead of running [_correctOriginSelectable]
+  // inline. [_adjustSelection] and [_initSelection] use this so the
+  // corrective logic runs against the committed selection indices and the
+  // per-selectable geometric direction signal, not the stale values held
+  // while the loop is mid-traversal.
+  List<(Selectable, SelectionResult)>? _pendingOriginCorrections;
 
   @override
   void add(Selectable selectable) {
@@ -3325,11 +3327,11 @@ abstract class MultiSelectableSelectionContainerDelegate extends SelectionContai
         event is SelectionEdgeUpdateEvent &&
         event.granularity != TextGranularity.character &&
         _originSelectables.contains(selectable)) {
-      final List<Selectable>? pending = _pendingOriginCorrections;
+      final List<(Selectable, SelectionResult)>? pending = _pendingOriginCorrections;
       if (pending != null) {
-        pending.add(selectable);
+        pending.add((selectable, result));
       } else {
-        _correctOriginSelectable(selectable, event);
+        _correctOriginSelectable(selectable, event, result);
       }
     }
     return result;
@@ -3351,10 +3353,14 @@ abstract class MultiSelectableSelectionContainerDelegate extends SelectionContai
   ///
   /// * Forward selection (end ≥ start): anchor at origin start
   /// * Inverted selection (end < start): anchor at origin end
-  void _correctOriginSelectable(Selectable selectable, SelectionEdgeUpdateEvent event) {
+  void _correctOriginSelectable(
+    Selectable selectable,
+    SelectionEdgeUpdateEvent event,
+    SelectionResult dispatchResult,
+  ) {
     _isApplyingOriginCorrection = true;
     try {
-      _correctOriginSelectableImpl(selectable, event);
+      _correctOriginSelectableImpl(selectable, event, dispatchResult);
     } finally {
       debugPrint(
         '$currentSelectionStartIndex, $currentSelectionEndIndex setting _isApplyingOriginCorrection to false in $this',
@@ -3363,7 +3369,11 @@ abstract class MultiSelectableSelectionContainerDelegate extends SelectionContai
     }
   }
 
-  void _correctOriginSelectableImpl(Selectable selectable, SelectionEdgeUpdateEvent event) {
+  void _correctOriginSelectableImpl(
+    Selectable selectable,
+    SelectionEdgeUpdateEvent event,
+    SelectionResult dispatchResult,
+  ) {
     // If the selectable lost its selection entirely, restore it.
     if (!selectable.value.hasSelection) {
       selectable.dispatchSelectionEvent(const SelectAllSelectionEvent());
@@ -3383,31 +3393,39 @@ abstract class MultiSelectableSelectionContainerDelegate extends SelectionContai
       'start of _correctOriginSelectable $this $currentSelectionStartIndex, $currentSelectionEndIndex',
     );
     final isEndEdge = event.type == SelectionEventType.endEdgeUpdate;
-    // Detect inversion: the moving edge has crossed the origin boundary.
-    // This includes an "implicit inversion" case where the standard paragraph
-    // boundary logic sets the moving edge to a position that coincides with
-    // the origin boundary start/end, producing a collapsed selection. In this
-    // case the offset comparison catches what the standard < check misses.
-    bool forwardSelection = currentSelectionEndIndex >= currentSelectionStartIndex;
-    if (currentSelectionStartIndex == currentSelectionEndIndex) {
-      debugPrint('selection contained to only one selectable');
-      forwardSelection = range.endOffset >= range.startOffset;
-    }
-    if (forwardSelection && _originStartOffset != null && _originEndOffset != null) {
-      final int originStartIndex = selectables.indexOf(_originStartSelectable!);
-      final int originEndIndex = selectables.indexOf(_originEndSelectable!);
-      if (isEndEdge) {
-        debugPrint(
-          'moving end edge ${currentSelectionEndIndex >= originStartIndex}, ${currentSelectionEndIndex == originStartIndex},$originStartIndex - ${currentSelectionEndIndex}, ${range.endOffset >= _originStartOffset!}. $this',
-        );
-        forwardSelection =
-            currentSelectionEndIndex > originStartIndex ||
-            (currentSelectionEndIndex == originStartIndex && range.endOffset > _originStartOffset!);
-      } else {
-        forwardSelection =
-            currentSelectionStartIndex > originEndIndex ||
-            (currentSelectionStartIndex == originEndIndex && range.startOffset > _originEndOffset!);
-      }
+    // Compute the corrective direction from the origin selectable's own
+    // response to the original event. This is the geometric truth from this
+    // selectable, so it does not depend on the (possibly-stale) selection
+    // indices being read while another origin selectable is mid-iteration.
+    //
+    //  * `next`     — cursor is past this selectable in reading order; for
+    //                 end-edge update that means the moving end is past
+    //                 origin → forward; for start-edge update, start is
+    //                 past origin → inverted.
+    //  * `previous` — cursor is before this selectable; opposite of `next`.
+    //  * `end` / `pending` / `none` — cursor lands within this selectable
+    //                 (or the selectable can't decide). Use offset
+    //                 comparison if this is the origin start/end selectable;
+    //                 otherwise (only possible for multi-selectable origins)
+    //                 fall back to the committed indices.
+    final bool forwardSelection;
+    switch (dispatchResult) {
+      case SelectionResult.next:
+        forwardSelection = isEndEdge;
+      case SelectionResult.previous:
+        forwardSelection = !isEndEdge;
+      case SelectionResult.end:
+      case SelectionResult.pending:
+      case SelectionResult.none:
+        if (isEndEdge && selectable == _originStartSelectable && _originStartOffset != null) {
+          forwardSelection = range.endOffset > _originStartOffset!;
+        } else if (!isEndEdge && selectable == _originEndSelectable && _originEndOffset != null) {
+          forwardSelection = range.startOffset < _originEndOffset!;
+        } else {
+          forwardSelection = isEndEdge
+              ? currentSelectionEndIndex >= currentSelectionStartIndex
+              : currentSelectionStartIndex <= currentSelectionEndIndex;
+        }
     }
     // Say we have 5 selectables and a boundary that spans 2 of them.
     // 0 | [1 | 2] | 3 | 4
@@ -3500,15 +3518,15 @@ abstract class MultiSelectableSelectionContainerDelegate extends SelectionContai
       (isEnd && currentSelectionEndIndex == -1) || (!isEnd && currentSelectionStartIndex == -1),
     );
     assert(_pendingOriginCorrections == null);
-    final List<Selectable> pending = _pendingOriginCorrections = <Selectable>[];
+    final List<(Selectable, SelectionResult)> pending = _pendingOriginCorrections = <(Selectable, SelectionResult)>[];
     final SelectionResult initResult;
     try {
       initResult = _initSelectionInner(event, isEnd: isEnd);
     } finally {
       _pendingOriginCorrections = null;
     }
-    for (final Selectable origin in pending) {
-      _correctOriginSelectable(origin, event);
+    for (final (Selectable origin, SelectionResult dispatchResult) in pending) {
+      _correctOriginSelectable(origin, event, dispatchResult);
     }
     return initResult;
   }
@@ -3598,15 +3616,15 @@ abstract class MultiSelectableSelectionContainerDelegate extends SelectionContai
       return true;
     }());
     assert(_pendingOriginCorrections == null);
-    final List<Selectable> pending = _pendingOriginCorrections = <Selectable>[];
+    final List<(Selectable, SelectionResult)> pending = _pendingOriginCorrections = <(Selectable, SelectionResult)>[];
     final SelectionResult adjustedResult;
     try {
       adjustedResult = _adjustSelectionInner(event, isEnd: isEnd);
     } finally {
       _pendingOriginCorrections = null;
     }
-    for (final Selectable origin in pending) {
-      _correctOriginSelectable(origin, event);
+    for (final (Selectable origin, SelectionResult dispatchResult) in pending) {
+      _correctOriginSelectable(origin, event, dispatchResult);
     }
     return adjustedResult;
   }
