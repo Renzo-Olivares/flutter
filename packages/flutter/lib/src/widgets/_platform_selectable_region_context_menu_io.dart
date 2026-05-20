@@ -30,6 +30,7 @@ class PlatformSelectableRegionContextMenu extends StatelessWidget {
   // ignore: prefer_const_constructors_in_immutables
   PlatformSelectableRegionContextMenu({
     // ignore: avoid_unused_constructor_parameters
+    required SelectionContainerDelegate delegate,
     required Widget child,
     super.key,
   });
@@ -45,6 +46,9 @@ class PlatformSelectableRegionContextMenu extends StatelessWidget {
   /// This should only be used for testing.
   @visibleForTesting
   static RegisterViewFactory? debugOverrideRegisterViewFactory;
+
+  /// A no-op selection synchronization method for non-web platforms.
+  static void syncSelection(SelectionContainerDelegate client) {}
 
   /// Resets the view factory registration to its initial state.
   @visibleForTesting

@@ -39,11 +39,14 @@ typedef RegisterViewFactory = void Function(String, Object Function(int viewId),
 /// documentation.
 class PlatformSelectableRegionContextMenu extends StatelessWidget {
   /// See `_platform_selectable_region_context_menu_io.dart`.
-  PlatformSelectableRegionContextMenu({required this.child, super.key}) {
+  PlatformSelectableRegionContextMenu({required this.delegate, required this.child, super.key}) {
     if (_registeredViewType == null) {
       _register();
     }
   }
+
+  /// See `_platform_selectable_region_context_menu_io.dart`.
+  final SelectionContainerDelegate delegate;
 
   /// See `_platform_selectable_region_context_menu_io.dart`.
   final Widget child;
@@ -63,6 +66,8 @@ class PlatformSelectableRegionContextMenu extends StatelessWidget {
 
   static SelectionContainerDelegate? _activeClient;
 
+  static final Map<int, web.HTMLElement> _hashCodeToElement = {};
+
   // Keeps track if this widget has already registered its view factories or not.
   static String? _registeredViewType;
 
@@ -75,6 +80,37 @@ class PlatformSelectableRegionContextMenu extends StatelessWidget {
   // See `_platform_selectable_region_context_menu_io.dart`.
   @visibleForTesting
   static RegisterViewFactory? debugOverrideRegisterViewFactory;
+
+  /// Synchronizes the browser DOM selection with the active selectable region.
+  static void syncSelection(SelectionContainerDelegate client) {
+    final element = _hashCodeToElement[client.hashCode];
+    print('syncSelection: called! client hashCode: ${client.hashCode}');
+    print(
+      'syncSelection: element is null? ${element == null}. _activeClient is null? ${_activeClient == null}',
+    );
+    print('syncSelection: client matches _activeClient? ${_activeClient == client}');
+    if (element != null && _activeClient == client) {
+      final String? selectedText = client.getSelectedContent()?.plainText;
+      print('syncSelection: selectedText is: "$selectedText"');
+      if (selectedText != null && selectedText.isNotEmpty) {
+        element.innerText = selectedText;
+
+        try {
+          final web.Range range = web.document.createRange()..selectNode(element);
+          web.window.getSelection()
+            ?..removeAllRanges()
+            ..addRange(range);
+          print('syncSelection: Successfully set DOM selection range in browser!');
+        } catch (e) {
+          print('syncSelection: Error setting DOM selection: $e');
+        }
+      } else {
+        print('syncSelection: selectedText is null or empty!');
+      }
+    } else {
+      print('syncSelection: Preconditions failed! sync skipped.');
+    }
+  }
 
   /// Resets the view factory registration to its initial state.
   @visibleForTesting
@@ -127,6 +163,13 @@ class PlatformSelectableRegionContextMenu extends StatelessWidget {
 
     _registerViewFactory(_viewType, (int viewId, {Object? params}) {
       final htmlElement = web.document.createElement('div') as web.HTMLElement;
+      final int? delegateHashCode = params as int?;
+      print(
+        'ViewFactory: Created htmlElement. viewId: $viewId. params: $params. delegateHashCode: $delegateHashCode',
+      );
+      if (delegateHashCode != null) {
+        _hashCodeToElement[delegateHashCode] = htmlElement;
+      }
       htmlElement
         ..style.width = '100%'
         ..style.height = '100%'
@@ -135,6 +178,9 @@ class PlatformSelectableRegionContextMenu extends StatelessWidget {
       htmlElement.addEventListener(
         'mousedown',
         (web.Event event) {
+          print(
+            'htmlElement: mousedown event triggered! element hashCode: ${htmlElement.hashCode}',
+          );
           final mouseEvent = event as web.MouseEvent;
           mouseEvent.preventDefault();
           if (mouseEvent.button != _kRightClickButton) {
@@ -143,14 +189,11 @@ class PlatformSelectableRegionContextMenu extends StatelessWidget {
           callback(htmlElement, mouseEvent);
         }.toJS,
       );
-      // TODO(dantup): Using htmlElement doesn't seem to work, but body does?
-      //   is it ebcause at this point there isn't a real selection/focus for
-      //   the browser to know to target it?
-      // htmlElement.addEventListener(
-      web.document.body?.addEventListener(
-        'copy',
+
+      htmlElement.addEventListener(
+        'mouseup',
         (web.Event event) {
-          callback(htmlElement, null);
+          print('htmlElement: mouseup event triggered! element hashCode: ${htmlElement.hashCode}');
         }.toJS,
       );
       return htmlElement;
@@ -163,7 +206,9 @@ class PlatformSelectableRegionContextMenu extends StatelessWidget {
     return Stack(
       fit: StackFit.passthrough,
       children: <Widget>[
-        const Positioned.fill(child: HtmlElementView(viewType: _viewType)),
+        Positioned.fill(
+          child: HtmlElementView(viewType: _viewType, creationParams: delegate.hashCode),
+        ),
         child,
       ],
     );

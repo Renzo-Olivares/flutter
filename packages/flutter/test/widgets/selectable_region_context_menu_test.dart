@@ -201,7 +201,7 @@ void main() {
       ),
     );
 
-    final element = fakePlatformViewRegistry.getViewById(currentViewId + 1) as web.HTMLElement;
+    final element = fakePlatformViewRegistry.getViewById(currentViewId + 2) as web.HTMLElement;
     expect(element, isNotNull);
 
     // Select the text
@@ -223,7 +223,7 @@ void main() {
 
     // Dispatch the copy command on the document.
     element.ownerDocument!.body!.dispatchEvent(web.Event('copy'));
-    expect(element.innerText, anyOf('example', 'example '));
+    expect(element.innerText.trim(), 'example');
   }, variant: _browserContextMenuEnabledVariants);
 }
 

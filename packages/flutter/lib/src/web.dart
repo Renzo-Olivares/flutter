@@ -58,6 +58,7 @@ extension type Document._(JSObject _) implements JSObject {
   external Range createRange();
   external HTMLHeadElement? get head;
   external HTMLElement? get body;
+  external bool execCommand(String commandId, [bool showUi, String value]);
 }
 
 extension type DOMTokenList._(JSObject _) implements JSObject {

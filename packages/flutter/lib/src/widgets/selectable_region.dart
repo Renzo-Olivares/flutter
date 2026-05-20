@@ -448,6 +448,7 @@ class SelectableRegionState extends State<SelectableRegion>
   @override
   void initState() {
     super.initState();
+    _selectionStatusNotifier.addListener(_handleSelectionStatusChanged);
     _focusNode.addListener(_handleFocusChanged);
     _initMouseGestureRecognizer();
     _initTouchGestureRecognizer();
@@ -539,6 +540,19 @@ class SelectableRegionState extends State<SelectableRegion>
     }
     if (_webContextMenuEnabled) {
       PlatformSelectableRegionContextMenu.attach(_selectionDelegate);
+    }
+  }
+
+  void _handleSelectionStatusChanged() {
+    print(
+      'SelectableRegionState: _handleSelectionStatusChanged triggered. value=${_selectionStatusNotifier.value}',
+    );
+    if (_webContextMenuEnabled &&
+        _selectionStatusNotifier.value == SelectableRegionSelectionStatus.finalized) {
+      print(
+        'SelectableRegionState: Status is finalized! Calling syncSelection on platform menu...',
+      );
+      PlatformSelectableRegionContextMenu.syncSelection(_selectionDelegate);
     }
   }
 
@@ -1929,6 +1943,7 @@ class SelectableRegionState extends State<SelectableRegion>
   @protected
   @override
   void dispose() {
+    _selectionStatusNotifier.removeListener(_handleSelectionStatusChanged);
     _selectable?.removeListener(_updateSelectionStatus);
     _selectable?.pushHandleLayers(null, null);
     _selectionDelegate.dispose();
@@ -1953,7 +1968,7 @@ class SelectableRegionState extends State<SelectableRegion>
       child: SelectionContainer(registrar: this, delegate: _selectionDelegate, child: widget.child),
     );
     if (_webContextMenuEnabled) {
-      result = PlatformSelectableRegionContextMenu(child: result);
+      result = PlatformSelectableRegionContextMenu(delegate: _selectionDelegate, child: result);
     }
     return TapRegion(
       groupId: SelectableRegion,
