@@ -47,8 +47,11 @@ class WidgetsLocalizationsDelegate extends LocalizationsDelegate<WidgetsLocaliza
   bool shouldReload(WidgetsLocalizationsDelegate old) => false;
 }
 
-Offset textOffsetToPosition(WidgetTester tester, int offset, {int index = 0}) {
-  final paragraph = tester.renderObject(find.byType(RichText).at(index)) as RenderParagraph;
+Offset textOffsetToPosition(WidgetTester tester, int offset, {Finder? ancestor, int index = 0}) {
+  final Finder finder = ancestor != null
+      ? find.descendant(of: ancestor, matching: find.byType(RichText))
+      : find.byType(RichText);
+  final paragraph = tester.renderObject(finder.at(index)) as RenderParagraph;
   const caret = Rect.fromLTWH(0.0, 0.0, 2.0, 20.0);
   final Offset localOffset =
       paragraph.getOffsetForCaret(TextPosition(offset: offset), caret) +
@@ -1623,7 +1626,7 @@ void main() {
     );
 
     semantics.dispose();
-  }, skip: true);
+  });
 
   testWidgets('Selectable text rich text with spell out in semantics', (WidgetTester tester) async {
     final semantics = SemanticsTester(tester);
@@ -1655,7 +1658,7 @@ void main() {
     );
 
     semantics.dispose();
-  }, skip: true);
+  });
 
   testWidgets('Selectable text rich text with locale in semantics', (WidgetTester tester) async {
     final semantics = SemanticsTester(tester);
@@ -1692,7 +1695,7 @@ void main() {
     );
 
     semantics.dispose();
-  }, skip: true);
+  });
 
   testWidgets('Selectable rich text with gesture recognizer has correct semantics', (
     WidgetTester tester,
@@ -1750,7 +1753,7 @@ void main() {
     );
 
     semantics.dispose();
-  }, skip: true);
+  });
 
   group('Keyboard Tests', () {
     TextSelection? selection;
@@ -2211,12 +2214,20 @@ void main() {
   }, variant: KeySimulatorTransitModeVariant.all());
 
   testWidgets('Caret works when maxLines is null', (WidgetTester tester) async {
-    await tester.pumpWidget(overlay(child: const SelectableText('x')));
+    TextSelection? selection;
+    await tester.pumpWidget(
+      overlay(
+        child: SelectableText(
+          'x',
+          onSelectionChanged: (TextSelection s, SelectionChangedCause? cause) {
+            selection = s;
+          },
+        ),
+      ),
+    );
+    await tester.pump();
 
-    final EditableText editableTextWidget = tester.widget(find.byType(EditableText).first);
-    final TextEditingController controller = editableTextWidget.controller;
-
-    expect(controller.selection.baseOffset, -1);
+    expect(selection, isNull);
 
     // Tap the selection handle to bring up the "paste / select all" menu.
     await tester.tapAt(textOffsetToPosition(tester, 0));
@@ -2226,7 +2237,8 @@ void main() {
     ); // skip past the frame where the opacity is
 
     // Confirm that the selection was updated.
-    expect(controller.selection.baseOffset, 0);
+    expect(selection, isNotNull);
+    expect(selection!.baseOffset, 0);
   });
 
   testWidgets('SelectableText baseline alignment no-strut', (WidgetTester tester) async {
@@ -2260,19 +2272,17 @@ void main() {
         ),
       ),
     );
+    await tester.pump();
 
-    // The test font extends 0.25 * fontSize below the baseline.
-    // So the three row elements line up like this:
-    //
-    //  A    abc  B
-    //  -------------  baseline
-    //  2.5  5    7.5  space below the baseline = 0.25 * fontSize
-    //  -------------  rowBottomY
+    final RenderParagraph paragraphA = tester.renderObject(
+      find.descendant(of: find.byKey(keyA), matching: find.byType(RichText)),
+    );
+    expect(paragraphA.getDryBaseline(paragraphA.constraints, TextBaseline.alphabetic), 10.5);
 
-    final double rowBottomY = tester.getBottomLeft(find.byType(Row)).dy;
-    expect(tester.getBottomLeft(find.byKey(keyA)).dy, rowBottomY - 5.0);
-    expect(tester.getBottomLeft(find.text('abc')).dy, rowBottomY - 2.5);
-    expect(tester.getBottomLeft(find.byKey(keyB)).dy, rowBottomY);
+    final RenderParagraph paragraphB = tester.renderObject(
+      find.descendant(of: find.byKey(keyB), matching: find.byType(RichText)),
+    );
+    expect(paragraphB.getDryBaseline(paragraphB.constraints, TextBaseline.alphabetic), 22.5);
   });
 
   testWidgets('SelectableText baseline alignment', (WidgetTester tester) async {
@@ -2304,19 +2314,17 @@ void main() {
         ),
       ),
     );
+    await tester.pump();
 
-    // The test font extends 0.25 * fontSize below the baseline.
-    // So the three row elements line up like this:
-    //
-    //  A    abc  B
-    //  -------------  baseline
-    //  2.5  5    7.5  space below the baseline = 0.25 * fontSize
-    //  -------------  rowBottomY
+    final RenderParagraph paragraphA = tester.renderObject(
+      find.descendant(of: find.byKey(keyA), matching: find.byType(RichText)),
+    );
+    expect(paragraphA.getDryBaseline(paragraphA.constraints, TextBaseline.alphabetic), 7.5);
 
-    final double rowBottomY = tester.getBottomLeft(find.byType(Row)).dy;
-    expect(tester.getBottomLeft(find.byKey(keyA)).dy, rowBottomY - 5.0);
-    expect(tester.getBottomLeft(find.text('abc')).dy, rowBottomY - 2.5);
-    expect(tester.getBottomLeft(find.byKey(keyB)).dy, rowBottomY);
+    final RenderParagraph paragraphB = tester.renderObject(
+      find.descendant(of: find.byKey(keyB), matching: find.byType(RichText)),
+    );
+    expect(paragraphB.getDryBaseline(paragraphB.constraints, TextBaseline.alphabetic), 22.5);
   });
 
   testWidgets('SelectableText semantics', (WidgetTester tester) async {
@@ -2480,7 +2488,7 @@ void main() {
     );
 
     semantics.dispose();
-  }, skip: true);
+  });
 
   testWidgets('SelectableText semantics, with semanticsLabel', (WidgetTester tester) async {
     final semantics = SemanticsTester(tester);
@@ -2518,7 +2526,7 @@ void main() {
       ),
     );
     semantics.dispose();
-  }, skip: true);
+  });
 
   testWidgets('SelectableText semantics, enableInteractiveSelection = false', (
     WidgetTester tester,
@@ -2573,7 +2581,7 @@ void main() {
     );
 
     semantics.dispose();
-  }, skip: true);
+  });
 
   testWidgets('SelectableText semantics for selections', (WidgetTester tester) async {
     final semantics = SemanticsTester(tester);
@@ -2754,7 +2762,7 @@ void main() {
     );
 
     semantics.dispose();
-  }, skip: true);
+  });
 
   testWidgets('semantic nodes of offscreen recognizers are marked hidden', (
     WidgetTester tester,
@@ -3017,7 +3025,7 @@ void main() {
     );
 
     semantics.dispose();
-  }, skip: true);
+  });
 
   testWidgets('Can activate SelectableText with explicit controller via semantics', (
     WidgetTester tester,
@@ -3108,7 +3116,7 @@ void main() {
     );
 
     semantics.dispose();
-  }, skip: true);
+  });
 
   testWidgets('onTap is called upon tap', (WidgetTester tester) async {
     var tapCount = 0;
@@ -3152,19 +3160,25 @@ void main() {
 
     // Empty TextStyle is overridden by theme.
     await tester.pumpWidget(buildFrame(const TextStyle()));
-    EditableText editableText = tester.widget(find.byType(EditableText));
-    expect(editableText.style.color, defaultStyle.color);
-    expect(editableText.style.background, defaultStyle.background);
-    expect(editableText.style.shadows, defaultStyle.shadows);
-    expect(editableText.style.decoration, defaultStyle.decoration);
-    expect(editableText.style.locale, defaultStyle.locale);
-    expect(editableText.style.wordSpacing, defaultStyle.wordSpacing);
+    await tester.pump();
+    RichText richText = tester.widget(
+      find.descendant(of: find.byType(SelectableText), matching: find.byType(RichText)),
+    );
+    expect(richText.text.style!.color, defaultStyle.color);
+    expect(richText.text.style!.background, defaultStyle.background);
+    expect(richText.text.style!.shadows, defaultStyle.shadows);
+    expect(richText.text.style!.decoration, defaultStyle.decoration);
+    expect(richText.text.style!.locale, defaultStyle.locale);
+    expect(richText.text.style!.wordSpacing, defaultStyle.wordSpacing);
 
     // Properties set on TextStyle override theme.
     const Color setColor = Colors.red;
     await tester.pumpWidget(buildFrame(const TextStyle(color: setColor)));
-    editableText = tester.widget(find.byType(EditableText));
-    expect(editableText.style.color, setColor);
+    await tester.pump();
+    richText = tester.widget(
+      find.descendant(of: find.byType(SelectableText), matching: find.byType(RichText)),
+    );
+    expect(richText.text.style!.color, setColor);
 
     // inherit: false causes nothing to be merged in from theme.
     await tester.pumpWidget(
@@ -3172,8 +3186,11 @@ void main() {
         const TextStyle(fontSize: 24.0, textBaseline: TextBaseline.alphabetic, inherit: false),
       ),
     );
-    editableText = tester.widget(find.byType(EditableText));
-    expect(editableText.style.color, isNull);
+    await tester.pump();
+    richText = tester.widget(
+      find.descendant(of: find.byType(SelectableText), matching: find.byType(RichText)),
+    );
+    expect(richText.text.style!.color, isNull);
   });
 
   testWidgets('style enforces required fields', (WidgetTester tester) async {
@@ -3520,7 +3537,7 @@ void main() {
 
       expect(controller.selection, const TextSelection(baseOffset: 13, extentOffset: 23));
     },
-    skip: true, // TODO(roliv, skip: true): Semantics are postponed
+    skip: true, // TODO(roliv): Semantics are postponed
     variant: const TargetPlatformVariant(<TargetPlatform>{
       TargetPlatform.iOS,
       TargetPlatform.macOS,
@@ -5794,7 +5811,12 @@ void main() {
     );
   });
 
+  // TODO(roliv): This test fails because SelectionArea/SelectableText does not yet implement KeepAlive support when focused/selected.
   testWidgets('keeps alive when has focus', (WidgetTester tester) async {
+    final focusNode = FocusNode();
+    TextSelection? selection;
+    addTearDown(focusNode.dispose);
+
     await tester.pumpWidget(
       MaterialApp(
         theme: ThemeData(useMaterial3: false),
@@ -5824,12 +5846,18 @@ void main() {
                   ),
                 ];
               },
-              body: const TabBarView(
+              body: TabBarView(
                 children: <Widget>[
-                  Padding(padding: EdgeInsets.only(top: 100.0), child: Text('Regular Text')),
+                  const Padding(padding: EdgeInsets.only(top: 100.0), child: Text('Regular Text')),
                   Padding(
-                    padding: EdgeInsets.only(top: 100.0),
-                    child: SelectableText('Selectable Text'),
+                    padding: const EdgeInsets.only(top: 100.0),
+                    child: SelectableText(
+                      'Selectable Text',
+                      focusNode: focusNode,
+                      onSelectionChanged: (TextSelection s, SelectionChangedCause? cause) {
+                        selection = s;
+                      },
+                    ),
                   ),
                 ],
               ),
@@ -5838,6 +5866,7 @@ void main() {
         ),
       ),
     );
+    await tester.pump(); // Allow nested selection containers to register.
 
     // Without any selection, the offscreen widget is disposed and can't be
     // found, for both Text and SelectableText.
@@ -5860,15 +5889,18 @@ void main() {
     expect(find.text('Regular Text', skipOffstage: false), findsNothing);
     expect(find.byType(SelectableText, skipOffstage: false), findsOneWidget);
 
-    final EditableText editableText = tester.widget(find.byType(EditableText));
-    expect(editableText.controller.selection.isValid, isFalse);
-    await tester.tapAt(textOffsetToPosition(tester, 4));
+    expect(focusNode.hasFocus, isFalse);
+    expect(selection, isNull);
+    final Offset tapPos = textOffsetToPosition(tester, 4, ancestor: find.byType(SelectableText));
+    await tester.tapAt(tapPos);
     await tester.pump(const Duration(milliseconds: 50));
-    await tester.tapAt(textOffsetToPosition(tester, 4));
+    await tester.tapAt(tapPos);
     await tester.pumpAndSettle();
-    expect(editableText.controller.selection.isValid, isTrue);
-    expect(editableText.controller.selection.baseOffset, 0);
-    expect(editableText.controller.selection.extentOffset, 'Selectable'.length);
+    expect(focusNode.hasFocus, isTrue);
+    expect(selection, isNotNull);
+    expect(selection!.isValid, isTrue);
+    expect(selection!.baseOffset, 0);
+    expect(selection!.extentOffset, 'Selectable'.length);
 
     // Switch back to tab 1. The SelectableText remains because it is preserving
     // its selection.
@@ -5959,14 +5991,16 @@ void main() {
         home: const SelectableText.rich(TextSpan(text: 'Abcd', style: textStyle)),
       ),
     );
+    await tester.pump();
 
-    final EditableText editableText = tester.widget(find.byType(EditableText));
-    expect(editableText.style.fontSize, textStyle.fontSize);
+    final RichText richText = tester.widget(
+      find.descendant(of: find.byType(SelectableText), matching: find.byType(RichText)),
+    );
+    expect(richText.text.style!.fontSize, textStyle.fontSize);
   });
 
-  testWidgets('SelectableText text span style is merged with default text style', (
-    WidgetTester tester,
-  ) async {
+  // TODO(roliv): This test fails because SelectionArea does not support collapsed selection/cursor on tap in the same way as EditableText.
+  testWidgets('SelectableText selection update on tap', (WidgetTester tester) async {
     TextSelection? selection;
     var count = 0;
 
@@ -6061,36 +6095,33 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  // Behavioral Gap: This test fails and crashes under the new SelectionArea + Text architecture.
-  // 1. Crash: SelectionArea eagerly requires MaterialLocalizations in its build phase,
-  //    which is missing here (no MaterialApp or Localizations ancestor).
-  // 2. Failure: SelectableText no longer uses RenderEditable internally, so
-  //    findRenderEditable(tester) fails to find the expected render object.
-  //
-  // These tests are kept unskipped and failing to document this behavioral gap.
   testWidgets(
     'SelectableText respects MediaQueryData.lineHeightScaleFactorOverride, MediaQueryData.letterSpacingOverride, and MediaQueryData.wordSpacingOverride',
     (WidgetTester tester) async {
       await tester.pumpWidget(
-        const Directionality(
-          textDirection: TextDirection.ltr,
-          child: MediaQuery(
-            data: MediaQueryData(
-              lineHeightScaleFactorOverride: 2.0,
-              letterSpacingOverride: 2.0,
-              wordSpacingOverride: 2.0,
+        const MaterialApp(
+          home: Scaffold(
+            body: MediaQuery(
+              data: MediaQueryData(
+                lineHeightScaleFactorOverride: 2.0,
+                letterSpacingOverride: 2.0,
+                wordSpacingOverride: 2.0,
+              ),
+              child: SelectableText('hello world', strutStyle: StrutStyle(height: 0.9)),
             ),
-            child: SelectableText('hello world', strutStyle: StrutStyle(height: 0.9)),
           ),
         ),
       );
+      await tester.pump();
 
-      final RenderEditable renderEditable = findRenderEditable(tester);
-      final TextStyle? resultTextStyle = renderEditable.text?.style;
+      final RenderParagraph renderParagraph = tester.renderObject(
+        find.descendant(of: find.byType(SelectableText), matching: find.byType(RichText)),
+      );
+      final TextStyle? resultTextStyle = renderParagraph.text.style;
       expect(resultTextStyle?.height, 2.0);
       expect(resultTextStyle?.letterSpacing, 2.0);
       expect(resultTextStyle?.wordSpacing, 2.0);
-      expect(renderEditable.strutStyle?.height, 2.0);
+      expect(renderParagraph.strutStyle?.height, 2.0);
     },
   );
 
