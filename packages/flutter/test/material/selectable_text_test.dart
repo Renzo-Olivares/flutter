@@ -6016,6 +6016,7 @@ void main() {
         ),
       ),
     );
+    await tester.pump();
 
     expect(selection, null);
     expect(count, 0);
@@ -6099,16 +6100,15 @@ void main() {
     'SelectableText respects MediaQueryData.lineHeightScaleFactorOverride, MediaQueryData.letterSpacingOverride, and MediaQueryData.wordSpacingOverride',
     (WidgetTester tester) async {
       await tester.pumpWidget(
-        const MaterialApp(
-          home: Scaffold(
-            body: MediaQuery(
-              data: MediaQueryData(
-                lineHeightScaleFactorOverride: 2.0,
-                letterSpacingOverride: 2.0,
-                wordSpacingOverride: 2.0,
-              ),
-              child: SelectableText('hello world', strutStyle: StrutStyle(height: 0.9)),
+        const Directionality(
+          textDirection: TextDirection.ltr,
+          child: MediaQuery(
+            data: MediaQueryData(
+              lineHeightScaleFactorOverride: 2.0,
+              letterSpacingOverride: 2.0,
+              wordSpacingOverride: 2.0,
             ),
+            child: SelectableText('hello world', strutStyle: StrutStyle(height: 0.9)),
           ),
         ),
       );
