@@ -93,6 +93,16 @@ Widget overlayWithEntry(OverlayEntry entry) {
   );
 }
 
+// The boilerplate helper provides a lightweight Material environment for testing.
+//
+// In the migrated SelectionArea-based architecture, SelectableText (via SelectableRegion)
+// enforces a strict build-time assertion requiring an Overlay ancestor:
+// `assert(debugCheckHasOverlay(context))`.
+//
+// Since this helper is used as a lightweight alternative to MaterialApp (which has an
+// implicit Overlay) to keep the widget tree shallow, we must explicitly provide an
+// Overlay here. Otherwise, any test using boilerplate() to pump SelectableText will
+// crash immediately on build, even if they only test static layout/styling properties.
 Widget boilerplate({Widget? child}) {
   return Theme(
     data: ThemeData(useMaterial3: false),
