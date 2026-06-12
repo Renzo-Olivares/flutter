@@ -163,7 +163,7 @@ void main() {
   // Check that the Cupertino text selection toolbar is the expected one on iOS and macOS.
   // TODO(bleroux): try to merge this into text_selection_toolbar_utils.dart
   //                (for instance by adding a 'readOnly' flag).
-  // TODO(roliv): Fails because SelectionArea lacks iOS platform-specific toolbar buttons (Look Up, Search Web, Share) and incorrectly includes Select All on macOS.
+  // TODO(Renzo-Olivares): Fails because SelectionArea lacks iOS platform-specific toolbar buttons (Look Up, Search Web, Share) and incorrectly includes Select All on macOS.
   void expectCupertinoSelectionToolbar() {
     // This function is valid only for tests running on Apple platforms.
     expect(
@@ -241,7 +241,7 @@ void main() {
     );
   }
 
-  // TODO(roliv): Fails because SelectionArea introduces a hard dependency on MaterialLocalizations/Localizations, crashing before the Overlay check.
+  // TODO(Renzo-Olivares): Fails because SelectionArea introduces a hard dependency on MaterialLocalizations/Localizations, crashing before the Overlay check.
   testWidgets(
     'throw if no Overlay widget exists above',
     experimentalLeakTesting: LeakTesting.settings
@@ -467,7 +467,7 @@ void main() {
     expect(textWidget.selectionColor, selectionColor);
   });
 
-  // TODO(roliv): Fails due to 3px layout width regression in SelectionArea.
+  // TODO(Renzo-Olivares): Fails due to 3px layout width regression in SelectionArea.
   testWidgets('Selectable Text has adaptive size', (WidgetTester tester) async {
     await tester.pumpWidget(boilerplate(child: const SelectableText('s')));
 
@@ -496,7 +496,7 @@ void main() {
     expect(scaledBox.size.height, 27.0);
   });
 
-  // TODO(roliv): Fails due to 3px layout width regression in SelectionArea.
+  // TODO(Renzo-Olivares): Fails due to 3px layout width regression in SelectionArea.
   testWidgets('can switch between textWidthBasis', (WidgetTester tester) async {
     RenderBox findTextBox() => tester.renderObject(find.byType(SelectableText));
     const text = 'I can face roll keyboardkeyboardaszzaaaaszzaaaaszzaaaaszzaaaa';
@@ -550,10 +550,10 @@ void main() {
       await tester.pump(editableText.cursorBlinkInterval);
       expect(editableText.cursorCurrentlyVisible, equals(initialShowCursor));
     },
-    // TODO(roliv): Cursor not supported by SelectionArea
+    // TODO(Renzo-Olivares): Cursor not supported by SelectionArea
   );
 
-  // TODO(roliv): Fails because SelectionArea might not show 'Select all' button.
+  // TODO(Renzo-Olivares): Fails because SelectionArea might not show 'Select all' button.
   testWidgets('selectable text selection toolbar renders correctly inside opacity', (
     WidgetTester tester,
   ) async {
@@ -3517,7 +3517,7 @@ void main() {
     }),
   );
 
-  // TODO(roliv): Fails because SelectionArea/Semantics does not correctly handle double tap selection on spans with semantics labels.
+  // TODO(Renzo-Olivares): Fails because SelectionArea/Semantics does not correctly handle double tap selection on spans with semantics labels.
   testWidgets(
     'double tap selects word with semantics label',
     (WidgetTester tester) async {
@@ -3577,7 +3577,7 @@ void main() {
     await tester.pump(const Duration(milliseconds: 50));
 
     // First tap of double tap should create a collapsed selection.
-    // TODO(roliv): Fails because SelectionArea lacks iOS platform-specific tap offset snapping (expects 12, gets 11).
+    // TODO(Renzo-Olivares): Fails because SelectionArea lacks iOS platform-specific tap offset snapping (expects 12, gets 11).
     expect(latestSelection, isNotNull);
     expect(latestSelection!.isCollapsed, isTrue);
     expect(latestSelection!.baseOffset, 12);
@@ -3624,7 +3624,7 @@ void main() {
     await tester.pump(const Duration(milliseconds: 50));
 
     // First tap of double tap should create a collapsed selection.
-    // TODO(roliv): Fails because SelectionArea lacks iOS platform-specific tap offset snapping (expects 12, gets 11).
+    // TODO(Renzo-Olivares): Fails because SelectionArea lacks iOS platform-specific tap offset snapping (expects 12, gets 11).
     expect(latestSelection, isNotNull);
     expect(latestSelection!.isCollapsed, isTrue);
     expect(latestSelection!.baseOffset, 12);
@@ -4211,7 +4211,7 @@ void main() {
     variant: const TargetPlatformVariant(<TargetPlatform>{TargetPlatform.iOS}),
   );
 
-  // TODO(roliv): Fails because SelectionArea lacks horizontal edge scrolling when inside a horizontal scrollable.
+  // TODO(Renzo-Olivares): Fails because SelectionArea lacks horizontal edge scrolling when inside a horizontal scrollable.
   testWidgets('Desktop mouse drag can edge scroll when inside a horizontal scrollable', (
     WidgetTester tester,
   ) async {
@@ -4376,7 +4376,7 @@ void main() {
     await tester.pump(const Duration(milliseconds: 50));
 
     // First tap moved the cursor to the beginning of the second word.
-    // TODO(roliv): Fails because SelectionArea lacks iOS platform-specific tap offset snapping (expects 12, gets 11).
+    // TODO(Renzo-Olivares): Fails because SelectionArea lacks iOS platform-specific tap offset snapping (expects 12, gets 11).
     expect(
       currentSelection,
       const TextSelection.collapsed(offset: 12, affinity: TextAffinity.upstream),
@@ -4388,7 +4388,7 @@ void main() {
     await tester.pump();
 
     // Selected the "word" where the tap happened, which is the first space.
-    // TODO(roliv): Fails because SelectionArea lacks iOS word-edge snapping (selects space instead of previous word on long press).
+    // TODO(Renzo-Olivares): Fails because SelectionArea lacks iOS word-edge snapping (selects space instead of previous word on long press).
     expect(currentSelection, const TextSelection(baseOffset: 0, extentOffset: 7));
 
     expectCupertinoSelectionToolbar();
@@ -4470,7 +4470,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 50));
 
       // First tap moved the cursor.
-      // TODO(roliv): Fails because SelectionArea lacks iOS platform-specific tap offset snapping (expects 12, gets 11).
+      // TODO(Renzo-Olivares): Fails because SelectionArea lacks iOS platform-specific tap offset snapping (expects 12, gets 11).
       expect(
         currentSelection,
         TextSelection.collapsed(
@@ -4516,7 +4516,7 @@ void main() {
     await tester.tapAt(selectableTextStart + const Offset(50.0, 5.0));
     await tester.pump(const Duration(milliseconds: 50));
 
-    // TODO(roliv): Fails because SelectionArea lacks iOS platform-specific tap offset snapping (expects 7, gets 4).
+    // TODO(Renzo-Olivares): Fails because SelectionArea lacks iOS platform-specific tap offset snapping (expects 7, gets 4).
     expect(
       currentSelection,
       TextSelection.collapsed(
@@ -4566,7 +4566,7 @@ void main() {
     await tester.tapAt(selectableTextStart + const Offset(150.0, 5.0));
     await tester.pump(const Duration(milliseconds: 50));
     // First tap moved the cursor.
-    // TODO(roliv): Fails because SelectionArea lacks iOS platform-specific tap offset snapping (expects 12, gets 11).
+    // TODO(Renzo-Olivares): Fails because SelectionArea lacks iOS platform-specific tap offset snapping (expects 12, gets 11).
     expect(
       currentSelection,
       TextSelection.collapsed(
@@ -4724,7 +4724,7 @@ void main() {
 
     // The event should fallback to a normal tap and move the cursor.
     // Single taps selects the edge of the word.
-    // TODO(roliv): Fails because SelectionArea lacks iOS platform-specific tap offset snapping (expects 12, gets 11).
+    // TODO(Renzo-Olivares): Fails because SelectionArea lacks iOS platform-specific tap offset snapping (expects 12, gets 11).
     expect(
       currentSelection,
       const TextSelection.collapsed(offset: 12, affinity: TextAffinity.upstream),
@@ -5260,7 +5260,7 @@ void main() {
     );
   });
 
-  // TODO(roliv): This test fails because SelectionArea intercepts tap gestures
+  // TODO(Renzo-Olivares): This test fails because SelectionArea intercepts tap gestures
   // and prevents TextSpan recognizers from receiving them. This is a behavioral gap.
   testWidgets('text span with tap gesture recognizer works in selectable rich text', (
     WidgetTester tester,
@@ -5321,7 +5321,7 @@ void main() {
     expect(spyTaps, 1);
   });
 
-  // TODO(roliv): This test fails because SelectionArea intercepts long press gestures
+  // TODO(Renzo-Olivares): This test fails because SelectionArea intercepts long press gestures
   // and triggers selection instead of allowing TextSpan recognizers to consume them.
   // This is a behavioral gap.
   testWidgets('text span with long press gesture recognizer works in selectable rich text', (
@@ -5379,7 +5379,7 @@ void main() {
 
     // Long press does not trigger selection if there is text span with long
     // press recognizer.
-    // TODO(roliv): Fails because SelectionArea intercepts long press and/or doesn't support collapsed selection on tap in this context.
+    // TODO(Renzo-Olivares): Fails because SelectionArea intercepts long press and/or doesn't support collapsed selection on tap in this context.
     expect(
       selection,
       const TextSelection(baseOffset: 11, extentOffset: 11, affinity: TextAffinity.upstream),
@@ -5470,7 +5470,7 @@ void main() {
             child: SelectableText(
               'abc def ghi',
               onSelectionChanged: (TextSelection selection, SelectionChangedCause? cause) {
-                // TODO(roliv): Fails because SelectionArea triggers onSelectionChanged multiple times (noisy callback).
+                // TODO(Renzo-Olivares): Fails because SelectionArea triggers onSelectionChanged multiple times (noisy callback).
                 expect(newSelection, isNull);
                 newSelection = selection;
               },
@@ -5623,7 +5623,7 @@ void main() {
     expect(onSelectionChangedCallCount, equals(3));
   });
 
-  // TODO(roliv): SelectionArea does not support selecting previous word on long-pressing whitespace on mobile.
+  // TODO(Renzo-Olivares): SelectionArea does not support selecting previous word on long-pressing whitespace on mobile.
   testWidgets(
     'selecting a space selects the previous word on mobile',
     (WidgetTester tester) async {
@@ -5673,14 +5673,14 @@ void main() {
       expect(selection!.baseOffset, 0);
       expect(selection!.extentOffset, 1);
     },
-    // TODO(roliv): SelectionArea does not support selecting previous word on long-pressing whitespace on mobile.
+    // TODO(Renzo-Olivares): SelectionArea does not support selecting previous word on long-pressing whitespace on mobile.
     variant: const TargetPlatformVariant(<TargetPlatform>{
       TargetPlatform.iOS,
       TargetPlatform.android,
     }),
   );
 
-  // TODO(roliv): Fails because SelectionArea does not support selecting space on non-mobile platforms in the same way (or tap assertions fail).
+  // TODO(Renzo-Olivares): Fails because SelectionArea does not support selecting space on non-mobile platforms in the same way (or tap assertions fail).
   testWidgets(
     'selecting a space selects the space on non-mobile platforms',
     (WidgetTester tester) async {
@@ -5747,7 +5747,7 @@ void main() {
     }),
   );
 
-  // TODO(roliv): SelectionArea does not support selecting previous word on double-tapping whitespace on mobile.
+  // TODO(Renzo-Olivares): SelectionArea does not support selecting previous word on double-tapping whitespace on mobile.
   testWidgets(
     'double tapping a space selects the previous word on mobile',
     (WidgetTester tester) async {
@@ -5814,7 +5814,7 @@ void main() {
       expect(selection!.baseOffset, 6);
       expect(selection!.extentOffset, 14);
     },
-    // TODO(roliv): SelectionArea does not support selecting previous word on double-tapping whitespace on mobile.
+    // TODO(Renzo-Olivares): SelectionArea does not support selecting previous word on double-tapping whitespace on mobile.
     variant: const TargetPlatformVariant(<TargetPlatform>{
       TargetPlatform.iOS,
       TargetPlatform.android,
@@ -5896,7 +5896,7 @@ void main() {
     );
   });
 
-  // TODO(roliv): This test fails because SelectionArea/SelectableText does not yet implement KeepAlive support when focused/selected.
+  // TODO(Renzo-Olivares): This test fails because SelectionArea/SelectableText does not yet implement KeepAlive support when focused/selected.
   testWidgets('keeps alive when has focus', (WidgetTester tester) async {
     final focusNode = FocusNode();
     TextSelection? selection;
@@ -6084,7 +6084,7 @@ void main() {
     expect(richText.text.style!.fontSize, textStyle.fontSize);
   });
 
-  // TODO(roliv): This test fails because SelectionArea does not support collapsed selection/cursor on tap in the same way as EditableText.
+  // TODO(Renzo-Olivares): This test fails because SelectionArea does not support collapsed selection/cursor on tap in the same way as EditableText.
   testWidgets('SelectableText selection update on tap', (WidgetTester tester) async {
     TextSelection? selection;
     var count = 0;
