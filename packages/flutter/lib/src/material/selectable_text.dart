@@ -603,9 +603,7 @@ class _SelectableTextState extends State<SelectableText> {
         focusNode: focusNode,
         selectionControls: textSelectionControls,
         magnifierConfiguration: widget.magnifierConfiguration,
-        contextMenuBuilder: widget.contextMenuBuilder == SelectableText._defaultContextMenuBuilder
-            ? null
-            : _adaptContextMenuBuilder,
+        contextMenuBuilder: _adaptContextMenuBuilder,
         child: SelectionListener(selectionNotifier: _selectionNotifier, child: scrollableChild),
       );
     } else {
