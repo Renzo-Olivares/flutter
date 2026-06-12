@@ -14,12 +14,10 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/rendering.dart';
-import 'package:flutter/scheduler.dart';
 
 import 'adaptive_text_selection_toolbar.dart';
-import 'desktop_text_selection.dart';
 import 'magnifier.dart';
-import 'text_selection.dart';
+import 'selection_area.dart';
 import 'theme.dart';
 
 // Examples can assume:
@@ -33,47 +31,6 @@ import 'theme.dart';
 /// This value is in device pixels, not logical pixels as is typically used
 /// throughout the codebase.
 const int iOSHorizontalOffset = -2;
-
-class _TextSpanEditingController extends TextEditingController {
-  _TextSpanEditingController({required TextSpan textSpan})
-    : _textSpan = textSpan,
-      super(text: textSpan.toPlainText(includeSemanticsLabels: false));
-
-  final TextSpan _textSpan;
-
-  @override
-  TextSpan buildTextSpan({
-    required BuildContext context,
-    TextStyle? style,
-    required bool withComposing,
-  }) {
-    // This does not care about composing.
-    return TextSpan(style: style, children: <TextSpan>[_textSpan]);
-  }
-
-  @override
-  set text(String? newText) {
-    // This should never be reached.
-    throw UnimplementedError();
-  }
-}
-
-class _SelectableTextSelectionGestureDetectorBuilder extends TextSelectionGestureDetectorBuilder {
-  _SelectableTextSelectionGestureDetectorBuilder({required _SelectableTextState state})
-    : _state = state,
-      super(delegate: state);
-
-  final _SelectableTextState _state;
-
-  @override
-  void onSingleTapUp(TapDragUpDetails details) {
-    if (!delegate.selectionEnabled) {
-      return;
-    }
-    super.onSingleTapUp(details);
-    _state.widget.onTap?.call();
-  }
-}
 
 /// A run of selectable text with a single style.
 ///
@@ -517,162 +474,52 @@ class SelectableText extends StatefulWidget {
   }
 }
 
-class _SelectableTextState extends State<SelectableText>
-    implements TextSelectionGestureDetectorBuilderDelegate {
-  EditableTextState? get _editableText => editableTextKey.currentState;
-
-  late _TextSpanEditingController _controller;
-
+class _SelectableTextState extends State<SelectableText> {
   FocusNode? _focusNode;
   FocusNode get _effectiveFocusNode =>
       widget.focusNode ?? (_focusNode ??= FocusNode(skipTraversal: true));
 
-  bool _showSelectionHandles = false;
-
-  late _SelectableTextSelectionGestureDetectorBuilder _selectionGestureDetectorBuilder;
-
-  // API for TextSelectionGestureDetectorBuilderDelegate.
-  @override
-  late bool forcePressEnabled;
-
-  @override
-  final GlobalKey<EditableTextState> editableTextKey = GlobalKey<EditableTextState>();
-
-  @override
-  bool get selectionEnabled => widget.selectionEnabled;
-  // End of API for TextSelectionGestureDetectorBuilderDelegate.
+  late final SelectionListenerNotifier _selectionNotifier;
 
   @override
   void initState() {
     super.initState();
-    _selectionGestureDetectorBuilder = _SelectableTextSelectionGestureDetectorBuilder(state: this);
-    _controller = _TextSpanEditingController(
-      textSpan: widget.textSpan ?? TextSpan(text: widget.data),
-    );
-    _controller.addListener(_onControllerChanged);
-    _effectiveFocusNode.addListener(_handleFocusChanged);
-  }
-
-  @override
-  void didUpdateWidget(SelectableText oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (widget.data != oldWidget.data || widget.textSpan != oldWidget.textSpan) {
-      _controller.removeListener(_onControllerChanged);
-      _controller.dispose();
-      _controller = _TextSpanEditingController(
-        textSpan: widget.textSpan ?? TextSpan(text: widget.data),
-      );
-      _controller.addListener(_onControllerChanged);
-    }
-    if (widget.focusNode != oldWidget.focusNode) {
-      (oldWidget.focusNode ?? _focusNode)?.removeListener(_handleFocusChanged);
-      (widget.focusNode ?? _focusNode)?.addListener(_handleFocusChanged);
-    }
-    if (_effectiveFocusNode.hasFocus && _controller.selection.isCollapsed) {
-      _showSelectionHandles = false;
-    } else {
-      _showSelectionHandles = true;
+    _selectionNotifier = SelectionListenerNotifier();
+    _selectionNotifier.addListener(_handleSelectionDetailsChanged);
+    if (widget.autofocus) {
+      _effectiveFocusNode.requestFocus();
     }
   }
 
   @override
   void dispose() {
-    _effectiveFocusNode.removeListener(_handleFocusChanged);
+    _selectionNotifier.removeListener(_handleSelectionDetailsChanged);
+    _selectionNotifier.dispose();
     _focusNode?.dispose();
-    _controller.dispose();
     super.dispose();
   }
 
-  void _onControllerChanged() {
-    final bool showSelectionHandles =
-        !_effectiveFocusNode.hasFocus || !_controller.selection.isCollapsed;
-    if (showSelectionHandles == _showSelectionHandles) {
+  void _handleSelectionDetailsChanged() {
+    if (widget.onSelectionChanged == null) {
       return;
     }
-    setState(() {
-      _showSelectionHandles = showSelectionHandles;
-    });
-  }
-
-  void _handleFocusChanged() {
-    if (!_effectiveFocusNode.hasFocus &&
-        SchedulerBinding.instance.lifecycleState == AppLifecycleState.resumed) {
-      // We should only clear the selection when this SelectableText loses
-      // focus while the application is currently running. It is possible
-      // that the application is not currently running, for example on desktop
-      // platforms, clicking on a different window switches the focus to
-      // the new window causing the Flutter application to go inactive. In this
-      // case we want to retain the selection so it remains when we return to
-      // the Flutter application.
-      _controller.value = TextEditingValue(text: _controller.value.text);
+    if (_selectionNotifier.registered) {
+      final SelectionDetails details = _selectionNotifier.selection;
+      final SelectedContentRange? range = details.range;
+      if (range != null) {
+        final selection = TextSelection(
+          baseOffset: range.startOffset,
+          extentOffset: range.endOffset,
+        );
+        widget.onSelectionChanged!(selection, null);
+      } else {
+        widget.onSelectionChanged!(const TextSelection.collapsed(offset: -1), null);
+      }
     }
-  }
-
-  void _handleSelectionChanged(TextSelection selection, SelectionChangedCause? cause) {
-    final bool willShowSelectionHandles = _shouldShowSelectionHandles(cause);
-    if (willShowSelectionHandles != _showSelectionHandles) {
-      setState(() {
-        _showSelectionHandles = willShowSelectionHandles;
-      });
-    }
-
-    widget.onSelectionChanged?.call(selection, cause);
-
-    switch (Theme.of(context).platform) {
-      case TargetPlatform.iOS:
-      case TargetPlatform.macOS:
-        if (cause == SelectionChangedCause.longPress) {
-          _editableText?.bringIntoView(selection.base);
-        }
-        return;
-      case TargetPlatform.android:
-      case TargetPlatform.fuchsia:
-      case TargetPlatform.linux:
-      case TargetPlatform.windows:
-      // Do nothing.
-    }
-  }
-
-  /// Toggle the toolbar when a selection handle is tapped.
-  void _handleSelectionHandleTapped() {
-    if (_controller.selection.isCollapsed) {
-      _editableText!.toggleToolbar();
-    }
-  }
-
-  bool _shouldShowSelectionHandles(SelectionChangedCause? cause) {
-    // When the text field is activated by something that doesn't trigger the
-    // selection overlay, we shouldn't show the handles either.
-    if (!_selectionGestureDetectorBuilder.shouldShowSelectionToolbar) {
-      return false;
-    }
-
-    if (_controller.selection.isCollapsed) {
-      return false;
-    }
-
-    if (cause == SelectionChangedCause.keyboard) {
-      return false;
-    }
-
-    if (cause == SelectionChangedCause.longPress) {
-      return true;
-    }
-
-    if (_controller.text.isNotEmpty) {
-      return true;
-    }
-
-    return false;
   }
 
   @override
   Widget build(BuildContext context) {
-    // TODO(garyq): Assert to block WidgetSpans from being used here are removed,
-    // but we still do not yet have nice handling of things like carets, clipboard,
-    // and other features. We should add proper support. Currently, caret handling
-    // is blocked on SkParagraph switch and https://github.com/flutter/engine/pull/27010
-    // should be landed in SkParagraph after the switch is complete.
     assert(debugCheckHasMediaQuery(context));
     assert(debugCheckHasDirectionality(context));
     assert(
@@ -682,72 +529,15 @@ class _SelectableTextState extends State<SelectableText>
       'inherit false style must supply fontSize and textBaseline',
     );
 
-    final ThemeData theme = Theme.of(context);
     final DefaultSelectionStyle selectionStyle = DefaultSelectionStyle.of(context);
     final FocusNode focusNode = _effectiveFocusNode;
 
-    TextSelectionControls? textSelectionControls = widget.selectionControls;
-    final bool paintCursorAboveText;
-    final bool cursorOpacityAnimates;
-    Offset? cursorOffset;
-    final Color cursorColor;
-    final Color selectionColor;
-    Radius? cursorRadius = widget.cursorRadius;
-
-    switch (theme.platform) {
-      case TargetPlatform.iOS:
-        final CupertinoThemeData cupertinoTheme = CupertinoTheme.of(context);
-        forcePressEnabled = true;
-        textSelectionControls ??= cupertinoTextSelectionHandleControls;
-        paintCursorAboveText = true;
-        cursorOpacityAnimates = true;
-        cursorColor =
-            widget.cursorColor ?? selectionStyle.cursorColor ?? cupertinoTheme.primaryColor;
-        selectionColor =
-            selectionStyle.selectionColor ?? cupertinoTheme.primaryColor.withOpacity(0.40);
-        cursorRadius ??= const Radius.circular(2.0);
-        cursorOffset = Offset(iOSHorizontalOffset / MediaQuery.devicePixelRatioOf(context), 0);
-
-      case TargetPlatform.macOS:
-        final CupertinoThemeData cupertinoTheme = CupertinoTheme.of(context);
-        forcePressEnabled = false;
-        textSelectionControls ??= cupertinoDesktopTextSelectionHandleControls;
-        paintCursorAboveText = true;
-        cursorOpacityAnimates = true;
-        cursorColor =
-            widget.cursorColor ?? selectionStyle.cursorColor ?? cupertinoTheme.primaryColor;
-        selectionColor =
-            selectionStyle.selectionColor ?? cupertinoTheme.primaryColor.withOpacity(0.40);
-        cursorRadius ??= const Radius.circular(2.0);
-        cursorOffset = Offset(iOSHorizontalOffset / MediaQuery.devicePixelRatioOf(context), 0);
-
-      case TargetPlatform.android:
-      case TargetPlatform.fuchsia:
-        forcePressEnabled = false;
-        textSelectionControls ??= materialTextSelectionHandleControls;
-        paintCursorAboveText = false;
-        cursorOpacityAnimates = false;
-        cursorColor = widget.cursorColor ?? selectionStyle.cursorColor ?? theme.colorScheme.primary;
-        selectionColor =
-            selectionStyle.selectionColor ?? theme.colorScheme.primary.withOpacity(0.40);
-
-      case TargetPlatform.linux:
-      case TargetPlatform.windows:
-        forcePressEnabled = false;
-        textSelectionControls ??= desktopTextSelectionHandleControls;
-        paintCursorAboveText = false;
-        cursorOpacityAnimates = false;
-        cursorColor = widget.cursorColor ?? selectionStyle.cursorColor ?? theme.colorScheme.primary;
-        selectionColor =
-            selectionStyle.selectionColor ?? theme.colorScheme.primary.withOpacity(0.40);
-    }
+    final TextSelectionControls? textSelectionControls = widget.selectionControls;
 
     final DefaultTextStyle defaultTextStyle = DefaultTextStyle.of(context);
     TextStyle? effectiveTextStyle = widget.style;
     if (effectiveTextStyle == null || effectiveTextStyle.inherit) {
-      effectiveTextStyle = defaultTextStyle.style.merge(
-        widget.style ?? _controller._textSpan.style,
-      );
+      effectiveTextStyle = defaultTextStyle.style.merge(widget.style ?? widget.textSpan?.style);
     }
     final TextScaler? effectiveScaler =
         widget.textScaler ??
@@ -755,62 +545,91 @@ class _SelectableTextState extends State<SelectableText>
           null => null,
           final double textScaleFactor => TextScaler.linear(textScaleFactor),
         };
-    final Widget child = RepaintBoundary(
-      child: EditableText(
-        key: editableTextKey,
-        style: effectiveTextStyle,
-        readOnly: true,
-        toolbarOptions: widget.toolbarOptions,
-        textWidthBasis: widget.textWidthBasis ?? defaultTextStyle.textWidthBasis,
-        textHeightBehavior: widget.textHeightBehavior ?? defaultTextStyle.textHeightBehavior,
-        showSelectionHandles: _showSelectionHandles,
-        showCursor: widget.showCursor,
-        controller: _controller,
-        focusNode: focusNode,
-        strutStyle: widget.strutStyle ?? const StrutStyle(),
-        textAlign: widget.textAlign ?? defaultTextStyle.textAlign ?? TextAlign.start,
-        textDirection: widget.textDirection,
-        textScaler: effectiveScaler,
-        autofocus: widget.autofocus,
-        forceLine: false,
-        minLines: widget.minLines,
-        maxLines: widget.maxLines ?? defaultTextStyle.maxLines,
-        selectionColor: widget.selectionColor ?? selectionColor,
-        selectionControls: widget.selectionEnabled ? textSelectionControls : null,
-        onSelectionChanged: _handleSelectionChanged,
-        onSelectionHandleTapped: _handleSelectionHandleTapped,
-        rendererIgnoresPointer: true,
-        cursorWidth: widget.cursorWidth,
-        cursorHeight: widget.cursorHeight,
-        cursorRadius: cursorRadius,
-        cursorColor: cursorColor,
-        selectionHeightStyle: widget.selectionHeightStyle,
-        selectionWidthStyle: widget.selectionWidthStyle,
-        cursorOpacityAnimates: cursorOpacityAnimates,
-        cursorOffset: cursorOffset,
-        paintCursorAboveText: paintCursorAboveText,
-        backgroundCursorColor: CupertinoColors.inactiveGray,
-        enableInteractiveSelection: widget.enableInteractiveSelection,
-        magnifierConfiguration:
-            widget.magnifierConfiguration ?? TextMagnifier.adaptiveMagnifierConfiguration,
-        dragStartBehavior: widget.dragStartBehavior,
-        scrollPhysics: widget.scrollPhysics,
-        scrollBehavior: widget.scrollBehavior,
-        autofillHints: null,
-        contextMenuBuilder: widget.contextMenuBuilder,
-      ),
+
+    final Widget textWidget = widget.textSpan != null
+        ? Text.rich(
+            widget.textSpan!,
+            style: effectiveTextStyle,
+            strutStyle: widget.strutStyle,
+            textAlign: widget.textAlign ?? defaultTextStyle.textAlign ?? TextAlign.start,
+            textDirection: widget.textDirection,
+            textScaler: effectiveScaler,
+            maxLines: widget.maxLines ?? defaultTextStyle.maxLines,
+            selectionColor: widget.selectionColor ?? selectionStyle.selectionColor,
+            textWidthBasis: widget.textWidthBasis ?? defaultTextStyle.textWidthBasis,
+            textHeightBehavior: widget.textHeightBehavior ?? defaultTextStyle.textHeightBehavior,
+            semanticsLabel: widget.semanticsLabel,
+          )
+        : Text(
+            widget.data!,
+            style: effectiveTextStyle,
+            strutStyle: widget.strutStyle,
+            textAlign: widget.textAlign ?? defaultTextStyle.textAlign ?? TextAlign.start,
+            textDirection: widget.textDirection,
+            textScaler: effectiveScaler,
+            maxLines: widget.maxLines ?? defaultTextStyle.maxLines,
+            selectionColor: widget.selectionColor ?? selectionStyle.selectionColor,
+            textWidthBasis: widget.textWidthBasis ?? defaultTextStyle.textWidthBasis,
+            textHeightBehavior: widget.textHeightBehavior ?? defaultTextStyle.textHeightBehavior,
+            semanticsLabel: widget.semanticsLabel,
+          );
+
+    var textWidgetWithTap = textWidget;
+    if (widget.onTap != null) {
+      textWidgetWithTap = GestureDetector(
+        behavior: HitTestBehavior.translucent,
+        onTap: widget.onTap,
+        child: textWidget,
+      );
+    }
+
+    Widget scrollableChild = SingleChildScrollView(
+      physics: widget.scrollPhysics,
+      dragStartBehavior: widget.dragStartBehavior,
+      child: textWidgetWithTap,
     );
+
+    if (widget.scrollBehavior != null) {
+      scrollableChild = ScrollConfiguration(
+        behavior: widget.scrollBehavior!,
+        child: scrollableChild,
+      );
+    }
+
+    var result = scrollableChild;
+
+    if (widget.enableInteractiveSelection) {
+      result = SelectionArea(
+        focusNode: focusNode,
+        selectionControls: textSelectionControls,
+        magnifierConfiguration: widget.magnifierConfiguration,
+        contextMenuBuilder: widget.contextMenuBuilder == SelectableText._defaultContextMenuBuilder
+            ? null
+            : _adaptContextMenuBuilder,
+        child: SelectionListener(selectionNotifier: _selectionNotifier, child: scrollableChild),
+      );
+    } else {
+      result = SelectionContainer.disabled(child: scrollableChild);
+    }
 
     return Semantics(
       label: widget.semanticsLabel,
       excludeSemantics: widget.semanticsLabel != null,
       onLongPress: () {
-        _effectiveFocusNode.requestFocus();
+        focusNode.requestFocus();
       },
-      child: _selectionGestureDetectorBuilder.buildGestureDetector(
-        behavior: HitTestBehavior.translucent,
-        child: child,
-      ),
+      child: result,
+    );
+  }
+
+  Widget _adaptContextMenuBuilder(
+    BuildContext context,
+    SelectableRegionState selectableRegionState,
+  ) {
+    // Phase 1: Note that we cannot easily adapt EditableTextContextMenuBuilder to SelectableRegionContextMenuBuilder.
+    // We fall back to the default SelectableRegion context menu.
+    return AdaptiveTextSelectionToolbar.selectableRegion(
+      selectableRegionState: selectableRegionState,
     );
   }
 }
