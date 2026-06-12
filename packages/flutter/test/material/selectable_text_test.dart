@@ -1275,19 +1275,22 @@ void main() {
   });
 
   testWidgets('Can scroll multiline input', (WidgetTester tester) async {
+    TextSelection? currentSelection;
+
     await tester.pumpWidget(
       overlay(
-        child: const SelectableText(
+        child: SelectableText(
           kMoreThanFourLines,
           dragStartBehavior: DragStartBehavior.down,
-          style: TextStyle(color: Colors.black, fontSize: 34.0),
+          style: const TextStyle(color: Colors.black, fontSize: 34.0),
           maxLines: 2,
+          onSelectionChanged: (TextSelection selection, SelectionChangedCause? cause) {
+            currentSelection = selection;
+          },
         ),
       ),
     );
 
-    final EditableText editableTextWidget = tester.widget(find.byType(EditableText));
-    final TextEditingController controller = editableTextWidget.controller;
     RenderBox findInputBox() => tester.renderObject(find.byType(SelectableText));
     final RenderBox inputBox = findInputBox();
 
@@ -1346,28 +1349,27 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(seconds: 1));
 
-    expect(controller.selection.base.offset, 77);
-    expect(controller.selection.extent.offset, 82);
+    expect(currentSelection, isNotNull);
+    expect(currentSelection!.base.offset, 77);
+    expect(currentSelection!.extent.offset, 82);
     // Sanity check for the word selected is the intended one.
     expect(
-      controller.text.substring(controller.selection.baseOffset, controller.selection.extentOffset),
+      kMoreThanFourLines.substring(currentSelection!.baseOffset, currentSelection!.extentOffset),
       "won't",
     );
 
-    final RenderEditable renderEditable = findRenderEditable(tester);
-    final List<TextSelectionPoint> endpoints = globalize(
-      renderEditable.getEndpointsForSelection(controller.selection),
-      renderEditable,
+    final RenderParagraph paragraph = tester.renderObject(
+      find.descendant(of: find.byType(SelectableText), matching: find.byType(RichText)),
     );
-    expect(endpoints.length, 2);
+    final List<TextBox> boxes = paragraph.getBoxesForSelection(currentSelection!);
+    final Offset startHandlePos = paragraph.localToGlobal(boxes.first.toRect().bottomLeft);
 
     // Drag the left handle to the first line, just after 'First'.
-    final Offset handlePos = endpoints[0].point + const Offset(-1, 1);
     final Offset newHandlePos = textOffsetToPosition(
       tester,
       kMoreThanFourLines.indexOf('First') + 5,
     );
-    gesture = await tester.startGesture(handlePos, pointer: 7);
+    gesture = await tester.startGesture(startHandlePos, pointer: 7);
     await tester.pump(const Duration(seconds: 1));
     await gesture.moveTo(newHandlePos + const Offset(0.0, -10.0));
     await tester.pump(const Duration(seconds: 1));
@@ -1400,7 +1402,6 @@ void main() {
         ),
       ),
     );
-    expect(tester.widget<EditableText>(find.byType(EditableText)).scrollBehavior, isNull);
     expect(tester.widget<Scrollable>(find.byType(Scrollable)).scrollBehavior, isNotNull);
 
     final behavior = const ScrollBehavior()..copyWith(scrollbars: false);
@@ -1415,7 +1416,6 @@ void main() {
         ),
       ),
     );
-    expect(tester.widget<EditableText>(find.byType(EditableText)).scrollBehavior, equals(behavior));
     expect(tester.widget<Scrollable>(find.byType(Scrollable)).scrollBehavior, equals(behavior));
   });
 
@@ -4929,27 +4929,29 @@ void main() {
       ),
     );
 
-    final RenderEditable editable = findRenderEditable(tester);
-
-    Offset topLeft = editable.localToGlobal(
-      editable.getLocalRectForCaret(const TextPosition(offset: 4)).topLeft,
+    final RenderParagraph paragraph = tester.renderObject(
+      find.descendant(of: find.byType(SelectableText), matching: find.byType(RichText)),
     );
-    expect(topLeft.dx, equals(427));
 
-    topLeft = editable.localToGlobal(
-      editable.getLocalRectForCaret(const TextPosition(offset: 3)).topLeft,
+    Offset globalCaretPos = paragraph.localToGlobal(
+      paragraph.getOffsetForCaret(const TextPosition(offset: 4), Rect.zero),
     );
-    expect(topLeft.dx, equals(413));
+    expect(globalCaretPos.dx, equals(427));
 
-    topLeft = editable.localToGlobal(
-      editable.getLocalRectForCaret(const TextPosition(offset: 2)).topLeft,
+    globalCaretPos = paragraph.localToGlobal(
+      paragraph.getOffsetForCaret(const TextPosition(offset: 3), Rect.zero),
     );
-    expect(topLeft.dx, equals(399));
+    expect(globalCaretPos.dx, equals(413));
 
-    topLeft = editable.localToGlobal(
-      editable.getLocalRectForCaret(const TextPosition(offset: 1)).topLeft,
+    globalCaretPos = paragraph.localToGlobal(
+      paragraph.getOffsetForCaret(const TextPosition(offset: 2), Rect.zero),
     );
-    expect(topLeft.dx, equals(385));
+    expect(globalCaretPos.dx, equals(399));
+
+    globalCaretPos = paragraph.localToGlobal(
+      paragraph.getOffsetForCaret(const TextPosition(offset: 1), Rect.zero),
+    );
+    expect(globalCaretPos.dx, equals(385));
   });
 
   testWidgets('Caret indexes into trailing whitespace center align', (WidgetTester tester) async {
@@ -4962,37 +4964,39 @@ void main() {
       ),
     );
 
-    final RenderEditable editable = findRenderEditable(tester);
-
-    Offset topLeft = editable.localToGlobal(
-      editable.getLocalRectForCaret(const TextPosition(offset: 7)).topLeft,
+    final RenderParagraph paragraph = tester.renderObject(
+      find.descendant(of: find.byType(SelectableText), matching: find.byType(RichText)),
     );
-    expect(topLeft.dx, equals(469));
 
-    topLeft = editable.localToGlobal(
-      editable.getLocalRectForCaret(const TextPosition(offset: 8)).topLeft,
+    Offset globalCaretPos = paragraph.localToGlobal(
+      paragraph.getOffsetForCaret(const TextPosition(offset: 7), Rect.zero),
     );
-    expect(topLeft.dx, equals(483));
+    expect(globalCaretPos.dx, equals(469));
 
-    topLeft = editable.localToGlobal(
-      editable.getLocalRectForCaret(const TextPosition(offset: 4)).topLeft,
+    globalCaretPos = paragraph.localToGlobal(
+      paragraph.getOffsetForCaret(const TextPosition(offset: 8), Rect.zero),
     );
-    expect(topLeft.dx, equals(427));
+    expect(globalCaretPos.dx, equals(483));
 
-    topLeft = editable.localToGlobal(
-      editable.getLocalRectForCaret(const TextPosition(offset: 3)).topLeft,
+    globalCaretPos = paragraph.localToGlobal(
+      paragraph.getOffsetForCaret(const TextPosition(offset: 4), Rect.zero),
     );
-    expect(topLeft.dx, equals(413));
+    expect(globalCaretPos.dx, equals(427));
 
-    topLeft = editable.localToGlobal(
-      editable.getLocalRectForCaret(const TextPosition(offset: 2)).topLeft,
+    globalCaretPos = paragraph.localToGlobal(
+      paragraph.getOffsetForCaret(const TextPosition(offset: 3), Rect.zero),
     );
-    expect(topLeft.dx, equals(399));
+    expect(globalCaretPos.dx, equals(413));
 
-    topLeft = editable.localToGlobal(
-      editable.getLocalRectForCaret(const TextPosition(offset: 1)).topLeft,
+    globalCaretPos = paragraph.localToGlobal(
+      paragraph.getOffsetForCaret(const TextPosition(offset: 2), Rect.zero),
     );
-    expect(topLeft.dx, equals(385));
+    expect(globalCaretPos.dx, equals(399));
+
+    globalCaretPos = paragraph.localToGlobal(
+      paragraph.getOffsetForCaret(const TextPosition(offset: 1), Rect.zero),
+    );
+    expect(globalCaretPos.dx, equals(385));
   });
 
   testWidgets('selection handles are rendered and not faded away', (WidgetTester tester) async {
