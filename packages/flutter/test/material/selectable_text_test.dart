@@ -593,10 +593,20 @@ void main() {
   });
 
   testWidgets('Caret position is updated on tap', (WidgetTester tester) async {
-    await tester.pumpWidget(overlay(child: const SelectableText('abc def ghi')));
-    final EditableText editableText = tester.widget(find.byType(EditableText));
-    expect(editableText.controller.selection.baseOffset, -1);
-    expect(editableText.controller.selection.extentOffset, -1);
+    TextSelection? selection;
+    await tester.pumpWidget(
+      overlay(
+        child: SelectableText(
+          'abc def ghi',
+          onSelectionChanged: (TextSelection newSelection, SelectionChangedCause? cause) {
+            selection = newSelection;
+          },
+        ),
+      ),
+    );
+    await tester.pump(); // Allow nested selection containers to register.
+
+    expect(selection, isNull);
 
     // Tap to reposition the caret.
     const tapIndex = 4;
@@ -604,8 +614,9 @@ void main() {
     await tester.tapAt(ePos);
     await tester.pump();
 
-    expect(editableText.controller.selection.baseOffset, tapIndex);
-    expect(editableText.controller.selection.extentOffset, tapIndex);
+    expect(selection, isNotNull);
+    expect(selection!.baseOffset, tapIndex);
+    expect(selection!.extentOffset, tapIndex);
   });
 
   testWidgets('enableInteractiveSelection = false, tap', (WidgetTester tester) async {
@@ -2372,9 +2383,7 @@ void main() {
     final Key key = UniqueKey();
 
     await tester.pumpWidget(overlay(child: SelectableText('Guten Tag', key: key)));
-
-    final EditableText editableTextWidget = tester.widget(find.byType(EditableText).first);
-    final TextEditingController controller = editableTextWidget.controller;
+    await tester.pump(); // Allow nested selection containers to register.
 
     expect(
       semantics,
@@ -2408,7 +2417,7 @@ void main() {
     await tester.tap(find.byKey(key));
     await tester.pump();
 
-    controller.selection = const TextSelection.collapsed(offset: 9);
+    await tester.tapAt(textOffsetToPosition(tester, 9));
     await tester.pump();
 
     expect(
@@ -2447,7 +2456,7 @@ void main() {
       ),
     );
 
-    controller.selection = const TextSelection.collapsed(offset: 4);
+    await tester.tapAt(textOffsetToPosition(tester, 4));
     await tester.pump();
 
     expect(
@@ -2488,7 +2497,7 @@ void main() {
       ),
     );
 
-    controller.selection = const TextSelection.collapsed(offset: 0);
+    await tester.tapAt(textOffsetToPosition(tester, 0));
     await tester.pump();
 
     expect(
@@ -4165,13 +4174,22 @@ void main() {
   testWidgets(
     'long press drag moves the cursor under the drag and shows toolbar on lift (macOS)',
     (WidgetTester tester) async {
+      TextSelection? selection;
       await tester.pumpWidget(
-        const MaterialApp(
+        MaterialApp(
           home: Material(
-            child: Center(child: SelectableText('Atwater Peel Sherbrooke Bonaventure')),
+            child: Center(
+              child: SelectableText(
+                'Atwater Peel Sherbrooke Bonaventure',
+                onSelectionChanged: (TextSelection newSelection, SelectionChangedCause? cause) {
+                  selection = newSelection;
+                },
+              ),
+            ),
           ),
         ),
       );
+      await tester.pump(); // Allow nested selection containers to register.
 
       final Offset selectableTextStart = tester.getTopLeft(find.byType(SelectableText));
 
@@ -4180,11 +4198,8 @@ void main() {
       );
       await tester.pump(const Duration(milliseconds: 500));
 
-      final EditableText editableTextWidget = tester.widget(find.byType(EditableText).first);
-      final TextEditingController controller = editableTextWidget.controller;
-
       // The long pressed word is selected.
-      expect(controller.selection, const TextSelection(baseOffset: 0, extentOffset: 7));
+      expect(selection, const TextSelection(baseOffset: 0, extentOffset: 7));
       // Cursor move doesn't trigger a toolbar initially.
       expect(find.byType(CupertinoButton), findsNothing);
 
@@ -4192,7 +4207,7 @@ void main() {
       await tester.pump();
 
       // The selection position is now moved with the drag.
-      expect(controller.selection, const TextSelection(baseOffset: 0, extentOffset: 8));
+      expect(selection, const TextSelection(baseOffset: 0, extentOffset: 8));
       // Still no toolbar.
       expect(find.byType(CupertinoButton), findsNothing);
 
@@ -4200,7 +4215,7 @@ void main() {
       await tester.pump();
 
       // The selection position is now moved with the drag.
-      expect(controller.selection, const TextSelection(baseOffset: 0, extentOffset: 12));
+      expect(selection, const TextSelection(baseOffset: 0, extentOffset: 12));
       // Still no toolbar.
       expect(find.byType(CupertinoButton), findsNothing);
 
@@ -4208,7 +4223,7 @@ void main() {
       await tester.pump();
 
       // The selection isn't affected by the gesture lift.
-      expect(controller.selection, const TextSelection(baseOffset: 0, extentOffset: 12));
+      expect(selection, const TextSelection(baseOffset: 0, extentOffset: 12));
       // The toolbar now shows up.
       expectCupertinoSelectionToolbar();
     },
