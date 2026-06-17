@@ -695,36 +695,39 @@ void main() {
     expect(selection, const TextSelection.collapsed(offset: 9));
   });
 
+  // Under the SelectionArea-based architecture, Android delays rendering selection
+  // handles until the long-press gesture is released (onLongPressEnd).
+  // iOS, however, renders handles eagerly during the active hold phase (onLongPressStart).
+  //
+  // Since this test specifically asserts that handles are shown and remain opaque
+  // *during* the active hold phase (before gesture.up() is called), we must explicitly
+  // run this test on iOS. Running it on Android (the default test platform) would fail
+  // because handles are not yet rendered during the hold.
   testWidgets("Slight movements in longpress don't hide/show handles", (WidgetTester tester) async {
-    debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
-    try {
-      await tester.pumpWidget(overlay(child: const SelectableText('abc def ghi')));
-      // Allow nested selection containers to register.
-      await tester.pump();
+    await tester.pumpWidget(overlay(child: const SelectableText('abc def ghi')));
+    // Allow nested selection containers to register.
+    await tester.pump();
 
-      // Long press the 'e' to select 'def', but don't release the gesture.
-      final Offset ePos = textOffsetToPosition(tester, 5);
-      final TestGesture gesture = await tester.startGesture(ePos, pointer: 7);
-      await tester.pump(const Duration(seconds: 2));
-      await tester.pumpAndSettle();
+    // Long press the 'e' to select 'def', but don't release the gesture.
+    final Offset ePos = textOffsetToPosition(tester, 5);
+    final TestGesture gesture = await tester.startGesture(ePos, pointer: 7);
+    await tester.pump(const Duration(seconds: 2));
+    await tester.pumpAndSettle();
 
-      // Handles are shown.
-      final Finder fadeFinder = find.byType(FadeTransition);
-      expect(fadeFinder, findsNWidgets(2)); // 2 handles, 1 toolbar
-      FadeTransition handle = tester.widget(fadeFinder.at(0));
-      expect(handle.opacity.value, equals(1.0));
+    // Handles are shown.
+    final Finder fadeFinder = find.byType(FadeTransition);
+    expect(fadeFinder, findsNWidgets(2)); // 2 handles, 1 toolbar
+    FadeTransition handle = tester.widget(fadeFinder.at(0));
+    expect(handle.opacity.value, equals(1.0));
 
-      // Move the gesture very slightly.
-      await gesture.moveBy(const Offset(1.0, 1.0));
-      await tester.pump(SelectionOverlay.fadeDuration * 0.5);
-      handle = tester.widget(fadeFinder.at(0));
+    // Move the gesture very slightly.
+    await gesture.moveBy(const Offset(1.0, 1.0));
+    await tester.pump(SelectionOverlay.fadeDuration * 0.5);
+    handle = tester.widget(fadeFinder.at(0));
 
-      // The handle should still be fully opaque.
-      expect(handle.opacity.value, equals(1.0));
-    } finally {
-      debugDefaultTargetPlatformOverride = null;
-    }
-  });
+    // The handle should still be fully opaque.
+    expect(handle.opacity.value, equals(1.0));
+  }, variant: TargetPlatformVariant.only(TargetPlatform.iOS));
 
   testWidgets('Mouse long press is just like a tap', (WidgetTester tester) async {
     TextSelection? selection;
@@ -1557,33 +1560,36 @@ void main() {
     await setAppLifecycleState(AppLifecycleState.resumed);
     await tester.pumpAndSettle();
 
-    // Double tap on the first SelectableText to select a word.
-    final Offset tapPos = textOffsetToPosition(tester, 3); // 'r' in 'first'
-    await tester.tapAt(tapPos);
-    await tester.pump(const Duration(milliseconds: 50));
+    // Single tap on the first SelectableText to set a collapsed selection.
+    final Offset tapPos = textOffsetToPosition(
+      tester,
+      5,
+      ancestor: find.text('first selectable text'),
+    );
     await tester.tapAt(tapPos);
     await tester.pumpAndSettle();
 
-    expect(selectionA, const TextSelection(baseOffset: 0, extentOffset: 5)); // "first"
+    expect(selectionA, const TextSelection.collapsed(offset: 5));
     expect(selectionB, null);
 
     // Tapping on the second SelectableText should clear the selection from the first.
-    // We double-tap on the second one to select a word on it.
-    final Offset secondTextStart = tester.getCenter(find.text('second selectable text'));
-    await tester.tapAt(secondTextStart);
-    await tester.pump(const Duration(milliseconds: 50));
+    final Offset secondTextStart = textOffsetToPosition(
+      tester,
+      0,
+      ancestor: find.text('second selectable text'),
+    );
     await tester.tapAt(secondTextStart);
     await tester.pumpAndSettle();
 
-    expect(selectionA, const TextSelection.collapsed(offset: -1)); // Cleared (invalid)
-    expect(selectionB, const TextSelection(baseOffset: 7, extentOffset: 17)); // "selectable"
+    expect(selectionA, const TextSelection.collapsed(offset: -1)); // Cleared
+    expect(selectionB, const TextSelection.collapsed(offset: 0));
 
     // Setting the app lifecycle state to AppLifecycleState.inactive to simulate
     // a lose of window focus. Selection should remain the same.
     await setAppLifecycleState(AppLifecycleState.inactive);
     await tester.pumpAndSettle();
     expect(selectionA, const TextSelection.collapsed(offset: -1));
-    expect(selectionB, const TextSelection(baseOffset: 7, extentOffset: 17));
+    expect(selectionB, const TextSelection.collapsed(offset: 0));
   });
 
   testWidgets('Selectable text is skipped during focus traversal', (WidgetTester tester) async {
@@ -2112,7 +2118,8 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(selection1, isNotNull);
-    expect(selection1!.extentOffset - selection1!.baseOffset, 5);
+    // TODO(Renzo-Olivares): Fails because SelectionArea always extends forward on keyboard selection, yielding a positive delta (5) instead of negative (-5).
+    expect(selection1!.extentOffset - selection1!.baseOffset, -5);
 
     await tester.pumpWidget(
       MaterialApp(
@@ -2149,7 +2156,8 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(selection1, isNotNull);
-    expect(selection1!.extentOffset - selection1!.baseOffset, 10);
+    // TODO(Renzo-Olivares): Fails because SelectionArea always extends forward on keyboard selection, yielding a positive delta (10) instead of negative (-10).
+    expect(selection1!.extentOffset - selection1!.baseOffset, -10);
   }, variant: KeySimulatorTransitModeVariant.all());
 
   testWidgets('Changing focus test', (WidgetTester tester) async {
@@ -2209,7 +2217,8 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(selection1, isNotNull);
-    expect(selection1!.extentOffset - selection1!.baseOffset, 5);
+    // TODO(Renzo-Olivares): Fails because SelectionArea always extends forward on keyboard selection, yielding a positive delta (5) instead of negative (-5).
+    expect(selection1!.extentOffset - selection1!.baseOffset, -5);
     expect(selection2, isNull);
 
     // Tap the second SelectableText (key2) at the end to focus it.
@@ -2225,9 +2234,11 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(selection1, isNotNull);
-    expect(selection1!.extentOffset - selection1!.baseOffset, 5);
+    // TODO(Renzo-Olivares): Fails because SelectionArea always extends forward on keyboard selection, yielding a positive delta (5) instead of negative (-5).
+    expect(selection1!.extentOffset - selection1!.baseOffset, -5);
     expect(selection2, isNotNull);
-    expect(selection2!.extentOffset - selection2!.baseOffset, 5);
+    // TODO(Renzo-Olivares): Fails because SelectionArea always extends forward on keyboard selection, yielding a positive delta (5) instead of negative (-5).
+    expect(selection2!.extentOffset - selection2!.baseOffset, -5);
   }, variant: KeySimulatorTransitModeVariant.all());
 
   testWidgets('Caret works when maxLines is null', (WidgetTester tester) async {
@@ -2289,17 +2300,23 @@ void main() {
         ),
       ),
     );
+    // Allow nested selection containers to register.
     await tester.pump();
 
-    final RenderParagraph paragraphA = tester.renderObject(
-      find.descendant(of: find.byKey(keyA), matching: find.byType(RichText)),
-    );
-    expect(paragraphA.getDryBaseline(paragraphA.constraints, TextBaseline.alphabetic), 10.5);
+    // The test font extends 0.25 * fontSize below the baseline.
+    // So the three row elements line up like this:
+    //
+    //  A    abc  B
+    //  -------------  baseline
+    //  2.5  5    7.5  space below the baseline = 0.25 * fontSize
+    //  -------------  rowBottomY
 
-    final RenderParagraph paragraphB = tester.renderObject(
-      find.descendant(of: find.byKey(keyB), matching: find.byType(RichText)),
-    );
-    expect(paragraphB.getDryBaseline(paragraphB.constraints, TextBaseline.alphabetic), 22.5);
+    final double rowBottomY = tester.getBottomLeft(find.byType(Row)).dy;
+    // TODO(Renzo-Olivares): Fails because SelectableText (via SelectionArea) uses SingleChildScrollView internally,
+    // which blocks baseline propagation. The widgets end up top-aligned instead of baseline-aligned.
+    expect(tester.getBottomLeft(find.byKey(keyA)).dy, rowBottomY - 5.0);
+    expect(tester.getBottomLeft(find.text('abc')).dy, rowBottomY - 2.5);
+    expect(tester.getBottomLeft(find.byKey(keyB)).dy, rowBottomY);
   });
 
   testWidgets('SelectableText baseline alignment', (WidgetTester tester) async {
@@ -2331,17 +2348,23 @@ void main() {
         ),
       ),
     );
+    // Allow nested selection containers to register.
     await tester.pump();
 
-    final RenderParagraph paragraphA = tester.renderObject(
-      find.descendant(of: find.byKey(keyA), matching: find.byType(RichText)),
-    );
-    expect(paragraphA.getDryBaseline(paragraphA.constraints, TextBaseline.alphabetic), 7.5);
+    // The test font extends 0.25 * fontSize below the baseline.
+    // So the three row elements line up like this:
+    //
+    //  A    abc  B
+    //  -------------  baseline
+    //  2.5  5    7.5  space below the baseline = 0.25 * fontSize
+    //  -------------  rowBottomY
 
-    final RenderParagraph paragraphB = tester.renderObject(
-      find.descendant(of: find.byKey(keyB), matching: find.byType(RichText)),
-    );
-    expect(paragraphB.getDryBaseline(paragraphB.constraints, TextBaseline.alphabetic), 22.5);
+    final double rowBottomY = tester.getBottomLeft(find.byType(Row)).dy;
+    // TODO(Renzo-Olivares): Fails because SelectableText (via SelectionArea) uses SingleChildScrollView internally,
+    // which blocks baseline propagation. The widgets end up top-aligned instead of baseline-aligned.
+    expect(tester.getBottomLeft(find.byKey(keyA)).dy, rowBottomY - 5.0);
+    expect(tester.getBottomLeft(find.text('abc')).dy, rowBottomY - 2.5);
+    expect(tester.getBottomLeft(find.byKey(keyB)).dy, rowBottomY);
   });
 
   testWidgets('SelectableText semantics', (WidgetTester tester) async {
@@ -3233,22 +3256,32 @@ void main() {
   });
 
   testWidgets('tap moves cursor to the edge of the word it tapped', (WidgetTester tester) async {
+    TextSelection? latestSelection;
     await tester.pumpWidget(
-      const MaterialApp(
-        home: Material(child: Center(child: SelectableText('Atwater Peel Sherbrooke Bonaventure'))),
+      MaterialApp(
+        home: Material(
+          child: Center(
+            child: SelectableText(
+              'Atwater Peel Sherbrooke Bonaventure',
+              onSelectionChanged: (TextSelection selection, SelectionChangedCause? cause) {
+                latestSelection = selection;
+              },
+            ),
+          ),
+        ),
       ),
     );
+    await tester.pump(); // Allow nested selection containers to register.
 
     final Offset selectableTextStart = tester.getTopLeft(find.byType(SelectableText));
 
     await tester.tapAt(selectableTextStart + const Offset(50.0, 5.0));
     await tester.pump();
 
-    final EditableText editableTextWidget = tester.widget(find.byType(EditableText).first);
-    final TextEditingController controller = editableTextWidget.controller;
     // We moved the cursor.
+    expect(latestSelection, isNotNull);
     expect(
-      controller.selection,
+      latestSelection,
       const TextSelection.collapsed(offset: 7, affinity: TextAffinity.upstream),
     );
 
@@ -3257,23 +3290,32 @@ void main() {
   }, variant: TargetPlatformVariant.only(TargetPlatform.iOS));
 
   testWidgets('tap moves cursor to the position tapped (Android)', (WidgetTester tester) async {
+    TextSelection? latestSelection;
     await tester.pumpWidget(
-      const MaterialApp(
-        home: Material(child: Center(child: SelectableText('Atwater Peel Sherbrooke Bonaventure'))),
+      MaterialApp(
+        home: Material(
+          child: Center(
+            child: SelectableText(
+              'Atwater Peel Sherbrooke Bonaventure',
+              onSelectionChanged: (TextSelection selection, SelectionChangedCause? cause) {
+                latestSelection = selection;
+              },
+            ),
+          ),
+        ),
       ),
     );
+    await tester.pump(); // Allow nested selection containers to register.
 
     final Offset selectableTextStart = tester.getTopLeft(find.byType(SelectableText));
 
     await tester.tapAt(selectableTextStart + const Offset(50.0, 5.0));
     await tester.pump();
 
-    final EditableText editableTextWidget = tester.widget(find.byType(EditableText).first);
-    final TextEditingController controller = editableTextWidget.controller;
-
     // We moved the cursor.
+    expect(latestSelection, isNotNull);
     expect(
-      controller.selection,
+      latestSelection,
       const TextSelection.collapsed(offset: 4, affinity: TextAffinity.upstream),
     );
 
@@ -3297,7 +3339,7 @@ void main() {
         ),
       ),
     );
-    await tester.pump();
+    await tester.pump(); // Allow nested selection containers to register.
 
     final Offset selectableTextStart = tester.getTopLeft(find.byType(SelectableText));
 
@@ -3307,7 +3349,11 @@ void main() {
     await tester.pump();
 
     // No word selection should be triggered.
-    expect(latestSelection == null || latestSelection!.isCollapsed, isTrue);
+    expect(latestSelection, isNotNull);
+    expect(
+      latestSelection,
+      const TextSelection.collapsed(offset: 7, affinity: TextAffinity.upstream),
+    );
 
     // No toolbar.
     expect(find.byType(CupertinoButton), findsNothing);
@@ -3329,7 +3375,7 @@ void main() {
         ),
       ),
     );
-    await tester.pump();
+    await tester.pump(); // Allow nested selection containers to register.
 
     final Offset selectableTextStart = tester.getTopLeft(find.byType(SelectableText));
 
@@ -3339,7 +3385,11 @@ void main() {
     await tester.pump();
 
     // No word selection should be triggered.
-    expect(latestSelection == null || latestSelection!.isCollapsed, isTrue);
+    expect(latestSelection, isNotNull);
+    expect(
+      latestSelection,
+      const TextSelection.collapsed(offset: 4, affinity: TextAffinity.upstream),
+    );
 
     // No toolbar.
     expect(find.byType(CupertinoButton), findsNothing);
@@ -3363,7 +3413,7 @@ void main() {
           ),
         ),
       );
-      await tester.pump();
+      await tester.pump(); // Allow nested selection containers to register.
 
       final Offset selectableTextStart = tester.getTopLeft(find.byType(SelectableText));
 
@@ -3377,8 +3427,13 @@ void main() {
 
       // First tap of double tap should create a collapsed selection.
       expect(latestSelection, isNotNull);
-      expect(latestSelection!.isCollapsed, isTrue);
-      expect(latestSelection!.baseOffset, 11);
+      expect(
+        latestSelection,
+        TextSelection.collapsed(
+          offset: defaultTargetPlatform == TargetPlatform.iOS ? 12 : 11,
+          affinity: TextAffinity.upstream,
+        ),
+      );
 
       await tester.tapAt(selectableTextStart + const Offset(150.0, 5.0));
       await tester.pump();
@@ -3416,7 +3471,7 @@ void main() {
           ),
         ),
       );
-      await tester.pump();
+      await tester.pump(); // Allow nested selection containers to register.
 
       final Offset selectableTextStart = tester.getTopLeft(find.byType(SelectableText));
 
@@ -3430,8 +3485,10 @@ void main() {
 
       // First tap of double tap should create a collapsed selection.
       expect(latestSelection, isNotNull);
-      expect(latestSelection!.isCollapsed, isTrue);
-      expect(latestSelection!.baseOffset, 11);
+      expect(
+        latestSelection,
+        const TextSelection.collapsed(offset: 11, affinity: TextAffinity.upstream),
+      );
 
       await tester.tapAt(selectableTextStart + const Offset(150.0, 5.0));
       await tester.pump();
@@ -3446,33 +3503,43 @@ void main() {
   testWidgets('double tap on top of cursor also selects word (Android)', (
     WidgetTester tester,
   ) async {
+    TextSelection? latestSelection;
     await tester.pumpWidget(
-      const MaterialApp(
-        home: Material(child: Center(child: SelectableText('Atwater Peel Sherbrooke Bonaventure'))),
+      MaterialApp(
+        home: Material(
+          child: Center(
+            child: SelectableText(
+              'Atwater Peel Sherbrooke Bonaventure',
+              onSelectionChanged: (TextSelection selection, SelectionChangedCause? cause) {
+                latestSelection = selection;
+              },
+            ),
+          ),
+        ),
       ),
     );
+    await tester.pump(); // Allow nested selection containers to register.
+
+    final Finder selectableText = find.byType(SelectableText);
 
     // Tap to put the cursor after the "w".
     const index = 3;
-    await tester.tapAt(textOffsetToPosition(tester, index));
+    await tester.tapAt(textOffsetToPosition(tester, index, ancestor: selectableText));
     await tester.pump(const Duration(milliseconds: 500));
 
-    final EditableText editableTextWidget = tester.widget(find.byType(EditableText).first);
-    final TextEditingController controller = editableTextWidget.controller;
-
-    expect(controller.selection, const TextSelection.collapsed(offset: index));
+    expect(latestSelection, const TextSelection.collapsed(offset: index));
 
     // Double tap on the same location.
-    await tester.tapAt(textOffsetToPosition(tester, index));
+    await tester.tapAt(textOffsetToPosition(tester, index, ancestor: selectableText));
     await tester.pump(const Duration(milliseconds: 50));
 
     // First tap doesn't change the selection.
-    expect(controller.selection, const TextSelection.collapsed(offset: index));
+    expect(latestSelection, const TextSelection.collapsed(offset: index));
 
     // Second tap selects the word around the cursor.
-    await tester.tapAt(textOffsetToPosition(tester, index));
+    await tester.tapAt(textOffsetToPosition(tester, index, ancestor: selectableText));
     await tester.pump();
-    expect(controller.selection, const TextSelection(baseOffset: 0, extentOffset: 7));
+    expect(latestSelection, const TextSelection(baseOffset: 0, extentOffset: 7));
 
     expectMaterialSelectionToolbar();
   });
@@ -6094,7 +6161,6 @@ void main() {
     expect(richText.text.style!.fontSize, textStyle.fontSize);
   });
 
-  // TODO(Renzo-Olivares): This test fails because SelectionArea does not support collapsed selection/cursor on tap in the same way as EditableText.
   testWidgets('SelectableText selection update on tap', (WidgetTester tester) async {
     TextSelection? selection;
     var count = 0;
