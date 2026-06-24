@@ -481,6 +481,9 @@ class _SelectableTextState extends State<SelectableText> {
 
   late final SelectionListenerNotifier _selectionNotifier;
 
+  // To match EditableText's internal scrollable.
+  bool get _isMultiline => widget.maxLines != 1;
+
   @override
   void initState() {
     super.initState();
@@ -583,10 +586,19 @@ class _SelectableTextState extends State<SelectableText> {
       );
     }
 
-    Widget scrollableChild = SingleChildScrollView(
-      physics: widget.scrollPhysics,
-      dragStartBehavior: widget.dragStartBehavior,
-      child: textWidgetWithTap,
+    Widget scrollableChild = ScrollConfiguration(
+      // To match EditableText's internal scrollable.
+      behavior:
+          widget.scrollBehavior ??
+          ScrollConfiguration.of(context).copyWith(scrollbars: _isMultiline, overscroll: false),
+      child: SingleChildScrollView(
+        // To match EditableText's internal scrollable.
+        scrollDirection: _isMultiline ? Axis.vertical : Axis.horizontal,
+        // end.
+        physics: widget.scrollPhysics,
+        dragStartBehavior: widget.dragStartBehavior,
+        child: textWidgetWithTap,
+      ),
     );
 
     if (widget.scrollBehavior != null) {
