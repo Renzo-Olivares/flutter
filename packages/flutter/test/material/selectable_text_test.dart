@@ -5391,9 +5391,8 @@ void main() {
 
     expect(spyTaps, 0);
 
-    // Tap at 'l' in 'Peel' (index 11).
-    final Offset peelPos = textOffsetToPosition(tester, 11);
-    await tester.tapAt(peelPos);
+    final Offset selectableTextStart = tester.getTopLeft(find.byType(SelectableText));
+    await tester.tapAt(selectableTextStart + const Offset(150.0, 5.0));
     await tester.pumpAndSettle();
 
     expect(spyTaps, 1);
@@ -5402,10 +5401,12 @@ void main() {
     await tester.pump(const Duration(seconds: 1));
 
     // Starts a long press at the same location.
-    final TestGesture gesture = await tester.startGesture(peelPos);
+    final TestGesture gesture = await tester.startGesture(
+      selectableTextStart + const Offset(150.0, 5.0),
+    );
     await tester.pump(const Duration(milliseconds: 500));
     await gesture.up();
-    await tester.pumpAndSettle();
+    await tester.pump();
 
     // Long press still triggers selection.
     expect(selection, const TextSelection(baseOffset: 8, extentOffset: 12));
@@ -5452,22 +5453,22 @@ void main() {
     await tester.pump();
 
     expect(spyLongPress, 0);
+    final Offset selectableTextStart = tester.getTopLeft(find.byType(SelectableText));
 
-    // Tap at 'l' in 'Peel' (index 11).
-    final Offset peelPos = textOffsetToPosition(tester, 11);
-    await tester.tapAt(peelPos);
-    await tester.pumpAndSettle();
+    await tester.tapAt(selectableTextStart + const Offset(150.0, 5.0));
 
     expect(spyLongPress, 0);
 
     // Waits for a while to avoid double taps.
     await tester.pump(const Duration(seconds: 1));
 
-    // Starts a long press at the same location.
-    final TestGesture gesture = await tester.startGesture(peelPos);
+    // Starts a long press.
+    final TestGesture gesture = await tester.startGesture(
+      selectableTextStart + const Offset(150.0, 5.0),
+    );
     await tester.pump(const Duration(milliseconds: 500));
     await gesture.up();
-    await tester.pumpAndSettle();
+    await tester.pump();
 
     // Long press does not trigger selection if there is text span with long
     // press recognizer.
