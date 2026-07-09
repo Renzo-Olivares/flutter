@@ -557,7 +557,9 @@ class _SelectableTextState extends State<SelectableText> {
             textAlign: widget.textAlign ?? defaultTextStyle.textAlign ?? TextAlign.start,
             textDirection: widget.textDirection,
             textScaler: effectiveScaler,
-            maxLines: widget.maxLines ?? defaultTextStyle.maxLines,
+            // PROTOTYPE: multiline maxLines must not truncate layout; the
+            // viewport height constraint below provides the maxLines behavior.
+            maxLines: _isMultiline ? null : 1,
             selectionColor: widget.selectionColor ?? selectionStyle.selectionColor,
             textWidthBasis: widget.textWidthBasis ?? defaultTextStyle.textWidthBasis,
             textHeightBehavior: widget.textHeightBehavior ?? defaultTextStyle.textHeightBehavior,
@@ -570,7 +572,9 @@ class _SelectableTextState extends State<SelectableText> {
             textAlign: widget.textAlign ?? defaultTextStyle.textAlign ?? TextAlign.start,
             textDirection: widget.textDirection,
             textScaler: effectiveScaler,
-            maxLines: widget.maxLines ?? defaultTextStyle.maxLines,
+            // PROTOTYPE: multiline maxLines must not truncate layout; the
+            // viewport height constraint below provides the maxLines behavior.
+            maxLines: _isMultiline ? null : 1,
             selectionColor: widget.selectionColor ?? selectionStyle.selectionColor,
             textWidthBasis: widget.textWidthBasis ?? defaultTextStyle.textWidthBasis,
             textHeightBehavior: widget.textHeightBehavior ?? defaultTextStyle.textHeightBehavior,
@@ -604,6 +608,31 @@ class _SelectableTextState extends State<SelectableText> {
     if (widget.scrollBehavior != null) {
       scrollableChild = ScrollConfiguration(
         behavior: widget.scrollBehavior!,
+        child: scrollableChild,
+      );
+    }
+
+    // PROTOTYPE: mirror RenderEditable._preferredHeight — the viewport is
+    // clamped to [minLines, maxLines] line heights while the full text is
+    // laid out inside the scrollable. Like RenderEditable, minLines defaults
+    // to maxLines, so `maxLines: 2` alone yields a fixed two-line-tall box.
+    if (_isMultiline && (widget.maxLines != null || widget.minLines != null)) {
+      final painter = TextPainter(
+        text: TextSpan(text: ' ', style: effectiveTextStyle),
+        textDirection: widget.textDirection ?? Directionality.of(context),
+        textScaler: effectiveScaler ?? MediaQuery.textScalerOf(context),
+        strutStyle: widget.strutStyle,
+        textHeightBehavior: widget.textHeightBehavior ?? defaultTextStyle.textHeightBehavior,
+      );
+      final double lineHeight = painter.preferredLineHeight;
+      painter.dispose();
+      final int? maxLines = widget.maxLines;
+      final int? minLines = widget.minLines ?? maxLines;
+      scrollableChild = ConstrainedBox(
+        constraints: BoxConstraints(
+          minHeight: lineHeight * (minLines ?? 0),
+          maxHeight: maxLines == null ? double.infinity : lineHeight * maxLines,
+        ),
         child: scrollableChild,
       );
     }
