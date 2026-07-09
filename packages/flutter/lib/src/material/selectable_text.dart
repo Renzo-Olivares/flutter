@@ -404,7 +404,9 @@ class SelectableText extends StatefulWidget {
     BuildContext context,
     EditableTextState editableTextState,
   ) {
-    return AdaptiveTextSelectionToolbar.editableText(editableTextState: editableTextState);
+    return AdaptiveTextSelectionToolbar.editableText(
+      editableTextState: editableTextState,
+    );
   }
 
   /// The configuration for the magnifier used when the text is selected.
@@ -422,26 +424,80 @@ class SelectableText extends StatefulWidget {
   @override
   void debugFillProperties(DiagnosticPropertiesBuilder properties) {
     super.debugFillProperties(properties);
-    properties.add(DiagnosticsProperty<String>('data', data, defaultValue: null));
     properties.add(
-      DiagnosticsProperty<String>('semanticsLabel', semanticsLabel, defaultValue: null),
+      DiagnosticsProperty<String>('data', data, defaultValue: null),
     );
-    properties.add(DiagnosticsProperty<FocusNode>('focusNode', focusNode, defaultValue: null));
-    properties.add(DiagnosticsProperty<TextStyle>('style', style, defaultValue: null));
-    properties.add(DiagnosticsProperty<bool>('autofocus', autofocus, defaultValue: false));
-    properties.add(DiagnosticsProperty<bool>('showCursor', showCursor, defaultValue: false));
+    properties.add(
+      DiagnosticsProperty<String>(
+        'semanticsLabel',
+        semanticsLabel,
+        defaultValue: null,
+      ),
+    );
+    properties.add(
+      DiagnosticsProperty<FocusNode>(
+        'focusNode',
+        focusNode,
+        defaultValue: null,
+      ),
+    );
+    properties.add(
+      DiagnosticsProperty<TextStyle>('style', style, defaultValue: null),
+    );
+    properties.add(
+      DiagnosticsProperty<bool>('autofocus', autofocus, defaultValue: false),
+    );
+    properties.add(
+      DiagnosticsProperty<bool>('showCursor', showCursor, defaultValue: false),
+    );
     properties.add(IntProperty('minLines', minLines, defaultValue: null));
     properties.add(IntProperty('maxLines', maxLines, defaultValue: null));
-    properties.add(EnumProperty<TextAlign>('textAlign', textAlign, defaultValue: null));
-    properties.add(EnumProperty<TextDirection>('textDirection', textDirection, defaultValue: null));
-    properties.add(DoubleProperty('textScaleFactor', textScaleFactor, defaultValue: null));
-    properties.add(DiagnosticsProperty<TextScaler>('textScaler', textScaler, defaultValue: null));
-    properties.add(DoubleProperty('cursorWidth', cursorWidth, defaultValue: 2.0));
-    properties.add(DoubleProperty('cursorHeight', cursorHeight, defaultValue: null));
-    properties.add(DiagnosticsProperty<Radius>('cursorRadius', cursorRadius, defaultValue: null));
-    properties.add(DiagnosticsProperty<Color>('cursorColor', cursorColor, defaultValue: null));
     properties.add(
-      DiagnosticsProperty<Color>('selectionColor', selectionColor, defaultValue: null),
+      EnumProperty<TextAlign>('textAlign', textAlign, defaultValue: null),
+    );
+    properties.add(
+      EnumProperty<TextDirection>(
+        'textDirection',
+        textDirection,
+        defaultValue: null,
+      ),
+    );
+    properties.add(
+      DoubleProperty('textScaleFactor', textScaleFactor, defaultValue: null),
+    );
+    properties.add(
+      DiagnosticsProperty<TextScaler>(
+        'textScaler',
+        textScaler,
+        defaultValue: null,
+      ),
+    );
+    properties.add(
+      DoubleProperty('cursorWidth', cursorWidth, defaultValue: 2.0),
+    );
+    properties.add(
+      DoubleProperty('cursorHeight', cursorHeight, defaultValue: null),
+    );
+    properties.add(
+      DiagnosticsProperty<Radius>(
+        'cursorRadius',
+        cursorRadius,
+        defaultValue: null,
+      ),
+    );
+    properties.add(
+      DiagnosticsProperty<Color>(
+        'cursorColor',
+        cursorColor,
+        defaultValue: null,
+      ),
+    );
+    properties.add(
+      DiagnosticsProperty<Color>(
+        'selectionColor',
+        selectionColor,
+        defaultValue: null,
+      ),
     );
     properties.add(
       FlagProperty(
@@ -459,10 +515,18 @@ class SelectableText extends StatefulWidget {
       ),
     );
     properties.add(
-      DiagnosticsProperty<ScrollPhysics>('scrollPhysics', scrollPhysics, defaultValue: null),
+      DiagnosticsProperty<ScrollPhysics>(
+        'scrollPhysics',
+        scrollPhysics,
+        defaultValue: null,
+      ),
     );
     properties.add(
-      DiagnosticsProperty<ScrollBehavior>('scrollBehavior', scrollBehavior, defaultValue: null),
+      DiagnosticsProperty<ScrollBehavior>(
+        'scrollBehavior',
+        scrollBehavior,
+        defaultValue: null,
+      ),
     );
     properties.add(
       DiagnosticsProperty<TextHeightBehavior>(
@@ -516,7 +580,10 @@ class _SelectableTextState extends State<SelectableText> {
         );
         widget.onSelectionChanged!(selection, null);
       } else {
-        widget.onSelectionChanged!(const TextSelection.collapsed(offset: -1), null);
+        widget.onSelectionChanged!(
+          const TextSelection.collapsed(offset: -1),
+          null,
+        );
       }
     }
   }
@@ -528,19 +595,25 @@ class _SelectableTextState extends State<SelectableText> {
     assert(
       !(widget.style != null &&
           !widget.style!.inherit &&
-          (widget.style!.fontSize == null || widget.style!.textBaseline == null)),
+          (widget.style!.fontSize == null ||
+              widget.style!.textBaseline == null)),
       'inherit false style must supply fontSize and textBaseline',
     );
 
-    final DefaultSelectionStyle selectionStyle = DefaultSelectionStyle.of(context);
+    final DefaultSelectionStyle selectionStyle = DefaultSelectionStyle.of(
+      context,
+    );
     final FocusNode focusNode = _effectiveFocusNode;
 
-    final TextSelectionControls? textSelectionControls = widget.selectionControls;
+    final TextSelectionControls? textSelectionControls =
+        widget.selectionControls;
 
     final DefaultTextStyle defaultTextStyle = DefaultTextStyle.of(context);
     TextStyle? effectiveTextStyle = widget.style;
     if (effectiveTextStyle == null || effectiveTextStyle.inherit) {
-      effectiveTextStyle = defaultTextStyle.style.merge(widget.style ?? widget.textSpan?.style);
+      effectiveTextStyle = defaultTextStyle.style.merge(
+        widget.style ?? widget.textSpan?.style,
+      );
     }
     final TextScaler? effectiveScaler =
         widget.textScaler ??
@@ -554,30 +627,44 @@ class _SelectableTextState extends State<SelectableText> {
             widget.textSpan!,
             style: effectiveTextStyle,
             strutStyle: widget.strutStyle,
-            textAlign: widget.textAlign ?? defaultTextStyle.textAlign ?? TextAlign.start,
+            textAlign:
+                widget.textAlign ??
+                defaultTextStyle.textAlign ??
+                TextAlign.start,
             textDirection: widget.textDirection,
             textScaler: effectiveScaler,
             // PROTOTYPE: multiline maxLines must not truncate layout; the
             // viewport height constraint below provides the maxLines behavior.
             maxLines: _isMultiline ? null : 1,
-            selectionColor: widget.selectionColor ?? selectionStyle.selectionColor,
-            textWidthBasis: widget.textWidthBasis ?? defaultTextStyle.textWidthBasis,
-            textHeightBehavior: widget.textHeightBehavior ?? defaultTextStyle.textHeightBehavior,
+            selectionColor:
+                widget.selectionColor ?? selectionStyle.selectionColor,
+            textWidthBasis:
+                widget.textWidthBasis ?? defaultTextStyle.textWidthBasis,
+            textHeightBehavior:
+                widget.textHeightBehavior ??
+                defaultTextStyle.textHeightBehavior,
             semanticsLabel: widget.semanticsLabel,
           )
         : Text(
             widget.data!,
             style: effectiveTextStyle,
             strutStyle: widget.strutStyle,
-            textAlign: widget.textAlign ?? defaultTextStyle.textAlign ?? TextAlign.start,
+            textAlign:
+                widget.textAlign ??
+                defaultTextStyle.textAlign ??
+                TextAlign.start,
             textDirection: widget.textDirection,
             textScaler: effectiveScaler,
             // PROTOTYPE: multiline maxLines must not truncate layout; the
             // viewport height constraint below provides the maxLines behavior.
             maxLines: _isMultiline ? null : 1,
-            selectionColor: widget.selectionColor ?? selectionStyle.selectionColor,
-            textWidthBasis: widget.textWidthBasis ?? defaultTextStyle.textWidthBasis,
-            textHeightBehavior: widget.textHeightBehavior ?? defaultTextStyle.textHeightBehavior,
+            selectionColor:
+                widget.selectionColor ?? selectionStyle.selectionColor,
+            textWidthBasis:
+                widget.textWidthBasis ?? defaultTextStyle.textWidthBasis,
+            textHeightBehavior:
+                widget.textHeightBehavior ??
+                defaultTextStyle.textHeightBehavior,
             semanticsLabel: widget.semanticsLabel,
           );
 
@@ -594,7 +681,9 @@ class _SelectableTextState extends State<SelectableText> {
       // To match EditableText's internal scrollable.
       behavior:
           widget.scrollBehavior ??
-          ScrollConfiguration.of(context).copyWith(scrollbars: _isMultiline, overscroll: false),
+          ScrollConfiguration.of(
+            context,
+          ).copyWith(scrollbars: _isMultiline, overscroll: false),
       child: SingleChildScrollView(
         // To match EditableText's internal scrollable.
         scrollDirection: _isMultiline ? Axis.vertical : Axis.horizontal,
@@ -604,13 +693,6 @@ class _SelectableTextState extends State<SelectableText> {
         child: textWidgetWithTap,
       ),
     );
-
-    if (widget.scrollBehavior != null) {
-      scrollableChild = ScrollConfiguration(
-        behavior: widget.scrollBehavior!,
-        child: scrollableChild,
-      );
-    }
 
     // PROTOTYPE: mirror RenderEditable._preferredHeight — the viewport is
     // clamped to [minLines, maxLines] line heights while the full text is
@@ -622,7 +704,8 @@ class _SelectableTextState extends State<SelectableText> {
         textDirection: widget.textDirection ?? Directionality.of(context),
         textScaler: effectiveScaler ?? MediaQuery.textScalerOf(context),
         strutStyle: widget.strutStyle,
-        textHeightBehavior: widget.textHeightBehavior ?? defaultTextStyle.textHeightBehavior,
+        textHeightBehavior:
+            widget.textHeightBehavior ?? defaultTextStyle.textHeightBehavior,
       );
       final double lineHeight = painter.preferredLineHeight;
       painter.dispose();
@@ -645,7 +728,10 @@ class _SelectableTextState extends State<SelectableText> {
         selectionControls: textSelectionControls,
         magnifierConfiguration: widget.magnifierConfiguration,
         contextMenuBuilder: _adaptContextMenuBuilder,
-        child: SelectionListener(selectionNotifier: _selectionNotifier, child: scrollableChild),
+        child: SelectionListener(
+          selectionNotifier: _selectionNotifier,
+          child: scrollableChild,
+        ),
       );
     } else {
       result = SelectionContainer.disabled(child: scrollableChild);
