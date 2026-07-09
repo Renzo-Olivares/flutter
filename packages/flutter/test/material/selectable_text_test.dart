@@ -23,8 +23,6 @@ import 'package:leak_tracker_flutter_testing/leak_tracker_flutter_testing.dart';
 import '../widgets/clipboard_utils.dart';
 import '../widgets/semantics_tester.dart';
 
-// Imported helper removed, implemented locally below.
-
 class MaterialLocalizationsDelegate extends LocalizationsDelegate<MaterialLocalizations> {
   @override
   bool isSupported(Locale locale) => true;
@@ -193,6 +191,9 @@ void main() {
     }
   }
 
+  // Check that the Material text selection toolbar is the expected one.
+  // TODO(bleroux): Try to merge this into text_selection_toolbar_utils.dart
+  //                (for instance by adding a 'readOnly' flag).
   void expectMaterialSelectionToolbar() {
     if (defaultTargetPlatform == TargetPlatform.android) {
       expect(find.byType(TextButton), findsNWidgets(3));
@@ -538,32 +539,28 @@ void main() {
     expect(findRenderParagraph(tester).textHeightBehavior, textHeightBehavior);
   });
 
-  testWidgets(
-    'Cursor blinks when showCursor is true',
-    (WidgetTester tester) async {
-      await tester.pumpWidget(overlay(child: const SelectableText('some text', showCursor: true)));
-      await tester.tap(find.byType(SelectableText));
-      await tester.idle();
+  // TODO(Renzo-Olivares): Cursor not supported by SelectionArea.
+  testWidgets('Cursor blinks when showCursor is true', (WidgetTester tester) async {
+    await tester.pumpWidget(overlay(child: const SelectableText('some text', showCursor: true)));
+    await tester.tap(find.byType(SelectableText));
+    await tester.idle();
 
-      final EditableTextState editableText = tester.state(find.byType(EditableText));
+    final EditableTextState editableText = tester.state(find.byType(EditableText));
 
-      // Check that the cursor visibility toggles after each blink interval.
-      final bool initialShowCursor = editableText.cursorCurrentlyVisible;
-      await tester.pump(editableText.cursorBlinkInterval);
-      expect(editableText.cursorCurrentlyVisible, equals(!initialShowCursor));
-      await tester.pump(editableText.cursorBlinkInterval);
-      expect(editableText.cursorCurrentlyVisible, equals(initialShowCursor));
-      await tester.pump(editableText.cursorBlinkInterval ~/ 10);
-      expect(editableText.cursorCurrentlyVisible, equals(initialShowCursor));
-      await tester.pump(editableText.cursorBlinkInterval);
-      expect(editableText.cursorCurrentlyVisible, equals(!initialShowCursor));
-      await tester.pump(editableText.cursorBlinkInterval);
-      expect(editableText.cursorCurrentlyVisible, equals(initialShowCursor));
-    },
-    // TODO(Renzo-Olivares): Cursor not supported by SelectionArea
-  );
+    // Check that the cursor visibility toggles after each blink interval.
+    final bool initialShowCursor = editableText.cursorCurrentlyVisible;
+    await tester.pump(editableText.cursorBlinkInterval);
+    expect(editableText.cursorCurrentlyVisible, equals(!initialShowCursor));
+    await tester.pump(editableText.cursorBlinkInterval);
+    expect(editableText.cursorCurrentlyVisible, equals(initialShowCursor));
+    await tester.pump(editableText.cursorBlinkInterval ~/ 10);
+    expect(editableText.cursorCurrentlyVisible, equals(initialShowCursor));
+    await tester.pump(editableText.cursorBlinkInterval);
+    expect(editableText.cursorCurrentlyVisible, equals(!initialShowCursor));
+    await tester.pump(editableText.cursorBlinkInterval);
+    expect(editableText.cursorCurrentlyVisible, equals(initialShowCursor));
+  });
 
-  // TODO(Renzo-Olivares): Fails because SelectionArea might not show 'Select all' button.
   testWidgets('selectable text selection toolbar renders correctly inside opacity', (
     WidgetTester tester,
   ) async {
@@ -1008,6 +1005,8 @@ void main() {
     expect(endpoints.length, 2);
 
     // Drag the right handle 2 letters to the right.
+    // We use a small offset because the endpoint is on the very corner
+    // of the handle.
     Offset handlePos = endpoints[1].point + const Offset(1.0, 1.0);
     Offset newHandlePos = textOffsetToPosition(tester, 11);
     gesture = await tester.startGesture(handlePos, pointer: 7);
@@ -1066,6 +1065,8 @@ void main() {
     newSelection = null;
 
     // Drag the right handle 2 letters to the right.
+    // We use a small offset because the endpoint is on the very corner
+    // of the handle.
     final Offset handlePos = endpoints[1].point + const Offset(1.0, 1.0);
     final Offset newHandlePos = textOffsetToPosition(tester, 9);
     gesture = await tester.startGesture(handlePos, pointer: 7);
@@ -3288,7 +3289,6 @@ void main() {
     await tester.pump();
 
     // We moved the cursor.
-    expect(latestSelection, isNotNull);
     expect(
       latestSelection,
       const TextSelection.collapsed(offset: 7, affinity: TextAffinity.upstream),
@@ -3322,7 +3322,6 @@ void main() {
     await tester.pump();
 
     // We moved the cursor.
-    expect(latestSelection, isNotNull);
     expect(
       latestSelection,
       const TextSelection.collapsed(offset: 4, affinity: TextAffinity.upstream),
@@ -3357,8 +3356,7 @@ void main() {
     await tester.tapAt(selectableTextStart + const Offset(50.0, 5.0));
     await tester.pump();
 
-    // No word selection should be triggered.
-    expect(latestSelection, isNotNull);
+    // Plain collapsed selection.
     expect(
       latestSelection,
       const TextSelection.collapsed(offset: 7, affinity: TextAffinity.upstream),
@@ -3393,8 +3391,7 @@ void main() {
     await tester.tapAt(selectableTextStart + const Offset(50.0, 5.0));
     await tester.pump();
 
-    // No word selection should be triggered.
-    expect(latestSelection, isNotNull);
+    // Plain collapsed selection.
     expect(
       latestSelection,
       const TextSelection.collapsed(offset: 4, affinity: TextAffinity.upstream),
@@ -3434,8 +3431,9 @@ void main() {
       await tester.tapAt(selectableTextStart + const Offset(150.0, 5.0));
       await tester.pump(const Duration(milliseconds: 50));
 
-      // First tap of double tap should create a collapsed selection.
-      expect(latestSelection, isNotNull);
+      // First tap moved the cursor.
+      // On iOS, this moves the cursor to the closest word edge.
+      // On macOS, this moves the cursor to the tapped position.
       expect(
         latestSelection,
         TextSelection.collapsed(
@@ -3443,18 +3441,13 @@ void main() {
           affinity: TextAffinity.upstream,
         ),
       );
-
       await tester.tapAt(selectableTextStart + const Offset(150.0, 5.0));
       await tester.pump();
 
       // Second tap selects the word around the cursor.
       expect(latestSelection, const TextSelection(baseOffset: 8, extentOffset: 12));
 
-      if (defaultTargetPlatform == TargetPlatform.iOS) {
-        expectCupertinoSelectionToolbar();
-      } else {
-        expect(find.byType(CupertinoButton), findsNothing);
-      }
+      expectCupertinoSelectionToolbar();
     },
     variant: const TargetPlatformVariant(<TargetPlatform>{
       TargetPlatform.iOS,
@@ -3492,13 +3485,11 @@ void main() {
       await tester.tapAt(selectableTextStart + const Offset(150.0, 5.0));
       await tester.pump(const Duration(milliseconds: 50));
 
-      // First tap of double tap should create a collapsed selection.
-      expect(latestSelection, isNotNull);
+      // First tap moved the cursor.
       expect(
         latestSelection,
         const TextSelection.collapsed(offset: 11, affinity: TextAffinity.upstream),
       );
-
       await tester.tapAt(selectableTextStart + const Offset(150.0, 5.0));
       await tester.pump();
 
@@ -3603,7 +3594,6 @@ void main() {
     }),
   );
 
-  // TODO(Renzo-Olivares): Fails because SelectionArea/Semantics does not correctly handle double tap selection on spans with semantics labels.
   testWidgets(
     'double tap selects word with semantics label',
     (WidgetTester tester) async {
@@ -3662,25 +3652,23 @@ void main() {
     await tester.tapAt(selectableTextStart + const Offset(150.0, 5.0));
     await tester.pump(const Duration(milliseconds: 50));
 
-    // First tap of double tap should create a collapsed selection.
+    // First tap moved the cursor.
     // TODO(Renzo-Olivares): Fails because SelectionArea lacks iOS platform-specific tap offset snapping (expects 12, gets 11).
-    expect(latestSelection, isNotNull);
-    expect(latestSelection!.isCollapsed, isTrue);
-    expect(latestSelection!.baseOffset, 12);
-
+    expect(
+      latestSelection,
+      const TextSelection.collapsed(offset: 12, affinity: TextAffinity.upstream),
+    );
     await tester.tapAt(selectableTextStart + const Offset(150.0, 5.0));
     await tester.pump(const Duration(milliseconds: 500));
-
-    // Double tap selects 'Peel'.
-    expect(latestSelection, const TextSelection(baseOffset: 8, extentOffset: 12));
 
     await tester.tapAt(selectableTextStart + const Offset(100.0, 5.0));
     await tester.pump();
 
-    // Tap after double tap should create a collapsed selection.
-    expect(latestSelection, isNotNull);
-    expect(latestSelection!.isCollapsed, isTrue);
-    expect(latestSelection!.baseOffset, 7);
+    // Plain collapsed selection at the edge of first word. In iOS 12, the
+    // first tap after a double tap ends up putting the cursor at where
+    // you tapped instead of the edge like every other single tap. This is
+    // likely a bug in iOS 12 and not present in other versions.
+    expect(latestSelection, const TextSelection.collapsed(offset: 7));
 
     // No toolbar.
     expect(find.byType(CupertinoButton), findsNothing);
@@ -3709,25 +3697,21 @@ void main() {
     await tester.tapAt(selectableTextStart + const Offset(150.0, 5.0));
     await tester.pump(const Duration(milliseconds: 50));
 
-    // First tap of double tap should create a collapsed selection.
-    // TODO(Renzo-Olivares): Fails because SelectionArea lacks iOS platform-specific tap offset snapping (expects 12, gets 11).
-    expect(latestSelection, isNotNull);
-    expect(latestSelection!.isCollapsed, isTrue);
-    expect(latestSelection!.baseOffset, 12);
-
+    // First tap moved the cursor.
+    // TODO(Renzo-Olivares): Fails because SelectableRegion does not expose selection affinity
+    // (expects TextAffinity.upstream).
+    expect(
+      latestSelection,
+      const TextSelection.collapsed(offset: 11, affinity: TextAffinity.upstream),
+    );
     await tester.tapAt(selectableTextStart + const Offset(150.0, 5.0));
     await tester.pump(const Duration(milliseconds: 500));
-
-    // Double tap selects 'Peel'.
-    expect(latestSelection, const TextSelection(baseOffset: 8, extentOffset: 12));
 
     await tester.tapAt(selectableTextStart + const Offset(100.0, 5.0));
     await tester.pump();
 
-    // Tap after double tap should create a collapsed selection.
-    expect(latestSelection, isNotNull);
-    expect(latestSelection!.isCollapsed, isTrue);
-    expect(latestSelection!.baseOffset, 7);
+    // Collapse selection.
+    expect(latestSelection, const TextSelection.collapsed(offset: 7));
 
     // No toolbar.
     expect(find.byType(CupertinoButton), findsNothing);
@@ -3931,7 +3915,6 @@ void main() {
     await tester.pump();
     await gesture.up();
     await tester.pumpAndSettle();
-    expect(currentSelection, isNotNull);
     expect(
       currentSelection,
       TextSelection(baseOffset: testValue.indexOf('g'), extentOffset: testValue.indexOf('p') + 3),
@@ -4233,10 +4216,8 @@ void main() {
   testWidgets(
     'long press drag can edge scroll when inside a scrollable',
     (WidgetTester tester) async {
+      // This is a regression test for https://github.com/flutter/flutter/issues/129590.
       TextSelection? currentSelection;
-      final scrollController = ScrollController();
-      addTearDown(scrollController.dispose);
-
       await tester.pumpWidget(
         MaterialApp(
           home: Material(
@@ -4244,7 +4225,6 @@ void main() {
               child: SizedBox(
                 width: 300.0,
                 child: SingleChildScrollView(
-                  controller: scrollController,
                   scrollDirection: Axis.horizontal,
                   child: SelectableText(
                     'Atwater Peel Sherbrooke Bonaventure Angrignon Peel Côte-des-Neiges ' * 2,
@@ -4271,21 +4251,23 @@ void main() {
       expect(currentSelection, const TextSelection(baseOffset: 13, extentOffset: 23));
 
       await gesture.moveBy(const Offset(100, 0));
+      // To the edge of the screen basically.
       await tester.pump();
       expect(currentSelection, const TextSelection(baseOffset: 13, extentOffset: 23));
-
+      // Keep moving out.
       await gesture.moveBy(const Offset(100, 0));
       await tester.pump();
       expect(currentSelection, const TextSelection(baseOffset: 13, extentOffset: 35));
-
       await gesture.moveBy(const Offset(1600, 0));
-      await tester.pump(const Duration(seconds: 1));
+      await tester.pump();
       expect(currentSelection, const TextSelection(baseOffset: 13, extentOffset: 134));
 
       await gesture.up();
       await tester.pumpAndSettle();
 
+      // The selection isn't affected by the gesture lift.
       expect(currentSelection, const TextSelection(baseOffset: 13, extentOffset: 134));
+      // The toolbar shows up.
       if (defaultTargetPlatform == TargetPlatform.iOS) {
         expectCupertinoSelectionToolbar();
       } else {
@@ -4339,9 +4321,6 @@ void main() {
       kind: PointerDeviceKind.mouse,
     );
     await tester.pump();
-
-    expect(currentSelection, isNotNull);
-    expect(currentSelection!.isValid, isTrue);
 
     await gesture.moveBy(const Offset(100, 0));
     // To the edge of the screen basically.
@@ -4512,7 +4491,12 @@ void main() {
     await tester.pump(const Duration(milliseconds: 50));
 
     // First tap moves the cursor to the tapped position.
-    expect(currentSelection, const TextSelection.collapsed(offset: 11));
+    // TODO(Renzo-Olivares): Fails because SelectableRegion does not expose selection affinity
+    // (expects TextAffinity.upstream).
+    expect(
+      currentSelection,
+      const TextSelection.collapsed(offset: 11, affinity: TextAffinity.upstream),
+    );
     await tester.tapAt(selectableTextStart + const Offset(150.0, 5.0));
     await tester.pump(const Duration(milliseconds: 500));
 
@@ -4576,9 +4560,7 @@ void main() {
       // Double tap selection.
       expect(currentSelection, const TextSelection(baseOffset: 8, extentOffset: 12));
 
-      if (defaultTargetPlatform == TargetPlatform.iOS) {
-        expectCupertinoSelectionToolbar();
-      }
+      expectCupertinoSelectionToolbar();
     },
     variant: const TargetPlatformVariant(<TargetPlatform>{
       TargetPlatform.iOS,
@@ -4619,10 +4601,7 @@ void main() {
     await tester.tapAt(selectableTextStart + const Offset(50.0, 5.0));
     await tester.pump(const Duration(milliseconds: 50));
     expect(currentSelection, const TextSelection(baseOffset: 0, extentOffset: 7));
-
-    if (defaultTargetPlatform == TargetPlatform.iOS) {
-      expectCupertinoSelectionToolbar();
-    }
+    expectCupertinoSelectionToolbar();
 
     // Double tap selecting the same word somewhere else is fine.
     await tester.pumpAndSettle(kDoubleTapTimeout);
@@ -4635,17 +4614,14 @@ void main() {
       currentSelection,
       defaultTargetPlatform == TargetPlatform.iOS
           ? const TextSelection(baseOffset: 0, extentOffset: 7)
-          : const TextSelection.collapsed(offset: 1),
+          : const TextSelection.collapsed(offset: 1, affinity: TextAffinity.upstream),
     );
     await tester.tapAt(selectableTextStart + const Offset(10.0, 5.0));
     await tester.pump(const Duration(milliseconds: 50));
     // Second tap toggled the toolbar, and on macOS also selects the word at the tapped position.
     // On iOS the selection remains the same.
     expect(currentSelection, const TextSelection(baseOffset: 0, extentOffset: 7));
-
-    if (defaultTargetPlatform == TargetPlatform.iOS) {
-      expectCupertinoSelectionToolbar();
-    }
+    expectCupertinoSelectionToolbar();
 
     // Hide the toolbar so it doesn't interfere with taps on the text.
     final SelectableRegionState selectableRegionState = tester.state<SelectableRegionState>(
@@ -4669,10 +4645,7 @@ void main() {
     await tester.tapAt(selectableTextStart + const Offset(150.0, 5.0));
     await tester.pump(const Duration(milliseconds: 50));
     expect(currentSelection, const TextSelection(baseOffset: 8, extentOffset: 12));
-
-    if (defaultTargetPlatform == TargetPlatform.iOS) {
-      expectCupertinoSelectionToolbar();
-    }
+    expectCupertinoSelectionToolbar();
   }, variant: const TargetPlatformVariant(<TargetPlatform>{TargetPlatform.iOS, TargetPlatform.macOS}));
 
   testWidgets('force press does not select a word on (android)', (WidgetTester tester) async {
@@ -5352,8 +5325,6 @@ void main() {
     );
   });
 
-  // TODO(Renzo-Olivares): This test fails because SelectionArea intercepts tap gestures
-  // and prevents TextSpan recognizers from receiving them. This is a behavioral gap.
   testWidgets('text span with tap gesture recognizer works in selectable rich text', (
     WidgetTester tester,
   ) async {
@@ -5724,15 +5695,11 @@ void main() {
 
       await tester.pumpWidget(
         MaterialApp(
-          home: Material(
-            child: Center(
-              child: SelectableText(
-                ' blah blah',
-                onSelectionChanged: (TextSelection newSelection, SelectionChangedCause? cause) {
-                  selection = newSelection;
-                },
-              ),
-            ),
+          home: SelectableText(
+            ' blah blah',
+            onSelectionChanged: (TextSelection newSelection, SelectionChangedCause? cause) {
+              selection = newSelection;
+            },
           ),
         ),
       );
@@ -5766,7 +5733,6 @@ void main() {
       expect(selection!.baseOffset, 0);
       expect(selection!.extentOffset, 1);
     },
-    // TODO(Renzo-Olivares): SelectionArea does not support selecting previous word on long-pressing whitespace on mobile.
     variant: const TargetPlatformVariant(<TargetPlatform>{
       TargetPlatform.iOS,
       TargetPlatform.android,
@@ -5907,7 +5873,6 @@ void main() {
       expect(selection!.baseOffset, 6);
       expect(selection!.extentOffset, 14);
     },
-    // TODO(Renzo-Olivares): SelectionArea does not support selecting previous word on double-tapping whitespace on mobile.
     variant: const TargetPlatformVariant(<TargetPlatform>{
       TargetPlatform.iOS,
       TargetPlatform.android,
@@ -6177,7 +6142,9 @@ void main() {
     expect(richText.text.style!.fontSize, textStyle.fontSize);
   });
 
-  testWidgets('SelectableText selection update on tap', (WidgetTester tester) async {
+  testWidgets('SelectableText text span style is merged with default text style', (
+    WidgetTester tester,
+  ) async {
     TextSelection? selection;
     var count = 0;
 
