@@ -1581,6 +1581,7 @@ abstract class DefaultTextEditingStrategy
   @override
   void disable() {
     assert(isEnabled);
+    print('DIAGNOSTIC: disable() called from framework. Stack trace: ${StackTrace.current}');
     _pendingBlurConnectionCloseTimer?.cancel();
     _pendingBlurConnectionCloseTimer = null;
 
@@ -1728,7 +1729,10 @@ abstract class DefaultTextEditingStrategy
       // allowing the focus to move elsewhere.
       //
       // This is fixing https://github.com/flutter/flutter/issues/155265.
-      if (!_documentHasFocus) {
+      if (!_documentHasFocus || isIosSafari) {
+        if (isIosSafari && _documentHasFocus) {
+          print('DIAGNOSTIC: handleBlur on iOS Safari with document focus. We will NOT re-focus so Safari trackpad doesn\'t break!');
+        }
         _pendingBlurConnectionCloseTimer?.cancel();
         // When a browser tab is backgrounded, the input blur arrives before
         // visibilitychange. Wait briefly so tab switches can keep the text
@@ -2669,6 +2673,7 @@ class HybridTextEditing {
   }
 
   void sendTextConnectionClosedToFrameworkIfAny() {
+    print('DIAGNOSTIC: sendTextConnectionClosedToFrameworkIfAny called. isEditing: $isEditing. Stack trace: ${StackTrace.current}');
     if (isEditing) {
       stopEditing();
       channel.onConnectionClosed(_clientId);

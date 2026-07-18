@@ -922,6 +922,7 @@ class FocusNode with DiagnosticableTreeMixin, ChangeNotifier {
   /// ** See code in examples/api/lib/widgets/focus_manager/focus_node.unfocus.0.dart **
   /// {@end-tool}
   void unfocus({UnfocusDisposition disposition = UnfocusDisposition.scope}) {
+    print('DIAGNOSTIC: FocusNode.unfocus called. Stack trace: ${StackTrace.current}');
     if (!hasFocus && (_manager == null || _manager!._markedForFocus != this)) {
       return;
     }
@@ -1159,6 +1160,7 @@ class FocusNode with DiagnosticableTreeMixin, ChangeNotifier {
   /// The node is notified that it has received the primary focus in a
   /// microtask, so notification may lag the request by up to one frame.
   void requestFocus([FocusNode? node]) {
+    print('DIAGNOSTIC: requestFocus called on $this. node: $node. Stack trace: ${StackTrace.current}');
     if (node != null) {
       if (node._parent == null) {
         _reparent(node);
@@ -1866,6 +1868,7 @@ class FocusManager with DiagnosticableTreeMixin, ChangeNotifier {
   FocusNode? _suspendedNode;
 
   void _appLifecycleChange(AppLifecycleState state) {
+    print('DIAGNOSTIC: _appLifecycleChange called with state: $state. Stack trace: ${StackTrace.current}');
     if (state == AppLifecycleState.resumed) {
       if (_primaryFocus != rootScope) {
         assert(_focusDebug(() => 'focus changed while app was paused, ignoring $_suspendedNode'));
@@ -1885,6 +1888,7 @@ class FocusManager with DiagnosticableTreeMixin, ChangeNotifier {
       }
     } else if (_primaryFocus != rootScope) {
       assert(_focusDebug(() => 'suspending $_primaryFocus'));
+      print('DIAGNOSTIC: suspending focus $_primaryFocus');
       _markedForFocus = rootScope;
       _suspendedNode = _primaryFocus;
       applyFocusChangesIfNeeded();
@@ -1915,6 +1919,7 @@ class FocusManager with DiagnosticableTreeMixin, ChangeNotifier {
   }
 
   void _markNextFocus(FocusNode node) {
+    print('DIAGNOSTIC: _markNextFocus called for node: $node. Stack trace: ${StackTrace.current}');
     if (_primaryFocus == node) {
       // The caller asked for the current focus to be the next focus, so just
       // pretend that didn't happen.
@@ -1981,6 +1986,7 @@ class FocusManager with DiagnosticableTreeMixin, ChangeNotifier {
     if (_primaryFocus == null && _markedForFocus == null) {
       // If we don't have any current focus, and nobody has asked to focus yet,
       // then revert to the root scope.
+      print('DIAGNOSTIC: applyFocusChangesIfNeeded setting _markedForFocus to rootScope because both were null. Stack trace: ${StackTrace.current}');
       _markedForFocus = rootScope;
     }
     assert(_focusDebug(() => 'Refreshing focus state. Next focus will be $_markedForFocus'));

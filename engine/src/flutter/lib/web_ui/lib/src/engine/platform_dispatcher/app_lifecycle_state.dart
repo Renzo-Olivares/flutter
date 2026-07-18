@@ -46,6 +46,7 @@ abstract class AppLifecycleState {
 
   @visibleForTesting
   void onAppLifecycleStateChange(ui.AppLifecycleState newState) {
+    print('DIAGNOSTIC: onAppLifecycleStateChange called with $newState. Stack trace: ${StackTrace.current}');
     if (newState != _appLifecycleState) {
       _appLifecycleState = newState;
       for (final AppLifecycleStateListener listener in _listeners) {
@@ -93,6 +94,10 @@ class _BrowserAppLifecycleState extends AppLifecycleState {
   });
 
   late final DomEventListener _blurListener = createDomEventListener((DomEvent event) {
+    if (domDocument.hasFocus()) {
+      print('DIAGNOSTIC: Ignored window blur because domDocument.hasFocus() is true!');
+      return;
+    }
     onAppLifecycleStateChange(ui.AppLifecycleState.inactive);
   });
 

@@ -8,6 +8,8 @@ import 'dart:js_interop';
 import 'package:ui/src/engine.dart';
 import 'package:ui/ui.dart' as ui;
 
+import '../browser_detection.dart';
+
 /// Tracks the [FlutterView]s focus changes.
 final class ViewFocusBinding {
   ViewFocusBinding(this._viewManager, this._onViewFocusChange);
@@ -67,6 +69,14 @@ final class ViewFocusBinding {
         domDocument.hasFocus() && domDocument.activeElement != domDocument.body;
     if (wasFocusInvoked) {
       return;
+    }
+
+    if (isIosSafari && domDocument.hasFocus() && domDocument.activeElement == domDocument.body) {
+      final DomElement? target = event.target as DomElement?;
+      if (target?.tagName.toLowerCase() == 'input' || target?.tagName.toLowerCase() == 'textarea') {
+        print('DIAGNOSTIC: view_focus_binding ignored focusout from a text input on iOS Safari because the document still has focus!');
+        return;
+      }
     }
 
     event as DomFocusEvent;
