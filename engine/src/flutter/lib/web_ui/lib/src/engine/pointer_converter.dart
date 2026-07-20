@@ -264,7 +264,9 @@ class PointerDataConverter {
     double scale = 1.0,
     ui.PointerDataRespondCallback? onRespond,
   }) {
-    print('DIAGNOSTIC: Pointer event: change=$change, kind=$kind, device=$device, physicalX=$physicalX, physicalY=$physicalY');
+    print(
+      'DIAGNOSTIC: Pointer event: change=$change, kind=$kind, device=$device, physicalX=$physicalX, physicalY=$physicalY',
+    );
     if (_debugLogPointerConverter) {
       print('>> view=$viewId device=$device change=$change buttons=$buttons');
     }

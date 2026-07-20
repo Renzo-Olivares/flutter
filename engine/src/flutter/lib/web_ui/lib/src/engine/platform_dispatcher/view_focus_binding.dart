@@ -74,7 +74,9 @@ final class ViewFocusBinding {
     if (isIosSafari && domDocument.hasFocus() && domDocument.activeElement == domDocument.body) {
       final DomElement? target = event.target as DomElement?;
       if (target?.tagName.toLowerCase() == 'input' || target?.tagName.toLowerCase() == 'textarea') {
-        print('DIAGNOSTIC: view_focus_binding ignored focusout from a text input on iOS Safari because the document still has focus!');
+        print(
+          'DIAGNOSTIC: view_focus_binding ignored focusout from a text input on iOS Safari because the document still has focus!',
+        );
         return;
       }
     }

@@ -1731,7 +1731,9 @@ abstract class DefaultTextEditingStrategy
       // This is fixing https://github.com/flutter/flutter/issues/155265.
       if (!_documentHasFocus || isIosSafari) {
         if (isIosSafari && _documentHasFocus) {
-          print('DIAGNOSTIC: handleBlur on iOS Safari with document focus. We will NOT re-focus so Safari trackpad doesn\'t break!');
+          print(
+            'DIAGNOSTIC: handleBlur on iOS Safari with document focus. We will NOT re-focus so Safari trackpad doesn\'t break!',
+          );
         }
         _pendingBlurConnectionCloseTimer?.cancel();
         // When a browser tab is backgrounded, the input blur arrives before
@@ -2673,7 +2675,9 @@ class HybridTextEditing {
   }
 
   void sendTextConnectionClosedToFrameworkIfAny() {
-    print('DIAGNOSTIC: sendTextConnectionClosedToFrameworkIfAny called. isEditing: $isEditing. Stack trace: ${StackTrace.current}');
+    print(
+      'DIAGNOSTIC: sendTextConnectionClosedToFrameworkIfAny called. isEditing: $isEditing. Stack trace: ${StackTrace.current}',
+    );
     if (isEditing) {
       stopEditing();
       channel.onConnectionClosed(_clientId);

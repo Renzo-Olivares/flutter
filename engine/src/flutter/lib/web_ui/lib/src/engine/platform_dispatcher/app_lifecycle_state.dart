@@ -46,7 +46,9 @@ abstract class AppLifecycleState {
 
   @visibleForTesting
   void onAppLifecycleStateChange(ui.AppLifecycleState newState) {
-    print('DIAGNOSTIC: onAppLifecycleStateChange called with $newState. Stack trace: ${StackTrace.current}');
+    print(
+      'DIAGNOSTIC: onAppLifecycleStateChange called with $newState. Stack trace: ${StackTrace.current}',
+    );
     if (newState != _appLifecycleState) {
       _appLifecycleState = newState;
       for (final AppLifecycleStateListener listener in _listeners) {
