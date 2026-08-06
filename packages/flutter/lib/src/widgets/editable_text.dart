@@ -3695,6 +3695,10 @@ class EditableTextState extends State<EditableText>
         cause = SelectionChangedCause.keyboard;
       }
       _handleSelectionChanged(value.selection, cause);
+      // This branch does not reach _formatAndSetValue, so reveal the caret
+      // here. The user changed the selection through the platform input
+      // plugin and should see the result.
+      _scheduleShowCaretOnScreen(withAnimation: true);
     } else {
       if (value.text != _value.text) {
         // Hide the toolbar if the text was changed, but only hide the toolbar
@@ -3720,12 +3724,6 @@ class EditableTextState extends State<EditableText>
       _stopCursorBlink(resetCharTicks: false);
       _startCursorBlink();
     }
-
-    // Wherever the value is changed by the user, schedule a showCaretOnScreen
-    // to make sure the user can see the changes they just made. Programmatic
-    // changes to `textEditingValue` do not trigger the behavior even if the
-    // text field is focused.
-    _scheduleShowCaretOnScreen(withAnimation: true);
   }
 
   bool _checkNeedsAdjustAffinity(TextEditingValue value) {
@@ -4561,80 +4559,106 @@ class EditableTextState extends State<EditableText>
   static const Curve _caretAnimationCurve = Curves.fastOutSlowIn;
 
   bool _showCaretOnScreenScheduled = false;
+  // The reveal target/animation most recently requested for the pending
+  // post-frame callback. Later requests within the same frame win.
+  TextPosition? _scheduledCaretTarget;
+  bool _scheduledCaretWithAnimation = false;
 
-  void _scheduleShowCaretOnScreen({required bool withAnimation}) {
+  void _scheduleShowCaretOnScreen({required bool withAnimation, TextPosition? target}) {
+    _scheduledCaretTarget = target;
+    _scheduledCaretWithAnimation = withAnimation;
     if (_showCaretOnScreenScheduled) {
       return;
     }
     _showCaretOnScreenScheduled = true;
     SchedulerBinding.instance.addPostFrameCallback((Duration _) {
       _showCaretOnScreenScheduled = false;
-      // Since we are in a post frame callback, check currentContext in case
-      // RenderEditable has been disposed (in which case it will be null).
-      final renderEditable = _editableKey.currentContext?.findRenderObject() as RenderEditable?;
-      if (renderEditable == null ||
-          !(renderEditable.selection?.isValid ?? false) ||
-          !_scrollController.hasClients) {
-        return;
-      }
+      final TextPosition? scheduledTarget = _scheduledCaretTarget;
+      final bool scheduledWithAnimation = _scheduledCaretWithAnimation;
+      _scheduledCaretTarget = null;
+      _showPositionOnScreen(scheduledTarget, withAnimation: scheduledWithAnimation);
+    }, debugLabel: 'EditableText.showCaret');
+  }
 
-      final double lineHeight = renderEditable.preferredLineHeight;
+  // Scrolls the field (and any ancestor scrollables) to reveal the given
+  // position, or the selection's extent when `position` is null.
+  //
+  // This is the single execution path for all selection reveals: it applies
+  // [EditableText.scrollPadding] (enlarged at the bottom to make room for a
+  // selection handle) so that the revealed position is not flush against the
+  // viewport edge.
+  void _showPositionOnScreen(TextPosition? position, {required bool withAnimation}) {
+    // Check currentContext in case RenderEditable has been disposed (in which
+    // case it will be null).
+    final renderEditable = _editableKey.currentContext?.findRenderObject() as RenderEditable?;
+    if (renderEditable == null || !_scrollController.hasClients) {
+      return;
+    }
+    // When called synchronously, renderEditable.selection may not reflect the
+    // new value yet, so only require it to be valid when it is the target.
+    if (position == null && !(renderEditable.selection?.isValid ?? false)) {
+      return;
+    }
+    final TextPosition revealPosition = position ?? renderEditable.selection!.extent;
 
-      // Enlarge the target rect by scrollPadding to ensure that caret is not
-      // positioned directly at the edge after scrolling.
-      double bottomSpacing = widget.scrollPadding.bottom;
-      if (_selectionOverlay?.selectionControls != null) {
-        final double handleHeight = _selectionOverlay!.selectionControls!
-            .getHandleSize(lineHeight)
-            .height;
-        final double interactiveHandleHeight = math.max(handleHeight, kMinInteractiveDimension);
-        final Offset anchor = _selectionOverlay!.selectionControls!.getHandleAnchor(
-          TextSelectionHandleType.collapsed,
-          lineHeight,
-        );
-        final double handleCenter = handleHeight / 2 - anchor.dy;
-        bottomSpacing = math.max(handleCenter + interactiveHandleHeight / 2, bottomSpacing);
-      }
+    final double lineHeight = renderEditable.preferredLineHeight;
 
-      final EdgeInsets caretPadding = widget.scrollPadding.copyWith(bottom: bottomSpacing);
+    // Enlarge the target rect by scrollPadding to ensure that caret is not
+    // positioned directly at the edge after scrolling.
+    double bottomSpacing = widget.scrollPadding.bottom;
+    if (_selectionOverlay?.selectionControls != null) {
+      final double handleHeight = _selectionOverlay!.selectionControls!
+          .getHandleSize(lineHeight)
+          .height;
+      final double interactiveHandleHeight = math.max(handleHeight, kMinInteractiveDimension);
+      final Offset anchor = _selectionOverlay!.selectionControls!.getHandleAnchor(
+        TextSelectionHandleType.collapsed,
+        lineHeight,
+      );
+      final double handleCenter = handleHeight / 2 - anchor.dy;
+      bottomSpacing = math.max(handleCenter + interactiveHandleHeight / 2, bottomSpacing);
+    }
 
-      final Rect caretRect = renderEditable.getLocalRectForCaret(renderEditable.selection!.extent);
-      final RevealedOffset targetOffset = _getOffsetToRevealCaret(caretRect);
+    final EdgeInsets caretPadding = widget.scrollPadding.copyWith(bottom: bottomSpacing);
 
-      final Rect rectToReveal;
-      final TextSelection selection = textEditingValue.selection;
-      if (selection.isCollapsed) {
+    final Rect caretRect = renderEditable.getLocalRectForCaret(revealPosition);
+    final RevealedOffset targetOffset = _getOffsetToRevealCaret(caretRect);
+
+    final Rect rectToReveal;
+    final TextSelection selection = textEditingValue.selection;
+    if (selection.isCollapsed) {
+      rectToReveal = targetOffset.rect;
+    } else {
+      final List<TextBox> selectionBoxes = renderEditable.getBoxesForSelection(selection);
+      // selectionBoxes may be empty if, for example, the selection does not
+      // encompass a full character, like if it only contained part of an
+      // extended grapheme cluster.
+      if (selectionBoxes.isEmpty) {
         rectToReveal = targetOffset.rect;
       } else {
-        final List<TextBox> selectionBoxes = renderEditable.getBoxesForSelection(selection);
-        // selectionBoxes may be empty if, for example, the selection does not
-        // encompass a full character, like if it only contained part of an
-        // extended grapheme cluster.
-        if (selectionBoxes.isEmpty) {
-          rectToReveal = targetOffset.rect;
-        } else {
-          rectToReveal = selection.baseOffset < selection.extentOffset
-              ? selectionBoxes.last.toRect()
-              : selectionBoxes.first.toRect();
-        }
+        // Reveal the selection box on the side of the position being revealed,
+        // rather than unconditionally the extent side.
+        rectToReveal = revealPosition.offset <= selection.start
+            ? selectionBoxes.first.toRect()
+            : selectionBoxes.last.toRect();
       }
+    }
 
-      if (withAnimation) {
-        _scrollController.animateTo(
-          targetOffset.offset,
-          duration: _caretAnimationDuration,
-          curve: _caretAnimationCurve,
-        );
-        renderEditable.showOnScreen(
-          rect: caretPadding.inflateRect(rectToReveal),
-          duration: _caretAnimationDuration,
-          curve: _caretAnimationCurve,
-        );
-      } else {
-        _scrollController.jumpTo(targetOffset.offset);
-        renderEditable.showOnScreen(rect: caretPadding.inflateRect(rectToReveal));
-      }
-    }, debugLabel: 'EditableText.showCaret');
+    if (withAnimation) {
+      _scrollController.animateTo(
+        targetOffset.offset,
+        duration: _caretAnimationDuration,
+        curve: _caretAnimationCurve,
+      );
+      renderEditable.showOnScreen(
+        rect: caretPadding.inflateRect(rectToReveal),
+        duration: _caretAnimationDuration,
+        curve: _caretAnimationCurve,
+      );
+    } else {
+      _scrollController.jumpTo(targetOffset.offset);
+      renderEditable.showOnScreen(rect: caretPadding.inflateRect(rectToReveal));
+    }
   }
 
   late double _lastBottomViewInset;
@@ -4711,6 +4735,9 @@ class EditableTextState extends State<EditableText>
     final textChanged = oldValue.text != value.text;
     final bool textCommitted = !oldValue.composing.isCollapsed && value.composing.isCollapsed;
     final selectionChanged = oldValue.selection != value.selection;
+    // Compare against the pre-format value: even if a formatter rejects the
+    // change, the user attempted an edit and the caret should be revealed.
+    final valueChanged = oldValue != value;
 
     if (textChanged || textCommitted) {
       // Only apply input formatters if the text has changed (including uncommitted
@@ -4760,7 +4787,9 @@ class EditableTextState extends State<EditableText>
             (cause == SelectionChangedCause.longPress ||
                 cause == SelectionChangedCause.keyboard))) {
       _handleSelectionChanged(_value.selection, cause);
-      _bringIntoViewBySelectionState(oldTextSelection, value.selection, cause);
+    }
+    if (valueChanged) {
+      _scheduleShowSelectionEdgeOnScreen(oldTextSelection, _value.selection, cause);
     }
     final String currentText = _value.text;
     if (oldValue.text != currentText) {
@@ -4780,28 +4809,43 @@ class EditableTextState extends State<EditableText>
     endBatchEdit();
   }
 
-  void _bringIntoViewBySelectionState(
+  // The single place that decides whether a user-initiated change to the
+  // [TextEditingValue] scrolls the field, which selection edge it reveals,
+  // and whether the scroll animates.
+  void _scheduleShowSelectionEdgeOnScreen(
     TextSelection oldSelection,
     TextSelection newSelection,
     SelectionChangedCause? cause,
   ) {
-    switch (defaultTargetPlatform) {
-      case TargetPlatform.iOS:
-      case TargetPlatform.macOS:
-        if (cause == SelectionChangedCause.longPress || cause == SelectionChangedCause.drag) {
-          bringIntoView(newSelection.extent);
-        }
-      case TargetPlatform.linux:
-      case TargetPlatform.windows:
-      case TargetPlatform.fuchsia:
-      case TargetPlatform.android:
-        if (cause == SelectionChangedCause.drag) {
-          if (oldSelection.baseOffset != newSelection.baseOffset) {
-            bringIntoView(newSelection.base);
-          } else if (oldSelection.extentOffset != newSelection.extentOffset) {
-            bringIntoView(newSelection.extent);
-          }
-        }
+    switch (cause) {
+      case null:
+        // Programmatic changes to the value never auto-scroll.
+        break;
+      case SelectionChangedCause.drag:
+      case SelectionChangedCause.longPress:
+        // Reveal the moved edge of the selection, preferring the extent when
+        // both edges moved in a single update. A pointer drag or long press
+        // always moves the extent, with one exception: dragging the start
+        // selection handle on non-Apple platforms moves the base, and that
+        // gesture never moves both edges at once (order swapping is
+        // disallowed there). On Apple platforms the dragged handle always
+        // becomes the extent, so a base change there is an anchor swap, not
+        // the moving edge.
+        final TextPosition target = oldSelection.extentOffset != newSelection.extentOffset
+            ? newSelection.extent
+            : newSelection.base;
+        // Do not animate: a pointer is down and the viewport must track the
+        // gesture. An in-flight scroll animation would fight the next drag
+        // update (https://github.com/flutter/flutter/issues/132047).
+        _showPositionOnScreen(target, withAnimation: false);
+      case SelectionChangedCause.tap:
+      case SelectionChangedCause.doubleTap:
+      case SelectionChangedCause.forcePress:
+      case SelectionChangedCause.keyboard:
+      case SelectionChangedCause.toolbar:
+      case SelectionChangedCause.stylusHandwriting:
+        // Discrete changes reveal the extent after the frame settles.
+        _scheduleShowCaretOnScreen(withAnimation: true);
     }
   }
 
@@ -5147,12 +5191,9 @@ class EditableTextState extends State<EditableText>
 
   @override
   void userUpdateTextEditingValue(TextEditingValue value, SelectionChangedCause? cause) {
-    // Compare the current TextEditingValue with the pre-format new
-    // TextEditingValue value, in case the formatter would reject the change.
-    final shouldShowCaret = widget.readOnly ? _value.selection != value.selection : _value != value;
-    if (shouldShowCaret) {
-      _scheduleShowCaretOnScreen(withAnimation: true);
-    }
+    // Viewport scrolling is handled by _scheduleShowSelectionEdgeOnScreen,
+    // called from _formatAndSetValue, which reveals the selection edge that
+    // the user's gesture is moving.
 
     // Even if the value doesn't change, it may be necessary to focus and build
     // the selection overlay. For example, this happens when right clicking an

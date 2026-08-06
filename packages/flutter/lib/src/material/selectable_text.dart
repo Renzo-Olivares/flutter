@@ -618,19 +618,8 @@ class _SelectableTextState extends State<SelectableText>
 
     widget.onSelectionChanged?.call(selection, cause);
 
-    switch (Theme.of(context).platform) {
-      case TargetPlatform.iOS:
-      case TargetPlatform.macOS:
-        if (cause == SelectionChangedCause.longPress) {
-          _editableText?.bringIntoView(selection.base);
-        }
-        return;
-      case TargetPlatform.android:
-      case TargetPlatform.fuchsia:
-      case TargetPlatform.linux:
-      case TargetPlatform.windows:
-      // Do nothing.
-    }
+    // Viewport scrolling on selection changes is handled by EditableText
+    // itself, keyed on the SelectionChangedCause.
   }
 
   /// Toggle the toolbar when a selection handle is tapped.

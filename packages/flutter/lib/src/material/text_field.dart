@@ -1427,18 +1427,8 @@ class _TextFieldState extends State<TextField>
       });
     }
 
-    switch (Theme.of(context).platform) {
-      case TargetPlatform.iOS:
-      case TargetPlatform.macOS:
-      case TargetPlatform.linux:
-      case TargetPlatform.windows:
-      case TargetPlatform.fuchsia:
-      case TargetPlatform.android:
-        if (cause == SelectionChangedCause.longPress) {
-          _editableText?.bringIntoView(selection.extent);
-        }
-    }
-
+    // Viewport scrolling on selection changes is handled by EditableText
+    // itself, keyed on the SelectionChangedCause.
     switch (Theme.of(context).platform) {
       case TargetPlatform.iOS:
       case TargetPlatform.fuchsia:
