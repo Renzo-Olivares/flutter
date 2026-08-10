@@ -147,25 +147,6 @@ void main() {
       '$kThreeLines\n'
       "Fourth line won't display and ends at";
 
-  // Returns the first RenderEditable.
-  RenderEditable findRenderEditable(WidgetTester tester) {
-    final RenderObject root = tester.renderObject(find.byType(EditableText));
-    expect(root, isNotNull);
-
-    late RenderEditable renderEditable;
-    void recursiveFinder(RenderObject child) {
-      if (child is RenderEditable) {
-        renderEditable = child;
-        return;
-      }
-      child.visitChildren(recursiveFinder);
-    }
-
-    root.visitChildren(recursiveFinder);
-    expect(renderEditable, isNotNull);
-    return renderEditable;
-  }
-
   RenderParagraph findRenderParagraph(WidgetTester tester) {
     return tester.renderObject<RenderParagraph>(find.byType(RichText));
   }
@@ -1498,10 +1479,10 @@ void main() {
       ),
     );
 
-    final RenderEditable editable = findRenderEditable(tester);
+    final RenderParagraph paragraph = findRenderParagraph(tester);
 
-    final Offset topLeft = editable.localToGlobal(
-      editable.getLocalRectForCaret(const TextPosition(offset: 2)).topLeft,
+    final Offset topLeft = paragraph.localToGlobal(
+      paragraph.getOffsetForCaret(const TextPosition(offset: 2), Rect.zero),
     );
 
     expect(topLeft.dx, equals(399.0));
@@ -1517,10 +1498,10 @@ void main() {
       ),
     );
 
-    final RenderEditable editable = findRenderEditable(tester);
+    final RenderParagraph paragraph = findRenderParagraph(tester);
 
-    final Offset topLeft = editable.localToGlobal(
-      editable.getLocalRectForCaret(const TextPosition(offset: 2)).topLeft,
+    final Offset topLeft = paragraph.localToGlobal(
+      paragraph.getOffsetForCaret(const TextPosition(offset: 2), Rect.zero),
     );
 
     expect(topLeft.dx, equals(399.0));
