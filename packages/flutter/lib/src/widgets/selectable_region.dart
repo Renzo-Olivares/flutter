@@ -20,6 +20,7 @@ import 'package:flutter/services.dart';
 import 'package:vector_math/vector_math_64.dart';
 
 import 'actions.dart';
+import 'automatic_keep_alive.dart';
 import 'basic.dart';
 import 'context_menu_button_item.dart';
 import 'debug.dart';
@@ -343,8 +344,11 @@ class SelectableRegion extends StatefulWidget {
 
 /// State for a [SelectableRegion].
 class SelectableRegionState extends State<SelectableRegion>
-    with TextSelectionDelegate
+    with AutomaticKeepAliveClientMixin<SelectableRegion>, TextSelectionDelegate
     implements SelectionRegistrar {
+  @override
+  bool get wantKeepAlive => _focusNode.hasFocus;
+
   late final Map<Type, Action<Intent>> _actions = <Type, Action<Intent>>{
     SelectAllTextIntent: _makeOverridable(_SelectAllAction(this)),
     CopySelectionTextIntent: _makeOverridable(_CopySelectionAction(this)),
@@ -512,6 +516,7 @@ class SelectableRegionState extends State<SelectableRegion>
       if (_focusNode.hasFocus != oldWidget.focusNode?.hasFocus) {
         _handleFocusChanged();
       }
+      updateKeepAlive();
     }
   }
 
@@ -520,6 +525,7 @@ class SelectableRegionState extends State<SelectableRegion>
   }
 
   void _handleFocusChanged() {
+    updateKeepAlive();
     if (!_focusNode.hasFocus) {
       if (_webContextMenuEnabled) {
         PlatformSelectableRegionContextMenu.detach(_selectionDelegate);
@@ -1947,6 +1953,7 @@ class SelectableRegionState extends State<SelectableRegion>
   @protected
   @override
   Widget build(BuildContext context) {
+    super.build(context);
     assert(debugCheckHasOverlay(context));
     Widget result = SelectableRegionSelectionStatusScope._(
       selectionStatusNotifier: _selectionStatusNotifier,
