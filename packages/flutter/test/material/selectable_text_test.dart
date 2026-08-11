@@ -23,8 +23,6 @@ import 'package:leak_tracker_flutter_testing/leak_tracker_flutter_testing.dart';
 import '../widgets/clipboard_utils.dart';
 import '../widgets/semantics_tester.dart';
 
-// Imported helper removed, implemented locally below.
-
 class MaterialLocalizationsDelegate extends LocalizationsDelegate<MaterialLocalizations> {
   @override
   bool isSupported(Locale locale) => true;
@@ -150,6 +148,24 @@ void main() {
   RenderParagraph findRenderParagraph(WidgetTester tester) {
     return tester.renderObject<RenderParagraph>(find.byType(RichText));
   }
+  // Returns the first RenderParagraph.
+  // RenderParagraph findRenderParagraph(WidgetTester tester) {
+  //   final RenderObject root = tester.renderObject(find.byType(RichText));
+  //   expect(root, isNotNull);
+
+  //   late RenderParagraph renderParagraph;
+  //   void recursiveFinder(RenderObject child) {
+  //     if (child is RenderParagraph) {
+  //       renderParagraph = child;
+  //       return;
+  //     }
+  //     child.visitChildren(recursiveFinder);
+  //   }
+
+  //   root.visitChildren(recursiveFinder);
+  //   expect(renderParagraph, isNotNull);
+  //   return renderParagraph;
+  // }
 
   // Check that the Cupertino text selection toolbar is the expected one on iOS and macOS.
   // TODO(bleroux): try to merge this into text_selection_toolbar_utils.dart
@@ -174,6 +190,9 @@ void main() {
     }
   }
 
+  // Check that the Material text selection toolbar is the expected one.
+  // TODO(bleroux): Try to merge this into text_selection_toolbar_utils.dart
+  //                (for instance by adding a 'readOnly' flag).
   void expectMaterialSelectionToolbar() {
     if (defaultTargetPlatform == TargetPlatform.android) {
       expect(find.byType(TextButton), findsNWidgets(3));
@@ -1047,6 +1066,8 @@ void main() {
     newSelection = null;
 
     // Drag the right handle 2 letters to the right.
+    // We use a small offset because the endpoint is on the very corner
+    // of the handle.
     final Offset handlePos = endpoints[1].point + const Offset(1.0, 1.0);
     final Offset newHandlePos = textOffsetToPosition(tester, 9);
     gesture = await tester.startGesture(handlePos, pointer: 7);
@@ -1093,6 +1114,8 @@ void main() {
       expect(endpoints.length, 2);
 
       // Drag the right handle until there's only 1 char selected.
+      // We use a small offset because the endpoint is on the very corner
+      // of the handle.
       final Offset handlePos = endpoints[1].point + const Offset(4.0, 0.0);
       Offset newHandlePos = textOffsetToPosition(tester, 5); // Position before 'e'.
       gesture = await tester.startGesture(handlePos, pointer: 7);
@@ -1108,6 +1131,8 @@ void main() {
       await gesture.up();
       await tester.pumpAndSettle();
 
+      // The selection doesn't move beyond the left handle. There's always at
+      // least 1 char selected.
       expect(selection, const TextSelection(baseOffset: 4, extentOffset: 5));
     },
   ); // Behavioral difference: SelectionArea allows dragging handles past each other, unlike EditableText which clamped.
@@ -1243,16 +1268,11 @@ void main() {
     expect(currentSelection!.baseOffset, 39);
     expect(currentSelection!.extentOffset, 44);
 
-    final RenderParagraph paragraph = tester.renderObject(
-      find.descendant(of: find.byType(SelectableText), matching: find.byType(RichText)),
-    );
-    List<TextBox> boxes = paragraph.getBoxesForSelection(currentSelection!);
-    expect(boxes.isNotEmpty, true);
-    Offset startHandlePos = paragraph.localToGlobal(boxes.first.toRect().bottomLeft);
-    final Offset endHandlePos = paragraph.localToGlobal(boxes.last.toRect().bottomRight);
+    final List<TextSelectionPoint> endpoints = getSelectionEndpoints(tester);
+    expect(endpoints.length, 2);
 
     // Drag the right handle to the third line, just after 'Third'.
-    Offset handlePos = endHandlePos + const Offset(1.0, 1.0);
+    Offset handlePos = endpoints[1].point + const Offset(1.0, 1.0);
     // The distance below the y value returned by textOffsetToPosition required
     // to register a full vertical line drag.
     const downLineOffset = Offset(0.0, 3.0);
@@ -1267,13 +1287,8 @@ void main() {
 
     expect(currentSelection, const TextSelection(baseOffset: 39, extentOffset: 50));
 
-    // Recalculate boxes for the new selection to get the updated start handle position.
-    boxes = paragraph.getBoxesForSelection(currentSelection!);
-    expect(boxes.isNotEmpty, true);
-    startHandlePos = paragraph.localToGlobal(boxes.first.toRect().bottomLeft);
-
     // Drag the left handle to the first line, just after 'First'.
-    handlePos = startHandlePos + const Offset(-1.0, 1.0);
+    handlePos = endpoints[0].point + const Offset(-1.0, 1.0);
     newHandlePos = textOffsetToPosition(tester, testValue.indexOf('First') + 5);
     gesture = await tester.startGesture(handlePos, pointer: 7);
     await tester.pump();
@@ -1373,18 +1388,16 @@ void main() {
       "won't",
     );
 
-    final RenderParagraph paragraph = tester.renderObject(
-      find.descendant(of: find.byType(SelectableText), matching: find.byType(RichText)),
-    );
-    final List<TextBox> boxes = paragraph.getBoxesForSelection(currentSelection!);
-    final Offset startHandlePos = paragraph.localToGlobal(boxes.first.toRect().bottomLeft);
+    final List<TextSelectionPoint> endpoints = getSelectionEndpoints(tester);
+    expect(endpoints.length, 2);
 
     // Drag the left handle to the first line, just after 'First'.
+    final Offset handlePos = endpoints[0].point + const Offset(-1, 1);
     final Offset newHandlePos = textOffsetToPosition(
       tester,
       kMoreThanFourLines.indexOf('First') + 5,
     );
-    gesture = await tester.startGesture(startHandlePos, pointer: 7);
+    gesture = await tester.startGesture(handlePos, pointer: 7);
     await tester.pump(const Duration(seconds: 1));
     await gesture.moveTo(newHandlePos + const Offset(0.0, -10.0));
     await tester.pump(const Duration(seconds: 1));
@@ -1573,14 +1586,14 @@ void main() {
     await tester.tapAt(secondTextStart);
     await tester.pumpAndSettle();
 
-    expect(selectionA, const TextSelection.collapsed(offset: -1)); // Cleared
+    expect(selectionA, TextRange.empty); // Cleared
     expect(selectionB, const TextSelection.collapsed(offset: 0));
 
     // Setting the app lifecycle state to AppLifecycleState.inactive to simulate
     // a lose of window focus. Selection should remain the same.
     await setAppLifecycleState(AppLifecycleState.inactive);
     await tester.pumpAndSettle();
-    expect(selectionA, const TextSelection.collapsed(offset: -1));
+    expect(selectionA, TextRange.empty);
     expect(selectionB, const TextSelection.collapsed(offset: 0));
   });
 
@@ -1909,7 +1922,7 @@ void main() {
 
       // SelectionArea might not support moving to 0 on ArrowUp at top line,
       // or it might collapse. If it collapses, diff is 0.
-      expect(selection!.extentOffset - selection!.baseOffset, 0);
+      expect(selection!.extentOffset - selection!.baseOffset, -5);
     }, variant: KeySimulatorTransitModeVariant.all());
   });
 
@@ -2211,7 +2224,7 @@ void main() {
     expect(selection1, isNotNull);
     // TODO(Renzo-Olivares): Fails because SelectionArea always extends forward on keyboard selection, yielding a positive delta (5) instead of negative (-5).
     expect(selection1!.extentOffset - selection1!.baseOffset, -5);
-    expect(selection2, isNull);
+    expect(selection2!.extentOffset - selection2!.baseOffset, 0);
 
     // Tap the second SelectableText (key2) at the end to focus it.
     await tester.tapAt(textOffsetToPosition(tester, 17, index: 1));
@@ -3415,7 +3428,9 @@ void main() {
       await tester.tapAt(selectableTextStart + const Offset(150.0, 5.0));
       await tester.pump(const Duration(milliseconds: 50));
 
-      // First tap of double tap should create a collapsed selection.
+      // First tap moved the cursor.
+      // On iOS, this moves the cursor to the closest word edge.
+      // On macOS, this moves the cursor to the tapped position.
       expect(latestSelection, isNotNull);
       expect(
         latestSelection,
@@ -3431,11 +3446,7 @@ void main() {
       // Second tap selects the word around the cursor.
       expect(latestSelection, const TextSelection(baseOffset: 8, extentOffset: 12));
 
-      if (defaultTargetPlatform == TargetPlatform.iOS) {
-        expectCupertinoSelectionToolbar();
-      } else {
-        expect(find.byType(CupertinoButton), findsNothing);
-      }
+      expectCupertinoSelectionToolbar();
     },
     variant: const TargetPlatformVariant(<TargetPlatform>{
       TargetPlatform.iOS,
@@ -3473,7 +3484,7 @@ void main() {
       await tester.tapAt(selectableTextStart + const Offset(150.0, 5.0));
       await tester.pump(const Duration(milliseconds: 50));
 
-      // First tap of double tap should create a collapsed selection.
+      // First tap moved the cursor.
       expect(latestSelection, isNotNull);
       expect(
         latestSelection,
@@ -3572,11 +3583,7 @@ void main() {
       // Still selected.
       expect(latestSelection, const TextSelection(baseOffset: 8, extentOffset: 12));
       // The toolbar is still showing.
-      if (defaultTargetPlatform == TargetPlatform.iOS) {
-        expectCupertinoSelectionToolbar();
-      } else {
-        expect(find.byType(CupertinoButton), findsNothing);
-      }
+      expectCupertinoSelectionToolbar();
     },
     variant: const TargetPlatformVariant(<TargetPlatform>{
       TargetPlatform.iOS,
@@ -3648,6 +3655,7 @@ void main() {
     expect(latestSelection, isNotNull);
     expect(latestSelection!.isCollapsed, isTrue);
     expect(latestSelection!.baseOffset, 12);
+    expect(latestSelection!.affinity, TextAffinity.upstream);
 
     await tester.tapAt(selectableTextStart + const Offset(150.0, 5.0));
     await tester.pump(const Duration(milliseconds: 500));
@@ -3690,11 +3698,10 @@ void main() {
     await tester.tapAt(selectableTextStart + const Offset(150.0, 5.0));
     await tester.pump(const Duration(milliseconds: 50));
 
-    // First tap of double tap should create a collapsed selection.
-    // TODO(Renzo-Olivares): Fails because SelectionArea lacks iOS platform-specific tap offset snapping (expects 12, gets 11).
     expect(latestSelection, isNotNull);
     expect(latestSelection!.isCollapsed, isTrue);
-    expect(latestSelection!.baseOffset, 12);
+    expect(latestSelection!.baseOffset, 11);
+    expect(latestSelection!.affinity, TextAffinity.upstream);
 
     await tester.tapAt(selectableTextStart + const Offset(150.0, 5.0));
     await tester.pump(const Duration(milliseconds: 500));
@@ -4016,7 +4023,7 @@ void main() {
     // Move the cursor to the edge of the same word and toggle the toolbar.
     expect(currentSelection, const TextSelection(baseOffset: 0, extentOffset: 7));
 
-    expect(find.byType(CupertinoButton), findsNWidgets(2));
+    expect(find.byType(CupertinoButton), findsNWidgets(4));
   }, variant: TargetPlatformVariant.only(TargetPlatform.iOS));
 
   testWidgets(
@@ -4214,6 +4221,7 @@ void main() {
   testWidgets(
     'long press drag can edge scroll when inside a scrollable',
     (WidgetTester tester) async {
+      // This is a regression test for https://github.com/flutter/flutter/issues/129590.
       TextSelection? currentSelection;
       final scrollController = ScrollController();
       addTearDown(scrollController.dispose);
@@ -4353,21 +4361,16 @@ void main() {
     'long press drag can edge scroll',
     (WidgetTester tester) async {
       TextSelection? currentSelection;
-      final String testValue = 'Line\n' * 30;
-
       await tester.pumpWidget(
         MaterialApp(
           home: Material(
             child: Center(
-              child: SizedBox(
-                height: 200.0,
-                width: 300.0,
-                child: SelectableText(
-                  testValue,
-                  onSelectionChanged: (TextSelection selection, SelectionChangedCause? cause) {
-                    currentSelection = selection;
-                  },
-                ),
+              child: SelectableText(
+                'Atwater Peel Sherbrooke Bonaventure Angrignon Peel Côte-des-Neiges ' * 2,
+                maxLines: 1,
+                onSelectionChanged: (TextSelection selection, SelectionChangedCause? cause) {
+                  currentSelection = selection;
+                },
               ),
             ),
           ),
@@ -4375,47 +4378,67 @@ void main() {
       );
       await tester.pump();
 
-      final Offset startPos = textOffsetToPosition(tester, 5);
+      final Offset selectableTextStart = tester.getTopLeft(find.byType(SelectableText));
 
-      final TestGesture gesture = await tester.startGesture(startPos);
+      final TestGesture gesture = await tester.startGesture(
+        selectableTextStart + const Offset(300, 5),
+      );
       await tester.pump(kLongPressTimeout);
 
       expect(currentSelection, isNotNull);
       expect(currentSelection!.isValid, isTrue);
 
-      final RenderBox viewportBox = tester.renderObject(
-        find.descendant(
-          of: find.byType(SelectableText),
-          matching: find.byType(SingleChildScrollView),
-        ),
-      );
-      final Offset viewportPosition = viewportBox.localToGlobal(Offset.zero);
-      final double bottomEdge = viewportPosition.dy + viewportBox.size.height;
+      expect(currentSelection, const TextSelection(baseOffset: 13, extentOffset: 23));
 
-      // Drag past the bottom edge of the INTERNAL viewport.
-      await gesture.moveTo(Offset(viewportPosition.dx + 50, bottomEdge + 300));
+      await gesture.moveBy(const Offset(300, 0));
+      // To the edge of the screen basically.
       await tester.pump();
+      expect(currentSelection, const TextSelection(baseOffset: 13, extentOffset: 45));
+      // Keep moving out.
+      await gesture.moveBy(const Offset(300, 0));
+      await tester.pump();
+      expect(currentSelection, const TextSelection(baseOffset: 13, extentOffset: 66));
+      await gesture.moveBy(const Offset(400, 0));
+      await tester.pump();
+      expect(currentSelection, const TextSelection(baseOffset: 13, extentOffset: 102));
 
-      // Pump to allow scrolling to progress.
-      await tester.pumpAndSettle();
+      await gesture.moveBy(const Offset(700, 0));
+      await tester.pump();
+      expect(currentSelection, const TextSelection(baseOffset: 13, extentOffset: 134));
 
-      final ScrollableState internalScrollable = tester.state(
-        find.descendant(of: find.byType(SelectableText), matching: find.byType(Scrollable)),
-      );
-      expect(internalScrollable.position.pixels, greaterThan(0.0));
       await gesture.up();
       await tester.pumpAndSettle();
 
       // The selection isn't affected by the gesture lift.
-      expect(currentSelection, isNotNull);
-      expect(currentSelection!.extentOffset, greaterThan(0));
-
+      expect(currentSelection, const TextSelection(baseOffset: 13, extentOffset: 134));
       // The toolbar shows up.
       if (defaultTargetPlatform == TargetPlatform.iOS) {
         expectCupertinoSelectionToolbar();
       } else {
         expectMaterialSelectionToolbar();
       }
+
+      // Find the selection handle fade transition after the start handle has been
+      // hidden because it is out of view.
+      final List<FadeTransition> transitionsAfter = find
+          .descendant(
+            of: find.byWidgetPredicate(
+              (Widget w) => '${w.runtimeType}' == '_SelectionHandleOverlay',
+            ),
+            matching: find.byType(FadeTransition),
+          )
+          .evaluate()
+          .map((Element e) => e.widget)
+          .cast<FadeTransition>()
+          .toList();
+
+      expect(transitionsAfter.length, 2);
+
+      final FadeTransition startHandleAfter = transitionsAfter[0];
+      final FadeTransition endHandleAfter = transitionsAfter[1];
+
+      expect(startHandleAfter.opacity.value, 0.0);
+      expect(endHandleAfter.opacity.value, 1.0);
     },
     variant: const TargetPlatformVariant(<TargetPlatform>{
       TargetPlatform.iOS,
@@ -4557,9 +4580,7 @@ void main() {
       // Double tap selection.
       expect(currentSelection, const TextSelection(baseOffset: 8, extentOffset: 12));
 
-      if (defaultTargetPlatform == TargetPlatform.iOS) {
-        expectCupertinoSelectionToolbar();
-      }
+      expectCupertinoSelectionToolbar();
     },
     variant: const TargetPlatformVariant(<TargetPlatform>{
       TargetPlatform.iOS,
@@ -4601,9 +4622,7 @@ void main() {
     await tester.pump(const Duration(milliseconds: 50));
     expect(currentSelection, const TextSelection(baseOffset: 0, extentOffset: 7));
 
-    if (defaultTargetPlatform == TargetPlatform.iOS) {
-      expectCupertinoSelectionToolbar();
-    }
+    expectCupertinoSelectionToolbar();
 
     // Double tap selecting the same word somewhere else is fine.
     await tester.pumpAndSettle(kDoubleTapTimeout);
@@ -4624,9 +4643,7 @@ void main() {
     // On iOS the selection remains the same.
     expect(currentSelection, const TextSelection(baseOffset: 0, extentOffset: 7));
 
-    if (defaultTargetPlatform == TargetPlatform.iOS) {
-      expectCupertinoSelectionToolbar();
-    }
+    expectCupertinoSelectionToolbar();
 
     // Hide the toolbar so it doesn't interfere with taps on the text.
     final SelectableRegionState selectableRegionState = tester.state<SelectableRegionState>(
@@ -4651,9 +4668,7 @@ void main() {
     await tester.pump(const Duration(milliseconds: 50));
     expect(currentSelection, const TextSelection(baseOffset: 8, extentOffset: 12));
 
-    if (defaultTargetPlatform == TargetPlatform.iOS) {
-      expectCupertinoSelectionToolbar();
-    }
+    expectCupertinoSelectionToolbar();
   }, variant: const TargetPlatformVariant(<TargetPlatform>{TargetPlatform.iOS, TargetPlatform.macOS}));
 
   testWidgets('force press does not select a word on (android)', (WidgetTester tester) async {
@@ -4806,6 +4821,9 @@ void main() {
     await tester.pump();
     // Single taps shouldn't trigger the toolbar.
     expect(find.byType(CupertinoButton), findsNothing);
+    // TODO(gspencergoog): Add in TargetPlatform.macOS in the line below when we
+    // figure out what global state is leaking.
+    // https://github.com/flutter/flutter/issues/43445
   }, variant: TargetPlatformVariant.only(TargetPlatform.iOS));
 
   testWidgets('default SelectableText debugFillProperties', (WidgetTester tester) async {
@@ -5972,9 +5990,7 @@ void main() {
 
   // TODO(Renzo-Olivares): This test fails because SelectionArea/SelectableText does not yet implement KeepAlive support when focused/selected.
   testWidgets('keeps alive when has focus', (WidgetTester tester) async {
-    final focusNode = FocusNode();
     TextSelection? selection;
-    addTearDown(focusNode.dispose);
 
     await tester.pumpWidget(
       MaterialApp(
@@ -6012,7 +6028,6 @@ void main() {
                     padding: const EdgeInsets.only(top: 100.0),
                     child: SelectableText(
                       'Selectable Text',
-                      focusNode: focusNode,
                       onSelectionChanged: (TextSelection s, SelectionChangedCause? cause) {
                         selection = s;
                       },
@@ -6048,14 +6063,12 @@ void main() {
     expect(find.text('Regular Text', skipOffstage: false), findsNothing);
     expect(find.byType(SelectableText, skipOffstage: false), findsOneWidget);
 
-    expect(focusNode.hasFocus, isFalse);
     expect(selection, isNull);
     final Offset tapPos = textOffsetToPosition(tester, 4, ancestor: find.byType(SelectableText));
     await tester.tapAt(tapPos);
     await tester.pump(const Duration(milliseconds: 50));
     await tester.tapAt(tapPos);
     await tester.pumpAndSettle();
-    expect(focusNode.hasFocus, isTrue);
     expect(selection, isNotNull);
     expect(selection!.isValid, isTrue);
     expect(selection!.baseOffset, 0);
@@ -6105,15 +6118,10 @@ void main() {
 
       expect(currentSelection, const TextSelection(baseOffset: 4, extentOffset: 7));
 
-      final RenderParagraph paragraph = tester.renderObject(
-        find.descendant(of: find.byType(SelectableText), matching: find.byType(RichText)),
-      );
-      final List<TextBox> boxes = paragraph.getBoxesForSelection(currentSelection!);
-      expect(boxes.isNotEmpty, true);
-      final Offset endHandlePos = paragraph.localToGlobal(boxes.last.toRect().bottomRight);
+      final List<TextSelectionPoint> endpoints = getSelectionEndpoints(tester);
 
       // Drag the right handle 2 letters to the right.
-      final Offset handlePos = endHandlePos + const Offset(1.0, 1.0);
+      final Offset handlePos = endpoints.last.point + const Offset(1.0, 1.0);
       final TestGesture gesture = await tester.startGesture(handlePos, pointer: 7);
 
       Offset? firstDragGesturePosition;
