@@ -145,27 +145,24 @@ void main() {
       '$kThreeLines\n'
       "Fourth line won't display and ends at";
 
-  RenderParagraph findRenderParagraph(WidgetTester tester) {
-    return tester.renderObject<RenderParagraph>(find.byType(RichText));
-  }
   // Returns the first RenderParagraph.
-  // RenderParagraph findRenderParagraph(WidgetTester tester) {
-  //   final RenderObject root = tester.renderObject(find.byType(RichText));
-  //   expect(root, isNotNull);
+  RenderParagraph findRenderParagraph(WidgetTester tester) {
+    final RenderObject root = tester.renderObject(find.byType(SelectableText));
+    expect(root, isNotNull);
 
-  //   late RenderParagraph renderParagraph;
-  //   void recursiveFinder(RenderObject child) {
-  //     if (child is RenderParagraph) {
-  //       renderParagraph = child;
-  //       return;
-  //     }
-  //     child.visitChildren(recursiveFinder);
-  //   }
+    late RenderParagraph renderParagraph;
+    void recursiveFinder(RenderObject child) {
+      if (child is RenderParagraph) {
+        renderParagraph = child;
+        return;
+      }
+      child.visitChildren(recursiveFinder);
+    }
 
-  //   root.visitChildren(recursiveFinder);
-  //   expect(renderParagraph, isNotNull);
-  //   return renderParagraph;
-  // }
+    root.visitChildren(recursiveFinder);
+    expect(renderParagraph, isNotNull);
+    return renderParagraph;
+  }
 
   // Check that the Cupertino text selection toolbar is the expected one on iOS and macOS.
   // TODO(bleroux): try to merge this into text_selection_toolbar_utils.dart
