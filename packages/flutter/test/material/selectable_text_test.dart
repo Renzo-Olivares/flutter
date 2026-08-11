@@ -4445,6 +4445,9 @@ void main() {
       final FadeTransition startHandleAfter = transitionsAfter[0];
       final FadeTransition endHandleAfter = transitionsAfter[1];
 
+      // TODO(roliv): Fails because SelectableRegion does not pass handle visibility notifiers
+      // (startHandlesVisible/endHandlesVisible) to SelectionOverlay, so offscreen handle FadeTransition
+      // opacity stays 1.0.
       expect(startHandleAfter.opacity.value, 0.0);
       expect(endHandleAfter.opacity.value, 1.0);
     },
