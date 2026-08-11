@@ -3443,7 +3443,13 @@ void main() {
       // Second tap selects the word around the cursor.
       expect(latestSelection, const TextSelection(baseOffset: 8, extentOffset: 12));
 
-      expectCupertinoSelectionToolbar();
+      // The toolbar is showing on iOS. On macOS SelectableRegion is
+      // not wired up to show the toolbar on touch interaction.
+      if (defaultTargetPlatform == TargetPlatform.iOS) {
+        expectCupertinoSelectionToolbar();
+      } else {
+        expect(find.byType(CupertinoButton), findsNothing);
+      }
     },
     variant: const TargetPlatformVariant(<TargetPlatform>{
       TargetPlatform.iOS,
@@ -3579,8 +3585,13 @@ void main() {
 
       // Still selected.
       expect(latestSelection, const TextSelection(baseOffset: 8, extentOffset: 12));
-      // The toolbar is still showing.
-      expectCupertinoSelectionToolbar();
+      // The toolbar is still showing on iOS. On macOS SelectableRegion is
+      // not wired up to show the toolbar on touch interaction.
+      if (defaultTargetPlatform == TargetPlatform.iOS) {
+        expectCupertinoSelectionToolbar();
+      } else {
+        expect(find.byType(CupertinoButton), findsNothing);
+      }
     },
     variant: const TargetPlatformVariant(<TargetPlatform>{
       TargetPlatform.iOS,
@@ -4577,7 +4588,13 @@ void main() {
       // Double tap selection.
       expect(currentSelection, const TextSelection(baseOffset: 8, extentOffset: 12));
 
-      expectCupertinoSelectionToolbar();
+      // The toolbar is showing on iOS. On macOS SelectableRegion is
+      // not wired up to show the toolbar on touch interaction.
+      if (defaultTargetPlatform == TargetPlatform.iOS) {
+        expectCupertinoSelectionToolbar();
+      } else {
+        expect(find.byType(CupertinoButton), findsNothing);
+      }
     },
     variant: const TargetPlatformVariant(<TargetPlatform>{
       TargetPlatform.iOS,
@@ -4619,7 +4636,13 @@ void main() {
     await tester.pump(const Duration(milliseconds: 50));
     expect(currentSelection, const TextSelection(baseOffset: 0, extentOffset: 7));
 
-    expectCupertinoSelectionToolbar();
+    // The toolbar showing on iOS. On macOS SelectableRegion is
+    // not wired up to show the toolbar on touch interaction.
+    if (defaultTargetPlatform == TargetPlatform.iOS) {
+      expectCupertinoSelectionToolbar();
+    } else {
+      expect(find.byType(CupertinoButton), findsNothing);
+    }
 
     // Double tap selecting the same word somewhere else is fine.
     await tester.pumpAndSettle(kDoubleTapTimeout);
@@ -4640,7 +4663,13 @@ void main() {
     // On iOS the selection remains the same.
     expect(currentSelection, const TextSelection(baseOffset: 0, extentOffset: 7));
 
-    expectCupertinoSelectionToolbar();
+    // The toolbar showing on iOS. On macOS SelectableRegion is
+    // not wired up to show the toolbar on touch interaction.
+    if (defaultTargetPlatform == TargetPlatform.iOS) {
+      expectCupertinoSelectionToolbar();
+    } else {
+      expect(find.byType(CupertinoButton), findsNothing);
+    }
 
     // Hide the toolbar so it doesn't interfere with taps on the text.
     final SelectableRegionState selectableRegionState = tester.state<SelectableRegionState>(
@@ -4665,7 +4694,13 @@ void main() {
     await tester.pump(const Duration(milliseconds: 50));
     expect(currentSelection, const TextSelection(baseOffset: 8, extentOffset: 12));
 
-    expectCupertinoSelectionToolbar();
+    // The toolbar showing on iOS. On macOS SelectableRegion is
+    // not wired up to show the toolbar on touch interaction.
+    if (defaultTargetPlatform == TargetPlatform.iOS) {
+      expectCupertinoSelectionToolbar();
+    } else {
+      expect(find.byType(CupertinoButton), findsNothing);
+    }
   }, variant: const TargetPlatformVariant(<TargetPlatform>{TargetPlatform.iOS, TargetPlatform.macOS}));
 
   testWidgets('force press does not select a word on (android)', (WidgetTester tester) async {
