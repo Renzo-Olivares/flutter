@@ -114,13 +114,8 @@ Widget boilerplate({Widget? child}) {
         textDirection: TextDirection.ltr,
         child: MediaQuery(
           data: const MediaQueryData(size: Size(800.0, 600.0)),
-          child: Overlay(
-            key: UniqueKey(),
-            initialEntries: <OverlayEntry>[
-              OverlayEntry(
-                builder: (BuildContext context) => Center(child: Material(child: child)),
-              ),
-            ],
+          child: Overlay.wrap(
+            child: Center(child: Material(child: child)),
           ),
         ),
       ),
