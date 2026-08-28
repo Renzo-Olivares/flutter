@@ -37,19 +37,23 @@ The text stack is organized into modular reference guides located under [`refere
 
 When reading, modifying, or reviewing text subsystem code in `flutter/flutter`, always maintain these structural rules:
 
-1. **Subsystem Isolation**:
+1. **Repository Scope & Frozen Design Systems**:
+   - In the `flutter/flutter` repository, active text development takes place in `packages/flutter` across `widgets/`, `rendering/`, `services/`, and `painting/`.
+   - The legacy `packages/flutter/lib/src/material/` and `packages/flutter/lib/src/cupertino/` implementations are **frozen**.
+   - Active development of Material and Cupertino text UI components (`TextField`, `CupertinoTextField`, `AdaptiveTextSelectionToolbar`, `SelectionArea`, selection handles) belongs in the **`material_ui`** and **`cupertino_ui`** packages under the **`flutter/packages`** repository.
+
+2. **Subsystem Isolation**:
    - `RenderEditable` does **not** participate in the `SelectionArea` / `SelectableRegion` selection tree. It maintains its own selection and overlay state machine via `TextSelectionOverlay`.
-   - `SelectionArea` coordinates unified selection across read-only leaf registrants (`_SelectableFragment` in `RenderParagraph`, custom selectables) via the `SelectionRegistrarScope`.
+   - `SelectableRegion` coordinates unified selection across read-only leaf registrants (`_SelectableFragment` in `RenderParagraph`, custom selectables) via the `SelectionRegistrarScope`.
 
-2. **Layer Boundary Rules**:
-   - **`material/`** code and tests (`packages/flutter/lib/src/material/`, `packages/flutter/test/material/`) may import Material, Widgets, Rendering, and Services.
-   - **`cupertino/`** code and tests (`packages/flutter/lib/src/cupertino/`, `packages/flutter/test/cupertino/`) may import Cupertino, Widgets, Rendering, and Services.
+3. **Layer Boundary Rules in `packages/flutter`**:
    - **`widgets/`**, **`rendering/`**, and **`services/`** must **never** import `package:flutter/material.dart` or `package:flutter/cupertino.dart`.
+   - Legacy `material/` and `cupertino/` tests in `packages/flutter/test/` only verify frozen components.
 
-3. **IME Composing Range Preservation**:
+4. **IME Composing Range Preservation**:
    - Never mutate `TextEditingValue.text` without recalculating or explicitly resetting `TextEditingValue.composing` (`TextRange`). Clobbering active composing ranges breaks multilingual IMEs (Japanese, Chinese, Korean, Vietnamese).
 
-4. **BiDi & TextAffinity Disambiguation**:
+5. **BiDi & TextAffinity Disambiguation**:
    - At soft line wrap points and RTL/LTR junctions, a single glyph offset corresponds to two visually distinct caret positions. Always specify or account for `TextAffinity.upstream` vs `TextAffinity.downstream`.
 
 ---

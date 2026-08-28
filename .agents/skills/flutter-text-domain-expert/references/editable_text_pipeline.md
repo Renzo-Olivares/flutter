@@ -44,9 +44,9 @@ This document provides a deep, comprehensive architectural reference for the edi
 
 | Component / Symbol | Source File / Location | Concise Summary |
 | :--- | :--- | :--- |
-| [`TextField`](file:///Users/roliv/flutter/packages/flutter/lib/src/material/text_field.dart) | [`packages/flutter/lib/src/material/text_field.dart`](file:///Users/roliv/flutter/packages/flutter/lib/src/material/text_field.dart) | Material Design text input field with `InputDecoration`, theme tokens, and adaptively resolved toolbars. |
-| [`CupertinoTextField`](file:///Users/roliv/flutter/packages/flutter/lib/src/cupertino/text_field.dart) | [`packages/flutter/lib/src/cupertino/text_field.dart`](file:///Users/roliv/flutter/packages/flutter/lib/src/cupertino/text_field.dart) | iOS-styled text entry widget with rounded borders, clear buttons, and Cupertino selection handles. |
-| [`EditableText`](file:///Users/roliv/flutter/packages/flutter/lib/src/widgets/editable_text.dart) | [`packages/flutter/lib/src/widgets/editable_text.dart`](file:///Users/roliv/flutter/packages/flutter/lib/src/widgets/editable_text.dart) | Core stateful text editing widget managing the cursor loop, IME connections, and shortcuts. |
+| [`TextField`](file:///Users/roliv/flutter/packages/flutter/lib/src/material/text_field.dart) | [`packages/flutter/lib/src/material/text_field.dart`](file:///Users/roliv/flutter/packages/flutter/lib/src/material/text_field.dart) | Material text input wrapper (legacy/frozen here; actively developed in `material_ui` under `flutter/packages`). |
+| [`CupertinoTextField`](file:///Users/roliv/flutter/packages/flutter/lib/src/cupertino/text_field.dart) | [`packages/flutter/lib/src/cupertino/text_field.dart`](file:///Users/roliv/flutter/packages/flutter/lib/src/cupertino/text_field.dart) | Cupertino text entry wrapper (legacy/frozen here; actively developed in `cupertino_ui` under `flutter/packages`). |
+| [`EditableText`](file:///Users/roliv/flutter/packages/flutter/lib/src/widgets/editable_text.dart) | [`packages/flutter/lib/src/widgets/editable_text.dart`](file:///Users/roliv/flutter/packages/flutter/lib/src/widgets/editable_text.dart) | Core stateful text editing widget in `flutter/flutter` managing the cursor loop, IME connections, and shortcuts. |
 | [`EditableTextState`](file:///Users/roliv/flutter/packages/flutter/lib/src/widgets/editable_text.dart) | [`packages/flutter/lib/src/widgets/editable_text.dart`](file:///Users/roliv/flutter/packages/flutter/lib/src/widgets/editable_text.dart) | State engine implementing `TextInputClient`, `TextSelectionDelegate`, `AutofillClient`, `WidgetsBindingObserver`, and `TickerProviderStateMixin`. |
 | [`TextSelectionGestureDetector`](file:///Users/roliv/flutter/packages/flutter/lib/src/widgets/text_selection.dart) | [`packages/flutter/lib/src/widgets/text_selection.dart`](file:///Users/roliv/flutter/packages/flutter/lib/src/widgets/text_selection.dart) | Gesture detector wrapper orchestrating tap, double-tap, triple-tap, and drag selection on editable text. |
 | [`TextEditingController`](file:///Users/roliv/flutter/packages/flutter/lib/src/widgets/editable_text.dart) | [`packages/flutter/lib/src/widgets/editable_text.dart`](file:///Users/roliv/flutter/packages/flutter/lib/src/widgets/editable_text.dart) | Controller holding the canonical `TextEditingValue` and generating styled `InlineSpan` trees. |
@@ -79,17 +79,20 @@ This document provides a deep, comprehensive architectural reference for the edi
 
 ## 1. Editable Widget & State Machine
 
-The editable text subsystem manages user input, software/hardware keyboards, cursor blinking, text selection, and viewport scrolling.
+The editable text subsystem manages user input, software/hardware keyboards, cursor blinking, text selection, and viewport scrolling. In `flutter/flutter`, the active core engine is [`EditableText`](file:///Users/roliv/flutter/packages/flutter/lib/src/widgets/editable_text.dart) and [`RenderEditable`](file:///Users/roliv/flutter/packages/flutter/lib/src/rendering/editable.dart).
 
-### Presentation Layer (`TextField`, `CupertinoTextField`)
+### Design-System Wrappers (`TextField`, `CupertinoTextField`)
+
+> [!NOTE]
+> `TextField` and `CupertinoTextField` in `packages/flutter` are frozen. Active development of design-system text fields takes place in **`material_ui`** and **`cupertino_ui`** under the **`flutter/packages`** repository. Both wrap the foundational `EditableText` engine:
 
 1. **[`TextField`](file:///Users/roliv/flutter/packages/flutter/lib/src/material/text_field.dart)**:
    - Material design text entry widget.
    - Applies `InputDecoration` (labels, helper text, error text, prefix/suffix icons, Material borders).
-   - Configures theme tokens, cursor color, selection handles via `materialTextSelectionHandleControls`, and toolbars via `AdaptiveTextSelectionToolbar`.
+   - Configures theme tokens, cursor color, selection handles, and toolbars.
 2. **[`CupertinoTextField`](file:///Users/roliv/flutter/packages/flutter/lib/src/cupertino/text_field.dart)**:
    - iOS-styled text entry widget with rounded borders, prefix/suffix widgets, clear button mode, and iOS cursor blinking simulations.
-   - Configures selection handles via `cupertinoTextSelectionHandleControls` and toolbars via `CupertinoAdaptiveTextSelectionToolbar`.
+   - Configures Cupertino selection handles and toolbars.
 
 ---
 
