@@ -376,7 +376,8 @@ Scrollable.build()
 
 When a user drags a selection handle or cursor near the boundary of a scrollable view:
 - **Velocity Scalar**: Initialized with `_kDefaultSelectToScrollVelocityScalar = 30` in [`widgets/scrollable_helpers.dart`](file:///Users/roliv/flutter/packages/flutter/lib/src/widgets/scrollable_helpers.dart).
-- **Edge Detection**: Evaluates whether the pointer drag target lies within the auto-scroll threshold edge bands.
+- **Collision & Overdrag Evaluation**: Evaluates whether the incoming `dragTarget` rect extends beyond viewport boundaries (`proxyStart < viewportStart` or `proxyEnd > viewportEnd`). Auto-scroll velocity scales directly with overdrag distance ($\text{overDrag} \times \text{velocityScalar}$). Note that `EdgeDraggingAutoScroller` does **not** maintain internal edge bands; the caller delegate is responsible for calculating target geometry.
+- **Directional Edge Bands in Delegates**: In `_ScrollableSelectionContainerDelegate._dragTargetFromEvent`, pointer coordinates within an inner threshold (e.g., $20\text{ px}$) of a viewport boundary project the `dragTarget` outward beyond that boundary. This enables edge-scrolling on full-screen scroll views (without `SafeArea` insets) where pointer events cannot physically cross outside the viewport, while keeping outside-drag coordinates uninflated.
 - **Gesture Arbitration**: When auto-scrolling is active, `_ScrollableSelectionContainerDelegate.handleSelectionEdgeUpdate` returns `SelectionResult.pending`. This signals parent scrollables that the nested scrollable is handling movement, preventing conflicting parent viewport shifts.
 
 ---

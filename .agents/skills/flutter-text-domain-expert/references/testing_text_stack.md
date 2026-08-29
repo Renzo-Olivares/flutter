@@ -13,6 +13,7 @@ This document is a focused testing reference for the Flutter text subsystem (`pa
 5. [Finding & Interacting with Floating Overlays & Toolbars](#5-finding--interacting-with-floating-overlays--toolbars)
 6. [Realistic IME Simulation (`TestTextInput` vs. `enterText`)](#6-realistic-ime-simulation-testtextinput-vs-entertext)
 7. [BiDi & TextAffinity Assertions](#7-bidi--textaffinity-assertions)
+8. [Edge Scrolling & Viewport Drag Simulation](#8-edge-scrolling--viewport-drag-simulation)
 
 ---
 
@@ -434,3 +435,43 @@ final TextPosition position = paragraph.getPositionForOffset(
 );
 expect(position.offset, 4);
 ```
+
+---
+
+## 8. Edge Scrolling & Viewport Drag Simulation
+
+### Inside-Edge vs. Outside-Edge Drag Scenarios
+
+When testing selection drag and auto-scrolling in `Scrollable` / `SelectableRegion`, test both geometric entry conditions:
+
+1. **Inside-Edge Drags (Within Viewport Bounds)**:
+   - Simulates physical touch screens (full-screen views without `SafeArea` insets) where the pointer cannot physically leave the screen boundaries.
+   - Position the pointer within the inner edge band (e.g. $5\text{ px}$ inside the boundary):
+   ```dart
+   // 5 pixels ABOVE bottom edge (strictly inside the scrollable)
+   final Offset insideBottom = tester.getBottomLeft(find.byType(ListView)) + const Offset(10, -5);
+   await gesture.moveTo(insideBottom);
+   await tester.pump();
+   await tester.pump(const Duration(milliseconds: 100));
+
+   expect(controller.offset, greaterThan(0.0));
+   ```
+
+2. **Outside-Edge Drags (Past Viewport Bounds)**:
+   - Simulates desktop windowed apps or dialogs where the pointer moves past the scrollable into surrounding window margins or parent widgets.
+   ```dart
+   // 40 pixels PAST bottom edge (strictly outside the scrollable)
+   final Offset outsideBottom = tester.getBottomRight(find.byType(ListView)) + const Offset(0, 40);
+   await gesture.moveTo(outsideBottom);
+   await tester.pump();
+   await tester.pump(const Duration(milliseconds: 100));
+
+   expect(controller.offset, greaterThan(0.0));
+   ```
+
+### Multi-Axis and Bidirectional Test Verification
+
+Scrollable selection containers are axis-agnostic. Always test both axes and bidirectional movement to prevent coordinate inversion bugs (`dx`/`dy`, `width`/`height`, `top`/`bottom` vs. `left`/`right`):
+- **`Axis.vertical`**: Forward (bottom edge) and backward (top edge).
+- **`Axis.horizontal`**: Forward (right edge) and backward (left edge).
+

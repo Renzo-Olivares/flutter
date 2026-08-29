@@ -56,6 +56,10 @@ When reading, modifying, or reviewing text subsystem code in `flutter/flutter`, 
 5. **BiDi & TextAffinity Disambiguation**:
    - At soft line wrap points and RTL/LTR junctions, a single glyph offset corresponds to two visually distinct caret positions. Always specify or account for `TextAffinity.upstream` vs `TextAffinity.downstream`.
 
+6. **Geometry Resolution vs. Lifecycle Coupling**:
+   - Resolve continuous coordinate and drag-geometry bugs at the geometry layer (`_dragTargetFromEvent`, local-to-global transforms, directional edge bands).
+   - Never introduce cross-widget state listeners (e.g. `SelectableRegionSelectionStatusScope`, arbitrary `ValueListenable` subscriptions) to forcibly terminate animations or reset state upon gesture completion as a workaround for distorted overdrag geometry.
+
 ---
 
 ## 3. General Contribution & Triage Workflow
