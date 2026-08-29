@@ -20,6 +20,7 @@ This document provides a deep, comprehensive architectural reference for the sta
    - [`SelectionContainer` & `SelectionContainerDelegate`](#selectioncontainer--selectioncontainerdelegate)
    - [`SelectionContainer.disabled` & Subtree Selection Exemption](#selectioncontainerdisabled--subtree-selection-exemption)
    - [`MultiSelectableSelectionContainerDelegate` & Reading Order Sorting](#multiselectableselectioncontainerdelegate--reading-order-sorting)
+   - [Querying `SelectionGeometry` from a `SelectionContainerDelegate`](#querying-selectiongeometry-from-a-selectioncontainerdelegate)
    - [`Text` Widget Integration & `_SelectableTextContainerDelegate`](#text-widget-integration--_selectabletextcontainerdelegate)
    - [Scrollable Integration & `_ScrollableSelectionContainerDelegate`](#scrollable-integration--_scrollableselectioncontainerdelegate)
    - [`EdgeDraggingAutoScroller` Mechanics](#edgedraggingautoscroller-mechanics)
@@ -278,6 +279,65 @@ On Flutter Web desktop environments (`kIsWeb && BrowserContextMenu.enabled`), [`
 3. **Why Geometric Reading Order Matters**:
    - **Decoupled Tree Insertion**: Ensures that selection drag events (`SelectionEdgeUpdateEvent`) and select-all operations traverse child nodes in true visual reading order (top-to-bottom, left-to-right) regardless of the order they were inserted into the widget or render tree.
    - **WidgetSpan & Baseline Tolerance**: The `3.0` pixel vertical threshold accommodates subtle baseline differences, font metric variations, and padding on embedded inline `WidgetSpan`s without causing elements on the same line to swap order or split incorrectly.
+
+---
+
+### Querying `SelectionGeometry` from a `SelectionContainerDelegate`
+
+Inside container delegates (such as `MultiSelectableSelectionContainerDelegate`, `StaticSelectionContainerDelegate`, or `_ScrollableSelectionContainerDelegate`), selection geometry is represented at two levels:
+
+1. **Child Geometry (`selectable.value`)**: The raw `SelectionGeometry` of individual child selectables (e.g. `RenderParagraph` / `_SelectableFragment`), expressed in the child's local coordinate space.
+2. **Container Geometry (`this.value`)**: The composite `SelectionGeometry` aggregated across all children, expressed in the container's coordinate space.
+
+#### 1. Child vs. Container Geometry: When to Use Which
+
+| Query Scenario | Source of Truth | Coordinate Space | Lifecycle & Timing Notes |
+| :--- | :--- | :--- | :--- |
+| **During Event Handling**<br>*(inside `handleSelectionEdgeUpdate`, `_dragTargetFromEvent`, etc.)* | `selectables[index].value` | **Child Local Space** | **Immediate**: Children update their `value` in real time during event dispatch. |
+| **Outside Event Handling**<br>*(during paint, overlays, layout callbacks)* | `this.value` | **Container Local Space** | **Deferred**: Aggregate `this.value` is suppressed while `_isHandlingSelectionEvent == true` and refreshed afterward via `_updateSelectionGeometry()`. |
+
+> [!WARNING]
+> **Avoid `this.value` during active gesture/event dispatch!**  
+> Accessing `this.value` mid-event can return stale geometry from the prior frame because `MultiSelectableSelectionContainerDelegate` suppresses composite updates until the selection pass completes.
+
+#### 2. Common Query Patterns
+
+##### A. Querying Edge Points & Line Metrics (`lineHeight`, Caret Offsets)
+Always query the active boundary child directly from `selectables` with bounds checking:
+
+```dart
+// Querying end selection point metrics (e.g. for SelectionEventType.endEdgeUpdate)
+final SelectionPoint? endPoint =
+    (currentSelectionEndIndex != -1 && currentSelectionEndIndex < selectables.length)
+        ? selectables[currentSelectionEndIndex].value.endSelectionPoint
+        : null;
+final double lineHeight = endPoint?.lineHeight ?? 0.0;
+
+// Querying start selection point metrics (e.g. for SelectionEventType.startEdgeUpdate)
+final SelectionPoint? startPoint =
+    (currentSelectionStartIndex != -1 && currentSelectionStartIndex < selectables.length)
+        ? selectables[currentSelectionStartIndex].value.startSelectionPoint
+        : null;
+final double lineHeight = startPoint?.lineHeight ?? 0.0;
+```
+
+##### B. Transforming Child Coordinates to Container or Global Space
+When converting a child's `localPosition` or `selectionRects` into container or global coordinate systems:
+
+```dart
+final Selectable selectable = selectables[currentSelectionEndIndex];
+final RenderBox containerBox = state.context.findRenderObject()! as RenderBox;
+
+// Child local -> Container local:
+final Matrix4 transform = selectable.getTransformTo(containerBox);
+final Offset pointInContainer = MatrixUtils.transformPoint(transform, childPoint.localPosition);
+
+// Container local -> Global screen space:
+final Rect globalRect = MatrixUtils.transformRect(
+  containerBox.getTransformTo(null),
+  Rect.fromLTWH(0, 0, containerBox.size.width, containerBox.size.height),
+);
+```
 
 ---
 
