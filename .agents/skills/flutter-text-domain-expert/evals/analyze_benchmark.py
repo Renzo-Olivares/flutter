@@ -31,6 +31,7 @@ def analyze_candidate(conv_id, name, verbose=True):
     tools_used = []
     files_viewed = set()
     files_edited = set()
+    skill_triggered = False
     
     # 1. Parse steps, tool calls, and file operations from transcript.jsonl
     with open(t_jsonl, "r", encoding="utf-8") as f:
@@ -55,7 +56,10 @@ def analyze_candidate(conv_id, name, verbose=True):
                                     pass
                             if isinstance(args, dict):
                                 if fn == "view_file" and "AbsolutePath" in args:
-                                    files_viewed.add(Path(args["AbsolutePath"]).name)
+                                    abs_path = str(args["AbsolutePath"])
+                                    files_viewed.add(Path(abs_path).name)
+                                    if "flutter-text-domain-expert" in abs_path:
+                                        skill_triggered = True
                                 elif fn in ("replace_file_content", "write_to_file") and "TargetFile" in args:
                                     files_edited.add(Path(args["TargetFile"]).name)
     
@@ -75,6 +79,7 @@ def analyze_candidate(conv_id, name, verbose=True):
     
     if verbose:
         print(f"=== {name} ({conv_id}) ===")
+        print(f"Skill Triggered: {'Yes' if skill_triggered else 'No'}")
         print(f"Total Steps (PLANNER_RESPONSE): {steps}")
         print(f"Total Tool Calls: {tool_calls}")
         print(f"Estimated Tokens: {est_tokens:,} tokens (chars: {full_chars:,})")
@@ -86,6 +91,7 @@ def analyze_candidate(conv_id, name, verbose=True):
     return {
         "conv_id": conv_id,
         "name": name,
+        "skill_triggered": skill_triggered,
         "steps": steps,
         "tool_calls": tool_calls,
         "est_tokens": est_tokens,
@@ -106,6 +112,7 @@ if __name__ == "__main__":
     
     if res_a and res_b:
         print("=== Comparison Summary ===")
+        print(f"Skill Triggered: {'Yes' if res_a['skill_triggered'] else 'No'} vs {'Yes' if res_b['skill_triggered'] else 'No'}")
         step_delta = ((res_b["steps"] - res_a["steps"]) / res_a["steps"]) * 100 if res_a["steps"] else 0
         tool_delta = ((res_b["tool_calls"] - res_a["tool_calls"]) / res_a["tool_calls"]) * 100 if res_a["tool_calls"] else 0
         tok_delta = ((res_b["est_tokens"] - res_a["est_tokens"]) / res_a["est_tokens"]) * 100 if res_a["est_tokens"] else 0

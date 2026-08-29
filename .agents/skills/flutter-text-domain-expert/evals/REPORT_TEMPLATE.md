@@ -26,6 +26,7 @@
 
 | Metric | Candidate A (Baseline) | Candidate B (With Skill) | Delta (%) |
 | :--- | :---: | :---: | :---: |
+| **Skill Triggered Automatically** | | | |
 | **Total Planner Turns** | | | |
 | **Total Tool Calls** | | | |
 | **Estimated Tokens** | | | |
@@ -35,8 +36,8 @@
 ---
 
 ## 3. Trajectory & Behavioral Comparison
-- **Candidate A Investigation & Execution**: [How Candidate A investigated, what files were edited, tool calls executed, and challenges faced]
-- **Candidate B Investigation & Execution**: [How Candidate B investigated, what files were edited, tool calls executed, and skill references used]
+- **Candidate A Investigation & Execution**: [How Candidate A investigated, whether the skill was triggered automatically (if available), what files were edited, tool calls executed, and challenges faced]
+- **Candidate B Investigation & Execution**: [How Candidate B investigated, whether the skill was triggered automatically (if available), what files were edited, tool calls executed, and skill references used]
 
 ---
 

@@ -20,7 +20,6 @@ evals/
 │       └── 03_first_iteration_vs_edge_scrolling_invariants.json
 └── reports/                # Persisted evaluation reports (grouped by issue)
     └── issue_162856/
-        └── 03_first_iteration_vs_edge_scrolling_invariants_report.md
 ```
 
 ---
@@ -60,6 +59,6 @@ Once submitted, the orchestrating agent handles the entire benchmark autonomousl
 
 1. **Parallel Spawning**: Concurrently launches Candidate A (Baseline) and Candidate B (Treatment) in isolated worktree branches (`Workspace: "branch"`).
 2. **Reactive Waiting**: Stands by for both subagents to finish without polling loops.
-3. **Metric Extraction**: Automatically executes `python3 .agents/skills/flutter-text-domain-expert/evals/analyze_benchmark.py <CONV_A> <CONV_B>` to calculate exact step counts, tool distributions, and token usage.
+3. **Metric Extraction**: Automatically executes `python3 .agents/skills/flutter-text-domain-expert/evals/analyze_benchmark.py <CONV_A> <CONV_B>` to calculate exact step counts, tool distributions, token usage, and automatic skill trigger status.
 4. **Scoring & Report Saving**: Evaluates both trajectories against `rubric.md` and saves the completed report directly to `evals/reports/issue_<NUMBER>/<CASE_NAME>_report.md`.
 5. **Interactive Output**: Renders the final verdict, scorecard table, and trajectory breakdown in chat.

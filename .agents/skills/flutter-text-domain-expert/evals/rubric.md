@@ -37,6 +37,7 @@ Score both candidates strictly against the following 100-point rubric:
 
 ## 5. Search Precision & Autonomous Discovery (10 pts)
 - **Directness of Path**: Navigated directly to relevant files without exploratory wandering across unrelated directories.
+- **Autonomous Skill Activation**: Did the agent autonomously trigger/consult the `flutter-text-domain-expert` skill (if available in the environment) upon encountering the text domain task?
 - **Hallucinations**: Did not hallucinate non-existent classes, files, or APIs.
 
 ---

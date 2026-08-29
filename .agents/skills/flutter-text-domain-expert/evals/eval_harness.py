@@ -93,7 +93,7 @@ When both subagents finish:
 1. Note the `conversationId` of both Candidate A and Candidate B.
 2. Automatically run the metric extractor script:
    `python3 .agents/skills/flutter-text-domain-expert/evals/analyze_benchmark.py <CONVERSATION_ID_A> <CONVERSATION_ID_B>`
-3. Inspect their workspace git diffs, test outputs, and analyzer compliance.
+3. Inspect their workspace git diffs, test outputs, analyzer compliance, and whether the skill was triggered automatically (if it exists).
 
 ---
 
