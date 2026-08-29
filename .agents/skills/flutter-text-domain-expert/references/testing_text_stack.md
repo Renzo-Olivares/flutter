@@ -475,3 +475,31 @@ Scrollable selection containers are axis-agnostic. Always test both axes and bid
 - **`Axis.vertical`**: Forward (bottom edge) and backward (top edge).
 - **`Axis.horizontal`**: Forward (right edge) and backward (left edge).
 
+### Direct Drag vs. Selection Handle Drag Simulation
+
+When testing auto-scrolling inside viewport bounds, verify both drag modalities:
+
+1. **Direct Drag (Mouse / Long-Press Move)**:
+   - Tests pointer drag where the coordinate directly tracks the touch point.
+2. **Selection Handle Drag Within Bounds**:
+   - Long-press to bring up selection handles, then drag the start or end handle to a point strictly within bounds ($5\text{px}$ from the edge).
+   - Verifies that the `lineHeight / 2` caret offset does not prevent the selection handle from activating edge scrolling when dragged to the edge on full-screen mobile views.
+   - *(Note: Avoid only testing handle dragging by moving 40px outside the viewport, as dragging past the viewport masks the `lineHeight / 2` offset).*
+
+### Gesture Release & Scroll Cessation Invariant
+
+Whenever testing edge auto-scrolling, always assert that releasing the gesture halts scrolling immediately and does not continue scrolling during subsequent pumps:
+
+```dart
+// 1. Release the gesture
+await gesture.up();
+await tester.pump();
+await tester.pump(const Duration(seconds: 1));
+final double offsetAfterRelease = controller.offset;
+
+// 2. Settle the tree and ensure no phantom overscroll occurred
+await tester.pumpAndSettle();
+expect(controller.offset, offsetAfterRelease);
+```
+
+

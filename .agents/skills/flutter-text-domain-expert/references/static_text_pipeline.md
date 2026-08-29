@@ -369,6 +369,13 @@ Scrollable.build()
 - **Edge Update Synthesizing**:
   - Maintains records of the last scroll offset when a child selectable received a `SelectionEdgeUpdateEvent` (`_selectableStartEdgeUpdateRecords`, `_selectableEndEdgeUpdateRecords`).
   - If a selectable receives an edge update after scrolling has occurred, the delegate synthesizes an opposite edge update before dispatching the new event, maintaining continuous selection state across virtualized/scrolled elements.
+- **Selection Handle vs. Caret Geometry in `_ScrollableSelectionContainerDelegate`**:
+  - **The Caret vs. Handle Offset**: When a user drags a selection handle on mobile, `SelectableRegion` offsets the dispatched drag coordinate upward by `lineHeight / 2` (`_selectionEndPosition = handleDragPosition - Offset(0, lineHeight / 2)`) to place `globalPosition` at the center of the text line, preventing glyph hit-testing from jumping to the line underneath the teardrop handle.
+  - **Line-Height Aware Edge Detection**: Because the coordinate received by `_ScrollableSelectionContainerDelegate` is centered on the text line, the delegate accounts for the full vertical span of the line using the active `SelectionPoint.lineHeight` from `currentSelectionEndIndex` / `currentSelectionStartIndex`:
+    $$\text{lineTop} = \text{position.dy} - \frac{\text{lineHeight}}{2}, \quad \text{lineBottom} = \text{position.dy} + \frac{\text{lineHeight}}{2}$$
+  - **Edge-Band Calculation & Outer Clamping**:
+    - Near the bottom/top inside edges: `_dragTargetFromEvent` tests `lineBottom` against `globalRect.bottom - verticalEdgeBand` and `lineTop` against `globalRect.top + verticalEdgeBand`.
+    - Outside the viewport: When `position.dy` is already beyond `globalRect.bottom` or `globalRect.top`, `_dragTargetFromEvent` clamps strictly to `position.dy` without adding `lineHeight`, preventing auto-scroller overshoot when the gesture is released.
 
 ---
 
