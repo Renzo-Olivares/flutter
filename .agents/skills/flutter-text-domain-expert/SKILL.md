@@ -57,8 +57,8 @@ When reading, modifying, or reviewing text subsystem code in `flutter/flutter`, 
    - At soft line wrap points and RTL/LTR junctions, a single glyph offset corresponds to two visually distinct caret positions. Always specify or account for `TextAffinity.upstream` vs `TextAffinity.downstream`.
 
 6. **Geometry Resolution vs. Lifecycle Coupling**:
-   - Resolve continuous coordinate and drag-geometry bugs at the geometry layer (`_dragTargetFromEvent`, local-to-global transforms, directional edge bands).
-   - Never introduce cross-widget state listeners (e.g. `SelectableRegionSelectionStatusScope`, arbitrary `ValueListenable` subscriptions) to forcibly terminate animations or reset state upon gesture completion as a workaround for distorted overdrag geometry.
+   - Resolve continuous coordinate and gesture-geometry calculations directly at the geometry layer (e.g. coordinate transformations, directional projection, inner proximity thresholds).
+   - Never introduce cross-widget state or lifecycle listeners (e.g. subscribing to selection status notifiers) to forcibly cancel animations or reset state upon gesture release as a workaround for inaccurate or inflated spatial calculations.
 
 ---
 
