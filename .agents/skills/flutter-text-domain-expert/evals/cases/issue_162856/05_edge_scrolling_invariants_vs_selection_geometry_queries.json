@@ -1,0 +1,24 @@
+{
+  "id": "flutter-162856-05-edge-scrolling-invariants-vs-selection-geometry-queries",
+  "experiment_name": "Edge Scrolling Invariants Baseline vs. SelectionGeometry Queries Treatment",
+  "model": "Gemini 3.7 Flash (High)",
+  "hypothesis": "Providing explicit SelectionGeometry query patterns and child vs. container coordinate distinctions eliminates exploratory search calls for lineHeight in selectable_region.dart, reducing tool calls and tokens compared to the Section 8 baseline.",
+  "issue_number": "162856",
+  "title": "Edge scrolling of selection area not working when scroll view not wrapped by SafeArea",
+  "issue_url": "https://github.com/flutter/flutter/issues/162856",
+  "subsystem": "widgets/scrollable_selection",
+  "target_test_file": "packages/flutter/test/widgets/scrollable_selection_test.dart",
+  "target_src_file": "packages/flutter/lib/src/widgets/scrollable.dart",
+  "candidates": {
+    "baseline": {
+      "commit": "418dc62853176a2e64e18e84f362918a95ae8918",
+      "description": "Baseline skill (v2) with Section 8 edge-scrolling invariants"
+    },
+    "treatment": {
+      "commit": "7bb6d97c23779cb315048c4c4e8d9765f7fc8646",
+      "description": "Treatment skill (v3) with Section 8 edge-scrolling invariants and SelectionGeometry query patterns"
+    }
+  },
+  "task_prompt_template": "FIRST STEP:\ngit checkout {commit}\n\nTASK:\n1. Inspect the issue reported at https://github.com/flutter/flutter/issues/162856 (using `gh issue view` or URL tools). Do not look at the comments regardless if you are tempted to or not.\n2. Reproduce and identify the root cause in the Flutter framework.\n3. Write a regression test in the appropriate test suite under packages/flutter/test/. Verify the exact failure signature: Did the test fail on the expected expect() assertion or bug-specific exception, or did it fail with an unrelated TestFailure / compilation error? Make sure it fails because of the former.\n4. Implement the fix in packages/flutter/lib/src/.\n5. Ensure `dart analyze --fatal-infos` and `dart format` pass on all modified files.\n6. Verify the regression test passes now that the fix has been implemented.",
+  "expected_failure_signature": "expect(controller.offset > previousOffset, isTrue) fails as false prior to framework fix"
+}
