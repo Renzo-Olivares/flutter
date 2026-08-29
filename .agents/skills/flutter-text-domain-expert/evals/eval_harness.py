@@ -17,6 +17,7 @@ Usage:
 import argparse
 import json
 import os
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -27,12 +28,24 @@ def load_case(case_path):
         return json.load(f)
 
 
-def get_report_rel_path(case_path):
+def slugify_model(model_name):
+    if not model_name:
+        return ""
+    cleaned = re.sub(r"[^a-zA-Z0-9.]+", "-", model_name.strip().lower()).strip("-")
+    return cleaned
+
+
+def get_report_rel_path(case_path, model=""):
     p = Path(case_path)
     parent_name = p.parent.name
     stem = p.stem
+    model_slug = slugify_model(model)
     if parent_name.startswith("issue_") or (parent_name != "cases" and parent_name != "."):
+        if model_slug:
+            return f"reports/{parent_name}/{model_slug}/{stem}_report.md"
         return f"reports/{parent_name}/{stem}_report.md"
+    if model_slug:
+        return f"reports/{model_slug}/{stem}_report.md"
     return f"reports/{stem}_report.md"
 
 
@@ -40,6 +53,7 @@ def build_orchestrator_prompt(case, case_path=""):
     issue_url = case.get("issue_url", "")
     template = case.get("task_prompt_template", "")
     candidates = case.get("candidates", {})
+    model = case.get("model", "")
     
     baseline = candidates.get("baseline", {})
     treatment = candidates.get("treatment", {})
@@ -50,7 +64,7 @@ def build_orchestrator_prompt(case, case_path=""):
     desc_a = baseline.get("description", "Baseline")
     desc_b = treatment.get("description", "Treatment")
 
-    report_rel_path = get_report_rel_path(case_path) if case_path else f"reports/{case.get('id', 'case')}_report.md"
+    report_rel_path = get_report_rel_path(case_path, model=model) if case_path else f"reports/{case.get('id', 'case')}_report.md"
 
     prompt = f"""# Role: A/B Benchmark Orchestrator & Objective Judge
 You will orchestrate and evaluate a head-to-head A/B benchmark between two autonomous subagents on the following Flutter issue:
