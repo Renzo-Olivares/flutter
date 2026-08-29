@@ -1,6 +1,7 @@
 # Evaluation Report: [Issue Title / Number]
 
-**Target Issue**: [flutter/flutter#XXXXX](https://github.com/flutter/flutter/issues/XXXXX)
+**Target Issue**: [flutter/flutter#XXXXX](https://github.com/flutter/flutter/issues/XXXXX)  
+**Evaluated Model**: [e.g. Gemini 3.7 Flash (High)]
 
 ---
 

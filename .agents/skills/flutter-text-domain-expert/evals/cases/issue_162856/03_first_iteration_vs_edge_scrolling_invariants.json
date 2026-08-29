@@ -1,6 +1,7 @@
 {
   "id": "flutter-162856-03-first-iteration-vs-edge-scrolling-invariants",
   "experiment_name": "First Skill Iteration Baseline vs. Edge Scrolling Invariants Treatment",
+  "model": "Gemini 3.7 Flash (High)",
   "hypothesis": "Providing inside-edge drag guidelines and handle offset geometry prevents agents from reverting to naive 200px drag target boxes or causing bouncing regressions.",
   "issue_number": "162856",
   "title": "Edge scrolling of selection area not working when scroll view not wrapped by SafeArea",

@@ -1,6 +1,7 @@
 {
   "id": "flutter-162856-01-no-skill-vs-first-iteration",
   "experiment_name": "No Skill Baseline vs. First Skill Iteration Treatment",
+  "model": "Gemini 3.7 Flash (High)",
   "hypothesis": "Equipping agents with the initial version of flutter-text-domain-expert provides fundamental subsystem routing and test file location knowledge compared to no skill, though it lacks the specific edge-scrolling invariants added in later iterations.",
   "issue_number": "162856",
   "title": "Edge scrolling of selection area not working when scroll view not wrapped by SafeArea",

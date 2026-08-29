@@ -1,6 +1,7 @@
 {
   "id": "flutter-162856-02-no-skill-vs-edge-scrolling-invariants",
   "experiment_name": "No Skill Baseline vs. Edge Scrolling Invariants Treatment",
+  "model": "Gemini 3.7 Flash (High)",
   "hypothesis": "Equipping agents with flutter-text-domain-expert (including Section 8 edge-scrolling invariants) significantly improves search precision, avoids Flutter text testing traps, and prevents regressions compared to a baseline with no text skill.",
   "issue_number": "162856",
   "title": "Edge scrolling of selection area not working when scroll view not wrapped by SafeArea",
