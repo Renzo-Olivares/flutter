@@ -31,6 +31,8 @@ This document provides a deep, authoritative architectural reference for the fou
    - [Static vs. Editable Overlay Sharing](#static-vs-editable-overlay-sharing)
    - [Selection Handle Controls & Painters](#selection-handle-controls--painters)
    - [Platform Selection Toolbars & `ContextMenuController`](#platform-selection-toolbars--contextmenucontroller)
+   - [Platform Context Menu Action & Button Ordering Matrix](#platform-context-menu-action--button-ordering-matrix)
+   - [Text Subsystem `SystemChannels` Reference Map](#text-subsystem-systemchannels-reference-map)
    - [Magnifier Subsystem & Controllers](#magnifier-subsystem--controllers)
    - [Composited Layer Linking (`LeaderLayer` & `FollowerLayer`)](#composited-layer-linking-leaderlayer--followerlayer)
 
@@ -619,6 +621,36 @@ Floating context menus provide standard clipboard actions (Cut, Copy, Paste, Sel
 
 #### 3. `ContextMenuController`
 - [`ContextMenuController`](file:///Users/roliv/flutter/packages/flutter/lib/src/widgets/context_menu_controller.dart) manages the insertion, layout positioning, and removal of context menus into the application's root [`Overlay`](file:///Users/roliv/flutter/packages/flutter/lib/src/widgets/overlay.dart).
+
+---
+
+### Platform Context Menu Action & Button Ordering Matrix
+
+Context menu buttons, their platform channel invocations, and selection dismissal semantics vary across target platforms:
+
+| Platform | Canonical Button Order | Method Channel / Target | Selection Dismissal Behavior |
+| :--- | :--- | :--- | :--- |
+| **iOS** | `Copy` $\to$ `Select All` $\to$ `Look Up` $\to$ `Search Web` $\to$ `Share...`<br>*(+ `Cut`/`Paste` on editable text)* | `LookUp.invoke`<br>`SearchWeb.invoke`<br>`Share.invoke` | `hideToolbar(false)` *(toolbar hides, but selection handles and active selection remain alive)* |
+| **Android** | `Share` $\to$ `Copy` $\to$ `Select All` $\to$ *Text Processing Actions*<br>*(+ `Cut`/`Paste` on editable text)* | `Share.invoke`<br>`ProcessText.processTextAction` | `clearSelection()` + `hideToolbar()` *(selection is cleared immediately on button click)* |
+| **macOS** | `Copy` $\to$ `Select All` *(vertical right-click menu)* | Clipboard | `hideToolbar()` |
+| **Linux / Windows** | `Copy` $\to$ `Select all` *(vertical desktop card)* | Clipboard | `hideToolbar()` |
+| **Web** | Native browser context menu or Flutter toolbar when browser context menu is suppressed | Browser DOM | Native browser DOM behavior |
+
+---
+
+### Text Subsystem `SystemChannels` Reference Map
+
+The following platform channels under `SystemChannels` coordinate text editing, selection actions, IME input, and system-level text services:
+
+| Channel | Method / Event | Direction | Payload & Types | Subsystem & Purpose |
+| :--- | :--- | :---: | :--- | :--- |
+| **`SystemChannels.platform`**<br>`'flutter/platform'` | `Clipboard.setData`<br>`Clipboard.getData`<br>`Clipboard.hasStrings`<br>`LookUp.invoke`<br>`SearchWeb.invoke`<br>`Share.invoke`<br>`LiveText.isLiveTextInputAvailable`<br>`HapticFeedback.vibrate` | Outgoing | `{'text': String}`<br>`'text/plain'` $\to$ `{'text': String}`<br>`void` $\to$ `{'value': bool}`<br>`String` (selected plain text)<br>`String` (selected plain text)<br>`String` (selected plain text)<br>`void` $\to$ `bool`<br>`void` | System clipboard data transfer, iOS dictionary popup, iOS web search invocation, iOS/Android share sheet modal, Apple Live Text availability detection, and text selection haptic vibration. |
+| **`SystemChannels.textInput`**<br>`'flutter/textinput'` | `TextInput.setClient`<br>`TextInput.show`<br>`TextInput.hide`<br>`TextInput.setEditingState`<br>`TextInput.clearClient`<br>`TextInput.startLiveTextInput`<br><br>*Incoming:*<br>`TextInputClient.updateEditingState`<br>`TextInputClient.performAction`<br>`TextInputClient.onConnectionClosed` | Outgoing<br><br><br><br><br><br><br>Incoming | `[int clientId, Map config]`<br>`void`<br>`void`<br>`Map textEditingValue`<br>`void`<br>`void`<br><br>`[int id, Map state]`<br>`[int id, String action]`<br>`[int id]` | Primary IME transaction channel: opens/closes soft keyboard, synchronizes text buffer and composing range, dispatches action button presses (`done`, `go`, `newline`). |
+| **`SystemChannels.processText`**<br>`'flutter/processtext'` | `ProcessText.queryTextActions`<br>`ProcessText.processTextAction` | Outgoing | `void` $\to$ `Map<String, String>`<br>`[String id, String text, bool readOnly]` $\to$ `String?` | Android 6.0+ Text Processing Intents (exposing third-party application actions in context menus). |
+| **`SystemChannels.spellCheck`**<br>`'flutter/spellcheck'` | `SpellCheck.initiateSpellCheck` | Outgoing | `[String text, String locale]` $\to$ `List<SuggestionSpan>?` | Native operating system spell checking and replacement suggestions (Android & iOS). |
+| **`SystemChannels.scribe`**<br>`'flutter/scribe'` | `Scribe.startStylusHandwriting`<br>`Scribe.isStylusHandwritingAvailable`<br>`Scribe.isFeatureAvailable` | Outgoing | `void`<br>`void` $\to$ `bool`<br>`void` $\to$ `bool` | Android Scribe stylus handwriting detection and direct input. |
+| **`SystemChannels.contextMenu`**<br>`'flutter/contextmenu'` | `ContextMenu.enableContextMenu`<br>`ContextMenu.disableContextMenu` | Outgoing | `void`<br>`void` | Web platform channel controlling browser context menu suppression. |
+| **`SystemChannels.undoManager`**<br>`'flutter/undomanager'` | `UndoManager.undo`<br>`UndoManager.redo` | Outgoing | `void`<br>`void` | Platform undo/redo stack dispatch. |
 
 ---
 

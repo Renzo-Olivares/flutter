@@ -14,6 +14,7 @@ This document is a focused testing reference for the Flutter text subsystem (`pa
 6. [Realistic IME Simulation (`TestTextInput` vs. `enterText`)](#6-realistic-ime-simulation-testtextinput-vs-entertext)
 7. [BiDi & TextAffinity Assertions](#7-bidi--textaffinity-assertions)
 8. [Edge Scrolling & Viewport Drag Simulation](#8-edge-scrolling--viewport-drag-simulation)
+9. [`flutter/packages` Cross-Repo Testing & Verified Patch Workflow](#9-flutterpackages-cross-repo-testing--verified-patch-workflow)
 
 ---
 
@@ -342,6 +343,44 @@ final Finder handleGestureDetector = find.descendant(
 expect(handleGestureDetector, findsNWidgets(2));
 ```
 
+### Mocking Context Menu & Text Platform Channels (`SystemChannels.platform` / `processText`)
+
+When writing regression tests for context menu buttons (e.g. `Look Up`, `Search Web`, `Share`, `Live Text`, `Process Text`), intercept the outgoing platform channel messages using `setMockMethodCallHandler` and ensure cleanup via `addTearDown`:
+
+```dart
+testWidgets('Look Up button triggers LookUp.invoke platform channel', (WidgetTester tester) async {
+  String? invokedText;
+  TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(
+    SystemChannels.platform,
+    (MethodCall methodCall) async {
+      if (methodCall.method == 'LookUp.invoke') {
+        invokedText = methodCall.arguments as String;
+      }
+      return null;
+    },
+  );
+  addTearDown(
+    () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+      SystemChannels.platform,
+      null,
+    ),
+  );
+
+  await tester.pumpWidget(
+    MaterialApp(
+      home: Scaffold(
+        body: SelectionArea(child: Text('Hello world')),
+      ),
+    ),
+  );
+  await tester.pumpAndSettle();
+
+  // Select text and tap 'Look Up'
+  // ...
+  expect(invokedText, equals('Hello'));
+});
+```
+
 ---
 
 ## 6. Realistic IME Simulation (`TestTextInput` vs. `enterText`)
@@ -501,5 +540,38 @@ final double offsetAfterRelease = controller.offset;
 await tester.pumpAndSettle();
 expect(controller.offset, offsetAfterRelease);
 ```
+
+---
+
+## 9. `flutter/packages` Cross-Repo Testing & Verified Patch Workflow
+
+When implementing design-system text plumbing or UI features in `flutter/packages` (`material_ui` or `cupertino_ui`):
+
+### Dual-Channel CI Constraint (`master` & `stable`)
+`flutter/packages` runs continuous integration against **both `flutter/flutter` `master` and `stable`**:
+- **Zero Framework Material/Cupertino Plumbing**: Never add plumbing, parameters, or wrappers to `packages/flutter/lib/src/material/` or `packages/flutter/lib/src/cupertino/`. All design-system text plumbing must be done directly in `material_ui` or `cupertino_ui`.
+- **Two-Phase Feature Rollout**: If `material_ui` or `cupertino_ui` relies on a new framework API from `widgets/`, `rendering/`, or `services/`, that API must ship in an official Flutter `stable` release before it can be consumed in `flutter/packages`.
+
+### Verification Matrix
+Before generating a patch for `flutter/packages`, verify against both channels:
+```bash
+# 1. Run unit tests against the current local framework (master)
+flutter test packages/material_ui/test/
+
+# 2. Run unit tests against Flutter stable (to ensure no compile-time regressions on stable CI)
+/path/to/flutter-stable/bin/flutter test packages/material_ui/test/
+
+# 3. Verify static analysis and formatting
+dart analyze --fatal-infos packages/material_ui/
+dart format --set-exit-if-changed packages/material_ui/
+```
+
+### Verified Patch Proposal
+Once all tests and static analysis pass cleanly across both channels:
+```bash
+git diff packages/material_ui/ > material_ui_plumbing.patch
+```
+Provide the `.patch` artifact for manual review and application by the prompter.
+
 
 

@@ -38,10 +38,11 @@ The text stack is organized into modular reference guides located under [`refere
 
 When reading, modifying, or reviewing text subsystem code in `flutter/flutter`, always maintain these structural rules:
 
-1. **Repository Scope & Frozen Design Systems**:
-   - In the `flutter/flutter` repository, active text development takes place in `packages/flutter` across `widgets/`, `rendering/`, `services/`, and `painting/`.
-   - The legacy `packages/flutter/lib/src/material/` and `packages/flutter/lib/src/cupertino/` implementations are **frozen**.
-   - Active development of Material and Cupertino text UI components (`TextField`, `CupertinoTextField`, `AdaptiveTextSelectionToolbar`, `SelectionArea`, selection handles) belongs in the **`material_ui`** and **`cupertino_ui`** packages under the **`flutter/packages`** repository.
+1. **Strictly Frozen Design Systems in `flutter/flutter` (Zero Exceptions)**:
+   - In the `flutter/flutter` repository, text development is strictly restricted to `packages/flutter` under `widgets/`, `rendering/`, `services/`, and `painting/`.
+   - The legacy `packages/flutter/lib/src/material/` and `packages/flutter/lib/src/cupertino/` implementations are **completely frozen with ZERO exceptions**.
+   - **No Plumbing or Parameter Forwarding**: Do NOT add new parameters, constructors, or forwarding plumbing to any API in `flutter/flutter` `material/` or `cupertino/` (`AdaptiveTextSelectionToolbar`, `CupertinoAdaptiveTextSelectionToolbar`, `TextField`, `CupertinoTextField`, `SelectionArea`, etc.).
+   - All plumbing, wrapper additions, and new feature exposure must be implemented **only directly in `material_ui` or `cupertino_ui`** under the **`flutter/packages`** repository.
 
 2. **Subsystem Isolation**:
    - `RenderEditable` does **not** participate in the `SelectionArea` / `SelectableRegion` selection tree. It maintains its own selection and overlay state machine via `TextSelectionOverlay`.
@@ -60,6 +61,14 @@ When reading, modifying, or reviewing text subsystem code in `flutter/flutter`, 
 6. **Geometry Resolution vs. Lifecycle Coupling**:
    - Resolve continuous coordinate and gesture-geometry calculations directly at the geometry layer (e.g. coordinate transformations, directional projection, inner proximity thresholds).
    - Never introduce cross-widget state or lifecycle listeners (e.g. subscribing to selection status notifiers) to forcibly cancel animations or reset state upon gesture release as a workaround for inaccurate or inflated spatial calculations.
+
+7. **Cross-Repo Dual-Channel CI & Two-Phase Rollout (`flutter/packages`)**:
+   - **Dual-Channel CI Constraint**: `flutter/packages` CI runs against **both `flutter/flutter` `master` and `stable`**.
+   - **Two-Phase Feature Rollout**:
+     1. *Phase 1 (`flutter/flutter`)*: Implement and land foundational APIs, platform channels, or primitives strictly in `widgets/`, `rendering/`, or `services/` on `flutter/flutter` `master`.
+     2. *Release Waiting Period*: The framework change must ship in an official Flutter `stable` release before it can be leveraged in `material_ui` or `cupertino_ui` without breaking `stable` CI.
+     3. *Phase 2 (`flutter/packages`)*: Once available in Flutter `stable`, implement plumbing and UI wrappers directly in `material_ui` or `cupertino_ui`, bump the minimum Flutter SDK constraint in `pubspec.yaml`, and verify tests pass on both `master` and `stable`.
+   - **Verified Patch Proposal**: When generating changes for `flutter/packages`, verify against the dual-channel matrix (`master` and `stable`) and propose a clean `.patch` file for manual review and application by the prompter.
 
 ---
 
@@ -83,8 +92,11 @@ flowchart TD
     G --> H["Implement Changes & Reproduce Bug in Test"]
     H --> I["Verify Invariants:<br/>• No pumpAndSettle() between taps or on focused inputs<br/>• Respect Drag Slop & issue multiple moves<br/>• Use TestTextInput for IME composing tests"]
     I --> J["Run Static Analysis & Formatting:<br/>• dart analyze --fatal-infos &lt;files&gt;<br/>• dart format &lt;files&gt;"]
-    J --> K["Run Target Tests"]
+    J --> K["Run Target Tests:<br/>• ./bin/flutter test &lt;test_file&gt;"]
 ```
+
+> [!IMPORTANT]
+> **Framework Test Runner**: Always execute framework unit and widget tests using the repository's local Flutter tool (`./bin/flutter test <test_file>`). Do not use `dart test`, which lacks Flutter engine, binary messenger, and font bindings.
 
 ### Pre-Completion Checklist
 Before declaring any Flutter text task complete:
@@ -94,3 +106,4 @@ Before declaring any Flutter text task complete:
 - [ ] Verify that gesture tests avoid `pumpAndSettle()` between multi-taps.
 - [ ] Verify that drag-selection tests account for `kTouchSlop` / `kPanSlop` (large font or multiple move events).
 - [ ] Verify that all layer boundary rules are respected.
+- [ ] Execute target tests with `./bin/flutter test <test_file>`.
