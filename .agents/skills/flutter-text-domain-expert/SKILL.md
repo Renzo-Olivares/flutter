@@ -38,11 +38,10 @@ The text stack is organized into modular reference guides located under [`refere
 
 When reading, modifying, or reviewing text subsystem code in `flutter/flutter`, always maintain these structural rules:
 
-1. **Strictly Frozen Design Systems in `flutter/flutter` (Zero Exceptions)**:
-   - In the `flutter/flutter` repository, text development is strictly restricted to `packages/flutter` under `widgets/`, `rendering/`, `services/`, and `painting/`.
-   - The legacy `packages/flutter/lib/src/material/` and `packages/flutter/lib/src/cupertino/` implementations are **completely frozen with ZERO exceptions**.
-   - **No Plumbing or Parameter Forwarding**: Do NOT add new parameters, constructors, or forwarding plumbing to any API in `flutter/flutter` `material/` or `cupertino/` (`AdaptiveTextSelectionToolbar`, `CupertinoAdaptiveTextSelectionToolbar`, `TextField`, `CupertinoTextField`, `SelectionArea`, etc.).
-   - All plumbing, wrapper additions, and new feature exposure must be implemented **only directly in `material_ui` or `cupertino_ui`** under the **`flutter/packages`** repository.
+1. **Repository Scope & Frozen Design Systems**:
+   - In the `flutter/flutter` repository, active text development takes place in `packages/flutter` across `widgets/`, `rendering/`, `services/`, and `painting/`.
+   - The legacy `packages/flutter/lib/src/material/` and `packages/flutter/lib/src/cupertino/` implementations are **frozen**.
+   - Active development of Material and Cupertino text UI components (`TextField`, `CupertinoTextField`, `AdaptiveTextSelectionToolbar`, `SelectionArea`, selection handles) belongs in the **`material_ui`** and **`cupertino_ui`** packages under the **`flutter/packages`** repository.
 
 2. **Subsystem Isolation**:
    - `RenderEditable` does **not** participate in the `SelectionArea` / `SelectableRegion` selection tree. It maintains its own selection and overlay state machine via `TextSelectionOverlay`.
@@ -61,14 +60,6 @@ When reading, modifying, or reviewing text subsystem code in `flutter/flutter`, 
 6. **Geometry Resolution vs. Lifecycle Coupling**:
    - Resolve continuous coordinate and gesture-geometry calculations directly at the geometry layer (e.g. coordinate transformations, directional projection, inner proximity thresholds).
    - Never introduce cross-widget state or lifecycle listeners (e.g. subscribing to selection status notifiers) to forcibly cancel animations or reset state upon gesture release as a workaround for inaccurate or inflated spatial calculations.
-
-7. **Cross-Repo Dual-Channel CI & Two-Phase Rollout (`flutter/packages`)**:
-   - **Dual-Channel CI Constraint**: `flutter/packages` CI runs against **both `flutter/flutter` `master` and `stable`**.
-   - **Two-Phase Feature Rollout**:
-     1. *Phase 1 (`flutter/flutter`)*: Implement and land foundational APIs, platform channels, or primitives strictly in `widgets/`, `rendering/`, or `services/` on `flutter/flutter` `master`.
-     2. *Release Waiting Period*: The framework change must ship in an official Flutter `stable` release before it can be leveraged in `material_ui` or `cupertino_ui` without breaking `stable` CI.
-     3. *Phase 2 (`flutter/packages`)*: Once available in Flutter `stable`, implement plumbing and UI wrappers directly in `material_ui` or `cupertino_ui`, bump the minimum Flutter SDK constraint in `pubspec.yaml`, and verify tests pass on both `master` and `stable`.
-   - **Verified Patch Proposal**: When generating changes for `flutter/packages`, verify against the dual-channel matrix (`master` and `stable`) and propose a clean `.patch` file for manual review and application by the prompter.
 
 ---
 
