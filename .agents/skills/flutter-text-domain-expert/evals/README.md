@@ -14,18 +14,37 @@ evals/
 ├── eval_harness.py         # Dedicated prompt generator (with --copy to clipboard)
 ├── analyze_benchmark.py    # Metric extractor engine (parses steps, tools, tokens)
 ├── cases/                  # Target benchmark test cases (grouped by issue)
-│   └── issue_162856/
-│       ├── 01_no_skill_vs_first_iteration.json
-│       ├── 02_no_skill_vs_edge_scrolling_invariants.json
-│       └── 03_first_iteration_vs_edge_scrolling_invariants.json
+│   ├── issue_141775/
+│   │   ├── 01_no_skill_vs_treatment.json
+│   │   └── 02_selection_geometry_queries_vs_treatment.json
+│   ├── issue_162856/
+│   │   ├── 01_no_skill_vs_first_iteration.json
+│   │   ├── 02_no_skill_vs_edge_scrolling_invariants.json
+│   │   └── 03_first_iteration_vs_edge_scrolling_invariants.json
+│   └── issue_181169/
+│       └── 01_no_skill_vs_treatment.json
 └── reports/                # Persisted evaluation reports (grouped by issue & model)
-    └── issue_162856/
-        └── <model_slug>/
+    ├── issue_141775/
+    ├── issue_162856/
+    └── issue_181169/
 ```
 
 ---
 
-## Benchmark Cases for Issue #162856
+## Benchmark Cases by Issue
+
+### Issue #181169 (Two-Dimensional Scrollable Selection Assertion Error)
+| Case ID | Comparison | Baseline SHA | Treatment SHA | Purpose |
+| :--- | :--- | :--- | :--- | :--- |
+| **`01_no_skill_vs_treatment.json`** | No Skill vs. v4 Treatment | `67710a5db2` *(No Skill)* | `fd18dd04e4` *(v4 Skill)* | Measures ability to diagnose `EdgeDraggingAutoScroller` / `_ScrollableSelectionContainerDelegate` drag target size assertion errors during nested TableView selection. |
+
+### Issue #141775 (iOS SelectionArea Default Context Menu Buttons)
+| Case ID | Comparison | Baseline SHA | Treatment SHA | Purpose |
+| :--- | :--- | :--- | :--- | :--- |
+| **`01_no_skill_vs_treatment.json`** | No Skill vs. v4 Treatment | `67710a5db2` *(No Skill)* | `fd18dd04e4` *(v4 Skill)* | Measures baseline effectiveness of Context Menu Matrix & SystemChannels Map on iOS selection buttons. |
+| **`02_selection_geometry_queries_vs_treatment.json`** | v3 vs. v4 Treatment | `7bb6d97c23` *(v3 Skill)* | `fd18dd04e4` *(v4 Skill)* | Measures marginal impact of context menu action callbacks vs exploratory search. |
+
+### Issue #162856 (Edge Scrolling SafeArea Invariant)
 
 Chronological test suite evaluating the skill's inception and subsequent iterations:
 
