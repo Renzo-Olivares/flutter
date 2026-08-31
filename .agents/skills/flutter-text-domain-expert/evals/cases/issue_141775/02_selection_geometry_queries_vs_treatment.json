@@ -1,8 +1,8 @@
 {
-  "id": "flutter-141775-02-no-skill-vs-selection-geometry-queries",
-  "experiment_name": "No Skill Baseline vs. SelectionGeometry Queries Treatment (v3)",
+  "id": "flutter-141775-02-selection-geometry-queries-vs-treatment",
+  "experiment_name": "SelectionGeometry Queries Baseline (v3) vs. Context Menu Matrix Treatment (v4)",
   "model": "Gemini 3.7 Flash (High)",
-  "hypothesis": "Equipping agents with flutter-text-domain-expert (v3 with SelectionGeometry queries & edge-scrolling invariants) provides deep architectural understanding of SelectableRegion and context menu delegate pipelines, guiding agents to implement iOS default selection toolbar buttons (Look Up, Search Web, Share) in selectable_region.dart with proper layer compliance and canonical test placement.",
+  "hypothesis": "Equipping agents with the updated v4 skill (Platform Context Menu Matrix, SystemChannels reference map, and test runner invariants) reduces exploratory grepping cycles across editable_text.dart and toolbars compared to v3, enabling immediate direct implementation and mocking of LookUp, SearchWeb, and Share.",
   "issue_number": "141775",
   "title": "[iOS] Add default buttons to SelectionArea context menu",
   "issue_url": "https://github.com/flutter/flutter/issues/141775",
@@ -11,12 +11,12 @@
   "target_src_file": "packages/flutter/lib/src/widgets/selectable_region.dart",
   "candidates": {
     "baseline": {
-      "commit": "67710a5db2adcae7e5ad606c7f5001108e037672",
-      "description": "Baseline without flutter-text-domain-expert skill"
+      "commit": "7bb6d97c23779cb315048c4c4e8d9765f7fc8646",
+      "description": "Baseline with flutter-text-domain-expert skill (v3 with SelectionGeometry queries)"
     },
     "treatment": {
-      "commit": "7bb6d97c23779cb315048c4c4e8d9765f7fc8646",
-      "description": "Treatment with flutter-text-domain-expert skill (v3 with SelectionGeometry queries)"
+      "commit": "fd18dd04e40945ac80898e378e766b8602a6c3cd",
+      "description": "Treatment with flutter-text-domain-expert skill (v4 with Context Menu Matrix & SystemChannels Map)"
     }
   },
   "task_prompt_template": "FIRST STEP:\ngit checkout {commit}\n\nTASK:\n1. Inspect the issue reported at https://github.com/flutter/flutter/issues/141775 (using `gh issue view` or URL tools). Do not look at the comments regardless if you are tempted to or not.\n2. Reproduce and identify the root cause in the Flutter framework.\n3. Write a regression test in the appropriate test suite under packages/flutter/test/. Verify the exact failure signature: Did the test fail on the expected expect() assertion or bug-specific exception, or did it fail with an unrelated TestFailure / compilation error? Make sure it fails because of the former.\n4. Implement the fix in packages/flutter/lib/src/.\n5. Ensure `dart analyze --fatal-infos` and `dart format` pass on all modified files.\n6. Verify the regression test passes now that the fix has been implemented.",
