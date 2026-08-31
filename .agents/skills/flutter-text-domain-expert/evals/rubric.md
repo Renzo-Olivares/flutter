@@ -6,6 +6,7 @@ Score both candidates strictly against the following 100-point rubric:
 
 ## 1. Subsystem Routing & Architectural Precision (20 pts)
 - **Layer Boundaries**: Did it avoid illegal layer imports (e.g. importing Material inside `widgets/`, `rendering/`, or `services/`)?
+- **Frozen Design Systems & Subsystem Isolation**: Did it respect that legacy `material/` and `cupertino/` in `flutter/flutter` are frozen, restricting core framework changes to `widgets/`, `rendering/`, `services/`, and `painting/`, while directing design-system UI plumbing to `flutter/packages` (`material_ui`/`cupertino_ui`)?
 - **Root Cause & Subsystem Identification**: Did it correctly identify static selection (`SelectableRegion`) vs editable text (`RenderEditable`), and locate relevant classes quickly?
 - **Geometric vs Hacky Solutions**: Did it resolve the issue at the geometry/event delegate layer rather than introducing fragile lifecycle hooks or forced animation timers?
 
