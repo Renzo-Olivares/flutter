@@ -31,7 +31,8 @@ def analyze_candidate(conv_id, name, verbose=True):
     tools_used = []
     files_viewed = set()
     files_edited = set()
-    skill_triggered = False
+    skill_requested = False
+    skills_loaded = set()
     
     # 1. Parse steps, tool calls, and file operations from transcript.jsonl
     with open(t_jsonl, "r", encoding="utf-8") as f:
@@ -39,6 +40,8 @@ def analyze_candidate(conv_id, name, verbose=True):
             if not line.strip():
                 continue
             obj = json.loads(line)
+            
+            # Record planner steps and tool invocations
             if obj.get("type") == "PLANNER_RESPONSE":
                 steps += 1
                 tcs = obj.get("tool_calls", [])
@@ -48,7 +51,7 @@ def analyze_candidate(conv_id, name, verbose=True):
                         if isinstance(tc, dict):
                             fn = tc.get("name") or tc.get("function", {}).get("name") or "unknown"
                             tools_used.append(fn)
-                            args = tc.get("args") or tc.get("function", {}).get("arguments") or {}
+                            args = tc.get("parameters") or tc.get("args") or tc.get("function", {}).get("arguments") or {}
                             if isinstance(args, str):
                                 try:
                                     args = json.loads(args)
@@ -58,10 +61,20 @@ def analyze_candidate(conv_id, name, verbose=True):
                                 if fn == "view_file" and "AbsolutePath" in args:
                                     abs_path = str(args["AbsolutePath"])
                                     files_viewed.add(Path(abs_path).name)
-                                    if "flutter-text-domain-expert" in abs_path:
-                                        skill_triggered = True
+                                    if "flutter-text-domain-expert" in abs_path and "/evals/" not in abs_path:
+                                        skill_requested = True
                                 elif fn in ("replace_file_content", "write_to_file") and "TargetFile" in args:
                                     files_edited.add(Path(args["TargetFile"]).name)
+            
+            # Verify actual successful file reads for skill loading
+            elif obj.get("type") == "GENERIC" and obj.get("status") != "ERROR":
+                content = obj.get("content") or ""
+                if "File Path: `file://" in content and "flutter-text-domain-expert" in content:
+                    for line_content in content.splitlines():
+                        if line_content.startswith("File Path: `file://") and "flutter-text-domain-expert" in line_content:
+                            file_path_str = line_content.split("`")[1].replace("file://", "")
+                            if "/evals/" not in file_path_str:
+                                skills_loaded.add(Path(file_path_str).name)
     
     # 2. Calculate character count and estimated tokens from transcript_full.jsonl
     full_chars = 0
@@ -76,10 +89,17 @@ def analyze_candidate(conv_id, name, verbose=True):
                 full_chars += len(content) + len(thinking)
     
     est_tokens = full_chars // 4
+    skill_triggered = len(skills_loaded) > 0
     
     if verbose:
         print(f"=== {name} ({conv_id}) ===")
-        print(f"Skill Triggered: {'Yes' if skill_triggered else 'No'}")
+        if skill_triggered:
+            loaded_str = ", ".join(sorted(skills_loaded))
+            print(f"Skill Triggered: Yes (Loaded: {loaded_str})")
+        elif skill_requested:
+            print("Skill Triggered: No (Requested view_file but file not found / failed to load)")
+        else:
+            print("Skill Triggered: No")
         print(f"Total Steps (PLANNER_RESPONSE): {steps}")
         print(f"Total Tool Calls: {tool_calls}")
         print(f"Estimated Tokens: {est_tokens:,} tokens (chars: {full_chars:,})")
@@ -92,6 +112,8 @@ def analyze_candidate(conv_id, name, verbose=True):
         "conv_id": conv_id,
         "name": name,
         "skill_triggered": skill_triggered,
+        "skill_requested": skill_requested,
+        "skills_loaded": skills_loaded,
         "steps": steps,
         "tool_calls": tool_calls,
         "est_tokens": est_tokens,
@@ -112,7 +134,9 @@ if __name__ == "__main__":
     
     if res_a and res_b:
         print("=== Comparison Summary ===")
-        print(f"Skill Triggered: {'Yes' if res_a['skill_triggered'] else 'No'} vs {'Yes' if res_b['skill_triggered'] else 'No'}")
+        str_a = "Yes" if res_a["skill_triggered"] else "No"
+        str_b = "Yes" if res_b["skill_triggered"] else "No"
+        print(f"Skill Triggered: {str_a} vs {str_b}")
         step_delta = ((res_b["steps"] - res_a["steps"]) / res_a["steps"]) * 100 if res_a["steps"] else 0
         tool_delta = ((res_b["tool_calls"] - res_a["tool_calls"]) / res_a["tool_calls"]) * 100 if res_a["tool_calls"] else 0
         tok_delta = ((res_b["est_tokens"] - res_a["est_tokens"]) / res_a["est_tokens"]) * 100 if res_a["est_tokens"] else 0
