@@ -186,6 +186,14 @@ The Unified Selection Subsystem provides cross-widget, document-wide text select
      - `TargetPlatform.macOS` -> [`cupertinoDesktopTextSelectionHandleControls`](file:///Users/roliv/flutter/packages/flutter/lib/src/cupertino/desktop_text_selection.dart)
    - Configures default context menus via `AdaptiveTextSelectionToolbar.selectableRegion` and platform-adaptive magnifiers via `TextMagnifier.adaptiveMagnifierConfiguration`.
 
+2. **Context Menu Construction in `SelectionArea` & `SelectableRegion` (`contextMenuBuilder`)**:
+   - `SelectionArea` and `SelectableRegion` accept a `contextMenuBuilder` callback of type `SelectableRegionContextMenuBuilder` (`(BuildContext context, SelectableRegionState selectableRegionState) -> Widget`).
+   - While `AdaptiveTextSelectionToolbar.selectableRegion` is the default builder in `SelectionArea`, multiple adaptive constructors can be used to construct context menus for a `SelectionArea` or `SelectableRegion`:
+     - **[`AdaptiveTextSelectionToolbar.selectableRegion`](file:///Users/roliv/flutter/packages/flutter/lib/src/material/adaptive_text_selection_toolbar.dart)**: Automatically inspects `selectableRegionState.contextMenuButtonItems` and `selectableRegionState.contextMenuAnchors`.
+     - **[`AdaptiveTextSelectionToolbar.selectable`](file:///Users/roliv/flutter/packages/flutter/lib/src/material/adaptive_text_selection_toolbar.dart)**: Explicitly constructs adaptive toolbar buttons for a selection area or selectable region from granular callbacks (`onCopy`, `onSelectAll`, `onLookUp`, `onSearchWeb`, `onShare`) with `anchors: selectableRegionState.contextMenuAnchors`.
+     - **[`CupertinoAdaptiveTextSelectionToolbar.selectable`](file:///Users/roliv/flutter/packages/flutter/lib/src/cupertino/adaptive_text_selection_toolbar.dart)**: Can similarly be used to construct Cupertino-styled context menus for a selection area or selectable region from granular callbacks (`onCopy`, `onSelectAll`, `onLookUp`, `onSearchWeb`, `onShare`) and `anchors: selectableRegionState.contextMenuAnchors`.
+     - **[`AdaptiveTextSelectionToolbar.buttonItems`](file:///Users/roliv/flutter/packages/flutter/lib/src/material/adaptive_text_selection_toolbar.dart)** / **[`CupertinoAdaptiveTextSelectionToolbar.buttonItems`](file:///Users/roliv/flutter/packages/flutter/lib/src/cupertino/adaptive_text_selection_toolbar.dart)**: Builds toolbars directly from a raw `List<ContextMenuButtonItem>` passed via `buttonItems: selectableRegionState.contextMenuButtonItems` with `anchors: selectableRegionState.contextMenuAnchors`.
+
 ---
 
 ### `SelectableRegion` & `SelectionRegistrarScope`
