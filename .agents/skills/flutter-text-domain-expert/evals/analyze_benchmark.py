@@ -129,8 +129,8 @@ if __name__ == "__main__":
         print("Usage: python3 analyze_benchmark.py <conv_id_baseline> <conv_id_treatment>")
         sys.exit(1)
         
-    res_a = analyze_candidate(sys.argv[1], "Candidate A (Baseline)", verbose=True)
-    res_b = analyze_candidate(sys.argv[2], "Candidate B (Treatment)", verbose=True)
+    res_a = analyze_candidate(sys.argv[1], "Candidate A", verbose=True)
+    res_b = analyze_candidate(sys.argv[2], "Candidate B", verbose=True)
     
     if res_a and res_b:
         print("=== Comparison Summary ===")

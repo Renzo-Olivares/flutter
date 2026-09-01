@@ -7,6 +7,7 @@ description: >
   - When working on, debugging, or adding tests for Flutter text rendering (Text, RichText, RenderParagraph, TextPainter, InlineSpan, WidgetSpan).
   - When working on editable text and IME platform channels (TextField, CupertinoTextField, EditableText, RenderEditable, TextInput, TextInputClient, DeltaTextInputClient, DefaultTextEditingShortcuts).
   - When working on text selection subsystems (SelectionArea, SelectableRegion, SelectionContainer, SelectionOverlay, TextSelectionToolbar, magnifiers, selection handles).
+  - When working on text selection context menus, adaptive toolbars, SelectionArea/SelectableRegion buttons, or text platform channels.
   - When debugging text selection scrolling, edge-scrolling, auto-scrolling, or select-to-scroll behavior in Scrollable, ListView, or CustomScrollView (_ScrollableSelectionContainerDelegate, EdgeDraggingAutoScroller).
   - When writing or fixing unit, widget, or rendering tests for text features in packages/flutter/test/.
 

@@ -79,16 +79,16 @@ You will orchestrate and evaluate a head-to-head A/B benchmark between two auton
 ### Phase 1: Parallel Subagent Spawning
 Invoke two subagents concurrently using the `invoke_subagent` tool with isolated branched workspaces (`Workspace: "branch"`):
 
-1. **Candidate A (Baseline — {desc_a})**:
-   - **Role**: `Candidate A (Baseline)`
+1. **Candidate A ({desc_a})**:
+   - **Role**: `Candidate A`
    - **Workspace**: `"branch"`
    - **Prompt**:
 ```
 {prompt_a}
 ```
 
-2. **Candidate B (Treatment — {desc_b})**:
-   - **Role**: `Candidate B (With Skill)`
+2. **Candidate B ({desc_b})**:
+   - **Role**: `Candidate B`
    - **Workspace**: `"branch"`
    - **Prompt**:
 ```
