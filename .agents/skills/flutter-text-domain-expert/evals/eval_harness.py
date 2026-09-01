@@ -72,6 +72,10 @@ You will orchestrate and evaluate a head-to-head A/B benchmark between two auton
 ### Target Issue:
 > {issue_url}
 
+### Configuration:
+- **Candidate A**: {desc_a}
+- **Candidate B**: {desc_b}
+
 ---
 
 ## Execution Plan
@@ -79,7 +83,7 @@ You will orchestrate and evaluate a head-to-head A/B benchmark between two auton
 ### Phase 1: Parallel Subagent Spawning
 Invoke two subagents concurrently using the `invoke_subagent` tool with isolated branched workspaces (`Workspace: "branch"`):
 
-1. **Candidate A ({desc_a})**:
+1. **Candidate A**:
    - **Role**: `Candidate A`
    - **Workspace**: `"branch"`
    - **Prompt**:
@@ -87,7 +91,7 @@ Invoke two subagents concurrently using the `invoke_subagent` tool with isolated
 {prompt_a}
 ```
 
-2. **Candidate B ({desc_b})**:
+2. **Candidate B**:
    - **Role**: `Candidate B`
    - **Workspace**: `"branch"`
    - **Prompt**:

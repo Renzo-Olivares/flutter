@@ -1,6 +1,6 @@
 {
   "id": "flutter-162856-04-first-iteration-vs-selection-geometry-queries",
-  "experiment_name": "First Skill Iteration Baseline vs. SelectionGeometry Queries Treatment",
+  "experiment_name": "First Skill Iteration (v1) vs. SelectionGeometry Queries (v3)",
   "model": "Gemini 3.7 Flash (High)",
   "hypothesis": "Equipping agents with Section 8 edge-scrolling invariants and SelectionGeometry querying patterns eliminates naive bounding box errors, prevents test corruption regressions, and streamlines lineHeight extraction compared to the initial skill iteration.",
   "issue_number": "162856",
@@ -12,11 +12,11 @@
   "candidates": {
     "baseline": {
       "commit": "19261190bad200063c67b57d550811b0f3f4773a",
-      "description": "Baseline skill (v1) without Section 8 edge-scrolling invariants or SelectionGeometry query patterns"
+      "description": "Commit 19261190ba (skill v1 without Section 8 edge-scrolling invariants or SelectionGeometry query patterns)"
     },
     "treatment": {
       "commit": "7bb6d97c23779cb315048c4c4e8d9765f7fc8646",
-      "description": "Treatment skill (v3) with Section 8 edge-scrolling invariants and SelectionGeometry query patterns"
+      "description": "Commit 7bb6d97c23 (skill v3 with Section 8 edge-scrolling invariants and SelectionGeometry query patterns)"
     }
   },
   "task_prompt_template": "FIRST STEP:\ngit checkout --quiet {commit}\n\nTASK:\n1. Inspect the issue using `gh issue view 162856 --repo flutter/flutter` (do not pass `--comments`).\n2. Reproduce and identify the root cause in the Flutter framework.\n3. Write a regression test in the appropriate test suite under packages/flutter/test/. Verify the exact failure signature: Did the test fail on the expected expect() assertion or bug-specific exception, or did it fail with an unrelated TestFailure / compilation error? Make sure it fails because of the former.\n4. Implement the fix in packages/flutter/lib/src/.\n5. Ensure `dart analyze --fatal-infos` and `dart format` pass on all modified files.\n6. Verify the regression test passes now that the fix has been implemented.",

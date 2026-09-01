@@ -13,7 +13,7 @@
 
 ## 2. Comparative Scorecard Table
 
-| Dimension | Max Pts | Candidate A (Baseline) | Candidate B (With Skill) | Notes / Observations |
+| Dimension | Max Pts | Candidate A | Candidate B | Notes / Observations |
 | :--- | :---: | :---: | :---: | :--- |
 | **1. Subsystem Routing & Architectural Precision** | 20 | | | |
 | **2. Test File Placement & Organization** | 20 | | | |
@@ -25,7 +25,7 @@
 
 ### Quantitative Metrics Summary
 
-| Metric | Candidate A (Baseline) | Candidate B (With Skill) | Delta (%) |
+| Metric | Candidate A | Candidate B | Delta (%) |
 | :--- | :---: | :---: | :---: |
 | **Skill Triggered Automatically** | | | |
 | **Total Planner Turns** | | | |

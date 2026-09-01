@@ -1,6 +1,6 @@
 {
   "id": "flutter-181169-01-no-skill-vs-treatment",
-  "experiment_name": "No Skill Baseline vs. Text Domain Expert Skill Treatment (v4)",
+  "experiment_name": "No Skill vs. Text Domain Expert Skill (v4)",
   "model": "Gemini 3.7 Flash (High)",
   "hypothesis": "Equipping agents with flutter-text-domain-expert (v4 with Edge-Scrolling, Selection Invariants & Static Text Pipeline) provides deep architectural understanding of _ScrollableSelectionContainerDelegate and EdgeDraggingAutoScroller interaction in nested scrollables and multi-axis viewport selections, guiding agents to accurately diagnose coordinate space transformations, handle drag targets that exceed scrollable boundaries without tripping assertion failures, and place focused regression tests in scrollable_selection_test.dart while adhering to layer boundary invariants.",
   "issue_number": "181169",
@@ -12,11 +12,11 @@
   "candidates": {
     "baseline": {
       "commit": "67710a5db2adcae7e5ad606c7f5001108e037672",
-      "description": "Baseline without flutter-text-domain-expert skill"
+      "description": "Commit 67710a5db2 (without flutter-text-domain-expert skill)"
     },
     "treatment": {
-      "commit": "fd18dd04e40945ac80898e378e766b8602a6c3cd",
-      "description": "Treatment with flutter-text-domain-expert skill (v4 with Edge Scrolling & Context Menu Matrix)"
+      "commit": "c0397bad7867fb5d8e8ff4e5fbf9452818047fc7",
+      "description": "Commit c0397bad78 (skill v4 with Edge Scrolling & Context Menu Matrix)"
     }
   },
   "task_prompt_template": "FIRST STEP:\ngit checkout --quiet {commit}\n\nTASK:\n1. Inspect the issue using `gh issue view 181169 --repo flutter/flutter` (do not pass `--comments`).\n2. Reproduce and identify the root cause in the Flutter framework.\n3. Write a regression test in the appropriate test suite under packages/flutter/test/. Verify the exact failure signature: Did the test fail on the expected expect() assertion or bug-specific exception, or did it fail with an unrelated TestFailure / compilation error? Make sure it fails because of the former.\n4. Implement the fix in packages/flutter/lib/src/.\n5. Ensure `dart analyze --fatal-infos` and `dart format` pass on all modified files.\n6. Verify the regression test passes now that the fix has been implemented.",

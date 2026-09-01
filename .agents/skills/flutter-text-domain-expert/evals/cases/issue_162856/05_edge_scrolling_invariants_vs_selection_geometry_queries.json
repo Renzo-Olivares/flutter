@@ -1,6 +1,6 @@
 {
   "id": "flutter-162856-05-edge-scrolling-invariants-vs-selection-geometry-queries",
-  "experiment_name": "Edge Scrolling Invariants Baseline vs. SelectionGeometry Queries Treatment",
+  "experiment_name": "Edge Scrolling Invariants (v2) vs. SelectionGeometry Queries (v3)",
   "model": "Gemini 3.7 Flash (High)",
   "hypothesis": "Providing explicit SelectionGeometry query patterns and child vs. container coordinate distinctions eliminates exploratory search calls for lineHeight in selectable_region.dart, reducing tool calls and tokens compared to the Section 8 baseline.",
   "issue_number": "162856",
@@ -12,11 +12,11 @@
   "candidates": {
     "baseline": {
       "commit": "418dc62853176a2e64e18e84f362918a95ae8918",
-      "description": "Baseline skill (v2) with Section 8 edge-scrolling invariants"
+      "description": "Commit 418dc62853 (skill v2 with Section 8 edge-scrolling invariants)"
     },
     "treatment": {
       "commit": "7bb6d97c23779cb315048c4c4e8d9765f7fc8646",
-      "description": "Treatment skill (v3) with Section 8 edge-scrolling invariants and SelectionGeometry query patterns"
+      "description": "Commit 7bb6d97c23 (skill v3 with Section 8 edge-scrolling invariants and SelectionGeometry query patterns)"
     }
   },
   "task_prompt_template": "FIRST STEP:\ngit checkout --quiet {commit}\n\nTASK:\n1. Inspect the issue using `gh issue view 162856 --repo flutter/flutter` (do not pass `--comments`).\n2. Reproduce and identify the root cause in the Flutter framework.\n3. Write a regression test in the appropriate test suite under packages/flutter/test/. Verify the exact failure signature: Did the test fail on the expected expect() assertion or bug-specific exception, or did it fail with an unrelated TestFailure / compilation error? Make sure it fails because of the former.\n4. Implement the fix in packages/flutter/lib/src/.\n5. Ensure `dart analyze --fatal-infos` and `dart format` pass on all modified files.\n6. Verify the regression test passes now that the fix has been implemented.",

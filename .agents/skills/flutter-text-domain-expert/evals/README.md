@@ -36,13 +36,13 @@ evals/
 ### Issue #181169 (Two-Dimensional Scrollable Selection Assertion Error)
 | Case ID | Comparison | Baseline SHA | Treatment SHA | Purpose |
 | :--- | :--- | :--- | :--- | :--- |
-| **`01_no_skill_vs_treatment.json`** | No Skill vs. v4 Treatment | `67710a5db2` *(No Skill)* | `fd18dd04e4` *(v4 Skill)* | Measures ability to diagnose `EdgeDraggingAutoScroller` / `_ScrollableSelectionContainerDelegate` drag target size assertion errors during nested TableView selection. |
+| **`01_no_skill_vs_treatment.json`** | No Skill vs. v4 Treatment | `67710a5db2` *(No Skill)* | `c0397bad78` *(v4 Skill)* | Measures ability to diagnose `EdgeDraggingAutoScroller` / `_ScrollableSelectionContainerDelegate` drag target size assertion errors during nested TableView selection. |
 
 ### Issue #141775 (iOS SelectionArea Default Context Menu Buttons)
 | Case ID | Comparison | Baseline SHA | Treatment SHA | Purpose |
 | :--- | :--- | :--- | :--- | :--- |
-| **`01_no_skill_vs_treatment.json`** | No Skill vs. v4 Treatment | `67710a5db2` *(No Skill)* | `fd18dd04e4` *(v4 Skill)* | Measures baseline effectiveness of Context Menu Matrix & SystemChannels Map on iOS selection buttons. |
-| **`02_selection_geometry_queries_vs_treatment.json`** | v3 vs. v4 Treatment | `7bb6d97c23` *(v3 Skill)* | `fd18dd04e4` *(v4 Skill)* | Measures marginal impact of context menu action callbacks vs exploratory search. |
+| **`01_no_skill_vs_treatment.json`** | No Skill vs. v4 Treatment | `67710a5db2` *(No Skill)* | `c0397bad78` *(v4 Skill)* | Measures baseline effectiveness of Context Menu Matrix & SystemChannels Map on iOS selection buttons. |
+| **`02_selection_geometry_queries_vs_treatment.json`** | v3 vs. v4 Treatment | `7bb6d97c23` *(v3 Skill)* | `c0397bad78` *(v4 Skill)* | Measures marginal impact of context menu action callbacks vs exploratory search. |
 
 ### Issue #162856 (Edge Scrolling SafeArea Invariant)
 

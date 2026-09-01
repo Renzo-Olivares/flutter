@@ -1,6 +1,6 @@
 {
   "id": "flutter-162856-01-no-skill-vs-first-iteration",
-  "experiment_name": "No Skill Baseline vs. First Skill Iteration Treatment",
+  "experiment_name": "No Skill vs. First Skill Iteration",
   "model": "Gemini 3.7 Flash (High)",
   "hypothesis": "Equipping agents with the initial version of flutter-text-domain-expert provides fundamental subsystem routing and test file location knowledge compared to no skill, though it lacks the specific edge-scrolling invariants added in later iterations.",
   "issue_number": "162856",
@@ -12,11 +12,11 @@
   "candidates": {
     "baseline": {
       "commit": "67710a5db2adcae7e5ad606c7f5001108e037672",
-      "description": "Baseline without flutter-text-domain-expert skill"
+      "description": "Commit 67710a5db2 (without flutter-text-domain-expert skill)"
     },
     "treatment": {
       "commit": "19261190bad200063c67b57d550811b0f3f4773a",
-      "description": "Treatment with initial first iteration of flutter-text-domain-expert skill"
+      "description": "Commit 19261190ba (initial first iteration of skill)"
     }
   },
   "task_prompt_template": "FIRST STEP:\ngit checkout --quiet {commit}\n\nTASK:\n1. Inspect the issue using `gh issue view 162856 --repo flutter/flutter` (do not pass `--comments`).\n2. Reproduce and identify the root cause in the Flutter framework.\n3. Write a regression test in the appropriate test suite under packages/flutter/test/. Verify the exact failure signature: Did the test fail on the expected expect() assertion or bug-specific exception, or did it fail with an unrelated TestFailure / compilation error? Make sure it fails because of the former.\n4. Implement the fix in packages/flutter/lib/src/.\n5. Ensure `dart analyze --fatal-infos` and `dart format` pass on all modified files.\n6. Verify the regression test passes now that the fix has been implemented.",
