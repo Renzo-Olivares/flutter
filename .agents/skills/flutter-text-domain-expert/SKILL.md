@@ -62,10 +62,12 @@ When reading, modifying, or reviewing text subsystem code in `flutter/flutter`, 
    - Resolve continuous coordinate and gesture-geometry calculations directly at the geometry layer (e.g. coordinate transformations, directional projection, inner proximity thresholds).
    - Never introduce cross-widget state or lifecycle listeners (e.g. subscribing to selection status notifiers) to forcibly cancel animations or reset state upon gesture release as a workaround for inaccurate or inflated spatial calculations.
 
-7. **Comprehensive API Scope: Beyond Defaults to Adjacent Customizable APIs**:
-   - **Do Not Stop at Defaults**: When resolving a bug or adding a capability, do not declare the task complete simply because the *default* widget or constructor (e.g. an out-of-the-box builder like `.selectableRegion` or default theme behavior) automatically inherits the fix.
-   - **Audit Adjacent Customizable APIs**: Flutter provides layered, customizable alternatives alongside defaults (e.g. granular named constructors with discrete callbacks, custom delegating builders, or lower-level configuration adapters). Always check whether users of these adjacent APIs would still experience the bug or lack parity if they customize their implementation.
-   - **Decoupled Design-System Handoff**: If adjacent customizable APIs reside in design-system packages (`material_ui` or `cupertino_ui`), activate the **`material-cupertino-packages`** skill to ensure companion packages maintain parity.
+7. **Delegating Constructor & Wrapper Parity (Zero Parameter Dropping)**:
+   - **Do Not Stop at Defaults**: When a core primitive or helper function adds or extends parameters, callbacks, or supported capabilities, do not consider the task complete simply because default out-of-the-box builders or adapters pass them dynamically at runtime.
+   - **Mandatory Caller Audit**: Search across the codebase for all callers of the modified primitive or helper. For every caller that is a delegating named constructor, factory, or adapter:
+     1. **Zero Parameter Dropping**: Delegating constructors and companion adapters must not drop newly supported parameters or leave them `null` when the underlying primitive supports them. Optional parameters allow code to compile without errors, but omitting them silently breaks API parity for consumers who use those customizable constructors.
+     2. **Mandatory Forwarding**: Ensure all companion delegating constructors and wrappers are updated to expose and forward the newly added parameters and callbacks.
+     3. **Decoupled Design-System Handoff**: If any delegating constructors or companion wrappers reside in `material_ui` or `cupertino_ui`, you cannot consider the task complete at the framework boundary. You MUST activate the **`material-cupertino-packages`** skill to update the companion package and export a `.patch`.
 
 ---
 
@@ -103,5 +105,5 @@ Before declaring any Flutter text task complete:
 - [ ] Verify that gesture tests avoid `pumpAndSettle()` between multi-taps.
 - [ ] Verify that drag-selection tests account for `kTouchSlop` / `kPanSlop` (large font or multiple move events).
 - [ ] Verify that all layer boundary rules are respected.
-- [ ] Comprehensive API scope: verified that the fix covers adjacent customizable APIs (granular constructors, custom builders, delegates), not just the default configuration.
+- [ ] Delegating wrapper parity: verified that all downstream callers and delegating constructors (including companion design-system wrappers in `material_ui` / `cupertino_ui`) expose and forward newly added parameters/capabilities rather than dropping them.
 - [ ] Execute target tests with `./bin/flutter test <test_file>`.
