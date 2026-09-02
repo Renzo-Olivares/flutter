@@ -62,6 +62,11 @@ When reading, modifying, or reviewing text subsystem code in `flutter/flutter`, 
    - Resolve continuous coordinate and gesture-geometry calculations directly at the geometry layer (e.g. coordinate transformations, directional projection, inner proximity thresholds).
    - Never introduce cross-widget state or lifecycle listeners (e.g. subscribing to selection status notifiers) to forcibly cancel animations or reset state upon gesture release as a workaround for inaccurate or inflated spatial calculations.
 
+7. **Producer Invariants vs. Consumer Band-Aids**:
+   - When an assertion, crash, or arithmetic anomaly (`NaN`, `Infinity`, unhandled `null`, invalid index) occurs in a leaf component or utility (e.g. `EdgeDraggingAutoScroller`, matrix transforms, `RenderBox` layout):
+   - **Never mask corrupt upstream data**: Do not simply add defensive `isFinite`, `null`, or clamping guards at the crash site if the component's public contract expects valid domain values.
+   - **Fix at the producer**: Trace upstream to find the state machine, coordinate transformer, or event dispatcher that synthesized the invalid value. Ensure the producer outputs valid, bounded domain geometry that upholds downstream invariants.
+
 ---
 
 ## 3. General Contribution & Triage Workflow
