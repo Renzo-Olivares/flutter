@@ -15,8 +15,8 @@
       "description": "Commit 67710a5db2 (without flutter-text-domain-expert skill)"
     },
     "treatment": {
-      "commit": "c0397bad7867fb5d8e8ff4e5fbf9452818047fc7",
-      "description": "Commit c0397bad78 (skill v4 with Edge Scrolling & Context Menu Matrix)"
+      "commit": "ededfcedc989d970fa070e1a129d28ea61ba4f74",
+      "description": "Commit 749a9b79cc (skill v4 with Producer Invariants vs Consumer Band-Aids rule)"
     }
   },
   "task_prompt_template": "FIRST STEP:\ngit checkout --quiet {commit}\n\nTASK:\n1. Inspect the issue using `gh issue view 181169 --repo flutter/flutter` (do not pass `--comments`).\n2. Reproduce and identify the root cause in the Flutter framework.\n3. Write a regression test in the appropriate test suite under packages/flutter/test/. Verify the exact failure signature: Did the test fail on the expected expect() assertion or bug-specific exception, or did it fail with an unrelated TestFailure / compilation error? Make sure it fails because of the former.\n4. Implement the fix in packages/flutter/lib/src/.\n5. Ensure `dart analyze --fatal-infos` and `dart format` pass on all modified files.\n6. Verify the regression test passes now that the fix has been implemented.",
