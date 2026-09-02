@@ -35,7 +35,7 @@ See [`CHANGELOG.md`](CHANGELOG.md) for full documentation of each canonical vers
 - **`v0`** ([`67710a5db2`](https://github.com/flutter/flutter/commit/67710a5db2adcae7e5ad606c7f5001108e037672)): Framework Baseline (No Skill)
 - **`v1`** ([`19261190ba`](https://github.com/flutter/flutter/commit/19261190bad200063c67b57d550811b0f3f4773a)): First Skill Iteration (core architecture & references)
 - **`v2`** ([`7bb6d97c23`](https://github.com/flutter/flutter/commit/7bb6d97c23779cb315048c4c4e8d9765f7fc8646)): Selection Geometry & Edge-Scrolling Invariants (Sample 1)
-- **`v3`** ([`c118401d10`](https://github.com/flutter/flutter/commit/c118401d108ecc57a49ae8d70e2bf1ba167489c3)): Context Menu, Decoupled Packages & Delegating Constructor Parity (Sample 2)
+- **`v3`** ([`30d7c11508`](https://github.com/flutter/flutter/commit/30d7c115080a66baa45427f32cf795a5abd02c4a)): Context Menu, Decoupled Packages & Delegating Constructor Parity (Sample 2)
 
 ---
 
@@ -53,8 +53,8 @@ See [`CHANGELOG.md`](CHANGELOG.md) for full documentation of each canonical vers
 
 | Case ID | Comparison | Baseline SHA | Treatment SHA | Purpose |
 | :--- | :--- | :--- | :--- | :--- |
-| **`01_no_skill_vs_context_menu_and_decoupling.json`** | No Skill (`v0`) vs. Treatment (`v3`) | `67710a5db2` | `c118401d10` | Measures total value-add of text skill with decoupled packages workflow on iOS SelectionArea buttons. |
-| **`02_selection_geometry_queries_vs_context_menu_and_decoupling.json`** | Selection Geometry (`v2`) vs. Treatment (`v3`) | `7bb6d97c23` | `c118401d10` | Measures marginal impact of Invariant 7 delegating constructor parity and `material-cupertino-packages` split PR. |
+| **`01_no_skill_vs_context_menu_and_decoupling.json`** | No Skill (`v0`) vs. Treatment (`v3`) | `67710a5db2` | `30d7c11508` | Measures total value-add of text skill with decoupled packages workflow on iOS SelectionArea buttons. |
+| **`02_selection_geometry_queries_vs_context_menu_and_decoupling.json`** | Selection Geometry (`v2`) vs. Treatment (`v3`) | `7bb6d97c23` | `30d7c11508` | Measures marginal impact of Invariant 7 delegating constructor parity and `material-cupertino-packages` split PR. |
 
 *(Note: Issue #181169 will serve as Sample 3 for holdout zero-shot validation of v3.)*
 

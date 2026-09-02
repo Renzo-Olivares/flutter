@@ -11,14 +11,14 @@ This document tracks the canonical evolutionary versions of the `flutter-text-do
 | **`v0`** | [`67710a5db2`](https://github.com/flutter/flutter/commit/67710a5db2adcae7e5ad606c7f5001108e037672) | **Framework Baseline** *(No Skill)* | Standard Flutter repository without any specialized text domain expert skill or custom agent instructions. | Baseline for Sample 1 ([#162856](https://github.com/flutter/flutter/issues/162856)) & Sample 2 ([#141775](https://github.com/flutter/flutter/issues/141775)) |
 | **`v1`** | [`19261190ba`](https://github.com/flutter/flutter/commit/19261190bad200063c67b57d550811b0f3f4773a) | **First Iteration** | Initial text domain expert architecture: reference guides (`common_text_primitives.md`, `editable_text_pipeline.md`, `static_text_pipeline.md`, `testing_text_stack.md`), subsystem routing, and testing invariants. | Initial draft for #162856 |
 | **`v2`** | [`7bb6d97c23`](https://github.com/flutter/flutter/commit/7bb6d97c23779cb315048c4c4e8d9765f7fc8646) | **Selection Geometry Changes** | Edge-scrolling invariants, coordinate transformation rules, and `SelectionGeometry` querying patterns within `SelectionContainerDelegate` (preventing naive bounding box math). | Treatment for Sample 1 ([#162856](https://github.com/flutter/flutter/issues/162856))<br>Baseline for Sample 2 ([#141775](https://github.com/flutter/flutter/issues/141775)) |
-| **`v3`** | [`c118401d10`](https://github.com/flutter/flutter/commit/c118401d108ecc57a49ae8d70e2bf1ba167489c3) | **Context Menu & Decoupled Packages** | Decoupled multi-repo workflow (`material-cupertino-packages`), minimal `code-freeze.md` redirect, and Invariant 7 enforcing delegating constructor parity (zero parameter dropping) for companion wrappers in `material_ui` and `cupertino_ui`. | Treatment for Sample 2 ([#141775](https://github.com/flutter/flutter/issues/141775)) |
+| **`v3`** | [`30d7c11508`](https://github.com/flutter/flutter/commit/30d7c115080a66baa45427f32cf795a5abd02c4a) | **Context Menu & Decoupled Packages** | Decoupled multi-repo workflow (`material-cupertino-packages`), minimal `code-freeze.md` redirect, and Invariant 7 enforcing delegating constructor parity (zero parameter dropping) for companion wrappers in `material_ui` and `cupertino_ui`. | Treatment for Sample 2 ([#141775](https://github.com/flutter/flutter/issues/141775)) |
 
 ---
 
 ## Detailed Version Specifications
 
 ### v3 — Context Menu, Decoupled Packages & Delegating Constructor Parity
-- **Commit**: [`c118401d108ecc57a49ae8d70e2bf1ba167489c3`](https://github.com/flutter/flutter/commit/c118401d108ecc57a49ae8d70e2bf1ba167489c3)
+- **Commit**: [`30d7c115080a66baa45427f32cf795a5abd02c4a`](https://github.com/flutter/flutter/commit/30d7c115080a66baa45427f32cf795a5abd02c4a)
 - **Trigger Issue**: [flutter/flutter#141775](https://github.com/flutter/flutter/issues/141775) (`[iOS] Add default buttons to SelectionArea context menu`)
 - **Key Capabilities & Architectural Rules Added**:
   1. **Delegating Constructor Parity (Invariant 7)**:

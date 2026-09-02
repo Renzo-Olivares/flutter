@@ -15,8 +15,8 @@
       "description": "Commit 7bb6d97c23 (skill v2 with SelectionGeometry queries)"
     },
     "treatment": {
-      "commit": "c118401d108ecc57a49ae8d70e2bf1ba167489c3",
-      "description": "Commit c118401d108 (skill v3 with Decoupled Packages & Delegating Constructor Parity)"
+      "commit": "30d7c115080a66baa45427f32cf795a5abd02c4a",
+      "description": "Commit 30d7c115080 (skill v3 with Decoupled Packages & Delegating Constructor Parity)"
     }
   },
   "task_prompt_template": "FIRST STEP:\ngit checkout --quiet {commit}\n\nTASK:\n1. Inspect the issue using `gh issue view 141775 --repo flutter/flutter` (do not pass `--comments`).\n2. Reproduce and identify the root cause in the Flutter framework.\n3. Write regression tests verifying the issue across both core primitives (under packages/flutter/test/) and design-system consumers/wrappers (in packages/material_ui/test/ and/or packages/cupertino_ui/test/ in flutter/packages). Verify the exact failure signature: Did the test fail on the expected expect() assertion or bug-specific exception, or did it fail with an unrelated TestFailure / compilation error? Make sure it fails because of the former.\n4. Implement the complete fix across core primitives (in packages/flutter/lib/src/) and design-system consumers/wrappers (in packages/material_ui/ and/or packages/cupertino_ui/ in flutter/packages via a split PR using material-cupertino-packages).\n5. Ensure `dart analyze --fatal-infos` and `dart format` pass on all modified files.\n6. Verify all regression tests pass now that the fix has been implemented.",
