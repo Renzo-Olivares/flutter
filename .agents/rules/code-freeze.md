@@ -31,7 +31,7 @@ Modifications to frozen directories in `flutter/flutter` are **strictly permitte
 
 ## 2. Prohibition on Semantic & Behavioral Changes
 
-* **NEVER** add new features, bug fixes, refactors, API signatures, or widget modifications to frozen Material/Cupertino files in `flutter/flutter`.
+* **REDIRECT**: Redirect all investigations, feature additions, bug fixes, refactors, API updates, or widget modifications targeting Material or Cupertino components away from frozen `flutter/flutter` paths to **`material_ui`** and/or **`cupertino_ui`** in the **`flutter/packages`** repository.
 * All active development, bug fixes, and feature additions for Material and Cupertino components belong in **`material_ui`** and **`cupertino_ui`** under the **`flutter/packages`** repository (`https://github.com/flutter/packages`).
 * When handling tasks, issues, or PRs involving Material or Cupertino components, activate and follow the **`material-cupertino-packages`** skill to orchestrate multi-repo split PRs, local verification, and `.patch` generation.
 
