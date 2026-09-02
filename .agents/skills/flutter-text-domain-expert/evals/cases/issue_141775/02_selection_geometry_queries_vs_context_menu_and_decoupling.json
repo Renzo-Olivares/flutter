@@ -1,6 +1,6 @@
 {
-  "id": "flutter-141775-02-selection-geometry-queries-vs-treatment",
-  "experiment_name": "SelectionGeometry Queries (v2) vs. Decoupled Packages & Parity (v3)",
+  "id": "flutter-141775-02-selection-geometry-queries-vs-context-menu-and-decoupling",
+  "experiment_name": "SelectionGeometry Queries (v2) vs. Context Menu & Decoupled Packages (v3)",
   "model": "Gemini 3.7 Flash (High)",
   "hypothesis": "Equipping agents with flutter-text-domain-expert v3 (delegating constructor parity, zero parameter dropping, and decoupled packages workflow via material-cupertino-packages) guides the agent to make companion updates in material_ui and cupertino_ui, whereas v2 stops prematurely at core framework defaults.",
   "issue_number": "141775",

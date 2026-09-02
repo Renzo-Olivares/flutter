@@ -20,8 +20,8 @@ evals/
 │   │   ├── 02_no_skill_vs_selection_geometry_queries.json
 │   │   └── 03_first_iteration_vs_selection_geometry_queries.json
 │   └── issue_141775/
-│       ├── 01_no_skill_vs_treatment.json
-│       └── 02_selection_geometry_queries_vs_treatment.json
+│       ├── 01_no_skill_vs_context_menu_and_decoupling.json
+│       └── 02_selection_geometry_queries_vs_context_menu_and_decoupling.json
 └── reports/                # Persisted evaluation reports (grouped by issue & model)
     ├── issue_162856/gemini-3.7-flash-high/
     └── issue_141775/gemini-3.7-flash-high/
@@ -53,8 +53,8 @@ See [`CHANGELOG.md`](CHANGELOG.md) for full documentation of each canonical vers
 
 | Case ID | Comparison | Baseline SHA | Treatment SHA | Purpose |
 | :--- | :--- | :--- | :--- | :--- |
-| **`01_no_skill_vs_treatment.json`** | No Skill (`v0`) vs. Treatment (`v3`) | `67710a5db2` | `c118401d10` | Measures total value-add of text skill with decoupled packages workflow on iOS SelectionArea buttons. |
-| **`02_selection_geometry_queries_vs_treatment.json`** | Selection Geometry (`v2`) vs. Treatment (`v3`) | `7bb6d97c23` | `c118401d10` | Measures marginal impact of Invariant 7 delegating constructor parity and `material-cupertino-packages` split PR. |
+| **`01_no_skill_vs_context_menu_and_decoupling.json`** | No Skill (`v0`) vs. Treatment (`v3`) | `67710a5db2` | `c118401d10` | Measures total value-add of text skill with decoupled packages workflow on iOS SelectionArea buttons. |
+| **`02_selection_geometry_queries_vs_context_menu_and_decoupling.json`** | Selection Geometry (`v2`) vs. Treatment (`v3`) | `7bb6d97c23` | `c118401d10` | Measures marginal impact of Invariant 7 delegating constructor parity and `material-cupertino-packages` split PR. |
 
 *(Note: Issue #181169 will serve as Sample 3 for holdout zero-shot validation of v3.)*
 

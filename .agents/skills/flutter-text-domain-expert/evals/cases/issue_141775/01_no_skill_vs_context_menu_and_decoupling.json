@@ -1,6 +1,6 @@
 {
-  "id": "flutter-141775-01-no-skill-vs-treatment",
-  "experiment_name": "No Skill vs. Text Domain Expert Skill (v3)",
+  "id": "flutter-141775-01-no-skill-vs-context-menu-and-decoupling",
+  "experiment_name": "No Skill vs. Context Menu & Decoupled Packages (v3)",
   "model": "Gemini 3.7 Flash (High)",
   "hypothesis": "Equipping agents with flutter-text-domain-expert v3 (Platform Context Menu Matrix, Decoupled Packages workflow, and delegating constructor parity) provides deep architectural understanding of SelectableRegion and context menu delegate pipelines, guiding agents to implement iOS default selection toolbar buttons across core primitives and companion design-system wrappers.",
   "issue_number": "141775",
