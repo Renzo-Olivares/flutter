@@ -34,3 +34,11 @@ Modifications to frozen directories in `flutter/flutter` are **strictly permitte
 * **NEVER** add new features, bug fixes, refactors, API signatures, or widget modifications to frozen Material/Cupertino files in `flutter/flutter`.
 * All active development, bug fixes, and feature additions for Material and Cupertino components belong in **`material_ui`** and **`cupertino_ui`** under the **`flutter/packages`** repository (`https://github.com/flutter/packages`).
 * When handling tasks, issues, or PRs involving Material or Cupertino components, activate and follow the **`material-cupertino-packages`** skill to orchestrate multi-repo split PRs, local verification, and `.patch` generation.
+
+---
+
+## 3. Companion Design-System Wrapper Audit
+
+Whenever adding, updating, or extending APIs, parameters, callbacks, or properties in core framework primitives (`widgets/`, `rendering/`, `services/`, `painting/`) that have corresponding design-system wrappers or adapters:
+* **Mandatory Audit**: Check whether consumer widgets or adapters in Material or Cupertino forward or expose those properties.
+* **Trigger Split-PR**: If the design-system wrappers require companion updates, do NOT stop at the framework boundary. Follow the split-PR workflow using **`material-cupertino-packages`** to patch `material_ui` and/or `cupertino_ui` in the `flutter/packages` repository.
