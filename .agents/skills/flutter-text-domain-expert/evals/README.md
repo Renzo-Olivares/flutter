@@ -9,50 +9,54 @@ This directory contains the benchmark harness, evaluation rubrics, report templa
 ```text
 evals/
 ├── README.md               # Benchmark execution guide & workflow
+├── CHANGELOG.md            # Canonical skill version specification & commit SHAs
 ├── rubric.md               # 6-dimension 100-point scoring criteria
 ├── REPORT_TEMPLATE.md      # Standardized 4-part evaluation report layout
 ├── eval_harness.py         # Dedicated prompt generator (with --copy to clipboard)
 ├── analyze_benchmark.py    # Metric extractor engine (parses steps, tools, tokens)
 ├── cases/                  # Target benchmark test cases (grouped by issue)
-│   ├── issue_141775/
-│   │   ├── 01_no_skill_vs_treatment.json
-│   │   └── 02_selection_geometry_queries_vs_treatment.json
 │   ├── issue_162856/
 │   │   ├── 01_no_skill_vs_first_iteration.json
-│   │   ├── 02_no_skill_vs_edge_scrolling_invariants.json
-│   │   └── 03_first_iteration_vs_edge_scrolling_invariants.json
-│   └── issue_181169/
-│       └── 01_no_skill_vs_treatment.json
+│   │   ├── 02_no_skill_vs_selection_geometry_queries.json
+│   │   └── 03_first_iteration_vs_selection_geometry_queries.json
+│   └── issue_141775/
+│       ├── 01_no_skill_vs_treatment.json
+│       └── 02_selection_geometry_queries_vs_treatment.json
 └── reports/                # Persisted evaluation reports (grouped by issue & model)
-    ├── issue_141775/
-    ├── issue_162856/
-    └── issue_181169/
+    ├── issue_162856/gemini-3.7-flash-high/
+    └── issue_141775/gemini-3.7-flash-high/
 ```
+
+---
+
+## Skill Version Specification
+
+See [`CHANGELOG.md`](CHANGELOG.md) for full documentation of each canonical version:
+- **`v0`** ([`67710a5db2`](https://github.com/flutter/flutter/commit/67710a5db2adcae7e5ad606c7f5001108e037672)): Framework Baseline (No Skill)
+- **`v1`** ([`19261190ba`](https://github.com/flutter/flutter/commit/19261190bad200063c67b57d550811b0f3f4773a)): First Skill Iteration (core architecture & references)
+- **`v2`** ([`7bb6d97c23`](https://github.com/flutter/flutter/commit/7bb6d97c23779cb315048c4c4e8d9765f7fc8646)): Selection Geometry & Edge-Scrolling Invariants (Sample 1)
+- **`v3`** ([`c118401d10`](https://github.com/flutter/flutter/commit/c118401d108ecc57a49ae8d70e2bf1ba167489c3)): Context Menu, Decoupled Packages & Delegating Constructor Parity (Sample 2)
 
 ---
 
 ## Benchmark Cases by Issue
 
-### Issue #181169 (Two-Dimensional Scrollable Selection Assertion Error)
-| Case ID | Comparison | Baseline SHA | Treatment SHA | Purpose |
-| :--- | :--- | :--- | :--- | :--- |
-| **`01_no_skill_vs_treatment.json`** | No Skill vs. v4 Treatment | `67710a5db2` *(No Skill)* | `c0397bad78` *(v4 Skill)* | Measures ability to diagnose `EdgeDraggingAutoScroller` / `_ScrollableSelectionContainerDelegate` drag target size assertion errors during nested TableView selection. |
-
-### Issue #141775 (iOS SelectionArea Default Context Menu Buttons)
-| Case ID | Comparison | Baseline SHA | Treatment SHA | Purpose |
-| :--- | :--- | :--- | :--- | :--- |
-| **`01_no_skill_vs_treatment.json`** | No Skill vs. v4 Treatment | `67710a5db2` *(No Skill)* | `c0397bad78` *(v4 Skill)* | Measures baseline effectiveness of Context Menu Matrix & SystemChannels Map on iOS selection buttons. |
-| **`02_selection_geometry_queries_vs_treatment.json`** | v3 vs. v4 Treatment | `7bb6d97c23` *(v3 Skill)* | `c0397bad78` *(v4 Skill)* | Measures marginal impact of context menu action callbacks vs exploratory search. |
-
-### Issue #162856 (Edge Scrolling SafeArea Invariant)
-
-Chronological test suite evaluating the skill's inception and subsequent iterations:
+### Issue #162856 (Sample 1: Edge Scrolling SafeArea Invariant)
 
 | Case ID | Comparison | Baseline SHA | Treatment SHA | Purpose |
 | :--- | :--- | :--- | :--- | :--- |
-| **`01_no_skill_vs_first_iteration.json`** | No Skill vs. Iteration 1 | `67710a5db2` *(No Skill)* | `19261190ba` *(First Skill)* | Measures the baseline effectiveness of the initial skill against raw framework baseline. |
-| **`02_no_skill_vs_edge_scrolling_invariants.json`** | No Skill vs. Iteration 2 | `67710a5db2` *(No Skill)* | `418dc62853` *(Edge Scrolling Skill)* | Measures the total effectiveness of the full skill against raw framework baseline. |
-| **`03_first_iteration_vs_edge_scrolling_invariants.json`** | Iteration 1 vs. Iteration 2 | `19261190ba` *(First Skill)* | `418dc62853` *(Edge Scrolling Skill)* | Measures the marginal improvement of adding Section 8 edge-scrolling & handle geometry guidelines. |
+| **`01_no_skill_vs_first_iteration.json`** | No Skill (`v0`) vs. First Iteration (`v1`) | `67710a5db2` | `19261190ba` | Measures initial value-add of domain architecture and test location guides. |
+| **`02_no_skill_vs_selection_geometry_queries.json`** | No Skill (`v0`) vs. Selection Geometry (`v2`) | `67710a5db2` | `7bb6d97c23` | Measures total value-add of the resolved skill on edge scrolling & coordinate transforms. |
+| **`03_first_iteration_vs_selection_geometry_queries.json`** | First Iteration (`v1`) vs. Selection Geometry (`v2`) | `19261190ba` | `7bb6d97c23` | Measures marginal improvement of `SelectionGeometry` queries and Section 8 edge-scrolling invariants. |
+
+### Issue #141775 (Sample 2: iOS SelectionArea Context Menu & Decoupled Packages)
+
+| Case ID | Comparison | Baseline SHA | Treatment SHA | Purpose |
+| :--- | :--- | :--- | :--- | :--- |
+| **`01_no_skill_vs_treatment.json`** | No Skill (`v0`) vs. Treatment (`v3`) | `67710a5db2` | `c118401d10` | Measures total value-add of text skill with decoupled packages workflow on iOS SelectionArea buttons. |
+| **`02_selection_geometry_queries_vs_treatment.json`** | Selection Geometry (`v2`) vs. Treatment (`v3`) | `7bb6d97c23` | `c118401d10` | Measures marginal impact of Invariant 7 delegating constructor parity and `material-cupertino-packages` split PR. |
+
+*(Note: Issue #181169 will serve as Sample 3 for holdout zero-shot validation of v3.)*
 
 ---
 
