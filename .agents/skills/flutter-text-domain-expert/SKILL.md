@@ -62,6 +62,11 @@ When reading, modifying, or reviewing text subsystem code in `flutter/flutter`, 
    - Resolve continuous coordinate and gesture-geometry calculations directly at the geometry layer (e.g. coordinate transformations, directional projection, inner proximity thresholds).
    - Never introduce cross-widget state or lifecycle listeners (e.g. subscribing to selection status notifiers) to forcibly cancel animations or reset state upon gesture release as a workaround for inaccurate or inflated spatial calculations.
 
+7. **Comprehensive API Scope: Beyond Defaults to Adjacent Customizable APIs**:
+   - **Do Not Stop at Defaults**: When resolving a bug or adding a capability, do not declare the task complete simply because the *default* widget or constructor (e.g. an out-of-the-box builder like `.selectableRegion` or default theme behavior) automatically inherits the fix.
+   - **Audit Adjacent Customizable APIs**: Flutter provides layered, customizable alternatives alongside defaults (e.g. granular named constructors with discrete callbacks, custom delegating builders, or lower-level configuration adapters). Always check whether users of these adjacent APIs would still experience the bug or lack parity if they customize their implementation.
+   - **Decoupled Design-System Handoff**: If adjacent customizable APIs reside in design-system packages (`material_ui` or `cupertino_ui`), activate the **`material-cupertino-packages`** skill to ensure companion packages maintain parity.
+
 ---
 
 ## 3. General Contribution & Triage Workflow
@@ -98,4 +103,5 @@ Before declaring any Flutter text task complete:
 - [ ] Verify that gesture tests avoid `pumpAndSettle()` between multi-taps.
 - [ ] Verify that drag-selection tests account for `kTouchSlop` / `kPanSlop` (large font or multiple move events).
 - [ ] Verify that all layer boundary rules are respected.
+- [ ] Comprehensive API scope: verified that the fix covers adjacent customizable APIs (granular constructors, custom builders, delegates), not just the default configuration.
 - [ ] Execute target tests with `./bin/flutter test <test_file>`.
