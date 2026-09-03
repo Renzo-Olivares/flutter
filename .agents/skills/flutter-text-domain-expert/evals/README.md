@@ -48,13 +48,14 @@ See [`CHANGELOG.md`](CHANGELOG.md) for full documentation of each canonical vers
 | **`01_no_skill_vs_first_iteration.json`** | No Skill (`v0`) vs. First Iteration (`v1`) | `67710a5db2` | `19261190ba` | Measures initial value-add of domain architecture and test location guides. |
 | **`02_no_skill_vs_selection_geometry_queries.json`** | No Skill (`v0`) vs. Selection Geometry (`v2`) | `67710a5db2` | `7bb6d97c23` | Measures total value-add of the resolved skill on edge scrolling & coordinate transforms. |
 | **`03_first_iteration_vs_selection_geometry_queries.json`** | First Iteration (`v1`) vs. Selection Geometry (`v2`) | `19261190ba` | `7bb6d97c23` | Measures marginal improvement of `SelectionGeometry` queries and Section 8 edge-scrolling invariants. |
+| **`04_selection_geometry_queries_vs_context_menu_and_decoupling.json`** | Selection Geometry (`v2`) vs. Treatment (`v3`) | `7bb6d97c23` | `8808bf80fb` | Validates non-interference and zero-regression stability of v3 rules on edge scrolling. |
 
 ### Issue #141775 (Sample 2: iOS SelectionArea Context Menu & Decoupled Packages)
 
 | Case ID | Comparison | Baseline SHA | Treatment SHA | Purpose |
 | :--- | :--- | :--- | :--- | :--- |
-| **`01_no_skill_vs_context_menu_and_decoupling.json`** | No Skill (`v0`) vs. Treatment (`v3`) | `67710a5db2` | `30d7c11508` | Measures total value-add of text skill with decoupled packages workflow on iOS SelectionArea buttons. |
-| **`02_selection_geometry_queries_vs_context_menu_and_decoupling.json`** | Selection Geometry (`v2`) vs. Treatment (`v3`) | `7bb6d97c23` | `30d7c11508` | Measures marginal impact of Invariant 7 delegating constructor parity and `material-cupertino-packages` split PR. |
+| **`01_no_skill_vs_context_menu_and_decoupling.json`** | No Skill (`v0`) vs. Treatment (`v3`) | `67710a5db2` | `8808bf80fb` | Measures total value-add of text skill with decoupled packages workflow on iOS SelectionArea buttons. |
+| **`02_selection_geometry_queries_vs_context_menu_and_decoupling.json`** | Selection Geometry (`v2`) vs. Treatment (`v3`) | `7bb6d97c23` | `8808bf80fb` | Measures marginal impact of Invariant 7 delegating constructor parity and `material-cupertino-packages` split PR. |
 
 *(Note: Issue #181169 will serve as Sample 3 for holdout zero-shot validation of v3.)*
 
