@@ -35,8 +35,7 @@ See [`CHANGELOG.md`](CHANGELOG.md) for full documentation of each canonical vers
 - **`v0`** ([`67710a5db2`](https://github.com/flutter/flutter/commit/67710a5db2adcae7e5ad606c7f5001108e037672)): Framework Baseline (No Skill)
 - **`v1`** ([`19261190ba`](https://github.com/flutter/flutter/commit/19261190bad200063c67b57d550811b0f3f4773a)): First Skill Iteration (core architecture & references)
 - **`v2`** ([`7bb6d97c23`](https://github.com/flutter/flutter/commit/7bb6d97c23779cb315048c4c4e8d9765f7fc8646)): Selection Geometry & Edge-Scrolling Invariants (Sample 1)
-- **`v3`** ([`30d7c11508`](https://github.com/flutter/flutter/commit/30d7c115080a66baa45427f32cf795a5abd02c4a)): Context Menu, Decoupled Packages & Delegating Constructor Parity (Sample 2)
-- **`v4`** ([`5129314acc`](https://github.com/flutter/flutter/commit/5129314acc7fe7c03a648d25278510c27f1be514)): Lifecycle Investigation & Modular Test Isolation (Sample 1 & Sample 2 Consistency)
+- **`v3`** ([`af158b3675`](https://github.com/flutter/flutter/commit/af158b3675a30ae8e7a6ca2a9d460e59ee30768c)): Context Menu, Decoupled Packages, Delegating Constructor Parity & Lifecycle Isolation (Sample 2)
 
 ---
 

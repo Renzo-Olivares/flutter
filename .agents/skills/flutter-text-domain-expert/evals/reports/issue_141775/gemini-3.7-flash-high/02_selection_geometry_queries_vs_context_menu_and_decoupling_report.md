@@ -1,21 +1,18 @@
-# Evaluation Report: Issue #141775 - [iOS] Add default buttons to SelectionArea context menu
+# Evaluation Report: Flutter Issue #141775 (iOS Look Up, Search Web, Share in SelectionArea)
 
 **Target Issue**: [flutter/flutter#141775](https://github.com/flutter/flutter/issues/141775)  
 **Evaluated Model**: Gemini 3.7 Flash (High)  
-**Evaluator**: Antigravity A/B Benchmark Orchestrator & Objective Judge
+**Evaluated Candidates**:
+- **Candidate A**: Commit `7bb6d97c23` (Skill v2 with SelectionGeometry queries)
+- **Candidate B**: Commit `30d7c115080` (Skill v3 with Decoupled Packages & Delegating Constructor Parity)
 
 ---
 
 ## 1. Executive Summary & Final Verdict
-
-- **Winner Declaration**: **Candidate B** (Score: **99.5 / 100** vs Candidate A: **91.0 / 100**)
-- **High-Level Rationale**: 
-  Both candidates successfully diagnosed the root cause, implemented the complete fix across core framework primitives (`SelectableRegion`) and design-system packages (`material_ui` and `cupertino_ui`), verified pre-fix regression failure signatures, and passed all tests with 0 analyzer issues and zero semantic diff in frozen directories.
-  
-  However, **Candidate B** (equipped with Skill v3 featuring Decoupled Packages & Delegating Constructor Parity) demonstrated clear superiority in architectural precision, workflow efficiency, and autonomous search discipline:
-  1. **Direct Decoupled Package Orchestration**: Candidate B immediately loaded the `material-cupertino-packages` and `flutter-text-domain-expert` skills, following the exact multi-repo split PR procedure with a shallow clone of `flutter/packages`, local SDK scaffolding, pending changelogs YAML creation, clean patch generation, and complete teardown.
-  2. **Quantitative Efficiency**: Candidate B achieved a **24.2% reduction in tool calls** (113 vs 149) and a **21.3% reduction in planner turns** (118 vs 150) by eliminating exploratory searches and redundant task polling loops.
-  3. **Delegating Constructor Parity**: Candidate B methodically applied the Zero Parameter Dropping rule to update both `AdaptiveTextSelectionToolbar.selectable` and `CupertinoAdaptiveTextSelectionToolbar.selectable` with identical parameter parity for `onShare`, `onLookUp`, and `onSearchWeb`.
+- **Winner Declaration**: **Candidate B**
+- **High-Level Rationale**:
+  - **Candidate B** achieved near-perfect architectural precision (Score: **98/100**). It correctly adhered to the Material and Cupertino Code Freeze Rule in `flutter/flutter`, applying core primitive changes strictly in `packages/flutter/lib/src/widgets/selectable_region.dart` and `packages/flutter/test/widgets/selectable_region_test.dart`. It properly transitioned design-system changes (`AdaptiveTextSelectionToolbar` and `CupertinoAdaptiveTextSelectionToolbar`) to `flutter/packages` (`material_ui` and `cupertino_ui`), introduced the delegating `.selectableRegion` constructor, updated CHANGELOGs, bumped versions, and exported a clean `.patch` file.
+  - **Candidate A** (Score: **81/100**) produced a functionally sound fix for the core primitives but violated the `flutter/flutter` Code Freeze Rule by directly editing frozen files under `packages/flutter/lib/src/material/`, `packages/flutter/lib/src/cupertino/`, and their corresponding test suites instead of decoupling the changes to `flutter/packages`.
 
 ---
 
@@ -23,47 +20,53 @@
 
 | Dimension | Max Pts | Candidate A | Candidate B | Notes / Observations |
 | :--- | :---: | :---: | :---: | :--- |
-| **1. Subsystem Routing & Architectural Precision** | 20 | 18.5 | 20.0 | Candidate B immediately leveraged the decoupled packages and delegating constructor rules. Candidate A required extra reasoning turns navigating the split architecture. |
-| **2. Test File Placement & Organization** | 20 | 19.0 | 20.0 | Both placed tests in canonical files (`selectable_region_test.dart` and package test files). Candidate B's tests had cleaner isolation across platform variants. |
-| **3. Avoidance of Flutter Text Testing Traps** | 25 | 24.0 | 25.0 | Both avoided cursor blinking hangs and correctly retained selection overlays via `hideToolbar(false)` on iOS. Candidate A had minor task polling overhead (9 `manage_task` calls). |
-| **4. Code Correctness & Cleanliness** | 15 | 14.0 | 15.0 | Both achieved 0 analyzer errors (`dart analyze --fatal-infos`) and 100% `dart format` compliance. Candidate B exported patch files directly to workspace root with complete pending changelogs. |
-| **5. Search Precision & Autonomous Discovery** | 10 | 8.0 | 10.0 | Both autonomously activated `flutter-text-domain-expert`. Candidate B navigated directly with 16 searches, whereas Candidate A performed 26 searches exploring repository layouts. |
-| **6. Quantitative Resource & Token Efficiency** | 10 | 7.5 | 9.5 | Candidate B executed 24.2% fewer tool calls, 21.3% fewer planner turns, and reduced token consumption. |
-| **Total Score** | **100** | **91.0** | **99.5** | **Candidate B Wins (+8.5 pts)** |
+| **1. Subsystem Routing & Architectural Precision** | 20 | 12 | 20 | Candidate B respected multi-repo split PR architecture and added `.selectableRegion` delegating constructors. Candidate A modified frozen Material/Cupertino paths in `flutter/flutter`. |
+| **2. Test File Placement & Organization** | 20 | 14 | 20 | Candidate B isolated widget primitive tests in `selectable_region_test.dart` and design system tests in `cupertino_ui`/`material_ui`. Candidate A modified frozen test files in `flutter/flutter`. |
+| **3. Avoidance of Flutter Text Testing Traps** | 25 | 25 | 25 | Both candidates demonstrated excellent grasp of text testing: realistic gesture sequences, platform channel mocking with teardowns, and avoiding pumpAndSettle cursor hangs. |
+| **4. Code Correctness & Cleanliness** | 15 | 14 | 15 | Both passed `dart analyze --fatal-infos` and `dart format` cleanly. Candidate B included extra defensive null/empty string guards on selected content. |
+| **5. Search Precision & Autonomous Discovery** | 10 | 7 | 10 | Candidate B discovered and fully followed the `material-cupertino-packages` decoupled workflow and verified zero-diff frozen invariants. Candidate A missed the freeze requirement. |
+| **6. Quantitative Resource & Token Efficiency** | 10 | 9 | 8 | Candidate A was faster and used fewer tokens solely because it skipped cloning `flutter/packages` and executing multi-repo split PR workflows. Candidate B's usage was well-justified. |
+| **Total Score** | **100** | **81** | **98** | **Candidate B decisively wins on architecture, adherence to repository rules, and split PR decoupling.** |
 
 ### Quantitative Metrics Summary
 
-| Metric | Candidate A (7bb6d97c23) | Candidate B (30d7c115080) | Delta (%) |
+| Metric | Candidate A | Candidate B | Delta (%) |
 | :--- | :---: | :---: | :---: |
-| **Skill Triggered Automatically** | Yes (`SKILL.md`) | Yes (`SKILL.md`) | — |
-| **Total Planner Turns** | 150 | 118 | **-21.3%** |
-| **Total Tool Calls** | 149 | 113 | **-24.2%** |
-| **Estimated Tokens** | 123,356 | 118,011 | **-4.3%** |
-| **Distinct Files Viewed** | 24 | 21 | -12.5% |
-| **Distinct Files Modified** | 1 (`selectable_region_test.dart`) | 1 (`selectable_region_test.dart`) | 0.0% |
+| **Skill Triggered Automatically** | Yes (`flutter-text-domain-expert`) | Yes (`flutter-text-domain-expert`) | 0.0% |
+| **Total Planner Turns** | 115 | 142 | +23.5% |
+| **Total Tool Calls** | 107 | 139 | +29.9% |
+| **Estimated Tokens** | 91,242 | 163,057 | +78.7% |
+| **Distinct Files Viewed** | 12 | 21 | +75.0% |
+| **Distinct Files Modified** | 3 (in worktree) | 1 (in worktree) + patch | -66.7% |
 
 ---
 
 ## 3. Trajectory & Behavioral Comparison
 
 ### Candidate A Investigation & Execution
-1. **Discovery & Exploration**: Checked out commit `7bb6d97c23`. After viewing the issue via `gh issue view 141775`, Candidate A loaded `flutter-text-domain-expert` skill. Because commit `7bb6d97c23` lacked the v3 `material-cupertino-packages` skill, Candidate A spent exploratory search queries locating external package structures.
-2. **Core Framework Implementation**: Added `onLookUp` and `onSearchWeb` to `SelectableRegion.getSelectableButtonItems`, enabled iOS sharing/lookUp/searchWeb when uncollapsed, implemented `_lookUp()` and `_searchWeb()` methods using `SystemChannels.platform`, and called `hideToolbar(false)` on iOS.
-3. **Decoupled Package Workflow**: Cloned `flutter/packages` into `packages_repo`, updated `AdaptiveTextSelectionToolbar.selectable` in `material_ui` and `CupertinoAdaptiveTextSelectionToolbar.selectable` in `cupertino_ui`, and verified test suites.
-4. **Testing & Verification**: Verified 236 passing tests in `selectable_region_test.dart`, 67 in `material_ui`, and 37 in `cupertino_ui`.
+1. **Initial Exploration**: Ran `gh issue view 141775 --repo flutter/flutter` and read `flutter-text-domain-expert/SKILL.md` and `material-cupertino-packages/SKILL.md`.
+2. **Implementation**:
+   - Extended `SelectableRegion.getSelectableButtonItems` with `onLookUp` and `onSearchWeb` callbacks, and updated `_lookUp` / `_searchWeb` methods via `SystemChannels.platform`.
+   - Modified `packages/flutter/lib/src/material/adaptive_text_selection_toolbar.dart` and `packages/flutter/lib/src/cupertino/adaptive_text_selection_toolbar.dart` directly inside the `flutter/flutter` repository.
+3. **Testing**:
+   - Added regression tests in `packages/flutter/test/widgets/selectable_region_test.dart`.
+   - Added tests in `packages/flutter/test/cupertino/adaptive_text_selection_toolbar_test.dart`, `packages/flutter/test/material/adaptive_text_selection_toolbar_test.dart`, and `packages/flutter/test/material/selection_area_test.dart`.
+4. **Pitfall / Violation**:
+   - Candidate A failed to adhere to the Material and Cupertino Code Freeze rule in `flutter/flutter`, directly modifying 5 frozen files in the main repository.
 
 ### Candidate B Investigation & Execution
-1. **Discovery & Exploration**: Checked out commit `30d7c115080`. Autonomously triggered both `flutter-text-domain-expert` (v3) and `material-cupertino-packages` skills immediately upon encountering the task.
-2. **Architecture & Plan Formulation**: Immediately mapped out the multi-repo split PR requirements: Phase 1 in `packages/flutter/lib/src/widgets/selectable_region.dart` and Phase 2 in `packages/material_ui` and `packages/cupertino_ui`.
-3. **Core Primitives & Delegating Constructor Parity**:
-   - Implemented `onLookUp` and `onSearchWeb` in `SelectableRegion.getSelectableButtonItems` and `SelectableRegionState`.
-   - Updated `AdaptiveTextSelectionToolbar.selectable` and `CupertinoAdaptiveTextSelectionToolbar.selectable` with complete parameter parity for `onShare`, `onLookUp`, and `onSearchWeb`.
-4. **Isolated Package Workflow & Artifact Export**:
-   - Cloned a shallow copy of `flutter/packages` into `packages_repo`.
-   - Added temporary `dependency_overrides`, ran local test suites (8,143 tests in `material_ui`, 1,956 tests in `cupertino_ui`).
-   - Created `pending_changelogs` YAML files and exported clean standalone patches: `material_ui_selection_area_buttons.patch`, `cupertino_ui_selection_area_buttons.patch`, and `flutter_packages_selection_area_buttons.patch`.
-   - Classified dual-channel rollout as **Outcome B: Two-Phase Rollout (Waiting on Stable)** with label `waiting-for-stable`.
-   - Performed clean teardown of temporary scaffolding.
+1. **Initial Exploration**:
+   - Inspected `gh issue view 141775 --repo flutter/flutter`.
+   - Read `material-cupertino-packages/SKILL.md` and `flutter-text-domain-expert/SKILL.md`.
+   - Investigated git commit history for previous button additions (`132599`, `130532`, `131898`) to inspect the historical pattern of context menu items.
+2. **Implementation**:
+   - **`flutter/flutter`**: Modified only `packages/flutter/lib/src/widgets/selectable_region.dart` and `packages/flutter/test/widgets/selectable_region_test.dart`.
+   - **`flutter/packages`**: Cloned `flutter/packages`, modified `cupertino_ui` and `material_ui`, added the new delegating `.selectableRegion` constructor to `CupertinoAdaptiveTextSelectionToolbar`, updated version numbers (`1.0.2` and `1.1.1`), and added `CHANGELOG.md` entries.
+   - **Artifact**: Exported `flutter_packages_selection_area_ios_buttons.patch` for the split PR.
+3. **Testing & Invariant Verification**:
+   - Ran all tests in `selectable_region_test.dart` (234 tests passed).
+   - Ran all tests in `cupertino_ui` (1,962 tests passed) and `material_ui` (8,147 tests passed).
+   - Explicitly ran `git diff -w --ignore-blank-lines packages/flutter/lib/src/material packages/flutter/lib/src/cupertino ...` to confirm zero diff in frozen folders.
 
 ---
 
@@ -71,69 +74,36 @@
 
 ### Direct Citations from Transcripts
 
-#### Autonomous Skill Activation (Candidate B)
-```json
-{"name": "view_file", "args": {"AbsolutePath": "/Users/roliv/.../worktrees/subagent-Candidate-B-self-7ac2eae3/.agents/skills/flutter-text-domain-expert/SKILL.md"}}
-{"name": "view_file", "args": {"AbsolutePath": "/Users/roliv/.../worktrees/subagent-Candidate-B-self-7ac2eae3/.agents/skills/material-cupertino-packages/SKILL.md"}}
+#### 1. Zero-Diff Frozen Folder Verification (Candidate B)
+Candidate B verified the invariant explicitly before completing its work:
+```bash
+git diff -w --ignore-blank-lines packages/flutter/lib/src/material packages/flutter/lib/src/cupertino packages/flutter/test/material packages/flutter/test/cupertino
 ```
-Candidate B identified the cross-repository code freeze rule and text subsystem requirements upfront in early steps, avoiding any extraneous exploratory wandering.
+*Result: Empty diff, confirming zero changes to frozen directories in `flutter/flutter`.*
 
-#### Search Precision & Polling Efficiency
-- **Candidate A**: 26 search/find calls, 9 `manage_task` calls, 3 `schedule` timer calls (149 total tool calls).
-- **Candidate B**: 16 search/find calls, 0 polling loops or schedule timers (113 total tool calls, -24.2%).
-
-### Architectural Implementation Comparison
-
-Both candidates implemented the correct canonical button order and platform channels in `SelectableRegion`:
-
+#### 2. Realistic Gesture Lifecycle Isolation (Both Candidates)
+Both candidates correctly implemented gesture simulations using `startGesture`, `pump(kLongPressTimeout)` / `pump(const Duration(milliseconds: 500))`, and `addTearDown(gesture.removePointer)` rather than relying on brittle taps:
 ```dart
-// SelectableRegion.getSelectableButtonItems:
-final bool platformCanShare =
-    !kIsWeb &&
-    switch (defaultTargetPlatform) {
-      TargetPlatform.android ||
-      TargetPlatform.iOS => selectionGeometry.status == SelectionStatus.uncollapsed,
-      TargetPlatform.macOS ||
-      TargetPlatform.fuchsia ||
-      TargetPlatform.linux ||
-      TargetPlatform.windows => false,
-    };
-final bool canShare = onShare != null && platformCanShare;
-final bool canLookUp =
-    onLookUp != null &&
-    !kIsWeb &&
-    defaultTargetPlatform == TargetPlatform.iOS &&
-    selectionGeometry.status == SelectionStatus.uncollapsed;
-final bool canSearchWeb =
-    onSearchWeb != null &&
-    !kIsWeb &&
-    defaultTargetPlatform == TargetPlatform.iOS &&
-    selectionGeometry.status == SelectionStatus.uncollapsed;
+final TestGesture gesture = await tester.startGesture(textOffsetToPosition(paragraph, 6));
+addTearDown(gesture.removePointer);
+await tester.pump(const Duration(milliseconds: 500));
+expect(paragraph.selections[0], const TextSelection(baseOffset: 4, extentOffset: 7));
+await gesture.up();
+await tester.pumpAndSettle();
 ```
 
-And both preserved selection overlay state on iOS:
+#### 3. Delegating Constructor Parity (`CupertinoAdaptiveTextSelectionToolbar.selectableRegion`)
+Candidate B recognized that while `AdaptiveTextSelectionToolbar.selectableRegion` existed, `CupertinoAdaptiveTextSelectionToolbar` lacked a `.selectableRegion` constructor taking `selectableRegionState`:
 ```dart
-onLookUp: () {
-  _lookUp();
-  switch (defaultTargetPlatform) {
-    case TargetPlatform.android:
-    case TargetPlatform.fuchsia:
-      clearSelection();
-      _selectionStatusNotifier.value = SelectableRegionSelectionStatus.changing;
-      _finalizeSelectableRegionStatus();
-    case TargetPlatform.iOS:
-      hideToolbar(false);
-    case TargetPlatform.linux:
-    case TargetPlatform.macOS:
-    case TargetPlatform.windows:
-      hideToolbar();
-  }
-}
+CupertinoAdaptiveTextSelectionToolbar.selectableRegion({
+  super.key,
+  required SelectableRegionState selectableRegionState,
+}) : children = null,
+     buttonItems = selectableRegionState.contextMenuButtonItems,
+     anchors = selectableRegionState.contextMenuAnchors;
 ```
 
-### Decoupled Packages Workflow & Teardown
-Candidate B strictly followed the `material-cupertino-packages` protocol:
-1. Reverted `pubspec.yaml` temporary `dependency_overrides`.
-2. Created standard `pending_changelogs` YAML files.
-3. Exported clean patch files to the workspace root without machine-specific path pollution.
-4. Cleaned up temporary `packages_repo` checkout.
+---
+
+## 5. Conclusion
+Candidate B's skill update (Decoupled Packages & Delegating Constructor Parity) successfully guided the agent to complete the entire multi-repo contribution lifecycle without violating repository code freeze rules. Candidate B is declared the decisive winner.
