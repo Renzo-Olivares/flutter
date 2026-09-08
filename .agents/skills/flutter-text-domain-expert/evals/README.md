@@ -35,7 +35,7 @@ See [`CHANGELOG.md`](CHANGELOG.md) for full documentation of each canonical vers
 - **`v0`** ([`67710a5db2`](https://github.com/flutter/flutter/commit/67710a5db2adcae7e5ad606c7f5001108e037672)): Framework Baseline (No Skill)
 - **`v1`** ([`19261190ba`](https://github.com/flutter/flutter/commit/19261190bad200063c67b57d550811b0f3f4773a)): First Skill Iteration (core architecture & references)
 - **`v2`** ([`7bb6d97c23`](https://github.com/flutter/flutter/commit/7bb6d97c23779cb315048c4c4e8d9765f7fc8646)): Selection Geometry & Edge-Scrolling Invariants (Sample 1)
-- **`v3`** ([`8808bf80fb`](https://github.com/flutter/flutter/commit/8808bf80fbc5870fec0dce9de459bda4b8cceea7)): Context Menu, Decoupled Packages, Delegating Constructor Parity & Lifecycle Isolation (Sample 2)
+- **`v3`** ([`04a988638a`](https://github.com/flutter/flutter/commit/04a988638a9463e0cc9bba6a4071f07d7451b80c)): Context Menu, Decoupled Packages, Mandatory Investigation Directive & Lifecycle Isolation (Sample 2)
 
 ---
 
@@ -48,14 +48,14 @@ See [`CHANGELOG.md`](CHANGELOG.md) for full documentation of each canonical vers
 | **`01_no_skill_vs_first_iteration.json`** | No Skill (`v0`) vs. First Iteration (`v1`) | `67710a5db2` | `19261190ba` | Measures initial value-add of domain architecture and test location guides. |
 | **`02_no_skill_vs_selection_geometry_queries.json`** | No Skill (`v0`) vs. Selection Geometry (`v2`) | `67710a5db2` | `7bb6d97c23` | Measures total value-add of the resolved skill on edge scrolling & coordinate transforms. |
 | **`03_first_iteration_vs_selection_geometry_queries.json`** | First Iteration (`v1`) vs. Selection Geometry (`v2`) | `19261190ba` | `7bb6d97c23` | Measures marginal improvement of `SelectionGeometry` queries and Section 8 edge-scrolling invariants. |
-| **`04_selection_geometry_queries_vs_context_menu_and_decoupling.json`** | Selection Geometry (`v2`) vs. Treatment (`v3`) | `7bb6d97c23` | `8808bf80fb` | Validates non-interference and zero-regression stability of v3 rules on edge scrolling. |
+| **`04_selection_geometry_queries_vs_context_menu_and_decoupling.json`** | Selection Geometry (`v2`) vs. Treatment (`v3`) | `7bb6d97c23` | `04a988638a` | Validates non-interference and zero-regression stability of v3 rules on edge scrolling. |
 
 ### Issue #141775 (Sample 2: iOS SelectionArea Context Menu & Decoupled Packages)
 
 | Case ID | Comparison | Baseline SHA | Treatment SHA | Purpose |
 | :--- | :--- | :--- | :--- | :--- |
-| **`01_no_skill_vs_context_menu_and_decoupling.json`** | No Skill (`v0`) vs. Treatment (`v3`) | `67710a5db2` | `8808bf80fb` | Measures total value-add of text skill with decoupled packages workflow on iOS SelectionArea buttons. |
-| **`02_selection_geometry_queries_vs_context_menu_and_decoupling.json`** | Selection Geometry (`v2`) vs. Treatment (`v3`) | `7bb6d97c23` | `8808bf80fb` | Measures marginal impact of Invariant 7 delegating constructor parity and `material-cupertino-packages` split PR. |
+| **`01_no_skill_vs_context_menu_and_decoupling.json`** | No Skill (`v0`) vs. Treatment (`v3`) | `67710a5db2` | `04a988638a` | Measures total value-add of text skill with decoupled packages workflow on iOS SelectionArea buttons. |
+| **`02_selection_geometry_queries_vs_context_menu_and_decoupling.json`** | Selection Geometry (`v2`) vs. Treatment (`v3`) | `7bb6d97c23` | `04a988638a` | Measures marginal impact of Invariant 7 delegating constructor parity and `material-cupertino-packages` split PR. |
 
 *(Note: Issue #181169 will serve as Sample 3 for holdout zero-shot validation of v3.)*
 

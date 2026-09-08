@@ -15,8 +15,8 @@
       "description": "Commit 7bb6d97c23 (skill v2 with SelectionGeometry queries and Section 8 edge-scrolling invariants)"
     },
     "treatment": {
-      "commit": "8808bf80fbc5870fec0dce9de459bda4b8cceea7",
-      "description": "Commit 8808bf80fb (skill v3 with Decoupled Packages, Delegating Constructor Parity & Lifecycle Isolation)"
+      "commit": "04a988638a9463e0cc9bba6a4071f07d7451b80c",
+      "description": "Commit 04a988638a (skill v3 with Decoupled Packages, Delegating Constructor Parity & Mandatory Investigation Directive)"
     }
   },
   "task_prompt_template": "FIRST STEP:\ngit checkout --quiet {commit}\n\nTASK:\n1. Inspect the issue using `gh issue view 162856 --repo flutter/flutter` (do not pass `--comments`).\n2. Reproduce and investigate the root cause in the Flutter framework:\n   - Identify missing capabilities or defects in the core primitives.\n   - Inspect existing architectural patterns, callback contracts, and interaction lifecycles in the target subsystem (e.g. how adjacent delegates or gesture recognizers manage state transitions, scrolling, coordinate transforms, or event notifications).\n3. Write regression tests verifying the issue under packages/flutter/test/:\n   - Design focused test cases (e.g. separating static/structural verification from interactive gesture sequences to ensure clean lifecycle isolation).\n   - Verify the exact failure signature: Did the test fail on the expected expect() assertion or bug-specific exception, or did it fail with an unrelated TestFailure / compilation error? Make sure it fails because of the former.\n4. Implement the complete fix in packages/flutter/lib/src/.\n5. Ensure `dart analyze --fatal-infos` and `dart format` pass on all modified files.\n6. Verify all regression tests pass now that the fix has been implemented.",

@@ -11,25 +11,29 @@ This document tracks the canonical evolutionary versions of the `flutter-text-do
 | **`v0`** | [`67710a5db2`](https://github.com/flutter/flutter/commit/67710a5db2adcae7e5ad606c7f5001108e037672) | **Framework Baseline** *(No Skill)* | Standard Flutter repository without any specialized text domain expert skill or custom agent instructions. | Baseline for Sample 1 ([#162856](https://github.com/flutter/flutter/issues/162856)) & Sample 2 ([#141775](https://github.com/flutter/flutter/issues/141775)) |
 | **`v1`** | [`19261190ba`](https://github.com/flutter/flutter/commit/19261190bad200063c67b57d550811b0f3f4773a) | **First Iteration** | Initial text domain expert architecture: reference guides (`common_text_primitives.md`, `editable_text_pipeline.md`, `static_text_pipeline.md`, `testing_text_stack.md`), subsystem routing, and testing invariants. | Initial draft for #162856 |
 | **`v2`** | [`7bb6d97c23`](https://github.com/flutter/flutter/commit/7bb6d97c23779cb315048c4c4e8d9765f7fc8646) | **Selection Geometry Changes** | Edge-scrolling invariants, coordinate transformation rules, and `SelectionGeometry` querying patterns within `SelectionContainerDelegate` (preventing naive bounding box math). | Treatment for Sample 1 ([#162856](https://github.com/flutter/flutter/issues/162856))<br>Baseline for Sample 2 ([#141775](https://github.com/flutter/flutter/issues/141775)) |
-| **`v3`** | [`8808bf80fb`](https://github.com/flutter/flutter/commit/8808bf80fbc5870fec0dce9de459bda4b8cceea7) | **Context Menu & Decoupled Packages** | Decoupled multi-repo workflow (`material-cupertino-packages`), minimal `code-freeze.md` redirect, Invariant 7 enforcing delegating constructor parity (zero parameter dropping), and generalized prompt harness enforcing upfront interaction/lifecycle contract inspection and structural vs. interactive test isolation. | Treatment for Sample 2 ([#141775](https://github.com/flutter/flutter/issues/141775)) |
+| **`v3`** | [`04a988638a`](https://github.com/flutter/flutter/commit/04a988638a9463e0cc9bba6a4071f07d7451b80c) | **Context Menu, Decoupled Packages & Mandatory Investigation Routing** | Decoupled multi-repo workflow (`material-cupertino-packages`), minimal `code-freeze.md` redirect, Invariant 7 enforcing delegating constructor parity (zero parameter dropping), Mandatory Investigation Directive enforcing domain reference loading before codebase grepping, and explicit guidance avoiding the Git Archeology Trap. | Treatment for Sample 2 ([#141775](https://github.com/flutter/flutter/issues/141775)) |
 
 ---
 
 ## Detailed Version Specifications
 
-### v3 — Context Menu, Decoupled Packages & Delegating Constructor Parity
-- **Commit**: [`8808bf80fbc5870fec0dce9de459bda4b8cceea7`](https://github.com/flutter/flutter/commit/8808bf80fbc5870fec0dce9de459bda4b8cceea7)
-- **Trigger Issue**: [flutter/flutter#141775](https://github.com/flutter/flutter/issues/141775) (`[iOS] Add default buttons to SelectionArea context menu`)
+### v3 — Context Menu, Decoupled Packages & Mandatory Investigation Routing
+- **Commit**: [`04a988638a9463e0cc9bba6a4071f07d7451b80c`](https://github.com/flutter/flutter/commit/04a988638a9463e0cc9bba6a4071f07d7451b80c)
+- **Trigger Issue**: [flutter/flutter#141775](https://github.com/flutter/flutter/issues/141775) (`[iOS] Add default buttons to SelectionArea context menu`) & [flutter/flutter#162856](https://github.com/flutter/flutter/issues/162856) (Benchmark Iteration)
 - **Key Capabilities & Architectural Rules Added**:
-  1. **Delegating Constructor Parity (Invariant 7)**:
+  1. **Mandatory Investigation Directive & Anti-Git-Archeology**:
+     - Explicitly mandates calling `view_file` on matching domain reference documents under `references/` (e.g. `references/static_text_pipeline.md`) before grepping the codebase or making edits.
+     - Outlaws the **Git Archeology Trap**: warns agents against relying on narrow, point-in-time commit logs or past PR descriptions to deduce system invariants and anchoring on superseded workarounds.
+     - Added explicit navigation mapping for `EdgeDraggingAutoScroller` and `SelectionEdgeUpdateEvent` in `SKILL.md` Section 1.
+  2. **Delegating Constructor Parity (Invariant 7)**:
      - Explicitly mandates that when a core primitive or helper function adds or extends parameters, callbacks, or supported capabilities, downstream callers and delegating constructors (e.g. `AdaptiveTextSelectionToolbar.selectable`, `CupertinoAdaptiveTextSelectionToolbar.selectable`) must expose and forward them.
      - Enforces **Zero Parameter Dropping**: Prohibits delegating constructors from dropping parameters or defaulting them to `null` simply because Dart optional parameter rules allow it.
-  2. **Multi-Repo Decoupled Packages Skill (`material-cupertino-packages`)**:
+  3. **Multi-Repo Decoupled Packages Skill (`material-cupertino-packages`)**:
      - Guides the agent through the complete multi-repo split PR workflow when companion text wrappers reside in `material_ui` or `cupertino_ui` under `flutter/packages`.
      - Standardizes local on-demand shallow checkouts (`git clone --depth 1 https://github.com/flutter/packages.git packages_repo`), local SDK `dependency_overrides`, dual-channel CI testing (master framework override vs stable SDK), patch generation, and mandatory clone teardown (`rm -rf packages_repo flutter_stable`).
-  3. **Lean Code Freeze Rule**:
+  4. **Lean Code Freeze Rule**:
      - Stripped rule bloat from `.agents/rules/code-freeze.md` to keep it strictly focused as a binary stop sign on frozen paths (`packages/flutter/lib/src/{material,cupertino}/`), directly redirecting to `flutter/packages`.
-  4. **Subsystem-Agnostic Lifecycle Investigation & Modular Test Isolation**:
+  5. **Subsystem-Agnostic Lifecycle Investigation & Modular Test Isolation**:
      - Directs agents in the pre-fix investigation phase to analyze adjacent callback contracts, state transitions, dismissals, and platform channels before drafting tests.
      - Directs agents to separate static/structural configuration verification from interactive gesture sequences, avoiding fragile multi-action chained taps across dismissed component overlays.
 
