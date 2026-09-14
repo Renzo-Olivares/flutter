@@ -641,7 +641,7 @@ graph TD
     end
 
     subgraph Leaf_Selectables ["4. Leaf Selectable Registrants (NO RenderEditable)"]
-        RP_Leaf["RenderParagraph<br/><i>Registers _SelectableFragment instances via SelectionHandler</i>"]
+        RP_Leaf["RenderParagraph<br/><i>Registers _SelectableFragment instances via SelectionRegistrar.add</i>"]
         Custom_Leaf["Custom Selectable RenderObjects<br/><i>(SelectableImage, TableCell, CodeBlock)</i>"]
     end
 

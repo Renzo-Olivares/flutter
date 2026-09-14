@@ -116,7 +116,7 @@ Setting `EditableText.readOnly` prevents user text changes while retaining selec
 - **`TextInputClient`**: Receives editing commands, text value snapshots, action button triggers, floating cursor updates, and platform selectors from the IME.
 - **`TextSelectionDelegate`**: Provides selection manipulation callbacks (e.g. `cutSelection`, `pasteText`, `selectAll`).
 - **`AutofillClient`**: Handles platform autofill requests and credentials.
-- **`WidgetsBindingObserver`**: Monitors application lifecycle and metrics changes (e.g. keyboard appearance/resizing).
+- **`WidgetsBindingObserver`**: Monitors metrics changes (e.g. keyboard appearance/resizing) through `didChangeMetrics`. Application resume handling uses a separate `AppLifecycleListener(onResume: _onResume)`.
 - **`TickerProviderStateMixin`**: Ticks the cursor blinking animation controller.
 - **`AutomaticKeepAliveClientMixin<EditableText>`**: Requests keep-alive while `widget.focusNode.hasFocus`, preserving a focused field in lazy lists.
 
