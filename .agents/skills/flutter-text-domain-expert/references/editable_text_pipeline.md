@@ -33,7 +33,7 @@ This document provides a deep, comprehensive architectural reference for the edi
    - [Native System Context Menus & Platform Behaviors](#native-system-context-menus--platform-behaviors)
    - [Reference to Shared Overlays](#reference-to-shared-overlays)
 6. [Architectural Isolation Invariant](#6-architectural-isolation-invariant)
-   - [Why `RenderEditable` Is Isolated from `SelectionArea`](#why-rendereditable-is-isolated-from-selectionarea)
+   - [Why `RenderEditable` Is Isolated from `SelectionArea` / `SelectableRegion`](#why-rendereditable-is-isolated-from-selectionarea--selectableregion)
 7. [Architecture & Pipeline Diagrams](#7-architecture--pipeline-diagrams)
    - [Diagram 1: Core Editable Text & Caret/Viewport Pipeline](#diagram-1-core-editable-text--caretviewport-pipeline)
    - [Diagram 2: IME & State Processing Pipeline](#diagram-2-ime--state-processing-pipeline)
@@ -422,7 +422,7 @@ For details regarding handle controls (`MaterialTextSelectionHandleControls`, `C
 
 ## 6. Architectural Isolation Invariant
 
-### Why `RenderEditable` Is Isolated from `SelectionArea`
+### Why `RenderEditable` Is Isolated from `SelectionArea` / `SelectableRegion`
 
 > [!IMPORTANT]
 > 1. **Self-Contained State Machine**: `EditableText` / `RenderEditable` owns its own `TextEditingController`, caret blinking animation, keyboard shortcut bindings, viewport scrolling offset, and IME platform channel connections.

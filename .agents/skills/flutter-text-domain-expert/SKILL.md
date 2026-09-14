@@ -1,8 +1,8 @@
 ---
 name: flutter-text-domain-expert
 description: >
-  Architecture, debugging, source routing, and tests for Flutter text in
-  flutter/flutter (framework, engine, and embedders).
+  Architecture, debugging, subsystem routing, and testing best practices for Flutter text in
+  flutter/flutter: painting, rendering, services, widgets, engine/embedders.
 
   When to use:
   - Rendering/layout: Text, RichText, RenderParagraph, TextPainter, InlineSpan,
@@ -10,15 +10,15 @@ description: >
   - Editing/IME: TextField, CupertinoTextField, EditableText, RenderEditable,
     TextInput, TextInputClient, DeltaTextInputClient, TextInputFormatter,
     DefaultTextEditingShortcuts.
-  - Selection/menus: SelectionArea, SelectableRegion, SelectionContainer,
-    TextSelectionGestureDetector, SelectionOverlay, adaptive toolbars, handles,
-    magnifiers, and text platform channels.
-  - Selection scrolling: Scrollable, ListView, CustomScrollView,
-    _ScrollableSelectionContainerDelegate, EdgeDraggingAutoScroller.
-  - Unit, widget, rendering, and platform tests for these features.
+  - Selection/context menus/buttons: SelectionArea, SelectableRegion,
+    SelectionContainer, TextSelectionGestureDetector, SelectionOverlay,
+    TextSelectionToolbar, adaptive toolbars, selection handles, magnifiers, text platform channels.
+  - Edge-scrolling, auto-scrolling, select-to-scroll: Scrollable, ListView,
+    CustomScrollView, _ScrollableSelectionContainerDelegate, EdgeDraggingAutoScroller.
+  - Unit, widget, rendering, platform tests; packages/flutter/test/.
 
   When not to use:
-  - Unrelated framework behavior, build tooling, or engine build configuration.
+  - Unrelated routing, physics, animations, build tooling, engine build configuration.
 ---
 
 # Flutter Text Domain Expert Skill (`flutter/flutter`)
