@@ -76,7 +76,7 @@ This document provides an architectural navigation reference for the foundationa
 | [`AdaptiveTextSelectionToolbar`](../../../../packages/flutter/lib/src/material/adaptive_text_selection_toolbar.dart) | [`packages/flutter/lib/src/material/adaptive_text_selection_toolbar.dart`](../../../../packages/flutter/lib/src/material/adaptive_text_selection_toolbar.dart) | Adaptive toolbar wrapper (frozen here; active in `material_ui` under `flutter/packages`). |
 | [`TextMagnifier`](../../../../packages/flutter/lib/src/material/magnifier.dart) | [`packages/flutter/lib/src/material/magnifier.dart`](../../../../packages/flutter/lib/src/material/magnifier.dart) | Android/Material magnifying glass widget (frozen here; active in `material_ui` under `flutter/packages`). |
 | [`CupertinoTextMagnifier`](../../../../packages/flutter/lib/src/cupertino/magnifier.dart) | [`packages/flutter/lib/src/cupertino/magnifier.dart`](../../../../packages/flutter/lib/src/cupertino/magnifier.dart) | iOS magnifying glass widget (frozen here; active in `cupertino_ui` under `flutter/packages`). |
-| [`RawMagnifier`](../../../../packages/flutter/lib/src/widgets/magnifier.dart) | [`packages/flutter/lib/src/widgets/magnifier.dart`](../../../../packages/flutter/lib/src/widgets/magnifier.dart) | Low-level magnifier widget using `BackdropFilter` to distort and scale background pixels. |
+| [`RawMagnifier`](../../../../packages/flutter/lib/src/widgets/magnifier.dart) | [`packages/flutter/lib/src/widgets/magnifier.dart`](../../../../packages/flutter/lib/src/widgets/magnifier.dart) | Low-level magnifier widget whose render object uses `BackdropFilterLayer` to scale background pixels. |
 | [`MagnifierController`](../../../../packages/flutter/lib/src/widgets/magnifier.dart) | [`packages/flutter/lib/src/widgets/magnifier.dart`](../../../../packages/flutter/lib/src/widgets/magnifier.dart) | Controls showing, hiding, and animating magnifiers in the application `Overlay`. |
 
 ---
@@ -199,7 +199,7 @@ classDiagram
         +String? text
         +List~InlineSpan~? children
         +GestureRecognizer? recognizer
-        +MouseCursor? mouseCursor
+        +MouseCursor mouseCursor
         +String? semanticsLabel
         +Locale? locale
         +bool? spellOut
@@ -233,17 +233,17 @@ classDiagram
    - Traversal contract: `bool visitChildren(InlineSpanVisitor visitor)` where `typedef InlineSpanVisitor = bool Function(InlineSpan span)`.
    - Traverses the span tree in depth-first reading order.
    - Allows early termination by returning `false` from the visitor callback (used in offset indexing, hit testing, and text extraction).
-   - Specialized visitor methods built on top of `visitChildren`:
-     - `visitDirectChildren(InlineSpanVisitor visitor)`: Traverses only immediate children.
-     - `getSpanForPosition(TextPosition position)` / `getSpanForPositionVisitor`: Finds the specific leaf or branch span containing the specified string offset.
-     - `computeToPlainText(StringBuffer buffer, ...)`: Extracts flattened plain text representation.
-     - `codeUnitAtVisitor(int index, _Accumulator offset)`: Retrieves a character code unit at a logical index.
+   - Related traversal and lookup methods:
+     - `visitDirectChildren(InlineSpanVisitor visitor)`: Independently traverses only immediate children.
+     - `getSpanForPosition(TextPosition position)` / `getSpanForPositionVisitor`: Uses `visitChildren` to find the specific leaf or branch span containing the specified string offset.
+     - `computeToPlainText(StringBuffer buffer, ...)`: Extracts flattened plain text by recursively calling `computeToPlainText` on child spans.
+     - `codeUnitAtVisitor(int index, Accumulator offset)`: Retrieves a character code unit at a logical index; `codeUnitAt` invokes this callback through `visitChildren`.
 3. **Structural Tree Diffing (`compareTo`)**:
    - `compareTo(InlineSpan other)` computes a [`RenderComparison`](../../../../packages/flutter/lib/src/rendering/object.dart) enum value:
-     - `RenderComparison.identical`: Spans are identical; no action needed.
-     - `RenderComparison.metadata`: Only semantic or non-visual metadata changed (e.g. `semanticsLabel`, `recognizer`, `mouseCursor`); no layout or paint update needed.
-     - `RenderComparison.paint`: Visual properties changed that do NOT affect text layout geometry (e.g. `TextStyle.color`, `TextStyle.foreground`, `TextStyle.shadows`, `TextStyle.decoration`); triggers repaint (`markNeedsPaint()`) without invalidating framework layout geometry. During the next paint, `TextPainter` still recreates and lays out the engine paragraph to apply the new paint attributes.
-     - `RenderComparison.layout`: Structural or layout-critical properties changed (e.g. `text`, `fontSize`, `fontFamily`, `letterSpacing`, `PlaceholderDimensions`, child span count); triggers a full layout pass (`markNeedsLayout()`).
+     - `RenderComparison.identical`: The compared properties match. `TextSpan.compareTo` does not compare `semanticsLabel` or `mouseCursor`, so changes to those properties alone also return `identical`.
+     - `RenderComparison.metadata`: A `TextSpan` recognizer changed without a change requiring paint or layout; no layout or paint update needed.
+     - `RenderComparison.paint`: Paint attributes changed (e.g. `TextStyle.color`, `TextStyle.backgroundColor`, `TextStyle.decoration`); triggers repaint (`markNeedsPaint()`) without invalidating framework layout geometry. During the next paint, `TextPainter` still recreates and lays out the engine paragraph to apply the new paint attributes.
+     - `RenderComparison.layout`: Structural or style properties classified as requiring layout changed (e.g. `text`, `fontSize`, `fontFamily`, `letterSpacing`, `foreground`, `background`, `shadows`, child span count); triggers a full layout pass (`markNeedsLayout()`).
 4. **Semantics Extraction (`getSemanticsInformation`)**:
    - Returns a `List<InlineSpanSemanticsInformation>` describing accessibility metadata.
    - Spans with interactive gesture recognizers (`recognizer != null`) or embedded inline widgets (`WidgetSpan`) set `requiresOwnNode: true`, forcing Flutter's semantics subsystem to allocate individual accessible nodes in the OS accessibility tree.
@@ -257,9 +257,9 @@ classDiagram
 - **`text`**: The UTF-16 text string to render.
 - **`children`**: An optional list of child `InlineSpan` instances nested inside this span. Child spans inherit unresolved style properties from their parent span.
 - **`recognizer`**: An optional [`GestureRecognizer`](../../../../packages/flutter/lib/src/gestures/recognizer.dart) (e.g. [`TapGestureRecognizer`](../../../../packages/flutter/lib/src/gestures/tap.dart)) responding to pointer events directly on this span (such as clickable hyperlinks or mention tags).
-- **`mouseCursor`**: Custom mouse cursor (e.g. `SystemMouseCursors.click`) shown when hovering over the span.
+- **`mouseCursor`**: Non-nullable `MouseCursor` field shown when hovering over the span. The constructor accepts `MouseCursor?`; when omitted or null, it defaults to `MouseCursor.defer` if `recognizer` is null and `SystemMouseCursors.click` otherwise.
 - **`semanticsLabel`**: Optional accessibility string replacing the plain text content for screen readers.
-- **`locale` & `spellOut`**: Locale override for language-specific glyph rendering and TTS pronunciation flags.
+- **`locale` & `spellOut`**: Control assistive-technology pronunciation and whether text is spoken character by character. `TextStyle.locale` controls language-specific glyph selection.
 
 ---
 
@@ -342,10 +342,12 @@ When `TextPainter.layout(minWidth, maxWidth)` is called with updated constraints
 - On a successful fast path, it updates `contentWidth`; `paintOffset` is derived from that width, the paragraph width, and `textAlignment`. This avoids a native paragraph layout call for those constraint changes.
 
 #### 3. Deferred Paint Rebuilds (`_rebuildParagraphForPaint`)
-`ui.Paragraph` text/style content cannot be changed in place. If styling attributes that only affect painting change (such as `TextStyle.color`, `TextStyle.foreground`, `TextStyle.shadows`, or background `Paint`):
+`ui.Paragraph` text/style content cannot be changed in place. If styling changes produce `RenderComparison.paint` (such as changes to `TextStyle.color`, `TextStyle.backgroundColor`, or `TextStyle.decoration`):
 - `TextPainter` marks an internal flag: `_rebuildParagraphForPaint = true`.
 - It avoids triggering a synchronous engine rebuild or invalidating layout geometry.
 - The `ui.Paragraph` is recreated during the next `paint()` call using `_createParagraph(text!)`, then laid out again at `layoutCache.layoutMaxWidth`. This defers engine work until paint and preserves the framework layout cache; it does not eliminate engine paragraph layout.
+
+Changes to `TextStyle.foreground`, background `Paint`, or `TextStyle.shadows` instead produce `RenderComparison.layout` and invalidate the layout cache.
 
 ---
 
@@ -474,7 +476,7 @@ The abstract base class [`TextBoundary`](../../../../packages/flutter/lib/src/se
 
 #### 5. `DocumentBoundary` ([`services/text_boundary.dart`](../../../../packages/flutter/lib/src/services/text_boundary.dart))
 - Spans the entire document extent `[0, text.length]`.
-- Used for `Cmd+A` / `Ctrl+A` or `Cmd+Up/Down` full-document selection and caret jumps.
+- Used for full-document caret jumps and selection extension, such as `Cmd+Up/Down`. `Cmd+A` / `Ctrl+A` uses a separate Select All action: editable text constructs the full `TextSelection` directly, while static selection dispatches `SelectAllSelectionEvent`.
 
 ---
 
@@ -489,8 +491,10 @@ Flutter provides specialized gesture recognizers designed specifically for text 
                                    |
                 +------------------+------------------+
                 |                                     |
-    LongPressGestureRecognizer              BaseTapAndDragGestureRecognizer (sealed)
-    (Touch hold word selection)             (Consecutive tap counter & drag slop)
+    PrimaryPointerGestureRecognizer         BaseTapAndDragGestureRecognizer (sealed)
+                |                          (Consecutive tap counter & drag slop)
+    LongPressGestureRecognizer                         |
+    (Touch hold word selection)                        |
                                                       |
                    +----------------------------------+----------------------------------+
                    |                                  |                                  |
@@ -566,9 +570,10 @@ flowchart TD
 - **[`TextSelectionControls`](../../../../packages/flutter/lib/src/widgets/text_selection.dart)**: Abstract delegate interface defining `buildHandle()`, `buildToolbar()`, `getHandleSize()`, `getHandleAnchor()`.
 - **[`TextSelectionHandleControls`](../../../../packages/flutter/lib/src/widgets/text_selection.dart)**: Mixin that disables the legacy toolbar/clipboard-control path so `contextMenuBuilder` can manage the toolbar. Concrete `TextSelectionControls` subclasses implement platform handle rendering.
 - **[`TextSelectionHandleType`](../../../../packages/flutter/lib/src/rendering/selection.dart)**: Enum specifying the handle role:
-  - `left`: Start handle for forward selection (or end handle for reverse selection).
-  - `right`: End handle for forward selection (or start handle for reverse selection).
+  - `left`: Handle positioned to the left of its selection endpoint.
+  - `right`: Handle positioned to the right of its selection endpoint.
   - `collapsed`: Single cursor handle for collapsed selection / caret positioning on mobile.
+  - Start/end handle types depend on writing direction; mixed-direction text can have the same handle type at both endpoints. Editable iOS handles follow the field's text direction.
 
 #### 2. Material Platform Controls
 - **[`materialTextSelectionHandleControls`](../../../../packages/flutter/lib/src/material/text_selection.dart)** ([`MaterialTextSelectionHandleControls`](../../../../packages/flutter/lib/src/material/text_selection.dart)): Renders teardrop-shaped handles with a custom painter, using `TextSelectionTheme.selectionHandleColor` or the theme primary color.
@@ -622,7 +627,7 @@ The following platform channels under `SystemChannels` coordinate text editing, 
 
 | Channel | Wire Method / Event | Direction | Payload & Types | Subsystem & Purpose |
 | :--- | :--- | :---: | :--- | :--- |
-| **`SystemChannels.platform`**<br>`'flutter/platform'` | `Clipboard.setData`<br>`Clipboard.getData`<br>`Clipboard.hasStrings`<br>`LookUp.invoke`<br>`SearchWeb.invoke`<br>`Share.invoke`<br>`LiveText.isLiveTextInputAvailable`<br>`HapticFeedback.vibrate` | Outgoing | `{'text': String}`<br>`'text/plain'` $\to$ `{'text': String}`<br>`void` $\to$ `{'value': bool}`<br>`String` (selected plain text)<br>`String` (selected plain text)<br>`String` (selected plain text)<br>`void` $\to$ `bool`<br>`void` | System clipboard data transfer, iOS dictionary popup, iOS web search invocation, iOS/Android share sheet modal, Apple Live Text availability detection, and text selection haptic vibration. |
+| **`SystemChannels.platform`**<br>`'flutter/platform'` | `Clipboard.setData`<br>`Clipboard.getData`<br>`Clipboard.hasStrings`<br>`LookUp.invoke`<br>`SearchWeb.invoke`<br>`Share.invoke`<br>`LiveText.isLiveTextInputAvailable`<br>`HapticFeedback.vibrate` | Outgoing | `{'text': String}`<br>`'text/plain'` $\to$ `{'text': String}`<br>`'text/plain'` $\to$ `{'value': bool}`<br>`String` (selected plain text)<br>`String` (selected plain text)<br>`String` (selected plain text)<br>`void` $\to$ `bool`<br>`String` haptic type or no argument; text selection sends `'HapticFeedbackType.selectionClick'` | System clipboard data transfer, iOS dictionary popup, iOS web search invocation, iOS/Android share sheet modal, Apple Live Text availability detection, and text selection haptic vibration. |
 | **`SystemChannels.textInput`**<br>`'flutter/textinput'` | `TextInput.setClient`<br>`TextInput.show`<br>`TextInput.hide`<br>`TextInput.setEditingState`<br>`TextInput.clearClient`<br>`TextInput.startLiveTextInput`<br><br>*Incoming:*<br>`TextInputClient.updateEditingState`<br>`TextInputClient.performAction`<br>`TextInputClient.onConnectionClosed` | Outgoing<br><br><br><br><br><br><br>Incoming | `[int clientId, Map config]`<br>`void`<br>`void`<br>`Map textEditingValue`<br>`void`<br>`void`<br><br>`[int id, Map state]`<br>`[int id, String action]`<br>`[int id]` | Primary IME transaction channel: opens/closes soft keyboard, synchronizes text buffer and composing range, dispatches action button presses (`done`, `go`, `newline`). |
 | **`SystemChannels.processText`**<br>`'flutter/processtext'` | `ProcessText.queryTextActions`<br>`ProcessText.processTextAction` | Outgoing | `void` $\to$ `Map<String, String>`<br>`[String id, String text, bool readOnly]` $\to$ `String?` | Android 6.0+ Text Processing Intents (exposing third-party application actions in context menus). |
 | **`SystemChannels.spellCheck`**<br>`'flutter/spellcheck'` | `SpellCheck.initiateSpellCheck` | Outgoing | `[String locale, String text]` → list of maps with `startIndex`, `endIndex`, and `suggestions` | `DefaultSpellCheckService` in `services/spell_check.dart` sends a language tag, then text; it converts returned maps into `SuggestionSpan` objects. |
@@ -638,7 +643,7 @@ The following platform channels under `SystemChannels` coordinate text editing, 
 
 During touch handle dragging on mobile devices, a magnifying loupe floats above the finger to display obscured text.
 
-- **[`RawMagnifier`](../../../../packages/flutter/lib/src/widgets/magnifier.dart)**: Base widget using `BackdropFilter` with a scale transform matrix and focal point translation to magnify the underlying canvas layer.
+- **[`RawMagnifier`](../../../../packages/flutter/lib/src/widgets/magnifier.dart)**: Builds a custom `_Magnifier` render-object widget. Its `_RenderMagnification` uses `BackdropFilterLayer` with an `ImageFilter.matrix` scale transform and focal point translation to magnify the underlying canvas layer.
 - **[`MagnifierController`](../../../../packages/flutter/lib/src/widgets/magnifier.dart)**: Manages showing, hiding, shifting, and removing the magnifier overlay entry.
 - **[`TextMagnifierConfiguration`](../../../../packages/flutter/lib/src/widgets/text_selection.dart)**: Configuration contract passed into text fields or selectable regions.
 - **[`TextMagnifier`](../../../../packages/flutter/lib/src/material/magnifier.dart)**: Material / Android implementation using `Magnifier`, whose `RawMagnifier` decoration has a `RoundedRectangleBorder`.
@@ -648,7 +653,7 @@ During touch handle dragging on mobile devices, a magnifying loupe floats above 
 
 ### Composited Layer Linking (`LeaderLayer` & `FollowerLayer`)
 
-Selection handles and toolbars must float above sibling widgets without being clipped by intermediate layout containers, yet they must track scrolling text smoothly at 60/120 FPS.
+Selection handles and toolbars float above sibling widgets without being clipped by intermediate layout containers, while tracking scrolling text through composited layer links.
 
 ```
 Render Tree (Inside Scrollable Viewport):
@@ -664,4 +669,4 @@ Overlay Tree (Root Overlay):
 
 1. **`LayerLink`**: Identifies a pair of linked composited layers.
 2. **`LeaderLayer`**: Pushed into the layer tree during `paint()` by `RenderEditable` or `RenderParagraph` at the local 2D coordinates of selection endpoints.
-3. **`FollowerLayer`**: Wrapped around handle widgets inside `OverlayEntry`. During compositing in the engine/GPU, the `FollowerLayer` automatically applies the exact matrix transform and scroll offset of its matching `LeaderLayer` without triggering widget rebuilds or framework layout passes.
+3. **`FollowerLayer`**: Wrapped around handle widgets inside `OverlayEntry`. During framework scene construction, `FollowerLayer._establishTransform()` computes the transform between the leader and follower layer chains, including offsets. `addToScene()` passes that matrix to `SceneBuilder.pushTransform()` for engine rendering, without requiring widget rebuilds or framework layout passes for the follower transform.

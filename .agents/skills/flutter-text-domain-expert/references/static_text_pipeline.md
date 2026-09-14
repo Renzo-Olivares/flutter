@@ -251,15 +251,16 @@ The Unified Selection Subsystem provides cross-widget, document-wide text select
 
 1. **Constructor**:
    ```dart
-   const SelectionContainer.disabled({super.key, required Widget child})
+   const SelectionContainer.disabled({super.key, required this.child})
      : registrar = null,
        delegate = null;
    ```
 2. **Internal Mechanics**:
-   - Setting both `delegate = null` and `registrar = null` marks the container state as disabled (`_disabled == true`).
-   - In its `build()` method, `SelectionContainer.disabled` returns a `SelectionRegistrarScope._disabled(child: widget.child)` with `registrar: null`.
-   - `SelectionContainer.maybeOf(context)` inside the subtree returns `null`, preventing children (`Text`, `Scrollable`, `SelectableText`, etc.) from finding an ambient `SelectionRegistrar` and registering their `Selectable` items.
-   - The container itself does not register with ancestor registrars (`registrar = null`), reports a static `_disabledGeometry` (`SelectionGeometry(status: SelectionStatus.none, hasContent: true)`), and ignores incoming selection events.
+   - The constructor sets `delegate = null` and `registrar = null`; `_disabled` is true when the delegate is null.
+   - In its `build()` method, `SelectionContainer.disabled` returns a `SelectionRegistrarScope._disabled(child: widget.child)` with `registrar: null`, shadowing any ancestor registrar.
+   - `SelectionContainer.maybeOf(context)` under that scope returns `null`, preventing children such as `Text` and `Scrollable` from registering their `Selectable` items with the ancestor selection tree.
+   - The disabled container itself does not register with ancestor registrars, so normal selection dispatch does not reach it. Its `value` reports a static `_disabledGeometry` (`SelectionGeometry(status: SelectionStatus.none, hasContent: true)`).
+   - `SelectableText` builds a read-only `EditableText` and manages selection independently of this registrar tree; its selection is not disabled by this scope. See the [editable text pipeline](editable_text_pipeline.md#6-architectural-isolation-invariant).
 3. **Uses**:
    - **Interactive UI Elements**: Exempting interactive controls (e.g. action buttons, chips, checkboxes, dropdowns, icons) inside a `SelectionArea` from being highlighted, selected, or copied during broad document selection sweeps.
    - **Decorative Content**: Disabling selection on badges, line numbers in code editors, decorative icons, and tooltips ([`RawTooltip`](../../../../packages/flutter/lib/src/widgets/raw_tooltip.dart)).
@@ -478,8 +479,8 @@ For selection originating inside a scrollable, the delegate passes its point tar
      - Selects all selectable content within the container subtree.
      - Typically dispatched by keyboard select-all shortcuts (`Ctrl+A` / `Cmd+A`).
    - **[`ClearSelectionEvent`](../../../../packages/flutter/lib/src/rendering/selection.dart)** (`SelectionEventType.clear`):
-     - Clears and collapses the active selection, removing highlights across all selectables.
-     - Dispatched when tapping outside selection areas or on user dismiss actions.
+     - Removes the active selection and its highlights, leaving `SelectionStatus.none` rather than a collapsed selection.
+     - Dispatched by `clearSelection()`, including when the region loses focus while the app is resumed. Outside taps unfocus the region on web; on non-web platforms, an outside tap alone does not unfocus it.
    - **[`SelectWordSelectionEvent`](../../../../packages/flutter/lib/src/rendering/selection.dart)** (`SelectionEventType.selectWord`):
      - Selects the entire word at the target `globalPosition`.
      - Dispatched by mobile long-press gestures or desktop double-clicks.
@@ -515,7 +516,8 @@ In addition to primary container delegates and render objects, Flutter provides 
   - Wraps its child in a `SelectionContainer` backed by a private `_SelectionListenerDelegate` (which extends `StaticSelectionContainerDelegate` and implements `SelectionDetails`).
   - Does **not** capture or bubble selection changes from nested, independent `SelectionArea` or `SelectableRegion` subtrees (an additional `SelectionListener` must be placed under each nested region if observation is needed).
 - **[`SelectionListenerNotifier`](../../../../packages/flutter/lib/src/widgets/selectable_region.dart)**:
-  - A `ChangeNotifier` provided to `SelectionListener` that notifies attached listeners whenever the selection geometry or range inside the subtree changes.
+  - A `ChangeNotifier` provided to `SelectionListener` that notifies attached listeners when the aggregate selection geometry changes, except for the initial unselected geometry notification, which is suppressed.
+  - The selected range is computed when queried; range changes do not independently trigger notifications when the aggregate geometry remains equal.
   - Exposes the read-only [`SelectionDetails`](../../../../packages/flutter/lib/src/widgets/selectable_region.dart) via `selectionNotifier.selection`.
 
 #### 2. `SelectionDetails`

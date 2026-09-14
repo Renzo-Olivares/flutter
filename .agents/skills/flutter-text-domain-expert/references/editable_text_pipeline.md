@@ -8,6 +8,7 @@ This document provides a deep, comprehensive architectural reference for the edi
 - [Component & Class Index](#component--class-index)
 1. [Editable Widget & State Machine](#1-editable-widget--state-machine)
    - [Design-System Wrappers (`TextField`, `CupertinoTextField`)](#design-system-wrappers-textfield-cupertinotextfield)
+   - [`SelectableText` & Read-Only `EditableText`](#selectabletext--read-only-editabletext)
    - [Core Editing Engine (`EditableText`, `EditableTextState`)](#core-editing-engine-editabletext-editabletextstate)
    - [`TextSelectionGestureDetector` & Pointer Routing](#textselectiongesturedetector--pointer-routing)
    - [`TextEditingController` & Value Synchronization](#texteditingcontroller--value-synchronization)
@@ -46,6 +47,7 @@ This document provides a deep, comprehensive architectural reference for the edi
 | :--- | :--- | :--- |
 | [`TextField`](../../../../packages/flutter/lib/src/material/text_field.dart) | [`packages/flutter/lib/src/material/text_field.dart`](../../../../packages/flutter/lib/src/material/text_field.dart) | Material text input wrapper (legacy/frozen here; actively developed in `material_ui` under `flutter/packages`). |
 | [`CupertinoTextField`](../../../../packages/flutter/lib/src/cupertino/text_field.dart) | [`packages/flutter/lib/src/cupertino/text_field.dart`](../../../../packages/flutter/lib/src/cupertino/text_field.dart) | Cupertino text entry wrapper (legacy/frozen here; actively developed in `cupertino_ui` under `flutter/packages`). |
+| [`SelectableText`](../../../../packages/flutter/lib/src/material/selectable_text.dart) | [`packages/flutter/lib/src/material/selectable_text.dart`](../../../../packages/flutter/lib/src/material/selectable_text.dart) | Read-only `EditableText` wrapper using `RenderEditable` and the editable selection stack, independently of unified selection. |
 | [`EditableText`](../../../../packages/flutter/lib/src/widgets/editable_text.dart) | [`packages/flutter/lib/src/widgets/editable_text.dart`](../../../../packages/flutter/lib/src/widgets/editable_text.dart) | Core stateful text editing widget in `flutter/flutter` managing the cursor loop, IME connections, and shortcuts. |
 | [`EditableTextState`](../../../../packages/flutter/lib/src/widgets/editable_text.dart) | [`packages/flutter/lib/src/widgets/editable_text.dart`](../../../../packages/flutter/lib/src/widgets/editable_text.dart) | State engine with `TextInputClient`, `TextSelectionDelegate`, `WidgetsBindingObserver`, `TickerProviderStateMixin`, and `AutomaticKeepAliveClientMixin`; implements `AutofillClient`. |
 | [`TextSelectionGestureDetector`](../../../../packages/flutter/lib/src/widgets/text_selection.dart) | [`packages/flutter/lib/src/widgets/text_selection.dart`](../../../../packages/flutter/lib/src/widgets/text_selection.dart) | Gesture detector wrapper orchestrating tap, double-tap, triple-tap, and drag selection on editable text. |
@@ -95,6 +97,14 @@ The editable text subsystem manages user input, software/hardware keyboards, cur
 2. **[`CupertinoTextField`](../../../../packages/flutter/lib/src/cupertino/text_field.dart)**:
    - iOS-styled text entry widget with rounded borders, prefix/suffix widgets, clear button mode, and iOS cursor blinking simulations.
    - Configures Cupertino selection handles and toolbars.
+
+---
+
+### `SelectableText` & Read-Only `EditableText`
+
+[`SelectableText`](../../../../packages/flutter/lib/src/material/selectable_text.dart), including `SelectableText.rich`, builds `EditableText(readOnly: true)`. It supplies a text controller and uses `_SelectableTextSelectionGestureDetectorBuilder` with `rendererIgnoresPointer: true` for pointer selection. Its layout, selection, and floating controls therefore follow this reference's `RenderEditable` / `EditableTextState` / `TextSelectionOverlay` pipeline.
+
+Setting `EditableText.readOnly` prevents user text changes while retaining selection. It does not turn `RenderEditable` into a `Selectable` or register it with `SelectionRegistrar`. `SelectableText` and read-only text fields remain outside the unified `SelectionArea` / `SelectableRegion` selection tree, even when placed inside it.
 
 ---
 
@@ -300,7 +310,7 @@ classDiagram
 
 - **[`TextInputFormatter`](../../../../packages/flutter/lib/src/services/text_formatter.dart)**: Sits between IME input and `TextEditingController` to filter/format characters (e.g. `FilteringTextInputFormatter.digitsOnly`, `LengthLimitingTextInputFormatter`).
   > [!WARNING]
-  > Custom formatters must preserve `TextEditingValue.composing` ranges during active IME composition; truncating or shifting text inside the composing region will cause platform keyboard desynchronization.
+  > Custom formatters should generally defer text transformations until `TextEditingValue.composing` is collapsed, as documented by `TextInputFormatter`. The built-in `LengthLimitingTextInputFormatter` with `MaxLengthEnforcement.enforced` deliberately truncates active composing text and adjusts the composing range; its documentation identifies Gboard's Latin-character composition as a case where this can be appropriate. Adjusting ranges does not by itself establish that arbitrary transformations cooperate with every IME.
 - **[`SpellCheckService`](../../../../packages/flutter/lib/src/services/spell_check.dart)**: Queries native OS spell-check services and generates suggestion spans.
 - **`LiveText` ([`services/live_text.dart`](../../../../packages/flutter/lib/src/services/live_text.dart))**: Queries iOS Live Text availability and starts camera OCR input in the active field.
 - **`ProcessTextService` ([`services/process_text.dart`](../../../../packages/flutter/lib/src/services/process_text.dart))**: Its default implementation queries and invokes Android `ACTION_PROCESS_TEXT` activities. Discovering those activities requires the corresponding `<queries>` entry in the Android manifest.
@@ -325,8 +335,8 @@ When diagnosing low-level IME communication, composing range glitches, or platfo
 - **Flutter Web (`HybridTextEditing`)**:
   - The editing strategy uses an `<input>`, `<textarea>`, or contenteditable `<span>` with transparent text/caret, positioned over the focused `EditableText` and styled with the `.flt-text-editing` class.
   - The DOM control receives browser keyboard focus, enables mobile soft keyboards and native context-menu actions, handles autofill, and participates in IME composition.
-  - The strategy listens to DOM `input` and `selectionchange` events to synchronize editing state with Flutter, while framework editing-state and geometry messages update the DOM control.
-  - Firefox also uses a `select` listener for native Select All. Browser-menu gating, including mobile Web, is described under [Native System Context Menus & Platform Behaviors](#native-system-context-menus--platform-behaviors).
+  - The default strategy listens to DOM `input` and `selectionchange` events to synchronize editing state with Flutter, while framework editing-state and geometry messages update the DOM control.
+  - Firefox overrides that listener setup: it uses `input` for text changes, `keyup` to detect cursor movement, and `select` for native Select All, without a `selectionchange` listener. Browser-menu gating, including mobile Web, is described under [Native System Context Menus & Platform Behaviors](#native-system-context-menus--platform-behaviors).
   - Static `SelectableRegion` uses a separate transparent `div` bridge for desktop browser context menus. See [`platform_selectable_region_context_menu.dart`](../../../../packages/flutter/lib/src/widgets/platform_selectable_region_context_menu.dart); its right-click text transfer is separate from this editing-state synchronization.
 - **iOS (`FlutterTextInputView`)**:
   - iOS creates a backing `UIView` (`FlutterTextInputView`) conforming to the `UITextInput` protocol that becomes the first responder.
@@ -341,7 +351,7 @@ Flutter maps physical keystrokes to high-level text editing operations through t
 ### `DefaultTextEditingShortcuts` & Key Mapping
 
 [`DefaultTextEditingShortcuts`](../../../../packages/flutter/lib/src/widgets/default_text_editing_shortcuts.dart) defines platform-specific key combinations:
-- **macOS**: Emacs keybindings (`Ctrl+A` line start, `Ctrl+E` line end, `Ctrl+K` kill to line end), `Cmd+Left/Right` line navigation, `Alt+Left/Right` word navigation.
+- **macOS**: Emacs keybindings (`Ctrl+A` line start, `Ctrl+E` line end, `Ctrl+F/B` character navigation, `Ctrl+N/P` vertical navigation), `Cmd+Left/Right` line navigation, `Alt+Left/Right` word navigation.
 - **Windows / Linux**: `Home`/`End` line navigation, `Ctrl+Left/Right` word navigation, `Ctrl+Backspace`/`Ctrl+Delete` word deletion.
 
 ---
@@ -364,10 +374,10 @@ Shortcuts trigger [`Intent`](../../../../packages/flutter/lib/src/widgets/action
 
 ### macOS Selectors & Intent Mapping
 
-On macOS, when users trigger keyboard shortcuts or AppKit text commands (e.g. `Cmd+Z`, `Ctrl+A`, `Opt+Backspace`), the platform communicates selector strings to the Flutter Engine, which invokes `TextInputClient.performSelectors` over the method channel:
+On macOS, keys delegated to AppKit (e.g. arrow keys and `Opt+Backspace`) can produce selector strings that the Flutter Engine forwards through `TextInputClient.performSelectors` over the method channel. Other default shortcuts execute framework intents directly: `Cmd+Z` invokes `UndoTextIntent`, and `Ctrl+A` invokes `ExtendSelectionToLineBreakIntent`.
 
 - **Framework Handling (`EditableTextState.performSelector`)**:
-  - Receives selector string (e.g. `insertNewline:`, `deleteBackward:`, `moveLeft:`, `moveToBeginningOfParagraph:`, `deleteToBeginningOfLine:`, `pageDown:`).
+  - Receives a forwarded selector string (e.g. `deleteBackward:`, `moveLeft:`, `moveToBeginningOfParagraph:`, `deleteToBeginningOfLine:`). The macOS engine excludes `insertNewline:` from forwarding because it handles that command through text insertion or a text-input action.
   - Queries `intentForMacOSSelector(selectorName)` from [`widgets/default_text_editing_shortcuts.dart`](../../../../packages/flutter/lib/src/widgets/default_text_editing_shortcuts.dart).
   - If a matching `Intent` is found, invokes `Actions.invoke(primaryContext, intent)` to execute the corresponding framework action.
 
@@ -425,10 +435,10 @@ For details regarding handle controls (`MaterialTextSelectionHandleControls`, `C
 ### Why `RenderEditable` Is Isolated from `SelectionArea` / `SelectableRegion`
 
 > [!IMPORTANT]
-> 1. **Self-Contained State Machine**: `EditableText` / `RenderEditable` owns its own `TextEditingController`, caret blinking animation, keyboard shortcut bindings, viewport scrolling offset, and IME platform channel connections.
+> 1. **Self-Contained State Machine**: `EditableTextState` coordinates its supplied `TextEditingController`, caret blinking animation, keyboard shortcut bindings, viewport scrolling offset, and IME platform channel connections.
 > 2. **No `Selectable` Registration**: `RenderEditable` does **not** implement `Selectable` and does **not** register with `SelectionRegistrar`.
-> 3. **Avoidance of Split State**: If `RenderEditable` were part of the unified `SelectionArea` tree, external selection events would conflict with active IME composition sessions, soft keyboard selection changes, and internal viewport scrolling.
-> 4. **Encapsulation**: Wrapping a `TextField` inside a `SelectionArea` has no effect on the `TextField`; it continues to manage its own selection and context menu independently.
+> 3. **Read-Only Fields**: `SelectableText` and `EditableText(readOnly: true)` use this same editable selection stack. Read-only behavior does not add participation in unified selection.
+> 4. **Encapsulation**: Wrapping a `TextField` or `SelectableText` inside a `SelectionArea` does not merge its selection into the surrounding selection tree; it continues to manage its own selection and context menu independently.
 
 ---
 
@@ -441,6 +451,7 @@ graph TD
     subgraph Presentation_Widgets ["1. Presentation Layer"]
         M_TF["TextField / TextFormField<br/><i>Material styling, decoration, theme</i>"]
         C_TF["CupertinoTextField<br/><i>iOS styling, rounded border, overlays</i>"]
+        ST["SelectableText / SelectableText.rich<br/><i>Read-only text with independent selection</i>"]
     end
 
     subgraph Core_Widget_State ["2. Core Stateful Editing Engine"]
@@ -468,6 +479,7 @@ graph TD
 
     M_TF --> ET
     C_TF --> ET
+    ST -->|"readOnly: true"| ET
     ET --> ETS
     ETS --> RE
     RE --> CP

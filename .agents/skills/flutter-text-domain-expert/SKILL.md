@@ -10,10 +10,10 @@ description: >
   - Editing/IME: TextField, CupertinoTextField, EditableText, RenderEditable,
     TextInput, TextInputClient, DeltaTextInputClient, TextInputFormatter,
     DefaultTextEditingShortcuts.
-  - Selection/context menus/buttons: SelectionArea, SelectableRegion,
+  - Selection/context menus/buttons: SelectableText, SelectionArea, SelectableRegion,
     SelectionContainer, TextSelectionGestureDetector, SelectionOverlay,
     TextSelectionToolbar, adaptive toolbars, selection handles, magnifiers, text platform channels.
-  - Edge-scrolling, auto-scrolling, select-to-scroll: Scrollable, ListView,
+  - Selection scrolling: Scrollable, ListView,
     CustomScrollView, _ScrollableSelectionContainerDelegate, EdgeDraggingAutoScroller.
   - Unit, widget, rendering, platform tests; packages/flutter/test/.
 
@@ -41,7 +41,7 @@ The text stack is organized into modular reference guides located under [`refere
 | :--- | :--- | :--- |
 | **Common Foundation & Primitives** | [`common_text_primitives.md`](references/common_text_primitives.md) | • `dart:ui` Engine primitives (`ParagraphBuilder`, `Paragraph`, `LineMetrics`, `TextBox`)<br>• `TextPainter` layout caching (`_TextPainterLayoutCacheWithOffset`)<br>• `InlineSpan` hierarchy (`TextSpan`, `WidgetSpan`, visitor pattern)<br>• Text geometry, BiDi, and `TextAffinity`<br>• `TextBoundary` iterators (character, word, line, paragraph)<br>• Shared gesture recognizers (`TapAndPanGestureRecognizer`, `BaseTapAndDragGestureRecognizer`)<br>• Shared selection overlays, toolbars, handles, and magnifiers |
 | **Static Text & Unified Selection** | [`static_text_pipeline.md`](references/static_text_pipeline.md) | • `Text`, `RichText`, `_RichText`<br>• `RenderParagraph` layout, intrinsics, inline child layout (`WidgetSpan`), and span hit-testing<br>• `SelectionArea` & `SelectableRegion`<br>• `SelectionContainer` & delegates (`StaticSelectionContainerDelegate`, `_SelectableTextContainerDelegate`)<br>• `Scrollable` integration & `_ScrollableSelectionContainerDelegate` (`_selectionStartsInScrollable`, autoscrolling)<br>• Edge-scrolling: `EdgeDraggingAutoScroller`, `SelectionEdgeUpdateEvent`<br>• `_SelectableFragment` & leaf `Selectable`s<br>• 7 concrete `SelectionEvent` subclasses & `compareOrder` reading order sorting |
-| **Editable Text & Platform IME** | [`editable_text_pipeline.md`](references/editable_text_pipeline.md) | • `TextField`, `CupertinoTextField`, `EditableText`, `EditableTextState`<br>• `RenderEditable`, `_CaretPainter` (regular/floating cursor painting), `ViewportOffset`<br>• `TextInputClient` (standard) vs. `DeltaTextInputClient` (`TextEditingDelta` stream)<br>• Platform channel: `MethodChannel('flutter/textinput')`<br>• `TextInputFormatter`, `SpellCheckService`, `LiveText`, `ProcessTextService`<br>• `DefaultTextEditingShortcuts`, `Actions`, `TextEditingIntents`, macOS selectors<br>• `TextSelectionOverlay` (isolated from `SelectionArea`) |
+| **Editable Text & Platform IME** | [`editable_text_pipeline.md`](references/editable_text_pipeline.md) | • `TextField`, `CupertinoTextField`, `EditableText`, `EditableTextState`<br>• `SelectableText` (wraps a read-only `EditableText`)<br>• `RenderEditable`, `_CaretPainter` (regular/floating cursor painting), `ViewportOffset`<br>• `TextInputClient` (standard) vs. `DeltaTextInputClient` (`TextEditingDelta` stream)<br>• Platform channel: `MethodChannel('flutter/textinput')`<br>• `TextInputFormatter`, `SpellCheckService`, `LiveText`, `ProcessTextService`<br>• `DefaultTextEditingShortcuts`, `Actions`, `TextEditingIntents`, macOS selectors<br>• `TextSelectionOverlay` (isolated from `SelectionArea`) |
 | **Testing, Traps & Simulation** | [`testing_text_stack.md`](references/testing_text_stack.md) | • **Test Location Guide**: directory map across `packages/flutter/test/`<br>• Multi-tap timing & controlled pumps (`kDoubleTapTimeout`)<br>• Cursor blinking, scheduled frames, and settlement<br>• `FlutterTest` font metrics & pointer-specific drag slop<br>• Gesture acceptance and first-move callbacks (`onDragStart` / `onDragUpdate`)<br>• Floating overlay, toolbar & handle testing patterns (geometric dragging vs. `FadeTransition`)<br>• Realistic IME simulation with `TestTextInput` (composing ranges & actions)<br>• BiDi & `TextAffinity` assertions |
 | **Debugging Playbooks** | [`text_debugging_playbooks.md`](references/text_debugging_playbooks.md) | Coordinate conversions, conditional boundary clamping, and selection-scroll diagnostics. |
 
@@ -58,6 +58,7 @@ Apply these rules to the affected layers and the capabilities required by the ta
 
 2. **Subsystem Isolation**:
    - `RenderEditable` does **not** participate in the `SelectionArea` / `SelectableRegion` selection tree. `EditableTextState` manages its editing and selection state and uses `TextSelectionOverlay` for floating controls. `TextSelectionOverlay` wraps the shared `SelectionOverlay` implementation, so changes to `SelectionOverlay` can affect both editable and static selection.
+   - Route `SelectableText` issues to [editable_text_pipeline.md](references/editable_text_pipeline.md): it wraps `EditableText(readOnly: true)` and uses the editable selection machinery. The similarly named `_SelectableTextContainerDelegate` belongs to ordinary `Text` in the unified-selection pipeline.
    - Text-field wrappers use `TextSelectionGestureDetector` to recognize pointer interactions and `TextSelectionGestureDetectorBuilder` callbacks to coordinate caret placement and selection with `RenderEditable` and `EditableTextState`. These gesture callbacks are one input path alongside keyboard, IME, and selection-handle updates.
    - `SelectableRegionState` wires its own recognizers through `RawGestureDetector` and coordinates unified selection across read-only leaf registrants (`_SelectableFragment` in `RenderParagraph`, custom selectables) via `SelectionRegistrarScope`. It does not use `TextSelectionGestureDetector` for this selection tree.
 
@@ -65,7 +66,7 @@ Apply these rules to the affected layers and the capabilities required by the ta
    - Follow the repository's [Dart layer dependency rules](../../rules/dart-editing.md#layer-dependency-rules) for implementation files and tests. Use the [core text test fixtures](references/testing_text_stack.md#core-text-test-fixtures), including `TestWidgetsApp` and `TestTextField`, when exercising core text behavior.
 
 4. **IME Composing Range Preservation**:
-   - Never mutate `TextEditingValue.text` without recalculating or explicitly resetting `TextEditingValue.composing` (`TextRange`). Clobbering active composing ranges breaks multilingual IMEs (Japanese, Chinese, Korean, Vietnamese).
+   - Keep `TextEditingValue.composing` (`TextRange`) consistent with text changes. Custom formatters should generally defer transformations of active composing text until composition ends; disrupting composition can break IME input. Built-in `MaxLengthEnforcement.enforced` deliberately truncates composing text with range adjustment. See the [formatter guidance and supported exception](references/editable_text_pipeline.md#ancillary-services-formatters-spell-check-live-text-process-text).
 
 5. **BiDi & TextAffinity Disambiguation**:
    - At soft line wraps and RTL/LTR junctions, a single UTF-16 text offset can correspond to two visually distinct caret positions. Always specify or account for `TextAffinity.upstream` vs `TextAffinity.downstream`.
@@ -90,7 +91,7 @@ Follow this step-by-step workflow when addressing an issue or PR in the Flutter 
 flowchart TD
     A["User Request / Issue Report"] --> B{"Identify Domain"}
     B -->|"Static Text / Paragraph"| C["Read static_text_pipeline.md"]
-    B -->|"Editable Text / IME"| D["Read editable_text_pipeline.md"]
+    B -->|"Editable Text / SelectableText / IME"| D["Read editable_text_pipeline.md"]
     B -->|"Common Spans / Boundaries / Gestures"| E["Read common_text_primitives.md"]
     B -->|"Writing or Fixing Tests"| F["Read testing_text_stack.md"]
 
