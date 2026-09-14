@@ -1,49 +1,77 @@
-# Evaluation Report: [Issue Title / Number]
+# Evaluation: [case ID] — [run ID]
 
-**Target Issue**: [flutter/flutter#XXXXX](https://github.com/flutter/flutter/issues/XXXXX)  
-**Evaluated Model**: [e.g. Gemini 3.7 Flash (High)]
+## Configuration
 
-**Eval Configuration Revision**: [Git SHA for the case, harness, rubric, and report template; describe any uncommitted configuration changes]
+- Issue and snapshot hash: [URL; hash]
+- Requested source ref and resolved Flutter SHA: [ref; SHA]
+- Companion source SHA: [SHA]
+- Shared guidance and treatment text-skill hashes: [manifest reference]
+- Eval configuration: [revision; frozen configuration hashes including uncommitted content]
+- Antigravity version, actual Gemini model and reasoning setting: [values; evidence]
+- Tools, permissions, SDK/platform availability, execution limit: [values]
+- Discovery smoke check and isolation evidence: [references]
+- Paired repetitions attempted: [number; list interruptions/retries explicitly]
 
----
+## Acceptance results
 
-## 1. Executive Summary & Final Verdict
-- **Winner Declaration**: [Candidate A / Candidate B / Tie]
-- **High-Level Rationale**: [Key takeaways distinguishing the winner]
+For each pair, report every required check with evidence. Distinguish failed, unverified, and inapplicable behavior. Setup-invalid runs remain in the report but are not scored.
 
----
+| Pair | Check | Without text skill | Evidence | With text skill | Evidence |
+| --- | --- | --- | --- | --- | --- |
+| | [check ID] | pass / fail / unverified | [test event, command/log, artifact] | | |
 
-## 2. Comparative Scorecard Table
+| Pair | Without text skill outcome | With text skill outcome | Unverified behavior / setup limitation |
+| --- | --- | --- | --- |
+| | Passed / Failed / Inconclusive / Setup invalid | | |
 
-| Dimension | Max Pts | Candidate A | Candidate B | Notes / Observations |
-| :--- | :---: | :---: | :---: | :--- |
-| **1. Subsystem Routing & Architectural Precision** | 20 | | | |
-| **2. Test File Placement & Organization** | 20 | | | |
-| **3. Avoidance of Flutter Text Testing Traps** | 25 | | | |
-| **4. Code Correctness & Cleanliness** | 15 | | | |
-| **5. Search Precision & Autonomous Discovery** | 10 | | | |
-| **6. Quantitative Resource & Token Efficiency** | 10 | | | |
-| **Total Score** | **100** | | | |
+## Diagnostic scorecard
 
-### Quantitative Metrics Summary
+Quality assessment is performed using neutral candidate IDs before revealing the condition mapping. Preserve the original assessment in evaluation.json. Use full/half/zero anchors from rubric.md with per-criterion evidence; list applicability and normalization.
 
-| Metric | Candidate A | Candidate B | Delta (%) |
-| :--- | :---: | :---: | :---: |
-| **Skill Triggered Automatically** | | | |
-| **Total Planner Turns** | | | |
-| **Total Tool Calls** | | | |
-| **Estimated Tokens** | | | |
-| **Distinct Files Viewed** | | | |
-| **Distinct Files Modified** | | | |
+| Criterion | Max | Without text skill | With text skill | Evidence and deductions |
+| --- | ---: | ---: | ---: | --- |
+| F1 Requested behavior | 30 | | | |
+| F2 Complete integration | 20 | | | |
+| R1 Reproduction and fixed result | 10 | | | |
+| R2 Existing behavior protection | 10 | | | |
+| R3 Test realism and control | 5 | | | |
+| A1 Ownership and repository routing | 10 | | | |
+| A2 Focus and justification | 5 | | | |
+| V1 Executed validation | 5 | | | |
+| V2 Reviewable deliverables | 5 | | | |
+| Total | 100 | | | |
 
----
+## Guidance diagnostics
 
-## 3. Trajectory & Behavioral Comparison
-- **Candidate A Investigation & Execution**: [How Candidate A investigated, whether the skill was triggered automatically (if available), what files were edited, tool calls executed, and challenges faced]
-- **Candidate B Investigation & Execution**: [How Candidate B investigated, whether the skill was triggered automatically (if available), what files were edited, tool calls executed, and skill references used]
+| Observation | Without text skill | With text skill | Evidence |
+| --- | --- | --- | --- |
+| Text skill consulted | unavailable | observed / not observed / unknown | |
+| Companion skill needed | yes / no; reason | | |
+| Companion skill consulted | observed / not observed / unknown | | |
+| Required companion work completed | yes / no / unverified / N/A | | |
+| Freeze rule automatically supplied | confirmed / unconfirmed | | |
+| Applicable freeze respected | yes / no / unverified / N/A | | |
 
----
+Successful reads establish consultation. Do not infer automatic activation or non-use from incomplete logs.
 
-## 4. Key Strengths & Testing Pitfalls Observed
-- **Direct Citations from Transcripts**: [Excerpts/logs showing where traps were avoided or triggered]
-- **Architectural Differences**: [Code snippets comparing the implementations]
+## Resource measurements
+
+List measured candidate IDs and descendants, without double counting. Exclude setup and evaluator work from candidate totals. Prefer actual runtime usage; mark unavailable values explicitly. Character-based token estimates are transcript-size proxies, not actual consumption.
+
+| Metric | Without text skill | With text skill | Source / limitations |
+| --- | ---: | ---: | --- |
+| Elapsed candidate time | | | |
+| Planner responses | | | |
+| Tool calls, including descendants | | | |
+| Runtime token usage | | | |
+| Transcript character estimate, if needed | | | |
+| Distinct files viewed (observed) | | | |
+| Files modified (artifact-derived, by repository) | | | |
+
+## Assessment
+
+Report success counts with denominators, paired outcomes, and all inconclusive/setup-invalid counts. Compare efficiency among successful submissions. Explain the observed incremental effect of the text skill and concrete remaining limitations. A single pair supports only a description of that observation.
+
+## Machine-readable record
+
+Save evaluation.json alongside this report. Include manifest/run ID; per-pair candidate IDs and conditions; per-check status/evidence; per-criterion applicable/max/earned/evidence; primary outcome; guidance diagnostics; resource measurements; and limitations. Use null for unavailable measurements. Preserve the anonymized quality assessment and record any checks introduced after candidate execution.

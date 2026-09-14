@@ -1,0 +1,21 @@
+{
+  "id": "issue_141775",
+  "split": "development",
+  "repository": "flutter/flutter",
+  "issue_number": 141775,
+  "issue_url": "https://github.com/flutter/flutter/issues/141775",
+  "task_prompt": "Fix flutter/flutter#141775.",
+  "source_ref": "master",
+  "packages_source_ref": "main",
+  "acceptance": "acceptance.json",
+  "verification": [
+    {
+      "file": "verification/selection_actions_test.dart",
+      "destination": "packages/flutter/test/widgets/eval_selection_actions_test.dart",
+      "checks": [
+        "requested_actions",
+        "actions_use_selected_text"
+      ]
+    }
+  ]
+}

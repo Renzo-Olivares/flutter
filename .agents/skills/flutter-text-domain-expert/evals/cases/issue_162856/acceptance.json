@@ -1,0 +1,58 @@
+{
+  "applicable_rubric_criteria": [
+    "F1",
+    "F2",
+    "R1",
+    "R2",
+    "R3",
+    "A1",
+    "A2",
+    "V1",
+    "V2"
+  ],
+  "scope": "The reported touch-selection autoscroll failure in a full-screen scroll view without a SafeArea inset. Permit geometry or lifecycle changes justified by evidence.",
+  "checks": [
+    {
+      "id": "reported_interaction",
+      "required": true,
+      "expectation": "Long-press selection followed by dragging towards either screen edge scrolls the full-screen viewport in the expected direction without requiring an unreachable outside-screen pointer location.",
+      "verification": "evidence_review",
+      "evidence": "Use the frozen reproduction to validate a focused interaction test; verify selection as well as scroll offset. Run against unfixed and submitted source."
+    },
+    {
+      "id": "existing_scroll_behavior",
+      "required": true,
+      "expectation": "Existing outside-viewport dragging and relevant mouse/handle selection behavior remain correct.",
+      "verification": "evidence_review",
+      "evidence": "Run existing scrollable selection tests and inspect changed assertions. Do not require a particular edge-band algorithm or line-height query."
+    },
+    {
+      "id": "release_stability",
+      "required": true,
+      "expectation": "Scrolling stabilizes after the selection gesture ends, while valid continuous dragging still progresses.",
+      "verification": "evidence_review",
+      "evidence": "Assert eventual stable offset after release and progress during the relevant drag sequence. Do not require immediate zero movement if a supported animation is completing."
+    },
+    {
+      "id": "geometry_boundaries",
+      "required": true,
+      "expectation": "Relevant axis directions, small viewports, and coordinate transforms preserve valid selection and scrolling.",
+      "verification": "evidence_review",
+      "evidence": "Inspect the affected contract and run focused boundary tests appropriate to the change; distinguish supported absent state and sentinels from invalid inputs."
+    },
+    {
+      "id": "regression_evidence",
+      "required": true,
+      "expectation": "Regression coverage fails for the reported behavior on unfixed source and passes after the change.",
+      "verification": "evidence_review",
+      "evidence": "Cite test names, commands, expected behavioral failure, and fixed results. Setup and compilation errors do not establish reproduction."
+    },
+    {
+      "id": "repository_delivery",
+      "required": true,
+      "expectation": "The fix is complete at affected layers, respects the applicable freeze, and avoids unnecessary companion changes.",
+      "verification": "evidence_review",
+      "evidence": "Inspect implementation and caller coverage. If companion changes are necessary, verify their tests and complete patches against the pinned source. Otherwise document why core coverage is sufficient."
+    }
+  ]
+}

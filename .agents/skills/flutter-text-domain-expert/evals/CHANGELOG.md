@@ -1,72 +1,13 @@
-# Flutter Text Domain Expert — Skill Version Specification & Changelog
+# Evaluation protocol changes
 
-This document tracks the canonical evolutionary versions of the `flutter-text-domain-expert` skill and its companion rules across progressive benchmark sampling iterations.
+## 2026-09-14
 
----
+- Replace historical skill-version comparisons with one case per issue: without the text skill versus its current working-tree revision. Share the current freeze rule and companion-package skill between conditions.
+- Separate source refs from guidance snapshots. Antigravity setup agents create branch worktrees, run `git checkout --quiet`, and install current guidance before launching fresh measured children.
+- Fetch each issue once using `gh issue view --json number,title,body,url` without `--comments`, then reuse the frozen report across repetitions.
+- Add immutable input manifests, local preparation/collection/verification helpers, behavioral acceptance criteria, a focused selection-action fixture, outcome-based scoring, and explicit runtime/isolation checks.
+- Preserve raw logs and historical reports. Reports under `reports/` use the previous protocol and are not comparable with new runs under `runs/`.
 
-## Evaluation Protocol Changes
+## 2026-09-13
 
-### 2026-09-13 — Move contribution guidance from candidate prompts into the skill
-
-- Move contract investigation, bug-specific regression failure verification, focused test responsibilities, and affected-consumer coverage into `SKILL.md` and the testing reference. Add contract-aware invariant tracing that permits supported sentinel values and necessary consumer validation or lifecycle fixes.
-- Simplify all six candidate prompt templates for #141775 and #162856, retaining issue-specific scope and basic regression-test, implementation, analysis, formatting, and passing-test deliverables. Baseline and treatment continue to use the same template, with only the checkout commit substituted.
-- Retain the moved expectations in the evaluator's rubric, including invariant ownership, without changing the six scoring dimensions or their weights.
-- Record the git revision of the eval configuration (case, harness, rubric, and report template) in new reports. Runs with these simplified prompts and revised criteria are not directly comparable with existing reports produced under the previous protocol.
-- Preserve historical reports and candidate commit pins. Those pins still evaluate historical skill versions; evaluating the new guidance requires a treatment revision containing it.
-
----
-
-## Canonical Skill Versions
-
-| Version | Commit SHA | Milestone / Theme | Primary Focus & Capabilities Added | Benchmark Role |
-| :--- | :--- | :--- | :--- | :--- |
-| **`v0`** | [`67710a5db2`](https://github.com/flutter/flutter/commit/67710a5db2adcae7e5ad606c7f5001108e037672) | **Framework Baseline** *(No Skill)* | Standard Flutter repository without any specialized text domain expert skill or custom agent instructions. | Baseline for Sample 1 ([#162856](https://github.com/flutter/flutter/issues/162856)) & Sample 2 ([#141775](https://github.com/flutter/flutter/issues/141775)) |
-| **`v1`** | [`19261190ba`](https://github.com/flutter/flutter/commit/19261190bad200063c67b57d550811b0f3f4773a) | **First Iteration** | Initial text domain expert architecture: reference guides (`common_text_primitives.md`, `editable_text_pipeline.md`, `static_text_pipeline.md`, `testing_text_stack.md`), subsystem routing, and testing invariants. | Initial draft for #162856 |
-| **`v2`** | [`7bb6d97c23`](https://github.com/flutter/flutter/commit/7bb6d97c23779cb315048c4c4e8d9765f7fc8646) | **Selection Geometry Changes** | Edge-scrolling invariants, coordinate transformation rules, and `SelectionGeometry` querying patterns within `SelectionContainerDelegate` (preventing naive bounding box math). | Treatment for Sample 1 ([#162856](https://github.com/flutter/flutter/issues/162856))<br>Baseline for Sample 2 ([#141775](https://github.com/flutter/flutter/issues/141775)) |
-| **`v3`** | [`04a988638a`](https://github.com/flutter/flutter/commit/04a988638a9463e0cc9bba6a4071f07d7451b80c) | **Context Menu, Decoupled Packages & Mandatory Investigation Routing** | Decoupled multi-repo workflow (`material-cupertino-packages`), minimal `code-freeze.md` redirect, Invariant 7 enforcing delegating constructor parity (zero parameter dropping), Mandatory Investigation Directive enforcing domain reference loading before codebase grepping, and explicit guidance avoiding the Git Archeology Trap. | Treatment for Sample 2 ([#141775](https://github.com/flutter/flutter/issues/141775)) |
-
----
-
-## Detailed Version Specifications
-
-### v3 — Context Menu, Decoupled Packages & Mandatory Investigation Routing
-- **Commit**: [`04a988638a9463e0cc9bba6a4071f07d7451b80c`](https://github.com/flutter/flutter/commit/04a988638a9463e0cc9bba6a4071f07d7451b80c)
-- **Trigger Issue**: [flutter/flutter#141775](https://github.com/flutter/flutter/issues/141775) (`[iOS] Add default buttons to SelectionArea context menu`) & [flutter/flutter#162856](https://github.com/flutter/flutter/issues/162856) (Benchmark Iteration)
-- **Key Capabilities & Architectural Rules Added**:
-  1. **Mandatory Investigation Directive & Anti-Git-Archeology**:
-     - Explicitly mandates calling `view_file` on matching domain reference documents under `references/` (e.g. `references/static_text_pipeline.md`) before grepping the codebase or making edits.
-     - Outlaws the **Git Archeology Trap**: warns agents against relying on narrow, point-in-time commit logs or past PR descriptions to deduce system invariants and anchoring on superseded workarounds.
-     - Added explicit navigation mapping for `EdgeDraggingAutoScroller` and `SelectionEdgeUpdateEvent` in `SKILL.md` Section 1.
-  2. **Delegating Constructor Parity (Invariant 7)**:
-     - Explicitly mandates that when a core primitive or helper function adds or extends parameters, callbacks, or supported capabilities, downstream callers and delegating constructors (e.g. `AdaptiveTextSelectionToolbar.selectable`, `CupertinoAdaptiveTextSelectionToolbar.selectable`) must expose and forward them.
-     - Enforces **Zero Parameter Dropping**: Prohibits delegating constructors from dropping parameters or defaulting them to `null` simply because Dart optional parameter rules allow it.
-  3. **Multi-Repo Decoupled Packages Skill (`material-cupertino-packages`)**:
-     - Guides the agent through the complete multi-repo split PR workflow when companion text wrappers reside in `material_ui` or `cupertino_ui` under `flutter/packages`.
-     - Standardizes local on-demand shallow checkouts (`git clone --depth 1 https://github.com/flutter/packages.git packages_repo`), local SDK `dependency_overrides`, dual-channel CI testing (master framework override vs stable SDK), patch generation, and mandatory clone teardown (`rm -rf packages_repo flutter_stable`).
-  4. **Lean Code Freeze Rule**:
-     - Stripped rule bloat from `.agents/rules/code-freeze.md` to keep it strictly focused as a binary stop sign on frozen paths (`packages/flutter/lib/src/{material,cupertino}/`), directly redirecting to `flutter/packages`.
-  5. **Subsystem-Agnostic Lifecycle Investigation & Modular Test Isolation**:
-     - Directs agents in the pre-fix investigation phase to analyze adjacent callback contracts, state transitions, dismissals, and platform channels before drafting tests.
-     - Directs agents to separate static/structural configuration verification from interactive gesture sequences, avoiding fragile multi-action chained taps across dismissed component overlays.
-
-### v2 — Selection Geometry & Edge Scrolling
-- **Commit**: [`7bb6d97c23779cb315048c4c4e8d9765f7fc8646`](https://github.com/flutter/flutter/commit/7bb6d97c23779cb315048c4c4e8d9765f7fc8646)
-- **Trigger Issue**: [flutter/flutter#162856](https://github.com/flutter/flutter/issues/162856) (`Edge scrolling of selection area not working when scroll view not wrapped by SafeArea`)
-- **Key Capabilities & Architectural Rules Added**:
-  1. **SelectionGeometry Queries**:
-     - Documented the canonical pattern for querying selection geometry and line heights via `SelectionContainerDelegate` and `SelectionGeometry` rather than relying on raw global transforms or bounding box estimates.
-  2. **Section 8 Edge-Scrolling Guidelines**:
-     - Added comprehensive autoscroll and gesture guidelines to `references/static_text_pipeline.md`.
-     - Established testing invariants preventing test hangs on focused inputs (`pumpAndSettle()` hang trap) and multi-move requirements for `kTouchSlop` / `kPanSlop`.
-
-### v1 — First Iteration
-- **Commit**: [`19261190bad200063c67b57d550811b0f3f4773a`](https://github.com/flutter/flutter/commit/19261190bad200063c67b57d550811b0f3f4773a)
-- **Trigger Issue**: Initial establishment of the Flutter text domain expert skill
-- **Key Capabilities Added**:
-  1. Initial modular reference architecture: `common_text_primitives.md`, `editable_text_pipeline.md`, `static_text_pipeline.md`, `testing_text_stack.md`, and `text_debugging_playbooks.md`.
-  2. Subsystem routing table and core architectural invariants (layer boundary imports, IME composing range preservation, BiDi/TextAffinity).
-  3. Test location guide mapping Flutter text tests across `packages/flutter/test/`.
-
-### v0 — Baseline (No Skill)
-- **Commit**: [`67710a5db2adcae7e5ad606c7f5001108e037672`](https://github.com/flutter/flutter/commit/67710a5db2adcae7e5ad606c7f5001108e037672)
-- Unmodified Flutter repository commit prior to the introduction of `.agents/skills/flutter-text-domain-expert/`.
+Moved reusable contribution guidance from candidate task prompts into the text skill and its testing reference. Retained the old rubric structure at that time. Existing historical reports predate that prompt revision as well; consult their recorded provenance rather than treating them as results of the current protocol.

@@ -55,6 +55,7 @@ Apply these rules to the affected layers and the capabilities required by the ta
    - Framework text development spans `packages/flutter/lib/src/widgets/`, `rendering/`, `services/`, `painting/`, and `gestures/`. Engine text layout and platform input implementations live under `engine/src/flutter/`.
    - Legacy Material/Cupertino implementations, examples, and tests are **frozen** by the repository's [freeze workflow](../../../.github/workflows/freeze.yml), which provides an explicit code-reviewer override.
    - Active development of Material and Cupertino text UI components (`TextField`, `CupertinoTextField`, `AdaptiveTextSelectionToolbar`, `SelectionArea`, selection handles) belongs in the **`material_ui`** and **`cupertino_ui`** packages under the **`flutter/packages`** repository.
+   - Determine which layers require changes to complete the requested behavior. When Material or Cupertino components, wrappers, or their integration tests require changes, read and follow the [material-cupertino-packages skill](../material-cupertino-packages/SKILL.md). Complete the required core and companion-package work, including review artifacts.
 
 2. **Subsystem Isolation**:
    - `RenderEditable` does **not** participate in the `SelectionArea` / `SelectableRegion` selection tree. `EditableTextState` manages its editing and selection state and uses `TextSelectionOverlay` for floating controls. `TextSelectionOverlay` wraps the shared `SelectionOverlay` implementation, so changes to `SelectionOverlay` can affect both editable and static selection.
@@ -83,7 +84,6 @@ Apply these rules to the affected layers and the capabilities required by the ta
    - **Mandatory Forwarding**: Expose and forward the task-required parameters and capabilities through all affected wrappers. Optional parameters compiling successfully does not establish API parity; do not silently drop a required callback or leave it `null`.
    - **Consumer Regression Coverage**: When a change spans core primitives and design-system consumers, test the core behavior and its integration through affected public wrappers. Exercise delegating or customizable constructors where their forwarding paths differ.
    - **Complete Required Support**: Follow the capability through companion packages, framework services, platform channels, and native embedders. Existing TODOs or missing-support comments identify dependencies to investigate and implement when the task requires that support. Complete the necessary plumbing, tests, and comment updates as part of the work.
-   - **Companion Package Completion**: When affected wrappers reside in `material_ui` or `cupertino_ui`, use the [material-cupertino-packages skill](../material-cupertino-packages/SKILL.md) to update the companion package and export its `.patch`. The framework boundary is not the completion boundary for a capability that requires those wrappers.
 
 ---
 

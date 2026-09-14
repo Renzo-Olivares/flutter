@@ -1,145 +1,206 @@
 #!/usr/bin/env python3
-"""
-Lightweight Metric Extractor for Antigravity Subagent Trajectories.
+"""Extract observable Antigravity metrics; do not infer model usage or activation."""
 
-Can be run standalone:
-  python3 analyze_benchmark.py <conv_id_baseline> <conv_id_treatment>
-
-Or imported as a module by benchmark_runner.py:
-  from analyze_benchmark import analyze_candidate
-"""
-
-import json
-import os
-import sys
+import argparse
 from collections import Counter
+import json
 from pathlib import Path
+import re
+
+SKILLS = ('flutter-text-domain-expert', 'material-cupertino-packages')
 
 
-def analyze_candidate(conv_id, name, verbose=True):
-    base_dir = Path.home() / f".gemini/antigravity/brain/{conv_id}/.system_generated/logs"
-    t_jsonl = base_dir / "transcript.jsonl"
-    tf_jsonl = base_dir / "transcript_full.jsonl"
-    
-    if not t_jsonl.exists():
-        if verbose:
-            print(f"Warning: Transcript file not found at {t_jsonl}")
+def read_events(path, warnings):
+    if not path.exists():
+        warnings.append(f'Missing log: {path.name}')
         return None
-        
-    steps = 0
-    tool_calls = 0
-    tools_used = []
-    files_viewed = set()
-    files_edited = set()
-    skill_requested = False
-    skills_loaded = set()
-    
-    # 1. Parse steps, tool calls, and file operations from transcript.jsonl
-    with open(t_jsonl, "r", encoding="utf-8") as f:
-        for line in f:
-            if not line.strip():
-                continue
-            obj = json.loads(line)
-            
-            # Record planner steps and tool invocations
-            if obj.get("type") == "PLANNER_RESPONSE":
-                steps += 1
-                tcs = obj.get("tool_calls", [])
-                if tcs:
-                    tool_calls += len(tcs)
-                    for tc in tcs:
-                        if isinstance(tc, dict):
-                            fn = tc.get("name") or tc.get("function", {}).get("name") or "unknown"
-                            tools_used.append(fn)
-                            args = tc.get("parameters") or tc.get("args") or tc.get("function", {}).get("arguments") or {}
-                            if isinstance(args, str):
-                                try:
-                                    args = json.loads(args)
-                                except Exception:
-                                    pass
-                            if isinstance(args, dict):
-                                if fn == "view_file" and "AbsolutePath" in args:
-                                    abs_path = str(args["AbsolutePath"])
-                                    files_viewed.add(Path(abs_path).name)
-                                    if "flutter-text-domain-expert" in abs_path and "/evals/" not in abs_path:
-                                        skill_requested = True
-                                elif fn in ("replace_file_content", "write_to_file") and "TargetFile" in args:
-                                    files_edited.add(Path(args["TargetFile"]).name)
-            
-            # Verify actual successful file reads for skill loading
-            elif obj.get("type") == "GENERIC" and obj.get("status") != "ERROR":
-                content = obj.get("content") or ""
-                if "File Path: `file://" in content and "flutter-text-domain-expert" in content:
-                    for line_content in content.splitlines():
-                        if line_content.startswith("File Path: `file://") and "flutter-text-domain-expert" in line_content:
-                            file_path_str = line_content.split("`")[1].replace("file://", "")
-                            if "/evals/" not in file_path_str:
-                                skills_loaded.add(Path(file_path_str).name)
-    
-    # 2. Calculate character count and estimated tokens from transcript_full.jsonl
-    full_chars = 0
-    if tf_jsonl.exists():
-        with open(tf_jsonl, "r", encoding="utf-8") as f:
-            for line in f:
-                if not line.strip():
+    events = []
+    for number, line in enumerate(path.read_text().splitlines(), 1):
+        if not line.strip():
+            continue
+        try:
+            value = json.loads(line)
+            if not isinstance(value, dict):
+                raise ValueError('Expected an object')
+            events.append(value)
+        except (ValueError, json.JSONDecodeError):
+            warnings.append(f'Malformed event at {path.name}:{number}')
+    return events
+
+
+def file_name(value, workspace=None):
+    # The CLI sometimes JSON-encodes individual argument strings inside args.
+    try:
+        decoded = json.loads(value)
+        if isinstance(decoded, str):
+            value = decoded
+    except (ValueError, TypeError):
+        pass
+    path = Path(value.removeprefix('file://'))
+    if workspace:
+        try:
+            return path.resolve().relative_to(Path(workspace).resolve()).as_posix()
+        except ValueError:
+            pass
+    # Preserve directory identity, including for files outside the main repo.
+    return path.as_posix()
+
+
+def skill_name(path):
+    if '/evals/' in path:
+        return None
+    return next((name for name in SKILLS if f'/{name}/' in '/' + path), None)
+
+
+def analyze_candidate(conv_id, name, *, logs_dir=None, workspace=None, artifacts=None,
+                      usage_file=None, verbose=False):
+    if logs_dir:
+        logs = Path(logs_dir)
+    else:
+        roots = [Path.home() / '.gemini' / runtime / 'brain' / conv_id / '.system_generated/logs'
+                 for runtime in ('antigravity', 'antigravity-cli')]
+        present = [path for path in roots if path.exists()]
+        if len(present) > 1:
+            raise ValueError('Conversation exists in both IDE and CLI logs; specify --logs explicitly.')
+        logs = present[0] if present else roots[0]
+    warnings = []
+    events = read_events(logs / 'transcript.jsonl', warnings)
+    full = read_events(logs / 'transcript_full.jsonl', warnings)
+    planner, tools = 0, Counter()
+    viewed, edit_requests = set(), set()
+    requested = {name: set() for name in SKILLS}
+    loaded = {name: set() for name in SKILLS}
+    if events is not None:
+        for event in events:
+            if event.get('type') == 'PLANNER_RESPONSE':
+                planner += 1
+                for call in event.get('tool_calls') or []:
+                    if not isinstance(call, dict):
+                        warnings.append('Unrecognized tool-call record')
+                        continue
+                    function = call.get('function') or {}
+                    name_of_tool = call.get('name') or function.get('name') or 'unknown'
+                    tools[name_of_tool] += 1
+                    arguments = call.get('parameters') or call.get('args') or function.get('arguments') or {}
+                    if isinstance(arguments, str):
+                        try:
+                            arguments = json.loads(arguments)
+                        except ValueError:
+                            arguments = {}
+                    if not isinstance(arguments, dict):
+                        continue
+                    if name_of_tool == 'view_file' and arguments.get('AbsolutePath'):
+                        path = file_name(arguments['AbsolutePath'], workspace)
+                        viewed.add(path)
+                        skill = skill_name(path)
+                        if skill:
+                            requested[skill].add(path)
+                    if name_of_tool in ('replace_file_content', 'multi_replace_file_content', 'write_to_file'):
+                        if arguments.get('TargetFile'):
+                            edit_requests.add(file_name(arguments['TargetFile'], workspace))
+            elif event.get('type') == 'GENERIC' and event.get('status') != 'ERROR':
+                content = event.get('content')
+                if not isinstance(content, str):
                     continue
-                obj = json.loads(line)
-                content = obj.get("content", "") or ""
-                thinking = obj.get("thinking", "") or ""
-                full_chars += len(content) + len(thinking)
-    
-    est_tokens = full_chars // 4
-    skill_triggered = len(skills_loaded) > 0
-    
-    if verbose:
-        print(f"=== {name} ({conv_id}) ===")
-        if skill_triggered:
-            loaded_str = ", ".join(sorted(skills_loaded))
-            print(f"Skill Triggered: Yes (Loaded: {loaded_str})")
-        elif skill_requested:
-            print("Skill Triggered: No (Requested view_file but file not found / failed to load)")
+                for value in re.findall(r'^File Path: `file://([^`]+)`', content, re.MULTILINE):
+                    path = file_name(value, workspace)
+                    viewed.add(path)
+                    skill = skill_name(path)
+                    if skill:
+                        loaded[skill].add(path)
+    if events is not None and not planner:
+        warnings.append('No recognized PLANNER_RESPONSE events; counters are unavailable.')
+    if events is not None and any('Malformed event' in warning for warning in warnings):
+        warnings.append('Counts are partial because malformed events were skipped.')
+    chars = None
+    if full is not None:
+        text = [event.get(key) for event in full for key in ('content', 'thinking')
+                if isinstance(event.get(key), str)]
+        if text:
+            chars = sum(map(len, text))
         else:
-            print("Skill Triggered: No")
-        print(f"Total Steps (PLANNER_RESPONSE): {steps}")
-        print(f"Total Tool Calls: {tool_calls}")
-        print(f"Estimated Tokens: {est_tokens:,} tokens (chars: {full_chars:,})")
-        print("Tool call frequency:")
-        for tool, count in Counter(tools_used).most_common():
-            print(f"  {tool}: {count}")
-        print()
-    
-    return {
-        "conv_id": conv_id,
-        "name": name,
-        "skill_triggered": skill_triggered,
-        "skill_requested": skill_requested,
-        "skills_loaded": skills_loaded,
-        "steps": steps,
-        "tool_calls": tool_calls,
-        "est_tokens": est_tokens,
-        "full_chars": full_chars,
-        "tools": Counter(tools_used),
-        "files_viewed": files_viewed,
-        "files_edited": files_edited,
+            warnings.append('Full transcript has no recognized text fields.')
+    artifact_files = None
+    if artifacts:
+        artifact_path = Path(artifacts) / 'artifacts.json'
+        if artifact_path.exists():
+            artifact_files = json.loads(artifact_path.read_text()).get('files_modified')
+        else:
+            warnings.append('Artifact file manifest unavailable.')
+    usage = json.loads(Path(usage_file).read_text()) if usage_file else None
+    if isinstance(usage, dict) and 'conversation_id' in usage and isinstance(usage.get('usage'), dict):
+        if usage['conversation_id'] != conv_id:
+            raise ValueError('Runtime usage belongs to a different conversation.')
+        # Observed agy --output-format json schema. Do not assume descendant inclusion.
+        usage = {'source': str(Path(usage_file).resolve()), 'scope': 'agy print invocation',
+                 'conversation_id': conv_id, 'usage': usage['usage'],
+                 'duration_seconds': usage.get('duration_seconds'),
+                 'num_turns': usage.get('num_turns'), 'descendant_accounting': 'unknown'}
+    if usage is not None and (not isinstance(usage, dict) or not usage.get('source') or not usage.get('scope')):
+        raise ValueError('Provide agy output JSON or usage JSON identifying source and accounting scope.')
+    consultation = {}
+    for skill in SKILLS:
+        consultation[skill] = {
+            'status': 'observed' if loaded[skill] else ('not_observed' if events is not None else 'unknown'),
+            'successful_reads': sorted(loaded[skill]), 'read_requests': sorted(requested[skill]),
+            'automatic_activation': 'unknown',
+        }
+    result = {
+        'conv_id': conv_id, 'name': name, 'planner_responses': planner if planner else None,
+        'tool_calls': sum(tools.values()) if planner else None, 'tools': dict(tools),
+        'files_viewed_observed': sorted(viewed) if events is not None else None,
+        'file_edit_requests': sorted(edit_requests) if events is not None else None,
+        'files_modified_from_artifacts': artifact_files, 'guidance_consultation': consultation,
+        'runtime_usage': usage, 'transcript_characters': chars,
+        'estimated_transcript_tokens': chars // 4 if chars is not None else None,
+        'limitations': warnings + [
+            'Tool-based file observations do not cover shell reads/edits or all runtime schemas.',
+            'No observed read is not proof of non-use; injected skill/rule content may not be logged here.',
+            'Character estimates describe recorded text size, not input/output/reasoning token consumption.',
+            'This record covers one conversation; aggregate measured descendants separately exactly once.',
+        ],
     }
+    if verbose:
+        print(json.dumps(result, indent=2))
+    return result
 
 
-if __name__ == "__main__":
-    if len(sys.argv) < 3:
-        print("Usage: python3 analyze_benchmark.py <conv_id_baseline> <conv_id_treatment>")
-        sys.exit(1)
-        
-    res_a = analyze_candidate(sys.argv[1], "Candidate A", verbose=True)
-    res_b = analyze_candidate(sys.argv[2], "Candidate B", verbose=True)
-    
-    if res_a and res_b:
-        print("=== Comparison Summary ===")
-        str_a = "Yes" if res_a["skill_triggered"] else "No"
-        str_b = "Yes" if res_b["skill_triggered"] else "No"
-        print(f"Skill Triggered: {str_a} vs {str_b}")
-        step_delta = ((res_b["steps"] - res_a["steps"]) / res_a["steps"]) * 100 if res_a["steps"] else 0
-        tool_delta = ((res_b["tool_calls"] - res_a["tool_calls"]) / res_a["tool_calls"]) * 100 if res_a["tool_calls"] else 0
-        tok_delta = ((res_b["est_tokens"] - res_a["est_tokens"]) / res_a["est_tokens"]) * 100 if res_a["est_tokens"] else 0
-        print(f"Steps:      {res_a['steps']} -> {res_b['steps']} ({step_delta:+.1f}%)")
-        print(f"Tool Calls: {res_a['tool_calls']} -> {res_b['tool_calls']} ({tool_delta:+.1f}%)")
-        print(f"Tokens:     {res_a['est_tokens']:,} -> {res_b['est_tokens']:,} ({tok_delta:+.1f}%)")
+def percent_delta(before, after):
+    if before in (None, 0) or after is None:
+        return None
+    return (after - before) * 100 / before
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('conversation_a')
+    parser.add_argument('conversation_b')
+    for suffix in ('a', 'b'):
+        parser.add_argument(f'--logs-{suffix}', type=Path)
+        parser.add_argument(f'--workspace-{suffix}', type=Path)
+        parser.add_argument(f'--artifacts-{suffix}', type=Path)
+        parser.add_argument(f'--usage-{suffix}', type=Path,
+                            help='agy --output-format json output, or usage JSON with source/accounting scope.')
+    parser.add_argument('--output', type=Path)
+    args = parser.parse_args()
+    try:
+        candidates = [analyze_candidate(
+            getattr(args, f'conversation_{suffix}'), f'Candidate {suffix.upper()}',
+            logs_dir=getattr(args, f'logs_{suffix}'), workspace=getattr(args, f'workspace_{suffix}'),
+            artifacts=getattr(args, f'artifacts_{suffix}'), usage_file=getattr(args, f'usage_{suffix}'),
+        ) for suffix in ('a', 'b')]
+        result = {'candidates': candidates, 'delta_percent': {
+            key: percent_delta(candidates[0][key], candidates[1][key])
+            for key in ('planner_responses', 'tool_calls', 'estimated_transcript_tokens')
+        }}
+        encoded = json.dumps(result, indent=2) + '\n'
+        if args.output:
+            with args.output.open('x') as stream:
+                stream.write(encoded)
+        print(encoded, end='')
+    except (ValueError, OSError, json.JSONDecodeError) as error:
+        parser.error(str(error))
+
+
+if __name__ == '__main__':
+    main()

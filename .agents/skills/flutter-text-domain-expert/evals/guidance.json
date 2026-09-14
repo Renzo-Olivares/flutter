@@ -1,0 +1,14 @@
+{
+  "shared": [
+    ".agents/rules/code-freeze.md",
+    ".agents/skills/material-cupertino-packages/**"
+  ],
+  "treatment_only": [
+    ".agents/skills/flutter-text-domain-expert/**"
+  ],
+  "exclude": [
+    "**/evals/**",
+    "**/__pycache__/**",
+    "**/.DS_Store"
+  ]
+}
