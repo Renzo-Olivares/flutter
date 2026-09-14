@@ -37,6 +37,8 @@ This document is a focused testing reference for the Flutter text subsystem (`pa
 
 Place focused tests in the layer that owns the behavior; use component tests for interactions that depend on Material or Cupertino UI. Active Material and Cupertino component development belongs in `material_ui` and `cupertino_ui` under the `flutter/packages` repository, while existing framework suites remain useful references for legacy behavior.
 
+Choose fixtures that follow the repository's [Dart layer dependency rules](../../../rules/dart-editing.md#layer-dependency-rules).
+
 | Subsystem / Feature Area | Target Test File | When to Test Here |
 | :--- | :--- | :--- |
 | **Unified Selection (Core)** | [`packages/flutter/test/widgets/selectable_region_test.dart`](../../../../packages/flutter/test/widgets/selectable_region_test.dart) | `SelectableRegion` state, registration, multi-child event routing, cross-region drag selection. |
@@ -59,6 +61,13 @@ Place focused tests in the layer that owns the behavior; use component tests for
 | **Platform Channels & Deltas** | [`packages/flutter/test/services/text_input_test.dart`](../../../../packages/flutter/test/services/text_input_test.dart)<br>[`packages/flutter/test/services/delta_text_input_test.dart`](../../../../packages/flutter/test/services/delta_text_input_test.dart) | Platform channel codec, `TextInputConnection`, and `TextEditingDelta` diff stream processing. |
 | **Material Text (Frozen / Legacy)** | [`packages/flutter/test/material/text_field_test.dart`](../../../../packages/flutter/test/material/text_field_test.dart)<br>[`packages/flutter/test/material/selection_area_test.dart`](../../../../packages/flutter/test/material/selection_area_test.dart)<br>[`packages/flutter/test/material/adaptive_text_selection_toolbar_test.dart`](../../../../packages/flutter/test/material/adaptive_text_selection_toolbar_test.dart) | Legacy tests for frozen Material text components in `flutter/flutter` (active tests belong in `material_ui` under `flutter/packages`). |
 | **Cupertino Text (Frozen / Legacy)** | [`packages/flutter/test/cupertino/text_field_test.dart`](../../../../packages/flutter/test/cupertino/text_field_test.dart)<br>[`packages/flutter/test/cupertino/adaptive_text_selection_toolbar_test.dart`](../../../../packages/flutter/test/cupertino/adaptive_text_selection_toolbar_test.dart) | Legacy tests for frozen Cupertino text components in `flutter/flutter` (active tests belong in `cupertino_ui` under `flutter/packages`). |
+
+### Core Text Test Fixtures
+
+Prefer existing helpers when they provide the setup required by the test:
+
+- [`TestWidgetsApp`](../../../../packages/flutter_test/lib/src/test_widgets_app.dart), exported by `package:flutter_test/flutter_test.dart`, supplies `WidgetsApp` defaults and a default route builder. Place the test widget in `home` for `Navigator` / `Overlay` support, including `SelectableRegion` and selection toolbars. Override routing only when the test requires different behavior.
+- [`TestTextField`](../../../../packages/flutter/test/widgets/editable_text_tester.dart) wraps `EditableText` with `TextSelectionGestureDetector` integration and manages a controller and focus node when none are supplied. Import this repository-local helper from the test file; it is not exported by `flutter_test`. Supply a `contextMenuBuilder` or suitable selection controls when testing toolbars or handle geometry.
 
 ---
 
@@ -134,7 +143,7 @@ await tester.pump(kDoubleTapTimeout);
 - With `cursorOpacityAnimates == true`, `_onCursorTick` schedules the next animation asynchronously specifically to allow `pumpAndSettle` to complete.
 
 ```dart
-await tester.tap(find.byType(TextField));
+await tester.showKeyboard(find.byType(EditableText));
 await tester.pumpAndSettle();
 ```
 
@@ -233,14 +242,16 @@ Use intermediate moves when the scenario needs them. If an expected update is mi
 Selection handles, magnifiers, and context menu toolbars are **not child widgets** of `TextField` or `SelectionArea`. They are inserted into the application root [`Overlay`](../../../../packages/flutter/lib/src/widgets/overlay.dart).
 
 ```dart
-// ❌ WRONG: Toolbar is not a child of TextField
-expect(find.descendant(of: find.byType(TextField), matching: find.text('Copy')), findsOneWidget);
+// ❌ WRONG: Toolbar is not a child of EditableText
+expect(find.descendant(of: find.byType(EditableText), matching: find.text('Copy')), findsOneWidget);
 
 // ✅ CORRECT: Search the global Overlay / Tree
 expect(find.text('Copy'), findsOneWidget);
 ```
 
 ### Finding Platform-Specific Toolbars
+
+These assertions belong in the corresponding `material_ui` or `cupertino_ui` component tests. Core framework tests should find the custom toolbar supplied by their widgets-layer fixture.
 
 ```dart
 // Material adaptive toolbar
@@ -343,12 +354,12 @@ expect(handleGestureDetector, findsNWidgets(2));
 
 Match the widget, platform, and channel to the action under test. The current `SelectableRegion` default menu supports Copy, Select All, Share on Android, and available process-text actions. `Look Up` is an `EditableTextState` action implemented for iOS; an ordinary `SelectionArea` does not provide that default button. `Share.invoke` uses `SystemChannels.platform` with the selected string as its argument. Process-text actions use `SystemChannels.processText` instead.
 
-This complete widget test selects text, taps the Android Share action, and checks the outgoing payload. It uses the existing Material wrapper to build its toolbar; core channel behavior can also be tested with `SelectableRegion` and a test toolbar, as in [`selectable_region_test.dart`](../../../../packages/flutter/test/widgets/selectable_region_test.dart).
+This complete core widget test selects text, invokes the Android Share menu item's callback, and checks the outgoing payload. `TestWidgetsApp` supplies the app and overlay setup for `SelectableRegion`. The callback approach tests the action and channel contract; toolbar appearance and hit testing belong in separate UI tests. See also [`selectable_region_test.dart`](../../../../packages/flutter/test/widgets/selectable_region_test.dart).
 
 ```dart
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
@@ -373,19 +384,24 @@ void main() {
       });
 
       await tester.pumpWidget(
-        const MaterialApp(
-          home: Scaffold(
-            body: SelectionArea(child: Text('Hello')),
+        TestWidgetsApp(
+          home: SelectableRegion(
+            selectionControls: emptyTextSelectionControls,
+            child: const Text('Hello'),
           ),
         ),
       );
+      await tester.pumpAndSettle();
       final SelectableRegionState region = tester.state<SelectableRegionState>(
         find.byType(SelectableRegion),
       );
-      region.selectAll(SelectionChangedCause.toolbar);
-      await tester.pumpAndSettle();
+      region.selectAll(SelectionChangedCause.keyboard);
 
-      await tester.tap(find.text('Share'));
+      final ContextMenuButtonItem share = region.contextMenuButtonItems.singleWhere(
+        (ContextMenuButtonItem item) => item.type == ContextMenuButtonType.share,
+      );
+      expect(share.onPressed, isNotNull);
+      share.onPressed!();
       await tester.pumpAndSettle();
       expect(sharedText, 'Hello');
     },
@@ -412,7 +428,7 @@ To test multi-stage IME composition (such as CJK input or autocorrect pre-compos
 
 ```dart
 // Focus field
-await tester.tap(find.byType(TextField));
+await tester.showKeyboard(find.byType(EditableText));
 await tester.pump();
 
 // 1. Send marked composing text: "ni" (composing range 0..2)

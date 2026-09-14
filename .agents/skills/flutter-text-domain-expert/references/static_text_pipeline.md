@@ -220,10 +220,7 @@ The Unified Selection Subsystem provides cross-widget, document-wide text select
    - The callback transforms the event coordinates, dispatches `SelectWordSelectionEvent` to the active delegate, and assigns `client.getSelectedContent()?.plainText` to the div's `innerText`.
    - It creates and selects a DOM `Range` over that element so the native browser menu has selected text to act on. This bridge does not listen to general DOM `selectionchange` events or continuously synchronize browser selection geometry.
 3. **Editable Web Text Uses a Separate Path**:
-   - [`EditableText`](../../../../packages/flutter/lib/src/widgets/editable_text.dart) uses the web engine's [`text-editing strategy`](../../../../engine/src/flutter/lib/web_ui/lib/src/engine/text_editing/text_editing.dart), backed by an `input`, `textarea`, or contenteditable `span` according to its configuration and strategy.
-   - The engine places this transparent editing control over the editable widget to support native right-click actions. It listens to `input` and DOM `selectionchange` to synchronize text and selection. Firefox also uses a `select` listener for native Select All.
-   - EditableText's web-menu condition is `kIsWeb && BrowserContextMenu.enabled`, without SelectableRegion's Android/iOS exclusions. It suppresses the Flutter `contextMenuBuilder` while the native browser menu is enabled.
-   - Both paths use the same `BrowserContextMenu` enable/disable API, but their DOM elements and synchronization mechanisms are separate.
+   - This div bridge is specific to `SelectableRegion`. `EditableText` uses the web engine's editing control; its DOM synchronization and browser-menu conditions are documented in the [editable text pipeline](editable_text_pipeline.md#invisible-native-input-elements--synchronization).
 4. **Web/IO Guard**:
    - `SelectableRegion.build` wraps its subtree in the platform-menu widget only when `_webContextMenuEnabled` is true.
    - The IO constructor can be called, but its `build`, `attach`, and `detach` implementations throw `UnimplementedError`. See [`_platform_selectable_region_context_menu_io.dart`](../../../../packages/flutter/lib/src/widgets/_platform_selectable_region_context_menu_io.dart).
@@ -421,6 +418,7 @@ Scrollable.build()
 #### 2. `_ScrollableSelectionContainerDelegate` Mechanics
 `_ScrollableSelectionContainerDelegate` extends `MultiSelectableSelectionContainerDelegate` with scrolling-specific synchronization and auto-scrolling capabilities:
 - **Role of `_selectionStartsInScrollable` & Drag Boundary Clamping**:
+  - For pointer-driven selection, `_selectionStartsInScrollable` tracks whether the drag selection originated inside or outside this scrollable's viewport. It controls eligibility for autoscrolling and outside-origin boundary clamping; initialization and non-drag selection operations follow the rules below.
   - `handleSelectionEdgeUpdate` initializes `_selectionStartsInScrollable` from `_globalPositionInScrollable(event.globalPosition)` only when both cached drag endpoints are null. `handleSelectWord` sets it from the word-selection event; `handleClearSelection` resets it and clears both endpoints. `handleSelectAll` seeds endpoints from geometry without setting the flag to true.
   - **Selection Originating Outside (`_selectionStartsInScrollable == false`)**:
     - When the drag selection originates outside the scrollable (e.g., dragging across multiple scrollables or from an outside header/document body), moving the drag position across the scrollable boundaries causes `_inferPositionRelatedToOrigin` to clamp the inferred position:

@@ -1,13 +1,24 @@
 ---
 name: flutter-text-domain-expert
 description: >
-  Architecture, source routing, and testing guidance for Flutter text rendering,
-  editing, selection, and IME in flutter/flutter. Use for Text/RichText spans and
-  layout, EditableText/RenderEditable and text-field behavior, text-input platform
-  channels, SelectionArea/SelectableRegion, context menus, overlays, magnifiers,
-  and selection-driven scrolling in Scrollable/ListView/CustomScrollView. Covers
-  painting, rendering, services, widgets, gestures, engine/embedders, and associated
-  tests. Excludes unrelated framework, build-tool, and engine-build work.
+  Architecture, debugging, source routing, and tests for Flutter text in
+  flutter/flutter (framework, engine, and embedders).
+
+  When to use:
+  - Rendering/layout: Text, RichText, RenderParagraph, TextPainter, InlineSpan,
+    TextSpan, WidgetSpan.
+  - Editing/IME: TextField, CupertinoTextField, EditableText, RenderEditable,
+    TextInput, TextInputClient, DeltaTextInputClient, TextInputFormatter,
+    DefaultTextEditingShortcuts.
+  - Selection/menus: SelectionArea, SelectableRegion, SelectionContainer,
+    TextSelectionGestureDetector, SelectionOverlay, adaptive toolbars, handles,
+    magnifiers, and text platform channels.
+  - Selection scrolling: Scrollable, ListView, CustomScrollView,
+    _ScrollableSelectionContainerDelegate, EdgeDraggingAutoScroller.
+  - Unit, widget, rendering, and platform tests for these features.
+
+  When not to use:
+  - Unrelated framework behavior, build tooling, or engine build configuration.
 ---
 
 # Flutter Text Domain Expert Skill (`flutter/flutter`)
@@ -46,12 +57,12 @@ Apply these rules to the affected layers and the capabilities required by the ta
    - Active development of Material and Cupertino text UI components (`TextField`, `CupertinoTextField`, `AdaptiveTextSelectionToolbar`, `SelectionArea`, selection handles) belongs in the **`material_ui`** and **`cupertino_ui`** packages under the **`flutter/packages`** repository.
 
 2. **Subsystem Isolation**:
-   - `RenderEditable` does **not** participate in the `SelectionArea` / `SelectableRegion` selection tree. `EditableTextState` coordinates its selection through `TextSelectionOverlay`, which wraps the shared `SelectionOverlay` implementation. Changes to `SelectionOverlay` can affect both editable and static selection.
-   - `SelectableRegion` coordinates unified selection across read-only leaf registrants (`_SelectableFragment` in `RenderParagraph`, custom selectables) via the `SelectionRegistrarScope`.
+   - `RenderEditable` does **not** participate in the `SelectionArea` / `SelectableRegion` selection tree. `EditableTextState` manages its editing and selection state and uses `TextSelectionOverlay` for floating controls. `TextSelectionOverlay` wraps the shared `SelectionOverlay` implementation, so changes to `SelectionOverlay` can affect both editable and static selection.
+   - Text-field wrappers use `TextSelectionGestureDetector` to recognize pointer interactions and `TextSelectionGestureDetectorBuilder` callbacks to coordinate caret placement and selection with `RenderEditable` and `EditableTextState`. These gesture callbacks are one input path alongside keyboard, IME, and selection-handle updates.
+   - `SelectableRegionState` wires its own recognizers through `RawGestureDetector` and coordinates unified selection across read-only leaf registrants (`_SelectableFragment` in `RenderParagraph`, custom selectables) via `SelectionRegistrarScope`. It does not use `TextSelectionGestureDetector` for this selection tree.
 
 3. **Layer Boundary Rules in `packages/flutter`**:
-   - **`widgets/`**, **`rendering/`**, and **`services/`** must **never** import `package:flutter/material.dart` or `package:flutter/cupertino.dart`.
-   - Core framework tests can exercise behavior through existing design-system widgets; edits within the legacy `material/` and `cupertino/` test directories are subject to the same freeze workflow.
+   - Follow the repository's [Dart layer dependency rules](../../rules/dart-editing.md#layer-dependency-rules) for implementation files and tests. Use the [core text test fixtures](references/testing_text_stack.md#core-text-test-fixtures), including `TestWidgetsApp` and `TestTextField`, when exercising core text behavior.
 
 4. **IME Composing Range Preservation**:
    - Never mutate `TextEditingValue.text` without recalculating or explicitly resetting `TextEditingValue.composing` (`TextRange`). Clobbering active composing ranges breaks multilingual IMEs (Japanese, Chinese, Korean, Vietnamese).

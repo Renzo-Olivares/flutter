@@ -1,6 +1,6 @@
 # Flutter Text Debugging Playbooks
 
-This document maps coordinate conversions and diagnostic checks for text selection, handle positioning, and auto-scrolling in the current implementation.
+This document contains structured diagnostic workflows and coordinate-space maps for common failure patterns in Flutter text selection, handle positioning, and auto-scrolling. Use it to trace a symptom to the responsible coordinate conversion, selection state, or animation lifecycle in the current implementation.
 
 ---
 

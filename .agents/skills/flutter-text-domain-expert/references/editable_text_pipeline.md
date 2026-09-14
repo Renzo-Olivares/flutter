@@ -33,6 +33,7 @@ This document provides a deep, comprehensive architectural reference for the edi
    - [Native System Context Menus & Platform Behaviors](#native-system-context-menus--platform-behaviors)
    - [Reference to Shared Overlays](#reference-to-shared-overlays)
 6. [Architectural Isolation Invariant](#6-architectural-isolation-invariant)
+   - [Why `RenderEditable` Is Isolated from `SelectionArea`](#why-rendereditable-is-isolated-from-selectionarea)
 7. [Architecture & Pipeline Diagrams](#7-architecture--pipeline-diagrams)
    - [Diagram 1: Core Editable Text & Caret/Viewport Pipeline](#diagram-1-core-editable-text--caretviewport-pipeline)
    - [Diagram 2: IME & State Processing Pipeline](#diagram-2-ime--state-processing-pipeline)
@@ -325,6 +326,7 @@ When diagnosing low-level IME communication, composing range glitches, or platfo
   - The editing strategy uses an `<input>`, `<textarea>`, or contenteditable `<span>` with transparent text/caret, positioned over the focused `EditableText` and styled with the `.flt-text-editing` class.
   - The DOM control receives browser keyboard focus, enables mobile soft keyboards and native context-menu actions, handles autofill, and participates in IME composition.
   - The strategy listens to DOM `input` and `selectionchange` events to synchronize editing state with Flutter, while framework editing-state and geometry messages update the DOM control.
+  - Firefox also uses a `select` listener for native Select All. Browser-menu gating, including mobile Web, is described under [Native System Context Menus & Platform Behaviors](#native-system-context-menus--platform-behaviors).
   - Static `SelectableRegion` uses a separate transparent `div` bridge for desktop browser context menus. See [`platform_selectable_region_context_menu.dart`](../../../../packages/flutter/lib/src/widgets/platform_selectable_region_context_menu.dart); its right-click text transfer is separate from this editing-state synchronization.
 - **iOS (`FlutterTextInputView`)**:
   - iOS creates a backing `UIView` (`FlutterTextInputView`) conforming to the `UITextInput` protocol that becomes the first responder.
@@ -399,7 +401,7 @@ To ensure high platform fidelity and prevent double-handling of hotkeys, [`Defau
 ### Native System Context Menus & Platform Behaviors
 
 1. **iOS 16.0+ `SystemContextMenu` / `SystemContextMenuController`**:
-   - On iOS 16.0+, [`SystemContextMenu`](../../../../packages/flutter/lib/src/widgets/system_context_menu.dart) uses [`SystemContextMenuController`](../../../../packages/flutter/lib/src/services/text_input.dart) to display Apple's native `UIEditMenuInteraction` system context menu for a supported field.
+   - On iOS 16.0+, [`SystemContextMenu`](../../../../packages/flutter/lib/src/widgets/system_context_menu.dart) uses [`SystemContextMenuController`](../../../../packages/flutter/lib/src/services/text_input.dart) to display Apple's native `UIEditMenuInteraction` system context menu for a supported field, rather than Flutter's custom Cupertino-rendered toolbar widget.
    - **Secure Pasteboard Support**: Invoking native paste through UIKit avoids triggering iOS's invasive system permission prompt (*"App would like to paste from..."*).
    - **Default Items**: `SystemContextMenu.getDefaultItems` maps the field's available actions to native items, including *Look Up*, *Share*, *Search Web*, and *Live Text* when enabled.
    - Activated automatically via `SystemContextMenu.isSupportedByField(editableTextState)` in [`TextField`](../../../../packages/flutter/lib/src/material/text_field.dart) and [`CupertinoTextField`](../../../../packages/flutter/lib/src/cupertino/text_field.dart).
@@ -420,9 +422,9 @@ For details regarding handle controls (`MaterialTextSelectionHandleControls`, `C
 
 ## 6. Architectural Isolation Invariant
 
+### Why `RenderEditable` Is Isolated from `SelectionArea`
+
 > [!IMPORTANT]
-> **Why `RenderEditable` Is Isolated from `SelectionArea` / `SelectableRegion`**:
->
 > 1. **Self-Contained State Machine**: `EditableText` / `RenderEditable` owns its own `TextEditingController`, caret blinking animation, keyboard shortcut bindings, viewport scrolling offset, and IME platform channel connections.
 > 2. **No `Selectable` Registration**: `RenderEditable` does **not** implement `Selectable` and does **not** register with `SelectionRegistrar`.
 > 3. **Avoidance of Split State**: If `RenderEditable` were part of the unified `SelectionArea` tree, external selection events would conflict with active IME composition sessions, soft keyboard selection changes, and internal viewport scrolling.
