@@ -109,6 +109,14 @@ flowchart TD
 > [!IMPORTANT]
 > **Framework Test Runner**: Always execute framework unit and widget tests using the repository's local Flutter tool (`./bin/flutter test <test_file>`). Do not use `dart test`, which lacks Flutter engine, binary messenger, and font bindings.
 
+### Keep references synchronized with code
+
+When using this skill to modify a described text pipeline, check the affected descriptions in `SKILL.md` and `references/` against the final implementation and tests before completing the task.
+
+Update any behavior descriptions, symbol names, source links, diagrams, or examples made inaccurate by the change. Search for repeated descriptions across the references and update those consistently. Include these documentation updates in the same change.
+
+Keep updates limited to verified implementation facts. Leave accurate content unchanged, avoid task history or speculative guidance, and exclude `evals/` from this maintenance.
+
 ### Pre-Completion Checklist
 Before declaring any Flutter text task complete:
 - [ ] Analyze modified Dart files and resolve diagnostics (`./bin/dart analyze --fatal-infos <modified_files>`).
