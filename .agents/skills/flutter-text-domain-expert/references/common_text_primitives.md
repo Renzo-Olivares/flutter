@@ -242,7 +242,7 @@ classDiagram
    - `compareTo(InlineSpan other)` computes a [`RenderComparison`](../../../../packages/flutter/lib/src/painting/basic_types.dart) enum value:
      - `RenderComparison.identical`: The compared properties match. `TextSpan.compareTo` does not compare `semanticsLabel` or `mouseCursor`, so changes to those properties alone also return `identical`.
      - `RenderComparison.metadata`: A `TextSpan` recognizer changed without a change requiring paint or layout; no layout or paint update needed.
-     - `RenderComparison.paint`: Paint attributes changed (e.g. `TextStyle.color`, `TextStyle.backgroundColor`, `TextStyle.decoration`); triggers repaint (`markNeedsPaint()`) without invalidating framework layout geometry. During the next paint, `TextPainter` still recreates and lays out the engine paragraph to apply the new paint attributes.
+     - `RenderComparison.paint`: Paint attributes changed (e.g. `TextStyle.color`, `TextStyle.backgroundColor`, `TextStyle.decoration`). `RenderParagraph.text` calls `markNeedsPaint()` and `markNeedsSemanticsUpdate()` without requesting framework layout. `RenderEditable.text` calls `markNeedsLayout()` and `markNeedsSemanticsUpdate()` for every unequal span, including paint-only changes. In both cases, `TextPainter` preserves its cached paragraph geometry; with unchanged layout inputs, subsequent `layout()` calls can reuse it. When painting occurs, `TextPainter` recreates and lays out the engine paragraph to apply the changed paint attributes.
      - `RenderComparison.layout`: Structural or style properties classified as requiring layout changed (e.g. `text`, `fontSize`, `fontFamily`, `letterSpacing`, `foreground`, `background`, `shadows`, child span count); triggers a full layout pass (`markNeedsLayout()`).
 4. **Semantics Extraction (`getSemanticsInformation`)**:
    - Returns a `List<InlineSpanSemanticsInformation>` describing accessibility metadata.
@@ -662,16 +662,20 @@ Selection handles and toolbars float above sibling widgets without being clipped
 
 ```
 Render Tree (Inside Scrollable Viewport):
-[RenderEditable / RenderParagraph]
-  |---> startHandleLayerLink (LeaderLayer at start glyph coordinate)
-  |---> endHandleLayerLink   (LeaderLayer at end glyph coordinate)
+[RenderEditable]
+  |---> startHandleLayerLink (LeaderLayer at clamped start endpoint + paint offset)
+  |---> endHandleLayerLink   (LeaderLayer at clamped end endpoint + paint offset)
+
+[RenderParagraph's selectable fragments]
+  |---> _startHandleLayerLink (LeaderLayer at start selection point + paint offset)
+  |---> _endHandleLayerLink   (LeaderLayer at end selection point + paint offset)
 
 Overlay Tree (Root Overlay):
 [OverlayEntry]
-  |---> FollowerLayer (linkedTo: startHandleLayerLink) ---> [Start Handle Widget]
-  |---> FollowerLayer (linkedTo: endHandleLayerLink)   ---> [End Handle Widget]
+  |---> FollowerLayer (linked to corresponding start LayerLink) ---> [Start Handle Widget]
+  |---> FollowerLayer (linked to corresponding end LayerLink)   ---> [End Handle Widget]
 ```
 
 1. **`LayerLink`**: Identifies a pair of linked composited layers.
-2. **`LeaderLayer`**: Pushed into the layer tree during `paint()` by `RenderEditable` or `RenderParagraph` at the local 2D coordinates of selection endpoints.
+2. **`LeaderLayer`**: Pushed into the layer tree during `paint()` by `RenderEditable` or `RenderParagraph`. `RenderEditable` clamps each selection endpoint's coordinates to its render-box bounds (`0..size.width` and `0..size.height`) before adding the paint offset and positioning its leader. `RenderParagraph`'s selectable fragments use each selection point's local position plus the paint offset, without that render-box clamping.
 3. **`FollowerLayer`**: Wrapped around handle widgets inside `OverlayEntry`. During framework scene construction, `FollowerLayer._establishTransform()` computes the transform between the leader and follower layer chains, including offsets. `addToScene()` passes that matrix to `SceneBuilder.pushTransform()` for engine rendering, without requiring widget rebuilds or framework layout passes for the follower transform.

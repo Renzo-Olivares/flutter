@@ -248,7 +248,7 @@ Incoming messages pass through `TextInput._handleTextInputInvocation()`. The wir
 
 ### System Channel Protocol (`'flutter/textinput'`)
 
-- **Channel**: `SystemChannels.textInput` (`MethodChannel('flutter/textinput')`).
+- **Channel**: `SystemChannels.textInput`, declared as `MethodChannel` and constructed as `OptionalMethodChannel('flutter/textinput', JSONMethodCodec())`.
 - **[`TextInputConfiguration`](../../../../packages/flutter/lib/src/services/text_input.dart)**: Configures input type (`TextInputType`), action button (`TextInputAction`), autocorrect, autofill, smart punctuation, and `enableDeltaModel`.
 - **[`TextInputConnection`](../../../../packages/flutter/lib/src/services/text_input.dart)**: Active connection handle returned by `TextInput.attach()`.
 
