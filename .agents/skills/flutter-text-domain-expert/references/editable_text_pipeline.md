@@ -121,7 +121,7 @@ Setting `EditableText.readOnly` prevents user text changes while retaining selec
 - **`AutomaticKeepAliveClientMixin<EditableText>`**: Requests keep-alive while `widget.focusNode.hasFocus`, preserving a focused field in lazy lists.
 
 #### Key State Machine Responsibilities:
-- **Blinking Cursor Loop**: Controlled by an `AnimationController` and `_cursorTimer`. On iOS, uses discrete keyframe simulation curves (`_DiscreteKeyFrameSimulation.iOSBlinkingCaret`) rather than smooth linear fades.
+- **Blinking Cursor Loop**: Controlled by an `AnimationController` and `_cursorTimer`. When `cursorOpacityAnimates` is `true`, uses `_DiscreteKeyFrameSimulation.iOSBlinkingCaret`; otherwise, a periodic timer toggles cursor opacity. `EditableText` defaults this flag to `false`. The design-system wrappers supply their own defaults: `TextField` enables it by default on iOS, and `CupertinoTextField` defaults it to `true`.
 - **Keyboard Shortcut Routing**: Wraps the render tree with `Actions` responding to keyboard shortcut intents defined in [`DefaultTextEditingShortcuts`](../../../../packages/flutter/lib/src/widgets/default_text_editing_shortcuts.dart).
 - **Scroll Synchronization**: Coordinates `ScrollController` with `RenderEditable` so newly typed characters or cursor movements scroll automatically into view (`_scheduleShowCaretOnScreen`).
 
@@ -213,7 +213,7 @@ Setting `EditableText.readOnly` prevents user text changes while retaining selec
 
 ### Selection Handle Compositing (`LeaderLayer` Anchors)
 
-Floating selection handles must float in the top-level application `Overlay` to avoid container clipping, yet they must track scrolling text at 60/120 FPS without rebuilding widgets.
+Floating selection handles live in the root application `Overlay` to avoid container clipping. Linked `LeaderLayer` and `FollowerLayer` objects keep them aligned with scrolling text. The follower transform can update without widget rebuilds, although scrolling can also trigger overlay rebuilds through `TextSelectionOverlay.updateForScroll()`.
 
 - `RenderEditable` exposes two [`LayerLink`](../../../../packages/flutter/lib/src/rendering/layer.dart) anchors: `startHandleLayerLink` and `endHandleLayerLink`.
 - In `_paintHandleLayers()`, `RenderEditable` pushes a [`LeaderLayer`](../../../../packages/flutter/lib/src/rendering/layer.dart) at the local 2D coordinates of the selection start and end glyph positions.
