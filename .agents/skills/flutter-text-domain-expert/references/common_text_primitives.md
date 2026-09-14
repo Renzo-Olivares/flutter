@@ -65,7 +65,7 @@ This document provides an architectural navigation reference for the foundationa
 | [`BaseTapAndDragGestureRecognizer`](../../../../packages/flutter/lib/src/gestures/tap_and_drag.dart) | [`packages/flutter/lib/src/gestures/tap_and_drag.dart`](../../../../packages/flutter/lib/src/gestures/tap_and_drag.dart) | Base recognizer unifying multi-tap counting (single/double/triple) with drag gestures. |
 | [`TapAndPanGestureRecognizer`](../../../../packages/flutter/lib/src/gestures/tap_and_drag.dart) | [`packages/flutter/lib/src/gestures/tap_and_drag.dart`](../../../../packages/flutter/lib/src/gestures/tap_and_drag.dart) | Pan recognizer used by `SelectableRegion` and `TextSelectionGestureDetector` for 2D drag selection. |
 | [`TapAndHorizontalDragGestureRecognizer`](../../../../packages/flutter/lib/src/gestures/tap_and_drag.dart) | [`packages/flutter/lib/src/gestures/tap_and_drag.dart`](../../../../packages/flutter/lib/src/gestures/tap_and_drag.dart) | Horizontal drag recognizer used by editable text selection detectors. |
-| [`LongPressGestureRecognizer`](../../../../packages/flutter/lib/src/gestures/long_press.dart) | [`packages/flutter/lib/src/gestures/long_press.dart`](../../../../packages/flutter/lib/src/gestures/long_press.dart) | Detects touch hold gestures to trigger word selection, magnifying loupes, or selection handle drags on mobile devices. |
+| [`LongPressGestureRecognizer`](../../../../packages/flutter/lib/src/gestures/long_press.dart) | [`packages/flutter/lib/src/gestures/long_press.dart`](../../../../packages/flutter/lib/src/gestures/long_press.dart) | Detects touch hold gestures to trigger word selection or magnifying loupes on mobile devices. |
 | [`ForcePressGestureRecognizer`](../../../../packages/flutter/lib/src/gestures/force_press.dart) | [`packages/flutter/lib/src/gestures/force_press.dart`](../../../../packages/flutter/lib/src/gestures/force_press.dart) | Detects 3D touch pressure changes on supported iOS devices to trigger word selection. |
 | [`SelectionOverlay`](../../../../packages/flutter/lib/src/widgets/text_selection.dart) | [`packages/flutter/lib/src/widgets/text_selection.dart`](../../../../packages/flutter/lib/src/widgets/text_selection.dart) | Shared overlay implementation used directly by `SelectableRegionState` and wrapped by `TextSelectionOverlay`. |
 | [`TextSelectionOverlay`](../../../../packages/flutter/lib/src/widgets/text_selection.dart) | [`packages/flutter/lib/src/widgets/text_selection.dart`](../../../../packages/flutter/lib/src/widgets/text_selection.dart) | Adapts editable state and `RenderEditable` geometry to the shared `SelectionOverlay`. |
@@ -239,7 +239,7 @@ classDiagram
      - `computeToPlainText(StringBuffer buffer, ...)`: Extracts flattened plain text by recursively calling `computeToPlainText` on child spans.
      - `codeUnitAtVisitor(int index, Accumulator offset)`: Retrieves a character code unit at a logical index; `codeUnitAt` invokes this callback through `visitChildren`.
 3. **Structural Tree Diffing (`compareTo`)**:
-   - `compareTo(InlineSpan other)` computes a [`RenderComparison`](../../../../packages/flutter/lib/src/rendering/object.dart) enum value:
+   - `compareTo(InlineSpan other)` computes a [`RenderComparison`](../../../../packages/flutter/lib/src/painting/basic_types.dart) enum value:
      - `RenderComparison.identical`: The compared properties match. `TextSpan.compareTo` does not compare `semanticsLabel` or `mouseCursor`, so changes to those properties alone also return `identical`.
      - `RenderComparison.metadata`: A `TextSpan` recognizer changed without a change requiring paint or layout; no layout or paint update needed.
      - `RenderComparison.paint`: Paint attributes changed (e.g. `TextStyle.color`, `TextStyle.backgroundColor`, `TextStyle.decoration`); triggers repaint (`markNeedsPaint()`) without invalidating framework layout geometry. During the next paint, `TextPainter` still recreates and lays out the engine paragraph to apply the new paint attributes.
@@ -317,7 +317,8 @@ Both static and editable text render objects consume `InlineSpan` trees directly
   - Generates multiple `_SelectableFragment` registrants across placeholders for document-wide selection.
 - **`RenderEditable.text` ([Editable Text Pipeline](editable_text_pipeline.md))**:
   - `RenderEditable.text` accepts any `InlineSpan` tree, allowing custom controllers (e.g. subclasses of `TextEditingController` overriding `buildTextSpan`) to render multi-colored syntax highlighting, mention tags, hashtags, and styled token runs inside interactive editable text fields.
-  - `RenderEditable.plainText` provides the flattened unformatted text string for clipboard, input methods, and accessibility, while `text` preserves the rich formatting tree.
+  - `RenderEditable.plainText` returns the `TextPainter`'s flattened display text, including obscuring characters when applicable, while `text` preserves the rich formatting tree.
+  - Clipboard operations use `textEditingValue.text`, and IME synchronization uses `widget.controller.value` in `EditableTextState`. Accessibility text is assembled from span semantics information, with obscuring characters used for obscured fields.
 
 ---
 
@@ -461,7 +462,7 @@ The abstract base class [`TextBoundary`](../../../../packages/flutter/lib/src/se
 
 #### 1. `CharacterBoundary` ([`services/text_boundary.dart`](../../../../packages/flutter/lib/src/services/text_boundary.dart))
 - Uses `package:characters` and `CharacterRange` to navigate Unicode extended grapheme clusters.
-- Ensures composite emojis (e.g. `👨‍👩‍👧‍👦` containing zero-width joiners and skin tone modifiers) and surrogate pairs are traversed as single atomic characters.
+- Ensures composite emojis (e.g. `👨‍👩‍👧‍👦` containing zero-width joiners) and surrogate pairs are traversed as single atomic characters.
 
 #### 2. `WordBoundary` ([`painting/text_painter.dart`](../../../../packages/flutter/lib/src/painting/text_painter.dart))
 - Accesses native Unicode UAX #29 word segmentation via `ui.Paragraph.getWordBoundary()`.
@@ -521,7 +522,8 @@ Flutter provides specialized gesture recognizers designed specifically for text 
 4. **[`TapAndDragGestureRecognizer`](../../../../packages/flutter/lib/src/gestures/tap_and_drag.dart)**:
    - Deprecated legacy equivalent of `TapAndPanGestureRecognizer`; use `TapAndPanGestureRecognizer` for new code.
 5. **[`LongPressGestureRecognizer`](../../../../packages/flutter/lib/src/gestures/long_press.dart)**:
-   - Detects touch hold gestures to trigger word selection, display magnifying loupes, or initiate selection handle drags on mobile devices.
+   - Detects touch hold gestures to trigger word selection or display magnifying loupes on mobile devices.
+   - Selection handle drags use `PanGestureRecognizer` in the shared handle overlay in [`text_selection.dart`](../../../../packages/flutter/lib/src/widgets/text_selection.dart).
 6. **[`ForcePressGestureRecognizer`](../../../../packages/flutter/lib/src/gestures/force_press.dart)**:
    - Detects 3D touch pressure changes on supported iOS devices to trigger word selection.
 
