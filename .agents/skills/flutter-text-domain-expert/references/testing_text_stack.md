@@ -8,7 +8,7 @@ This document is a focused testing reference for the Flutter text subsystem (`pa
 - [Component & Class Index](#component--class-index)
 1. [Test File Location Guide: Where to Add Tests](#1-test-file-location-guide-where-to-add-tests)
 2. [Multi-Tap Timing & The Consecutive Tap Reset Trap](#2-multi-tap-timing--the-consecutive-tap-reset-trap)
-3. [Caret Blinking & `pumpAndSettle()` Timeout / Leaks](#3-caret-blinking--pumpandsettle-timeout--leaks)
+3. [Caret Blinking, Frame Settlement & Disposal](#3-caret-blinking-frame-settlement--disposal)
 4. [Font Geometry, Hit-Testing & The Drag Slop Trap](#4-font-geometry-hit-testing--the-drag-slop-trap)
 5. [Finding & Interacting with Floating Overlays & Toolbars](#5-finding--interacting-with-floating-overlays--toolbars)
 6. [Realistic IME Simulation (`TestTextInput` vs. `enterText`)](#6-realistic-ime-simulation-testtextinput-vs-entertext)
@@ -21,60 +21,58 @@ This document is a focused testing reference for the Flutter text subsystem (`pa
 
 | Component / Symbol | Source File / Location | Concise Summary |
 | :--- | :--- | :--- |
-| [`TestTextInput`](file:///Users/roliv/flutter/packages/flutter_test/lib/src/test_text_input.dart) | [`packages/flutter_test/lib/src/test_text_input.dart`](file:///Users/roliv/flutter/packages/flutter_test/lib/src/test_text_input.dart) | Testing stub intercepting `'flutter/textinput'` channel calls to simulate native keyboard interactions. |
-| [`TestGesture`](file:///Users/roliv/flutter/packages/flutter_test/lib/src/gesture.dart) | [`packages/flutter_test/lib/src/gesture.dart`](file:///Users/roliv/flutter/packages/flutter_test/lib/src/gesture.dart) | Low-level pointer simulation handle for down, up, move, and multi-tap sequences. |
-| `kDoubleTapMinTime` | [`packages/flutter/lib/src/gestures/constants.dart`](file:///Users/roliv/flutter/packages/flutter/lib/src/gestures/constants.dart) | Minimum delay (40ms) required between consecutive taps to register as a double-tap. |
-| `kDoubleTapTimeout` | [`packages/flutter/lib/src/gestures/constants.dart`](file:///Users/roliv/flutter/packages/flutter/lib/src/gestures/constants.dart) | Maximum duration (300ms) after which consecutive tap counting resets back to single tap. |
-| `kTouchSlop` / `kPanSlop` | [`packages/flutter/lib/src/gestures/constants.dart`](file:///Users/roliv/flutter/packages/flutter/lib/src/gestures/constants.dart) | Physical distance thresholds (18px / 36px) that pointer drag must exceed before claiming the gesture arena. |
-| [`AdaptiveTextSelectionToolbar`](file:///Users/roliv/flutter/packages/flutter/lib/src/material/adaptive_text_selection_toolbar.dart) | [`packages/flutter/lib/src/material/adaptive_text_selection_toolbar.dart`](file:///Users/roliv/flutter/packages/flutter/lib/src/material/adaptive_text_selection_toolbar.dart) | Adaptive toolbar widget (frozen here; active in `material_ui` under `flutter/packages`). |
-| [`CupertinoAdaptiveTextSelectionToolbar`](file:///Users/roliv/flutter/packages/flutter/lib/src/cupertino/adaptive_text_selection_toolbar.dart) | [`packages/flutter/lib/src/cupertino/adaptive_text_selection_toolbar.dart`](file:///Users/roliv/flutter/packages/flutter/lib/src/cupertino/adaptive_text_selection_toolbar.dart) | Cupertino adaptive toolbar (frozen here; active in `cupertino_ui` under `flutter/packages`). |
-| [`TextMagnifier`](file:///Users/roliv/flutter/packages/flutter/lib/src/material/magnifier.dart) | [`packages/flutter/lib/src/material/magnifier.dart`](file:///Users/roliv/flutter/packages/flutter/lib/src/material/magnifier.dart) | Android/Material magnifying glass (frozen here; active in `material_ui` under `flutter/packages`). |
-| [`CupertinoTextMagnifier`](file:///Users/roliv/flutter/packages/flutter/lib/src/cupertino/magnifier.dart) | [`packages/flutter/lib/src/cupertino/magnifier.dart`](file:///Users/roliv/flutter/packages/flutter/lib/src/cupertino/magnifier.dart) | iOS magnifying glass (frozen here; active in `cupertino_ui` under `flutter/packages`). |
+| [`TestTextInput`](../../../../packages/flutter_test/lib/src/test_text_input.dart) | [`packages/flutter_test/lib/src/test_text_input.dart`](../../../../packages/flutter_test/lib/src/test_text_input.dart) | Testing stub intercepting `'flutter/textinput'` channel calls to simulate native keyboard interactions. |
+| [`TestGesture`](../../../../packages/flutter_test/lib/src/test_pointer.dart) | [`packages/flutter_test/lib/src/test_pointer.dart`](../../../../packages/flutter_test/lib/src/test_pointer.dart) | Low-level pointer simulation handle for down, up, move, and multi-tap sequences. |
+| `kDoubleTapMinTime` | [`packages/flutter/lib/src/gestures/constants.dart`](../../../../packages/flutter/lib/src/gestures/constants.dart) | 40ms minimum used by the general double-tap recognizer; the text tap-and-drag recognizers do not enforce this minimum. |
+| `kDoubleTapTimeout` | [`packages/flutter/lib/src/gestures/constants.dart`](../../../../packages/flutter/lib/src/gestures/constants.dart) | 300ms timeout between taps; an expired tap series starts again on the next pointer down. |
+| `kTouchSlop` / `kPanSlop` | [`packages/flutter/lib/src/gestures/constants.dart`](../../../../packages/flutter/lib/src/gestures/constants.dart) | Default non-mouse hit/pan thresholds (18 / 36 logical pixels), subject to device gesture settings; mouse uses 1 / 2 logical pixels. |
+| [`AdaptiveTextSelectionToolbar`](../../../../packages/flutter/lib/src/material/adaptive_text_selection_toolbar.dart) | [`packages/flutter/lib/src/material/adaptive_text_selection_toolbar.dart`](../../../../packages/flutter/lib/src/material/adaptive_text_selection_toolbar.dart) | Adaptive toolbar widget (frozen here; active in `material_ui` under `flutter/packages`). |
+| [`CupertinoAdaptiveTextSelectionToolbar`](../../../../packages/flutter/lib/src/cupertino/adaptive_text_selection_toolbar.dart) | [`packages/flutter/lib/src/cupertino/adaptive_text_selection_toolbar.dart`](../../../../packages/flutter/lib/src/cupertino/adaptive_text_selection_toolbar.dart) | Cupertino adaptive toolbar (frozen here; active in `cupertino_ui` under `flutter/packages`). |
+| [`TextMagnifier`](../../../../packages/flutter/lib/src/material/magnifier.dart) | [`packages/flutter/lib/src/material/magnifier.dart`](../../../../packages/flutter/lib/src/material/magnifier.dart) | Android/Material magnifying glass (frozen here; active in `material_ui` under `flutter/packages`). |
+| [`CupertinoTextMagnifier`](../../../../packages/flutter/lib/src/cupertino/magnifier.dart) | [`packages/flutter/lib/src/cupertino/magnifier.dart`](../../../../packages/flutter/lib/src/cupertino/magnifier.dart) | iOS magnifying glass (frozen here; active in `cupertino_ui` under `flutter/packages`). |
 
 ---
 
 ## 1. Test File Location Guide: Where to Add Tests
 
-Always respect Flutter's layer hierarchy when adding or modifying tests. Do not test low-level rendering or services features in Material or Cupertino test suites. Note that active Material and Cupertino component development belongs in `material_ui` and `cupertino_ui` under the `flutter/packages` repository.
+Place focused tests in the layer that owns the behavior; use component tests for interactions that depend on Material or Cupertino UI. Active Material and Cupertino component development belongs in `material_ui` and `cupertino_ui` under the `flutter/packages` repository, while existing framework suites remain useful references for legacy behavior.
 
 | Subsystem / Feature Area | Target Test File | When to Test Here |
 | :--- | :--- | :--- |
-| **Unified Selection (Core)** | [`packages/flutter/test/widgets/selectable_region_test.dart`](file:///Users/roliv/flutter/packages/flutter/test/widgets/selectable_region_test.dart) | `SelectableRegion` state, registration, multi-child event routing, cross-region drag selection. |
-| **Unified Selection (Web Context Menu)** | [`packages/flutter/test/widgets/selectable_region_context_menu_test.dart`](file:///Users/roliv/flutter/packages/flutter/test/widgets/selectable_region_context_menu_test.dart) | **Web-only (`@TestOn('browser')`)**: tests native browser context menus and web DOM text selection overlays. |
-| **Unified Selection (Scrolling & Auto-Scroll)** | [`packages/flutter/test/widgets/scrollable_selection_test.dart`](file:///Users/roliv/flutter/packages/flutter/test/widgets/scrollable_selection_test.dart)<br>[`packages/flutter/test/widgets/selectable_region_scroll_test.dart`](file:///Users/roliv/flutter/packages/flutter/test/widgets/selectable_region_scroll_test.dart) | Drag-selection inside/across `Scrollable`s, `EdgeDraggingAutoScroller` autoscrolling, and scroll offsets. |
-| **Selection Container & Delegation** | [`packages/flutter/test/widgets/selection_container_test.dart`](file:///Users/roliv/flutter/packages/flutter/test/widgets/selection_container_test.dart) | `SelectionContainer`, `SelectionContainer.disabled`, delegate tree hierarchies, and spatial sorting (`compareOrder`). |
-| **Low-Level Selection Protocol** | [`packages/flutter/test/rendering/selection_test.dart`](file:///Users/roliv/flutter/packages/flutter/test/rendering/selection_test.dart) | Low-level `Selectable`, `SelectionHandler`, `SelectionGeometry`, and `SelectionEvent` unit tests. |
-| **Editable Text (Core State & Lifecycle)** | [`packages/flutter/test/widgets/editable_text_test.dart`](file:///Users/roliv/flutter/packages/flutter/test/widgets/editable_text_test.dart) | `EditableTextState`, focus attachment, controller synchronization, and method channel setup. |
-| **Editable Text (Cursor & Caret)** | [`packages/flutter/test/widgets/editable_text_cursor_test.dart`](file:///Users/roliv/flutter/packages/flutter/test/widgets/editable_text_cursor_test.dart) | Cursor blinking animations, cursor color, opacity, and iOS floating cursor gestures. |
-| **Editable Text (Shortcuts & Selectors)** | [`packages/flutter/test/widgets/editable_text_shortcuts_test.dart`](file:///Users/roliv/flutter/packages/flutter/test/widgets/editable_text_shortcuts_test.dart)<br>[`packages/flutter/test/widgets/default_text_editing_shortcuts_test.dart`](file:///Users/roliv/flutter/packages/flutter/test/widgets/default_text_editing_shortcuts_test.dart) | Hardware keyboard shortcuts, `DefaultTextEditingShortcuts`, intent mappings, and macOS selector dispatches. |
-| **Editable Text (Auto-Scroll & Show-On-Screen)** | [`packages/flutter/test/widgets/editable_text_show_on_screen_test.dart`](file:///Users/roliv/flutter/packages/flutter/test/widgets/editable_text_show_on_screen_test.dart) | Automatic viewport scrolling when caret navigates or text expands beyond bounds. |
-| **Editable Text (Stylus / Scribble & Scribe)** | [`packages/flutter/test/widgets/editable_text_scribble_test.dart`](file:///Users/roliv/flutter/packages/flutter/test/widgets/editable_text_scribble_test.dart)<br>[`packages/flutter/test/widgets/editable_text_scribe_test.dart`](file:///Users/roliv/flutter/packages/flutter/test/widgets/editable_text_scribe_test.dart) | Apple Scribble handwriting and Android Stylus Scribe input protocols. |
-| **Editable Text (Span & Composing Styles)** | [`packages/flutter/test/widgets/editable_text_styles_test.dart`](file:///Users/roliv/flutter/packages/flutter/test/widgets/editable_text_styles_test.dart) | Styled `InlineSpan` trees and IME composing range styling within editable fields. |
-| **Text Gestures & Arena Resolution** | [`packages/flutter/test/widgets/text_selection_test.dart`](file:///Users/roliv/flutter/packages/flutter/test/widgets/text_selection_test.dart) | `TextSelectionGestureDetector`, `TapAndPanGestureRecognizer`, and tap-and-drag gesture recognizers. |
-| **System Context Menu (iOS 16+)** | [`packages/flutter/test/widgets/system_context_menu_test.dart`](file:///Users/roliv/flutter/packages/flutter/test/widgets/system_context_menu_test.dart) | `SystemContextMenu`, `SystemContextMenuController`, and Apple native secure paste integration. |
-| **Low-Level Editable Rendering** | [`packages/flutter/test/rendering/editable_test.dart`](file:///Users/roliv/flutter/packages/flutter/test/rendering/editable_test.dart)<br>[`packages/flutter/test/rendering/editable_gesture_test.dart`](file:///Users/roliv/flutter/packages/flutter/test/rendering/editable_gesture_test.dart)<br>[`packages/flutter/test/rendering/editable_intrinsics_test.dart`](file:///Users/roliv/flutter/packages/flutter/test/rendering/editable_intrinsics_test.dart) | `RenderEditable` layout, painting, selection boxes, caret geometry, pointer routing, and intrinsic sizing. |
-| **Static Text & Paragraph Rendering** | [`packages/flutter/test/widgets/text_test.dart`](file:///Users/roliv/flutter/packages/flutter/test/widgets/text_test.dart)<br>[`packages/flutter/test/widgets/rich_text_test.dart`](file:///Users/roliv/flutter/packages/flutter/test/widgets/rich_text_test.dart)<br>[`packages/flutter/test/rendering/paragraph_test.dart`](file:///Users/roliv/flutter/packages/flutter/test/rendering/paragraph_test.dart) | `Text`, `RichText`, `RenderParagraph`, `InlineSpan.hitTest`, `WidgetSpan` layout, and intrinsics. |
-| **Text Painter & Typography** | [`packages/flutter/test/painting/text_painter_test.dart`](file:///Users/roliv/flutter/packages/flutter/test/painting/text_painter_test.dart) | `TextPainter` layout caching, line metrics calculations, `TextScaler`, and `TextStyle` painting. |
-| **Logical Boundaries & Iterators** | [`packages/flutter/test/services/text_boundary_test.dart`](file:///Users/roliv/flutter/packages/flutter/test/services/text_boundary_test.dart) | Character, word, line, paragraph, and document text boundaries. |
-| **Platform Channels & Deltas** | [`packages/flutter/test/services/text_input_test.dart`](file:///Users/roliv/flutter/packages/flutter/test/services/text_input_test.dart)<br>[`packages/flutter/test/services/delta_text_input_test.dart`](file:///Users/roliv/flutter/packages/flutter/test/services/delta_text_input_test.dart) | Platform channel codec, `TextInputConnection`, and `TextEditingDelta` diff stream processing. |
-| **Material Text (Frozen / Legacy)** | [`packages/flutter/test/material/text_field_test.dart`](file:///Users/roliv/flutter/packages/flutter/test/material/text_field_test.dart)<br>[`packages/flutter/test/material/selection_area_test.dart`](file:///Users/roliv/flutter/packages/flutter/test/material/selection_area_test.dart)<br>[`packages/flutter/test/material/adaptive_text_selection_toolbar_test.dart`](file:///Users/roliv/flutter/packages/flutter/test/material/adaptive_text_selection_toolbar_test.dart) | Legacy tests for frozen Material text components in `flutter/flutter` (active tests belong in `material_ui` under `flutter/packages`). |
-| **Cupertino Text (Frozen / Legacy)** | [`packages/flutter/test/cupertino/text_field_test.dart`](file:///Users/roliv/flutter/packages/flutter/test/cupertino/text_field_test.dart)<br>[`packages/flutter/test/cupertino/adaptive_text_selection_toolbar_test.dart`](file:///Users/roliv/flutter/packages/flutter/test/cupertino/adaptive_text_selection_toolbar_test.dart) | Legacy tests for frozen Cupertino text components in `flutter/flutter` (active tests belong in `cupertino_ui` under `flutter/packages`). |
+| **Unified Selection (Core)** | [`packages/flutter/test/widgets/selectable_region_test.dart`](../../../../packages/flutter/test/widgets/selectable_region_test.dart) | `SelectableRegion` state, registration, multi-child event routing, cross-region drag selection. |
+| **Unified Selection (Web Context Menu)** | [`packages/flutter/test/widgets/selectable_region_context_menu_test.dart`](../../../../packages/flutter/test/widgets/selectable_region_context_menu_test.dart) | **Web-only (`@TestOn('browser')`)**: tests browser context-menu element setup, event routing, and client/registry lifecycle. |
+| **Unified Selection (Scrolling & Auto-Scroll)** | [`packages/flutter/test/widgets/scrollable_selection_test.dart`](../../../../packages/flutter/test/widgets/scrollable_selection_test.dart)<br>[`packages/flutter/test/widgets/selectable_region_scroll_test.dart`](../../../../packages/flutter/test/widgets/selectable_region_scroll_test.dart) | Drag-selection inside/across `Scrollable`s, `EdgeDraggingAutoScroller` autoscrolling, and scroll offsets. |
+| **Selection Container & Delegation** | [`packages/flutter/test/widgets/selection_container_test.dart`](../../../../packages/flutter/test/widgets/selection_container_test.dart) | `SelectionContainer`, `SelectionContainer.disabled`, delegate tree hierarchies, and spatial sorting (`compareOrder`). |
+| **Low-Level Selection Protocol** | [`packages/flutter/test/rendering/selection_test.dart`](../../../../packages/flutter/test/rendering/selection_test.dart) | Low-level `Selectable`, `SelectionHandler`, `SelectionGeometry`, and `SelectionEvent` unit tests. |
+| **Editable Text (Core State & Lifecycle)** | [`packages/flutter/test/widgets/editable_text_test.dart`](../../../../packages/flutter/test/widgets/editable_text_test.dart) | `EditableTextState`, focus attachment, controller synchronization, and method channel setup. |
+| **Editable Text (Cursor & Caret)** | [`packages/flutter/test/widgets/editable_text_cursor_test.dart`](../../../../packages/flutter/test/widgets/editable_text_cursor_test.dart) | Cursor blinking animations, cursor color, opacity, and iOS floating cursor gestures. |
+| **Editable Text (Shortcuts & Selectors)** | [`packages/flutter/test/widgets/editable_text_shortcuts_test.dart`](../../../../packages/flutter/test/widgets/editable_text_shortcuts_test.dart)<br>[`packages/flutter/test/widgets/default_text_editing_shortcuts_test.dart`](../../../../packages/flutter/test/widgets/default_text_editing_shortcuts_test.dart) | Hardware keyboard shortcuts, `DefaultTextEditingShortcuts`, intent mappings, and macOS selector dispatches. |
+| **Editable Text (Auto-Scroll & Show-On-Screen)** | [`packages/flutter/test/widgets/editable_text_show_on_screen_test.dart`](../../../../packages/flutter/test/widgets/editable_text_show_on_screen_test.dart) | Automatic viewport scrolling when caret navigates or text expands beyond bounds. |
+| **Editable Text (Stylus / Scribble & Scribe)** | [`packages/flutter/test/widgets/editable_text_scribble_test.dart`](../../../../packages/flutter/test/widgets/editable_text_scribble_test.dart)<br>[`packages/flutter/test/widgets/editable_text_scribe_test.dart`](../../../../packages/flutter/test/widgets/editable_text_scribe_test.dart) | Apple Scribble handwriting and Android Stylus Scribe input protocols. |
+| **Editable Text (Span & Composing Styles)** | [`packages/flutter/test/widgets/editable_text_styles_test.dart`](../../../../packages/flutter/test/widgets/editable_text_styles_test.dart) | Styled `InlineSpan` trees and IME composing range styling within editable fields. |
+| **Text Gestures & Arena Resolution** | [`packages/flutter/test/widgets/text_selection_test.dart`](../../../../packages/flutter/test/widgets/text_selection_test.dart) | `TextSelectionGestureDetector`, `TapAndPanGestureRecognizer`, and tap-and-drag gesture recognizers. |
+| **System Context Menu (iOS 16+)** | [`packages/flutter/test/widgets/system_context_menu_test.dart`](../../../../packages/flutter/test/widgets/system_context_menu_test.dart) | `SystemContextMenu`, `SystemContextMenuController`, and Apple native secure paste integration. |
+| **Low-Level Editable Rendering** | [`packages/flutter/test/rendering/editable_test.dart`](../../../../packages/flutter/test/rendering/editable_test.dart)<br>[`packages/flutter/test/rendering/editable_gesture_test.dart`](../../../../packages/flutter/test/rendering/editable_gesture_test.dart)<br>[`packages/flutter/test/rendering/editable_intrinsics_test.dart`](../../../../packages/flutter/test/rendering/editable_intrinsics_test.dart) | `RenderEditable` layout, painting, selection boxes, caret geometry, pointer routing, and intrinsic sizing. |
+| **Static Text & Paragraph Rendering** | [`packages/flutter/test/widgets/text_test.dart`](../../../../packages/flutter/test/widgets/text_test.dart)<br>[`packages/flutter/test/widgets/rich_text_test.dart`](../../../../packages/flutter/test/widgets/rich_text_test.dart)<br>[`packages/flutter/test/rendering/paragraph_test.dart`](../../../../packages/flutter/test/rendering/paragraph_test.dart) | `Text`, `RichText`, `RenderParagraph`, span hit testing through `RenderParagraph`, `WidgetSpan` layout, and intrinsics. |
+| **Text Painter & Typography** | [`packages/flutter/test/painting/text_painter_test.dart`](../../../../packages/flutter/test/painting/text_painter_test.dart) | `TextPainter` layout caching, line metrics calculations, `TextScaler`, and `TextStyle` painting. |
+| **Logical Boundaries & Iterators** | [`packages/flutter/test/services/text_boundary_test.dart`](../../../../packages/flutter/test/services/text_boundary_test.dart) | Character, word, line, paragraph, and document text boundaries. |
+| **Platform Channels & Deltas** | [`packages/flutter/test/services/text_input_test.dart`](../../../../packages/flutter/test/services/text_input_test.dart)<br>[`packages/flutter/test/services/delta_text_input_test.dart`](../../../../packages/flutter/test/services/delta_text_input_test.dart) | Platform channel codec, `TextInputConnection`, and `TextEditingDelta` diff stream processing. |
+| **Material Text (Frozen / Legacy)** | [`packages/flutter/test/material/text_field_test.dart`](../../../../packages/flutter/test/material/text_field_test.dart)<br>[`packages/flutter/test/material/selection_area_test.dart`](../../../../packages/flutter/test/material/selection_area_test.dart)<br>[`packages/flutter/test/material/adaptive_text_selection_toolbar_test.dart`](../../../../packages/flutter/test/material/adaptive_text_selection_toolbar_test.dart) | Legacy tests for frozen Material text components in `flutter/flutter` (active tests belong in `material_ui` under `flutter/packages`). |
+| **Cupertino Text (Frozen / Legacy)** | [`packages/flutter/test/cupertino/text_field_test.dart`](../../../../packages/flutter/test/cupertino/text_field_test.dart)<br>[`packages/flutter/test/cupertino/adaptive_text_selection_toolbar_test.dart`](../../../../packages/flutter/test/cupertino/adaptive_text_selection_toolbar_test.dart) | Legacy tests for frozen Cupertino text components in `flutter/flutter` (active tests belong in `cupertino_ui` under `flutter/packages`). |
 
 ---
 
 ## 2. Multi-Tap Timing & The Consecutive Tap Reset Trap
 
-### The `pumpAndSettle()` Anti-Pattern
+### Control Elapsed Time Between Taps
 
-Flutter's text gesture recognizers ([`BaseTapAndDragGestureRecognizer`](file:///Users/roliv/flutter/packages/flutter/lib/src/gestures/tap_and_drag.dart)) track consecutive tap counts (`consecutiveTapCount = 1, 2, 3`) using an internal timer bounded by `kDoubleTapTimeout` (300ms).
+Flutter's text gesture recognizers ([`BaseTapAndDragGestureRecognizer`](../../../../packages/flutter/lib/src/gestures/tap_and_drag.dart)) track consecutive taps using `kDoubleTapTimeout` (300ms). A new pointer down can continue the series when the timer is still active, the position is within `kDoubleTapSlop`, and the buttons match. The timeout starts on pointer up; after expiry, the next down begins a new series.
 
-> [!CAUTION]
-> **Never call `tester.pumpAndSettle()` between multi-taps!**
-> Calling `pumpAndSettle()` advances simulated clock time until no more frames are scheduled, which easily exceeds `kDoubleTapTimeout`. The gesture recognizer will reset `consecutiveTapCount` to 1, causing a double-tap to be processed as two disconnected single taps.
+`pumpAndSettle()` advances time by 100ms per pump by default and repeats while frames remain scheduled. It can preserve a tap series when it completes before the timeout, but animations can make it advance too far. Use explicit pumps between taps when the test depends on the consecutive count, and settle after the final tap when appropriate. See [`WidgetTester.pumpAndSettle`](../../../../packages/flutter_test/lib/src/widget_tester.dart).
 
 ### Correct Pattern for Double-Tap & Triple-Tap
 
-Use [`TestGesture`](file:///Users/roliv/flutter/packages/flutter_test/lib/src/gesture.dart) with `tester.pump(kDoubleTapMinTime)` or `tester.pump()`:
+Use [`TestGesture`](../../../../packages/flutter_test/lib/src/test_pointer.dart) with an explicit short delay or `tester.pump()`. The text tap-and-drag recognizers accept zero-delay consecutive taps; `kDoubleTapMinTime` is a constraint of the general double-tap recognizer, not this text recognizer. These interaction snippets assume a configured editable/selectable widget and a `tapLocation` inside the intended word or paragraph:
 
 ```dart
 // Double-tap to select word
@@ -82,7 +80,7 @@ final TestGesture gesture = await tester.startGesture(tapLocation);
 addTearDown(gesture.removePointer);
 await tester.pump();
 await gesture.up();
-await tester.pump(kDoubleTapMinTime);
+await tester.pump(const Duration(milliseconds: 40));
 
 await gesture.down(tapLocation);
 await tester.pump();
@@ -117,49 +115,38 @@ await tester.pumpAndSettle();
 
 ### Resetting Consecutive Tap State Between Test Steps
 
-When multiple interaction steps occur sequentially in a single test, explicitly drain the double-tap timeout so subsequent taps are not misinterpreted as consecutive taps:
+When the next interaction should begin a new tap series, advance by the timeout after the preceding pointer up:
 
 ```dart
-// Reset consecutive tap count cleanly
-await tester.tapAt(tapLocation);
-await tester.pumpAndSettle(kDoubleTapTimeout);
+// The next pointer down will start a new tap series.
+await tester.pump(kDoubleTapTimeout);
 ```
 
 ---
 
-## 3. Caret Blinking & `pumpAndSettle()` Timeout / Leaks
+## 3. Caret Blinking, Frame Settlement & Disposal
 
-### Why Focused `TextField` Hangs `pumpAndSettle()`
+### Focused Inputs Can Settle
 
-When an [`EditableText`](file:///Users/roliv/flutter/packages/flutter/lib/src/widgets/editable_text.dart) receives focus:
-1. It registers an infinite cursor blinking animation loop (`_cursorBlinkOpacityController` / `_cursorTimer`).
-2. Calling `await tester.pumpAndSettle()` waits indefinitely for the cursor animation to stop.
-3. The test **times out after 10 minutes** or fails with `"pumpAndSettle timed out"`.
+[`pumpAndSettle`](../../../../packages/flutter_test/lib/src/widget_tester.dart) waits for scheduled frames, not for all timers to disappear. A focused [`EditableText`](../../../../packages/flutter/lib/src/widgets/editable_text.dart) can settle while its cursor continues blinking:
 
-### Solution: Discrete Pumps & Teardown
+- With `cursorOpacityAnimates == false`, the cursor uses a periodic timer.
+- With `cursorOpacityAnimates == true`, `_onCursorTick` schedules the next animation asynchronously specifically to allow `pumpAndSettle` to complete.
 
 ```dart
-// ❌ WRONG: Hangs forever on focused EditableText
 await tester.tap(find.byType(TextField));
 await tester.pumpAndSettle();
-
-// ✅ CORRECT: Pump a discrete duration sufficient for layout & frame build
-await tester.tap(find.byType(TextField));
-await tester.pump();
-await tester.pump(const Duration(milliseconds: 100));
 ```
 
-### Avoiding Pending Timer Exceptions in `tearDown`
+A widget that continuously schedules frames can still cause `pumpAndSettle` to throw after its default ten-minute simulated-time timeout. Investigate the active animation or frame scheduler when this occurs; focus alone does not establish the cause.
 
-If a test ends while a cursor is focused, `flutter_test` can throw `"A Timer is still pending even after the widget tree was disposed"`. 
+### Assert Cursor Phases with Explicit Pumps
 
-To prevent this:
-1. Unfocus before completing the test:
-   ```dart
-   FocusManager.instance.primaryFocus?.unfocus();
-   await tester.pump();
-   ```
-2. Or use `tester.pump(const Duration(seconds: 1))` after removing the widget from the tree.
+When checking cursor opacity or the blink phase, advance by the interval relevant to that assertion instead of settling through an unspecified number of frames. For geometry or golden tests that require a fixed cursor, `EditableText.debugDeterministicCursor` is available; restore its previous value after the test.
+
+### Disposal Cancels Cursor Resources
+
+`EditableTextState.dispose` cancels `_cursorTimer` and disposes the cursor animation controller. The widget test binding normally unmounts the remaining tree before checking pending timers. Ending a successful test with a focused field does not itself leak the cursor timer. Dispose test-owned controllers and focus nodes normally; if a timer remains pending, trace its owner and cleanup path rather than adding an arbitrary post-disposal delay.
 
 ---
 
@@ -167,25 +154,32 @@ To prevent this:
 
 ### The Headless Test Font
 
-Headless tests run without platform OS fonts. The test environment uses the test font (`Ahem`) by default:
-- Every glyph (letters, numbers, symbols) and whitespace is an exact **1x1 em square box**.
-- With `fontSize: 10.0`, each character is exactly **10px wide x 10px high**.
-- `ascent = 8.0px`, `descent = 2.0px`, `height = 10.0px`.
+The default headless test font is **`FlutterTest`**. The engine also provides `Ahem` and `Cough`; its test font manager falls back to the first family, `FlutterTest`. See [`test_font_data.cc`](../../../../engine/src/flutter/runtime/test_font_data.cc) and [`test_font_manager.cc`](../../../../engine/src/flutter/txt/src/txt/test_font_manager.cc).
 
-### The Drag Slop Trap (`kTouchSlop` / `kPanSlop`)
+For unscaled `FlutterTest` text without line-height or strut overrides:
 
-When testing drag selection (e.g. dragging across characters):
-- Touch interactions require the drag distance to exceed `kTouchSlop` (18.0px) before the drag starts.
-- Mouse pan interactions require exceeding `kPanSlop` (36.0px).
+- Ordinary supported characters generally advance by one em. At `fontSize: 10.0`, that is 10 logical pixels.
+- The font ascent is 0.75em and descent is 0.25em: 7.5 and 2.5 logical pixels at size 10.
+- Glyph outlines are not all squares, and whitespace includes partial-em and zero-width characters. See the outlines and advance widths in [`gen_test_font.py`](../../../../engine/src/flutter/tools/gen_test_font.py).
 
-> [!WARNING]
-> If you test drag selection with small text (e.g. `fontSize: 10.0`) and drag across only 1 character (10px), **no selection change will occur** because the movement is within the slop threshold.
-> 
-> **Rule**: In drag-selection tests, use a large font size (e.g. `fontSize: 48.0` or `30.0`), or drag across multiple characters.
+Use measured caret positions and selection boxes for mixed styles, Unicode, custom fonts, text scaling, or struts rather than assuming every code unit occupies a square.
+
+### Drag Slop Depends on Pointer Kind and Recognizer
+
+[`computeHitSlop` and `computePanSlop`](../../../../packages/flutter/lib/src/gestures/events.dart) choose thresholds in logical pixels:
+
+| Pointer kind | Hit slop | Pan slop |
+| :--- | :--- | :--- |
+| Mouse | `kPrecisePointerHitSlop`: 1 | `kPrecisePointerPanSlop`: 2 |
+| Other kinds | `gestureSettings.touchSlop` or `kTouchSlop`: 18 | `gestureSettings.panSlop` or `kPanSlop`: 36 |
+
+`TapAndHorizontalDragGestureRecognizer` uses hit slop for its primary-axis acceptance; `TapAndPanGestureRecognizer` uses pan slop. Arena acceptance can also affect the path taken. `SelectableRegion` uses a pan recognizer for mouse and a horizontal recognizer for other pointer kinds. Device settings can change the non-mouse thresholds.
+
+A one-character, 10-pixel mouse drag can therefore select text. Larger fonts or longer drags are convenient when a test needs to cross the active threshold, but are not required for every selection test. Specify `PointerDeviceKind.mouse` when simulating mouse selection; `tester.startGesture` defaults to touch.
 
 ### Precise Position Calculation Helper (`textOffsetToPosition`)
 
-To convert a character offset to global coordinates for `tester.tapAt()` or `gesture.moveTo()`:
+These helpers use `package:flutter/rendering.dart` and convert a text offset to global logical coordinates for `tester.tapAt()` or `gesture.moveTo()`. Use the helper matching the render object; the paragraph helper targets the middle of a line with uniform styling:
 
 ```dart
 Offset textOffsetToPosition(RenderParagraph paragraph, int offset) {
@@ -197,7 +191,7 @@ Offset textOffsetToPosition(RenderParagraph paragraph, int offset) {
 }
 ```
 
-For [`RenderEditable`](file:///Users/roliv/flutter/packages/flutter/lib/src/rendering/editable.dart):
+For [`RenderEditable`](../../../../packages/flutter/lib/src/rendering/editable.dart):
 
 ```dart
 Offset editableOffsetToPosition(RenderEditable editable, int offset) {
@@ -208,32 +202,27 @@ Offset editableOffsetToPosition(RenderEditable editable, int offset) {
 }
 ```
 
-### Why a Single `gesture.moveTo()` May Not Trigger `onDragUpdate`
+### The First Accepted Move Can Update Selection
 
-In [`BaseTapAndDragGestureRecognizer`](file:///Users/roliv/flutter/packages/flutter/lib/src/gestures/tap_and_drag.dart), when a pointer moves after `PointerDownEvent`:
-1. The **first** `PointerMoveEvent` exceeding `kTouchSlop` / `kPanSlop` transitions the recognizer into `_DragState.accepted` and fires `onDragStart`. This first move is consumed as the anchor position of the drag.
-2. The `onDragUpdate` callback (which drives `SelectionEdgeUpdateEvent` and actually moves the selection extent) is **only dispatched on subsequent move events**.
+In [`BaseTapAndDragGestureRecognizer`](../../../../packages/flutter/lib/src/gestures/tap_and_drag.dart), `_acceptDrag` calls `onDragStart` and then `onDragUpdate` for the same event when its local delta is nonzero. Text selection recognizers configure `DragStartBehavior.down`, so the initial press remains the drag origin. A single move can both start the drag and extend the selection; see the single-move case in [`tap_and_drag_test.dart`](../../../../packages/flutter/test/gestures/tap_and_drag_test.dart).
 
-> [!IMPORTANT]
-> **Issue Multiple Move Events in Drag Tests**:
-> If you call `await gesture.moveTo(target)` only once after `gesture.down()`, that single move event may only register the drag start without firing `onDragUpdate` or advancing the selection extent.
-> 
-> When testing drag selection with `TestGesture`, always issue intermediate move calls or multiple sequential `moveTo()` steps:
-> ```dart
-> // 1. Down: Initial press
-> await gesture.down(textOffsetToPosition(paragraph, 0));
-> await tester.pump();
-> 
-> // 2. First move: Exceeds slop, transitions to accepted, fires onDragStart
-> await gesture.moveTo(textOffsetToPosition(paragraph, 2));
-> await tester.pump();
-> 
-> // 3. Second move: Fires onDragUpdate, updating selection extent
-> await gesture.moveTo(textOffsetToPosition(paragraph, 5));
-> await tester.pumpAndSettle();
-> 
-> expect(paragraph.selections[0], const TextSelection(baseOffset: 0, extentOffset: 5));
-> ```
+For a single, uniformly styled LTR paragraph with mouse selection enabled and no competing gesture, an interaction can be:
+
+```dart
+final TestGesture gesture = await tester.startGesture(
+  textOffsetToPosition(paragraph, 0),
+  kind: PointerDeviceKind.mouse,
+);
+addTearDown(gesture.removePointer);
+await tester.pump();
+await gesture.moveTo(textOffsetToPosition(paragraph, 5));
+await tester.pump();
+expect(paragraph.selections.single, const TextSelection(baseOffset: 0, extentOffset: 5));
+await gesture.up();
+await tester.pumpAndSettle();
+```
+
+Use intermediate moves when the scenario needs them. If an expected update is missing, inspect the event delta, pointer kind, gesture-arena result, drag-start behavior, and any `dragUpdateThrottleFrequency` before assuming a second move is required.
 
 ---
 
@@ -241,7 +230,7 @@ In [`BaseTapAndDragGestureRecognizer`](file:///Users/roliv/flutter/packages/flut
 
 ### Overlay Hierarchy Isolation
 
-Selection handles, magnifiers, and context menu toolbars are **not child widgets** of `TextField` or `SelectionArea`. They are inserted into the application root [`Overlay`](file:///Users/roliv/flutter/packages/flutter/lib/src/widgets/overlay.dart).
+Selection handles, magnifiers, and context menu toolbars are **not child widgets** of `TextField` or `SelectionArea`. They are inserted into the application root [`Overlay`](../../../../packages/flutter/lib/src/widgets/overlay.dart).
 
 ```dart
 // ❌ WRONG: Toolbar is not a child of TextField
@@ -267,42 +256,50 @@ await tester.pumpAndSettle();
 
 ### Finding & Dragging Selection Handles
 
-Selection handles are floating overlay controls attached to the text via [`CompositedTransformFollower`](file:///Users/roliv/flutter/packages/flutter/lib/src/widgets/basic.dart). Because handles are dynamically positioned by leader-layer offsets, Flutter tests interact with handles using two canonical approaches:
+Selection handles are floating overlay controls attached to the text via [`CompositedTransformFollower`](../../../../packages/flutter/lib/src/widgets/basic.dart). Because handles are dynamically positioned by leader-layer offsets, Flutter tests interact with handles using two canonical approaches:
 
 #### Method A: Geometric Dragging via Selection Endpoints (Standard Practice)
 
 Instead of searching for handle widgets by generic types (which is fragile), calculate the handle's exact coordinates using the render object's selection endpoints:
 
 **1. For `RenderEditable` (`TextField` / `EditableText`)**:
+
+This snippet assumes one editable field with at least ten characters and visible handles for a non-collapsed LTR selection. It uses `editableOffsetToPosition` from section 4; endpoint offsets should target the handle shape provided by the test's selection controls.
 ```dart
-final RenderEditable renderEditable = findRenderEditable(tester);
-final List<TextSelectionPoint> endpoints = globalize(
-  renderEditable.getEndpointsForSelection(controller.selection),
-  renderEditable,
+final EditableTextState editableState = tester.state<EditableTextState>(
+  find.byType(EditableText),
+);
+final RenderEditable renderEditable = editableState.renderEditable;
+final List<TextSelectionPoint> endpoints = renderEditable.getEndpointsForSelection(
+  editableState.widget.controller.selection,
 );
 expect(endpoints.length, 2);
 
 // Start handle (endpoints[0]) & End handle (endpoints[1])
 // Note: An offset (e.g. ±1px) targets the handle body attached to the endpoint
-final Offset startHandlePos = endpoints[0].point + const Offset(-1.0, 1.0);
-final Offset endHandlePos = endpoints[1].point + const Offset(1.0, 1.0);
+final Offset startHandlePos =
+    renderEditable.localToGlobal(endpoints[0].point) + const Offset(-1.0, 1.0);
+final Offset endHandlePos =
+    renderEditable.localToGlobal(endpoints[1].point) + const Offset(1.0, 1.0);
 
 // Drag the end handle to expand selection
 final TestGesture gesture = await tester.startGesture(endHandlePos);
 addTearDown(gesture.removePointer);
 await tester.pump();
-await gesture.moveTo(textOffsetToPosition(tester, 10));
+await gesture.moveTo(editableOffsetToPosition(renderEditable, 10));
 await tester.pump();
 await gesture.up();
 await tester.pumpAndSettle();
 ```
 
 **2. For `RenderParagraph` (`SelectableRegion` / `SelectionArea`)**:
+
+For a single LTR paragraph with visible handles, the following locates the selection-box corners and uses `textOffsetToPosition` from section 4. Mixed-direction text or selections spanning multiple paragraphs need endpoints that reflect their actual selection geometry.
 ```dart
 final RenderParagraph paragraph = tester.renderObject(find.byType(RichText));
 final List<TextBox> boxes = paragraph.getBoxesForSelection(paragraph.selections.first);
-final Offset startHandlePos = globalize(boxes.first.toRect().bottomLeft, paragraph);
-final Offset endHandlePos = globalize(boxes.last.toRect().bottomRight, paragraph);
+final Offset startHandlePos = paragraph.localToGlobal(boxes.first.toRect().bottomLeft);
+final Offset endHandlePos = paragraph.localToGlobal(boxes.last.toRect().bottomRight);
 
 // Drag the start handle backward
 final TestGesture gesture = await tester.startGesture(startHandlePos);
@@ -342,42 +339,60 @@ final Finder handleGestureDetector = find.descendant(
 expect(handleGestureDetector, findsNWidgets(2));
 ```
 
-### Mocking Context Menu & Text Platform Channels (`SystemChannels.platform` / `processText`)
+### Mocking a Supported Context Menu Action
 
-When writing regression tests for context menu buttons (e.g. `Look Up`, `Search Web`, `Share`, `Live Text`, `Process Text`), intercept the outgoing platform channel messages using `setMockMethodCallHandler` and ensure cleanup via `addTearDown`:
+Match the widget, platform, and channel to the action under test. The current `SelectableRegion` default menu supports Copy, Select All, Share on Android, and available process-text actions. `Look Up` is an `EditableTextState` action implemented for iOS; an ordinary `SelectionArea` does not provide that default button. `Share.invoke` uses `SystemChannels.platform` with the selected string as its argument. Process-text actions use `SystemChannels.processText` instead.
+
+This complete widget test selects text, taps the Android Share action, and checks the outgoing payload. It uses the existing Material wrapper to build its toolbar; core channel behavior can also be tested with `SelectableRegion` and a test toolbar, as in [`selectable_region_test.dart`](../../../../packages/flutter/test/widgets/selectable_region_test.dart).
 
 ```dart
-testWidgets('Look Up button triggers LookUp.invoke platform channel', (WidgetTester tester) async {
-  String? invokedText;
-  TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(
-    SystemChannels.platform,
-    (MethodCall methodCall) async {
-      if (methodCall.method == 'LookUp.invoke') {
-        invokedText = methodCall.arguments as String;
-      }
-      return null;
+import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_test/flutter_test.dart';
+
+void main() {
+  testWidgets(
+    'Share sends the selected text to the platform',
+    (WidgetTester tester) async {
+      String? sharedText;
+      tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        SystemChannels.platform,
+        (MethodCall call) async {
+          if (call.method == 'Share.invoke') {
+            sharedText = call.arguments as String;
+          }
+          return null;
+        },
+      );
+      addTearDown(() {
+        tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+          SystemChannels.platform,
+          null,
+        );
+      });
+
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(
+            body: SelectionArea(child: Text('Hello')),
+          ),
+        ),
+      );
+      final SelectableRegionState region = tester.state<SelectableRegionState>(
+        find.byType(SelectableRegion),
+      );
+      region.selectAll(SelectionChangedCause.toolbar);
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Share'));
+      await tester.pumpAndSettle();
+      expect(sharedText, 'Hello');
     },
+    variant: TargetPlatformVariant.only(TargetPlatform.android),
+    skip: kIsWeb, // Share is not offered by the web selection menu.
   );
-  addTearDown(
-    () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
-      SystemChannels.platform,
-      null,
-    ),
-  );
-
-  await tester.pumpWidget(
-    MaterialApp(
-      home: Scaffold(
-        body: SelectionArea(child: Text('Hello world')),
-      ),
-    ),
-  );
-  await tester.pumpAndSettle();
-
-  // Select text and tap 'Look Up'
-  // ...
-  expect(invokedText, equals('Hello'));
-});
+}
 ```
 
 ---
@@ -478,64 +493,48 @@ expect(position.offset, 4);
 
 ## 8. Edge Scrolling & Viewport Drag Simulation
 
-### Inside-Edge vs. Outside-Edge Drag Scenarios
+### Current Inside-Edge and Outside-Edge Behavior
 
-When testing selection drag and auto-scrolling in `Scrollable` / `SelectableRegion`, test both geometric entry conditions:
+`_ScrollableSelectionContainerDelegate` creates a zero-size drag target at the selection event's global position. `EdgeDraggingAutoScroller` compares that target with the viewport: a target strictly inside the viewport does not start scrolling; a target beyond an edge can scroll when there is remaining extent and the resolved physics accepts user scrolling. There is no inner-edge activation band. See [`scrollable.dart`](../../../../packages/flutter/lib/src/widgets/scrollable.dart) and [`scrollable_helpers.dart`](../../../../packages/flutter/lib/src/widgets/scrollable_helpers.dart).
 
-1. **Inside-Edge Drags (Within Viewport Bounds)**:
-   - Simulates physical touch screens (full-screen views without `SafeArea` insets) where the pointer cannot physically leave the screen boundaries.
-   - Position the pointer within the inner edge band (e.g. $5\text{ px}$ inside the boundary):
-   ```dart
-   // 5 pixels ABOVE bottom edge (strictly inside the scrollable)
-   final Offset insideBottom = tester.getBottomLeft(find.byType(ListView)) + const Offset(10, -5);
-   await gesture.moveTo(insideBottom);
-   await tester.pump();
-   await tester.pump(const Duration(milliseconds: 100));
-
-   expect(controller.offset, greaterThan(0.0));
-   ```
-
-2. **Outside-Edge Drags (Past Viewport Bounds)**:
-   - Simulates desktop windowed apps or dialogs where the pointer moves past the scrollable into surrounding window margins or parent widgets.
-   ```dart
-   // 40 pixels PAST bottom edge (strictly outside the scrollable)
-   final Offset outsideBottom = tester.getBottomRight(find.byType(ListView)) + const Offset(0, 40);
-   await gesture.moveTo(outsideBottom);
-   await tester.pump();
-   await tester.pump(const Duration(milliseconds: 100));
-
-   expect(controller.offset, greaterThan(0.0));
-   ```
-
-### Multi-Axis and Bidirectional Test Verification
-
-Scrollable selection containers are axis-agnostic. Always test both axes and bidirectional movement to prevent coordinate inversion bugs (`dx`/`dy`, `width`/`height`, `top`/`bottom` vs. `left`/`right`):
-- **`Axis.vertical`**: Forward (bottom edge) and backward (top edge).
-- **`Axis.horizontal`**: Forward (right edge) and backward (left edge).
-
-### Direct Drag vs. Selection Handle Drag Simulation
-
-When testing auto-scrolling inside viewport bounds, verify both drag modalities:
-
-1. **Direct Drag (Mouse / Long-Press Move)**:
-   - Tests pointer drag where the coordinate directly tracks the touch point.
-2. **Selection Handle Drag Within Bounds**:
-   - Long-press to bring up selection handles, then drag the start or end handle to a point strictly within bounds ($5\text{px}$ from the edge).
-   - Verifies that the `lineHeight / 2` caret offset does not prevent the selection handle from activating edge scrolling when dragged to the edge on full-screen mobile views.
-   - *(Note: Avoid only testing handle dragging by moving 40px outside the viewport, as dragging past the viewport masks the `lineHeight / 2` offset).*
-
-### Gesture Release & Scroll Cessation Invariant
-
-Whenever testing edge auto-scrolling, always assert that releasing the gesture halts scrolling immediately and does not continue scrolling during subsequent pumps:
+For a fresh, direct mouse selection that starts inside an untransformed, vertically scrolling `ListView`, with positive content extent and ordinary scroll physics, check both conditions. The snippet assumes that `gesture` is down and `controller` is the list's attached scroll controller, with no auto-scroll already in flight:
 
 ```dart
-// 1. Release the gesture
-await gesture.up();
+final double offsetBeforeInsideDrag = controller.offset;
+final Offset insideBottom =
+    tester.getBottomLeft(find.byType(ListView)) + const Offset(10, -5);
+await gesture.moveTo(insideBottom);
 await tester.pump();
-await tester.pump(const Duration(seconds: 1));
-final double offsetAfterRelease = controller.offset;
+await tester.pump(const Duration(milliseconds: 100));
+expect(controller.offset, offsetBeforeInsideDrag);
 
-// 2. Settle the tree and ensure no phantom overscroll occurred
-await tester.pumpAndSettle();
-expect(controller.offset, offsetAfterRelease);
+final Offset outsideBottom =
+    tester.getBottomLeft(find.byType(ListView)) + const Offset(10, 40);
+await gesture.moveTo(outsideBottom);
+await tester.pump();
+await tester.pump(const Duration(milliseconds: 100));
+expect(controller.offset, greaterThan(offsetBeforeInsideDrag));
 ```
+
+The selection must start in the scrollable for this delegate to auto-scroll. When a nested child returns `SelectionResult.pending`, the parent stops its own auto-scroller and waits for the child. At a scroll limit, or with physics that rejects user offsets, an outside target does not produce further scrolling.
+
+### Axis Direction and Drag Modality
+
+For changes to shared scrolling geometry, exercise the relevant vertical and horizontal paths, including reversed axis directions. With `AxisDirection.down`, the bottom edge increases the scroll offset; with `AxisDirection.right`, the right edge increases it. `AxisDirection.up` and `AxisDirection.left` reverse these relationships.
+
+Direct mouse drags and selection-handle drags do not necessarily dispatch the same coordinates. A handle drag tracks the handle's paint origin and subtracts half the selection line height vertically before dispatching the edge event. Inspect that event position when deciding whether it is inside or outside the viewport. Dragging a handle 5 pixels inside the bottom edge does not imply auto-scroll activation; an outside pointer may also need to move farther to place the adjusted event beyond the edge. Existing handle tests move beyond the viewport in [`scrollable_selection_test.dart`](../../../../packages/flutter/test/widgets/scrollable_selection_test.dart).
+
+### Gesture Release and Eventual Scroll Stability
+
+Gesture release stops the region's continuous edge-update scheduling. An already scheduled auto-scroll step can still complete: `EdgeDraggingAutoScroller` uses discrete linear `animateTo` steps, and `stopAutoScroll` clears its loop flag without cancelling the current scroll activity. Tests should allow this completion and verify eventual stability; the implementation does not promise zero movement immediately after release.
+
+```dart
+await gesture.up();
+await tester.pumpAndSettle(); // Allow already scheduled scrolling to finish.
+final double settledOffset = controller.offset;
+
+await tester.pump(const Duration(seconds: 1));
+expect(controller.offset, settledOffset);
+```
+
+A baseline taken after settlement checks for resumed or continuing scrolling. It does not establish that the offset stayed fixed from the instant of release. If diagnosing the size or timing of movement after release, record the offset at release and during the following frames separately.

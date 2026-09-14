@@ -1,28 +1,24 @@
 ---
 name: flutter-text-domain-expert
 description: >
-  Deep architectural domain expertise, troubleshooting guides, testing best practices, and subsystem routing for the Flutter text stack (painting, rendering, services, widgets, selection, editing, and IME) in the flutter/flutter repository.
-
-  When to use:
-  - When working on, debugging, or adding tests for Flutter text rendering (Text, RichText, RenderParagraph, TextPainter, InlineSpan, WidgetSpan).
-  - When working on editable text and IME platform channels (TextField, CupertinoTextField, EditableText, RenderEditable, TextInput, TextInputClient, DeltaTextInputClient, DefaultTextEditingShortcuts).
-  - When working on text selection subsystems (SelectionArea, SelectableRegion, SelectionContainer, SelectionOverlay, TextSelectionToolbar, magnifiers, selection handles).
-  - When working on text selection context menus, adaptive toolbars, SelectionArea/SelectableRegion buttons, or text platform channels.
-  - When debugging text selection scrolling, edge-scrolling, auto-scrolling, or select-to-scroll behavior in Scrollable, ListView, or CustomScrollView (_ScrollableSelectionContainerDelegate, EdgeDraggingAutoScroller).
-  - When writing or fixing unit, widget, or rendering tests for text features in packages/flutter/test/.
-
-  When not to use:
-  - For general non-text issues (e.g. routing, physics simulations, non-text animations, build tooling, engine build configs).
+  Architecture, source routing, and testing guidance for Flutter text rendering,
+  editing, selection, and IME in flutter/flutter. Use for Text/RichText spans and
+  layout, EditableText/RenderEditable and text-field behavior, text-input platform
+  channels, SelectionArea/SelectableRegion, context menus, overlays, magnifiers,
+  and selection-driven scrolling in Scrollable/ListView/CustomScrollView. Covers
+  painting, rendering, services, widgets, gestures, engine/embedders, and associated
+  tests. Excludes unrelated framework, build-tool, and engine-build work.
 ---
 
 # Flutter Text Domain Expert Skill (`flutter/flutter`)
 
-This skill provides authoritative architectural guidance, subsystem reference mappings, testing invariants, and development workflows for contributing to the text subsystem in the `flutter/flutter` repository.
+Use this skill to locate text-subsystem code, understand its current behavior, and choose focused regression tests in `flutter/flutter`. The references describe the implementation in this repository; verify the relevant source and tests when working on a change.
 
 > [!IMPORTANT]
-> **MANDATORY INVESTIGATION DIRECTIVE — CONSULT REFERENCE DOCS FIRST**:
-> 1. **Read Domain References First**: You **MUST** call `view_file` on the corresponding reference document under `references/` (e.g. `references/static_text_pipeline.md`) before grepping the codebase or modifying files. The reference documents contain pre-synthesized architectural invariants, coordinate math, and testing patterns.
-> 2. **Avoid the Git Archeology Trap**: Do **NOT** use `git log -S`, `git show`, or `gh issue view` to deduce design intent or invariants. Past commit descriptions are narrow, point-in-time snapshots that often document superseded workarounds. The curated documents in `references/`, existing test suites, and in-code assertions are the authoritative sources of truth.
+> **Start with the relevant reference**:
+> 1. Read the corresponding document under `references/` with an available file-reading tool before investigating its implementation. Load only the references relevant to the task.
+> 2. Treat current source, tests, and in-code assertions as authoritative. Use the references as navigation and architectural notes; resolve disagreements in favor of verified repository behavior.
+> 3. Consult commit history or issue discussions when they help establish context, then check that the described behavior still applies. Keep these reference documents about the current implementation, without proposed changes or speculative algorithms.
 
 ---
 
@@ -34,45 +30,44 @@ The text stack is organized into modular reference guides located under [`refere
 | :--- | :--- | :--- |
 | **Common Foundation & Primitives** | [`common_text_primitives.md`](references/common_text_primitives.md) | • `dart:ui` Engine primitives (`ParagraphBuilder`, `Paragraph`, `LineMetrics`, `TextBox`)<br>• `TextPainter` layout caching (`_TextPainterLayoutCacheWithOffset`)<br>• `InlineSpan` hierarchy (`TextSpan`, `WidgetSpan`, visitor pattern)<br>• Text geometry, BiDi, and `TextAffinity`<br>• `TextBoundary` iterators (character, word, line, paragraph)<br>• Shared gesture recognizers (`TapAndPanGestureRecognizer`, `BaseTapAndDragGestureRecognizer`)<br>• Shared selection overlays, toolbars, handles, and magnifiers |
 | **Static Text & Unified Selection** | [`static_text_pipeline.md`](references/static_text_pipeline.md) | • `Text`, `RichText`, `_RichText`<br>• `RenderParagraph` layout, intrinsics, inline child layout (`WidgetSpan`), and span hit-testing<br>• `SelectionArea` & `SelectableRegion`<br>• `SelectionContainer` & delegates (`StaticSelectionContainerDelegate`, `_SelectableTextContainerDelegate`)<br>• `Scrollable` integration & `_ScrollableSelectionContainerDelegate` (`_selectionStartsInScrollable`, autoscrolling)<br>• Edge-scrolling: `EdgeDraggingAutoScroller`, `SelectionEdgeUpdateEvent`<br>• `_SelectableFragment` & leaf `Selectable`s<br>• 7 concrete `SelectionEvent` subclasses & `compareOrder` reading order sorting |
-| **Editable Text & Platform IME** | [`editable_text_pipeline.md`](references/editable_text_pipeline.md) | • `TextField`, `CupertinoTextField`, `EditableText`, `EditableTextState`<br>• `RenderEditable`, `_CaretPainter` (blinking/floating cursor), `ViewportOffset`<br>• `TextInputClient` (standard) vs. `DeltaTextInputClient` (`TextEditingDelta` stream)<br>• Platform channel: `MethodChannel('flutter/textinput')`<br>• `TextInputFormatter`, `SpellCheckService`, `LiveText`, `ProcessTextService`<br>• `DefaultTextEditingShortcuts`, `Actions`, `TextEditingIntents`, macOS selectors<br>• `TextSelectionOverlay` (isolated from `SelectionArea`) |
-| **Testing, Traps & Simulation** | [`testing_text_stack.md`](references/testing_text_stack.md) | • **Test Location Guide**: directory map across `packages/flutter/test/`<br>• Multi-tap timing & `pumpAndSettle()` tap reset trap (`kDoubleTapTimeout`)<br>• Caret blinking timer hang & timeout trap<br>• Ahem font geometry & drag slop trap (`kTouchSlop` / `kPanSlop`)<br>• Multi-move event requirements (`onDragStart` vs `onDragUpdate`)<br>• Floating overlay, toolbar & handle testing patterns (geometric dragging vs. `FadeTransition`)<br>• Realistic IME simulation with `TestTextInput` (composing ranges & actions)<br>• BiDi & `TextAffinity` assertions |
-| **Debugging Playbooks** | [`text_debugging_playbooks.md`](references/text_debugging_playbooks.md) | Diagnostic trees and triage runbooks for common text bug patterns *(iterative reference)*. |
+| **Editable Text & Platform IME** | [`editable_text_pipeline.md`](references/editable_text_pipeline.md) | • `TextField`, `CupertinoTextField`, `EditableText`, `EditableTextState`<br>• `RenderEditable`, `_CaretPainter` (regular/floating cursor painting), `ViewportOffset`<br>• `TextInputClient` (standard) vs. `DeltaTextInputClient` (`TextEditingDelta` stream)<br>• Platform channel: `MethodChannel('flutter/textinput')`<br>• `TextInputFormatter`, `SpellCheckService`, `LiveText`, `ProcessTextService`<br>• `DefaultTextEditingShortcuts`, `Actions`, `TextEditingIntents`, macOS selectors<br>• `TextSelectionOverlay` (isolated from `SelectionArea`) |
+| **Testing, Traps & Simulation** | [`testing_text_stack.md`](references/testing_text_stack.md) | • **Test Location Guide**: directory map across `packages/flutter/test/`<br>• Multi-tap timing & controlled pumps (`kDoubleTapTimeout`)<br>• Cursor blinking, scheduled frames, and settlement<br>• `FlutterTest` font metrics & pointer-specific drag slop<br>• Gesture acceptance and first-move callbacks (`onDragStart` / `onDragUpdate`)<br>• Floating overlay, toolbar & handle testing patterns (geometric dragging vs. `FadeTransition`)<br>• Realistic IME simulation with `TestTextInput` (composing ranges & actions)<br>• BiDi & `TextAffinity` assertions |
+| **Debugging Playbooks** | [`text_debugging_playbooks.md`](references/text_debugging_playbooks.md) | Coordinate conversions, conditional boundary clamping, and selection-scroll diagnostics. |
 
 ---
 
-## 2. Core Architectural Invariants to Uphold
+## 2. Architectural Rules and Contribution Responsibilities
 
-When reading, modifying, or reviewing text subsystem code in `flutter/flutter`, always maintain these structural rules:
+Apply these rules to the affected layers and the capabilities required by the task:
 
 1. **Repository Scope & Frozen Design Systems**:
-   - In the `flutter/flutter` repository, active text development takes place in `packages/flutter` across `widgets/`, `rendering/`, `services/`, and `painting/`.
-   - The legacy `packages/flutter/lib/src/material/` and `packages/flutter/lib/src/cupertino/` implementations are **frozen**.
+   - Framework text development spans `packages/flutter/lib/src/widgets/`, `rendering/`, `services/`, `painting/`, and `gestures/`. Engine text layout and platform input implementations live under `engine/src/flutter/`.
+   - Legacy Material/Cupertino implementations, examples, and tests are **frozen** by the repository's [freeze workflow](../../../.github/workflows/freeze.yml), which provides an explicit code-reviewer override.
    - Active development of Material and Cupertino text UI components (`TextField`, `CupertinoTextField`, `AdaptiveTextSelectionToolbar`, `SelectionArea`, selection handles) belongs in the **`material_ui`** and **`cupertino_ui`** packages under the **`flutter/packages`** repository.
 
 2. **Subsystem Isolation**:
-   - `RenderEditable` does **not** participate in the `SelectionArea` / `SelectableRegion` selection tree. It maintains its own selection and overlay state machine via `TextSelectionOverlay`.
+   - `RenderEditable` does **not** participate in the `SelectionArea` / `SelectableRegion` selection tree. `EditableTextState` coordinates its selection through `TextSelectionOverlay`, which wraps the shared `SelectionOverlay` implementation. Changes to `SelectionOverlay` can affect both editable and static selection.
    - `SelectableRegion` coordinates unified selection across read-only leaf registrants (`_SelectableFragment` in `RenderParagraph`, custom selectables) via the `SelectionRegistrarScope`.
 
 3. **Layer Boundary Rules in `packages/flutter`**:
    - **`widgets/`**, **`rendering/`**, and **`services/`** must **never** import `package:flutter/material.dart` or `package:flutter/cupertino.dart`.
-   - Legacy `material/` and `cupertino/` tests in `packages/flutter/test/` only verify frozen components.
+   - Core framework tests can exercise behavior through existing design-system widgets; edits within the legacy `material/` and `cupertino/` test directories are subject to the same freeze workflow.
 
 4. **IME Composing Range Preservation**:
    - Never mutate `TextEditingValue.text` without recalculating or explicitly resetting `TextEditingValue.composing` (`TextRange`). Clobbering active composing ranges breaks multilingual IMEs (Japanese, Chinese, Korean, Vietnamese).
 
 5. **BiDi & TextAffinity Disambiguation**:
-   - At soft line wrap points and RTL/LTR junctions, a single glyph offset corresponds to two visually distinct caret positions. Always specify or account for `TextAffinity.upstream` vs `TextAffinity.downstream`.
+   - At soft line wraps and RTL/LTR junctions, a single UTF-16 text offset can correspond to two visually distinct caret positions. Always specify or account for `TextAffinity.upstream` vs `TextAffinity.downstream`.
 
-6. **Geometry Resolution vs. Lifecycle Coupling**:
-   - Resolve continuous coordinate and gesture-geometry calculations directly at the geometry layer (e.g. coordinate transformations, directional projection, inner proximity thresholds).
-   - Never introduce cross-widget state or lifecycle listeners (e.g. subscribing to selection status notifiers) to forcibly cancel animations or reset state upon gesture release as a workaround for inaccurate or inflated spatial calculations.
+6. **Diagnose Geometry and Lifecycle Separately**:
+   - Determine whether the failure is in coordinate conversion, selection state, or animation lifecycle. Correct demonstrated geometry errors at the geometry layer.
+   - Investigate lifecycle and selection-status handling when the evidence points there. A geometry-first debugging preference does not prohibit a necessary lifecycle fix; verify the behavior with a focused test.
 
-7. **Delegating Constructor & Wrapper Parity (Zero Parameter Dropping)**:
-   - **Do Not Stop at Defaults**: When a core primitive or helper function adds or extends parameters, callbacks, or supported capabilities, do not consider the task complete simply because default out-of-the-box builders or adapters pass them dynamically at runtime.
-   - **Mandatory Caller Audit**: Search across the codebase for all callers of the modified primitive or helper. For every caller that is a delegating named constructor, factory, or adapter:
-     1. **Zero Parameter Dropping**: Delegating constructors and companion adapters must not drop newly supported parameters or leave them `null` when the underlying primitive supports them. Optional parameters allow code to compile without errors, but omitting them silently breaks API parity for consumers who use those customizable constructors.
-     2. **Mandatory Forwarding**: Ensure all companion delegating constructors and wrappers are updated to expose and forward the newly added parameters and callbacks.
-     3. **Decoupled Design-System Handoff**: If any delegating constructors or companion wrappers reside in `material_ui` or `cupertino_ui`, you cannot consider the task complete at the framework boundary. You MUST activate the **`material-cupertino-packages`** skill to update the companion package and export a `.patch`.
+7. **Delegating Constructor Parity and Complete Platform Support**:
+   - **Mandatory Caller Audit**: When extending a primitive, helper, parameter, or callback, inspect all affected callers, including delegating named constructors, factories, and adapters. Completion includes customizable constructors as well as default builders.
+   - **Mandatory Forwarding**: Expose and forward the task-required parameters and capabilities through all affected wrappers. Optional parameters compiling successfully does not establish API parity; do not silently drop a required callback or leave it `null`.
+   - **Complete Required Support**: Follow the capability through companion packages, framework services, platform channels, and native embedders. Existing TODOs or missing-support comments identify dependencies to investigate and implement when the task requires that support. Complete the necessary plumbing, tests, and comment updates as part of the work.
+   - **Companion Package Completion**: When affected wrappers reside in `material_ui` or `cupertino_ui`, use the [material-cupertino-packages skill](../material-cupertino-packages/SKILL.md) to update the companion package and export its `.patch`. The framework boundary is not the completion boundary for a capability that requires those wrappers.
 
 ---
 
@@ -87,15 +82,15 @@ flowchart TD
     B -->|"Editable Text / IME"| D["Read editable_text_pipeline.md"]
     B -->|"Common Spans / Boundaries / Gestures"| E["Read common_text_primitives.md"]
     B -->|"Writing or Fixing Tests"| F["Read testing_text_stack.md"]
-    
+
     C --> G["Locate Target Source & Test File<br/>(consult Test Location Guide in testing_text_stack.md)"]
     D --> G
     E --> G
     F --> G
 
-    G --> H["Implement Changes & Reproduce Bug in Test"]
-    H --> I["Verify Invariants:<br/>• No pumpAndSettle() between taps or on focused inputs<br/>• Respect Drag Slop & issue multiple moves<br/>• Use TestTextInput for IME composing tests"]
-    I --> J["Run Static Analysis & Formatting:<br/>• dart analyze --fatal-infos &lt;files&gt;<br/>• dart format &lt;files&gt;"]
+    G --> H["Implement Required Layers & Reproduce Bug in Test"]
+    H --> I["Verify Behavior:<br/>• Control elapsed time for tap and cursor assertions<br/>• Match pointer slop and gesture acceptance<br/>• Use TestTextInput for IME composing tests"]
+    I --> J["Run Static Analysis & Formatting:<br/>• ./bin/dart analyze --fatal-infos &lt;files&gt;<br/>• ./bin/dart format &lt;files&gt;"]
     J --> K["Run Target Tests:<br/>• ./bin/flutter test &lt;test_file&gt;"]
 ```
 
@@ -104,11 +99,11 @@ flowchart TD
 
 ### Pre-Completion Checklist
 Before declaring any Flutter text task complete:
-- [ ] Address all lints, warnings, and errors (`dart analyze --fatal-infos <modified_files>`).
-- [ ] Format all modified Dart files (`dart format <modified_files>`).
-- [ ] Verify that tests avoid `pumpAndSettle()` hangs on focused `EditableText` widgets.
-- [ ] Verify that gesture tests avoid `pumpAndSettle()` between multi-taps.
-- [ ] Verify that drag-selection tests account for `kTouchSlop` / `kPanSlop` (large font or multiple move events).
+- [ ] Analyze modified Dart files and resolve diagnostics (`./bin/dart analyze --fatal-infos <modified_files>`).
+- [ ] Format modified Dart files (`./bin/dart format <modified_files>`).
+- [ ] Control elapsed time for multi-tap and cursor-phase tests. `pumpAndSettle()` waits for scheduled frames; a focused input alone does not make it hang.
+- [ ] Match drag tests to pointer kind, recognizer, gesture settings, and `DragStartBehavior`; the first accepted move can deliver both start and update callbacks.
+- [ ] Base geometry expectations on the actual font and coordinate space. Selection auto-scroll tests should distinguish inside/outside targets and eventual stability after release.
 - [ ] Verify that all layer boundary rules are respected.
-- [ ] Delegating wrapper parity: verified that all downstream callers and delegating constructors (including companion design-system wrappers in `material_ui` / `cupertino_ui`) expose and forward newly added parameters/capabilities rather than dropping them.
+- [ ] Verify forwarding through all affected constructors and wrappers, including companion design-system packages, and complete platform support required by the task.
 - [ ] Execute target tests with `./bin/flutter test <test_file>`.
