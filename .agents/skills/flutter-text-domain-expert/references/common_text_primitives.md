@@ -246,7 +246,8 @@ classDiagram
      - `RenderComparison.layout`: Structural or style properties classified as requiring layout changed (e.g. `text`, `fontSize`, `fontFamily`, `letterSpacing`, `foreground`, `background`, `shadows`, child span count); triggers a full layout pass (`markNeedsLayout()`).
 4. **Semantics Extraction (`getSemanticsInformation`)**:
    - Returns a `List<InlineSpanSemanticsInformation>` describing accessibility metadata.
-   - Spans with interactive gesture recognizers (`recognizer != null`) or embedded inline widgets (`WidgetSpan`) set `requiresOwnNode: true`, forcing Flutter's semantics subsystem to allocate individual accessible nodes in the OS accessibility tree.
+   - `InlineSpanSemanticsInformation.requiresOwnNode` is true for placeholders, non-null recognizers, or non-null semantics identifiers.
+   - This metadata does not guarantee one OS accessibility node per span. Placeholder children can contribute zero or multiple nodes, and `RenderParagraph` can merge their semantics configurations upward. Node assembly also depends on the renderer and platform; `RenderEditable` excludes macOS from its recognizer-driven separate-node path.
 
 ---
 
@@ -510,11 +511,13 @@ Flutter provides specialized gesture recognizers designed specifically for text 
    - Manages transitions between `ready`, `possible`, and `accepted` drag states based on precision pan slop thresholds (`kPanSlop`, `kTouchSlop`).
    - Supports `eagerVictoryOnDrag` (defaults to `true`) to claim the gesture arena immediately upon detecting drag motion.
 2. **[`TapAndPanGestureRecognizer`](../../../../packages/flutter/lib/src/gestures/tap_and_drag.dart)**:
-   - Tracks full 2D dragging across both X and Y axes simultaneously.
-   - Primary recognizer for **Mouse / Desktop** pointers in [`SelectableRegion`](../../../../packages/flutter/lib/src/widgets/selectable_region.dart) and [`TextSelectionGestureDetector`](../../../../packages/flutter/lib/src/widgets/text_selection.dart).
+   - Tracks full 2D dragging across both X and Y axes.
+   - [`SelectableRegion`](../../../../packages/flutter/lib/src/widgets/selectable_region.dart) uses it for mouse pointers.
+   - [`TextSelectionGestureDetector`](../../../../packages/flutter/lib/src/widgets/text_selection.dart) uses it on Linux, macOS, and Windows, regardless of pointer kind.
 3. **[`TapAndHorizontalDragGestureRecognizer`](../../../../packages/flutter/lib/src/gestures/tap_and_drag.dart)**:
-   - Constrains drag detection to horizontal motion along the X axis.
-   - Primary recognizer for **Touch / Mobile** pointers to prevent horizontal text selection gestures from prematurely competing with or losing the gesture arena to vertical parent [`Scrollable`](../../../../packages/flutter/lib/src/widgets/scrollable.dart) widgets.
+   - Detects drags based on horizontal motion along the X axis.
+   - [`SelectableRegion`](../../../../packages/flutter/lib/src/widgets/selectable_region.dart) uses it for all non-mouse pointer kinds.
+   - [`TextSelectionGestureDetector`](../../../../packages/flutter/lib/src/widgets/text_selection.dart) uses it on Android, Fuchsia, and iOS, regardless of pointer kind.
 4. **[`TapAndDragGestureRecognizer`](../../../../packages/flutter/lib/src/gestures/tap_and_drag.dart)**:
    - Deprecated legacy equivalent of `TapAndPanGestureRecognizer`; use `TapAndPanGestureRecognizer` for new code.
 5. **[`LongPressGestureRecognizer`](../../../../packages/flutter/lib/src/gestures/long_press.dart)**:
@@ -601,7 +604,7 @@ Floating context menus provide standard clipboard actions (Cut, Copy, Paste, Sel
 - **[`CupertinoAdaptiveTextSelectionToolbar`](../../../../packages/flutter/lib/src/cupertino/adaptive_text_selection_toolbar.dart)**: Cupertino adaptive toolbar factory.
 
 #### 3. `ContextMenuController`
-- [`ContextMenuController`](../../../../packages/flutter/lib/src/widgets/context_menu_controller.dart) manages the insertion, layout positioning, and removal of context menus into the application's root [`Overlay`](../../../../packages/flutter/lib/src/widgets/overlay.dart).
+- [`ContextMenuController`](../../../../packages/flutter/lib/src/widgets/context_menu_controller.dart) manages the insertion and removal of context menus into the application's root [`Overlay`](../../../../packages/flutter/lib/src/widgets/overlay.dart). The widget returned by `contextMenuBuilder` and its layout delegate determine positioning.
 
 ---
 
@@ -617,7 +620,7 @@ The static and editable pipelines build different button lists. The following ta
 | **macOS / Linux / Windows** | `Copy` → `Select All` | Copy hides the toolbar. Select All selects content and hides the toolbar. |
 | **Web** | Native browser menu on supported desktop `SelectableRegion` configurations; otherwise the Flutter toolbar | The static DOM bridge transfers selected text into a transparent div. Share is omitted on web. See the [static web context-menu path](static_text_pipeline.md#web-desktop-platform-context-menus-platformselectableregioncontextmenu). |
 
-[`EditableText.getEditableButtonItems`](../../../../packages/flutter/lib/src/widgets/editable_text.dart) instead orders non-null callbacks as Cut → Copy → Paste → Android Share → Select All → Look Up → Search Web → non-Android Share, followed by Live Text when supplied. Availability is determined by `EditableTextState` and clipboard state; these are not unconditional buttons on every platform. Editable actions apply their own selection/toolbar behavior. Editable web menus use the engine's transparent editing control (`input`, `textarea`, or contenteditable `span`), not the `SelectableRegion` div bridge.
+[`EditableText.getEditableButtonItems`](../../../../packages/flutter/lib/src/widgets/editable_text.dart) instead orders non-null callbacks as Cut → Copy → Paste → Android Share → Select All → Look Up → Search Web → non-Android Share, followed by Live Text when supplied. Availability is determined by `EditableTextState` and clipboard state; these are not unconditional buttons on every platform. Editable actions apply their own selection/toolbar behavior. Editable web menus use the engine's transparent editing control (`input` or `textarea`), not the `SelectableRegion` div bridge.
 
 ---
 
@@ -645,7 +648,7 @@ During touch handle dragging on mobile devices, a magnifying loupe floats above 
 
 - **[`RawMagnifier`](../../../../packages/flutter/lib/src/widgets/magnifier.dart)**: Builds a custom `_Magnifier` render-object widget. Its `_RenderMagnification` uses `BackdropFilterLayer` with an `ImageFilter.matrix` scale transform and focal point translation to magnify the underlying canvas layer.
 - **[`MagnifierController`](../../../../packages/flutter/lib/src/widgets/magnifier.dart)**: Manages showing, hiding, shifting, and removing the magnifier overlay entry.
-- **[`TextMagnifierConfiguration`](../../../../packages/flutter/lib/src/widgets/text_selection.dart)**: Configuration contract passed into text fields or selectable regions.
+- **[`TextMagnifierConfiguration`](../../../../packages/flutter/lib/src/widgets/magnifier.dart)**: Configuration contract passed into text fields or selectable regions.
 - **[`TextMagnifier`](../../../../packages/flutter/lib/src/material/magnifier.dart)**: Material / Android implementation using `Magnifier`, whose `RawMagnifier` decoration has a `RoundedRectangleBorder`.
 - **[`CupertinoTextMagnifier`](../../../../packages/flutter/lib/src/cupertino/magnifier.dart)**: Cupertino / iOS implementation using `CupertinoMagnifier`, with a `RoundedRectangleBorder`, shadow, and default size of 80 × 47.5 logical pixels.
 

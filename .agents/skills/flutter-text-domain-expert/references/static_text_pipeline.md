@@ -125,13 +125,13 @@ Static text in Flutter is configured via high-level widgets and compiled into an
                                        v
 +-----------------------------------------------------------------------------+
 | Stage 4: positionInlineChildren(TextPainter.inlinePlaceholderBoxes)         |
-|   Sets TextParentData.offset for each child RenderBox                       |
+|   Sets child offsets from boxes; omitted children receive null offsets      |
 +-----------------------------------------------------------------------------+
                                        |
                                        v
 +-----------------------------------------------------------------------------+
 | Stage 5: paintInlineChildren(context, offset)                               |
-|   Draws each child RenderBox onto PaintingContext at computed offset        |
+|   Paints child RenderBoxes with non-null offsets                            |
 +-----------------------------------------------------------------------------+
 ```
 
@@ -141,11 +141,11 @@ Static text in Flutter is configured via high-level widgets and compiled into an
    - `RenderParagraph` forwards the list to `_textPainter.setPlaceholderDimensions()`.
 3. **Engine Placeholder Registration**:
    - When `_textPainter` constructs the native paragraph via `InlineSpan.build()`, each `WidgetSpan.build()` invokes `ui.ParagraphBuilder.addPlaceholder()` with its measured `PlaceholderDimensions`, passing width, height, alignment, and baseline information to the paragraph layout engine.
-   - `ui.Paragraph.layout(constraints)` calculates line wrapping and resolves exact 2D bounding boxes for all placeholders.
+   - `ui.Paragraph.layout(constraints)` calculates line wrapping and resolves 2D bounding boxes for retained placeholders. Ellipsized placeholders can be omitted from the returned boxes.
 4. **Child Positioning (`positionInlineChildren`)**:
-   - `RenderParagraph` reads `_textPainter.inlinePlaceholderBoxes` and assigns the computed local 2D coordinates to `(child.parentData as TextParentData).offset`.
+   - `RenderParagraph` reads `_textPainter.inlinePlaceholderBoxes` and assigns the computed local 2D coordinates to each corresponding child's `TextParentData.offset`. Children omitted from the boxes receive null offsets.
 5. **Composited Painting (`paintInlineChildren`)**:
-   - `RenderParagraph.paint()` draws the background and text paragraph onto `context.canvas` via `_textPainter.paint(canvas, offset)` and then invokes `paintInlineChildren()` to paint each child `RenderBox`.
+   - `RenderParagraph.paint()` draws the background and text paragraph onto `context.canvas` via `_textPainter.paint(canvas, offset)` and then invokes `paintInlineChildren()` to paint child `RenderBox`es with non-null offsets, skipping omitted children.
 
 ---
 
@@ -371,7 +371,7 @@ Text.build()
 1. **Ambient Registrar Detection**:
    - In `Text.build()`, the widget queries `SelectionContainer.maybeOf(context)`.
    - If an ambient `SelectionRegistrar` exists, `Text` wraps its internal tree in `_SelectableTextContainer`.
-   - `_SelectableTextContainerState` creates a `_SelectableTextContainerDelegate` holding a `GlobalKey` (`_textKey`) targeting the internal `_RichText` and `RenderParagraph`.
+   - `_SelectableTextContainerState` creates a `_SelectableTextContainerDelegate` holding a `GlobalKey` (`_textKey`). `_RichText` forwards this key to the public `RichText` widget, allowing the delegate to retrieve its `RenderParagraph`.
 2. **`StaticSelectionContainerDelegate` Base**:
    - `_SelectableTextContainerDelegate` extends [`StaticSelectionContainerDelegate`](../../../../packages/flutter/lib/src/widgets/selectable_region.dart) to coordinate selection across the paragraph and any child `Selectable` items.
 3. **Distinguishing Paragraph Spans vs. Inline `WidgetSpan` Selectables**:
