@@ -74,16 +74,26 @@ Apply these rules to the affected layers and the capabilities required by the ta
 6. **Diagnose Geometry and Lifecycle Separately**:
    - Determine whether the failure is in coordinate conversion, selection state, or animation lifecycle. Correct demonstrated geometry errors at the geometry layer.
    - Investigate lifecycle and selection-status handling when the evidence points there. A geometry-first debugging preference does not prohibit a necessary lifecycle fix; verify the behavior with a focused test.
+   - **Trace Invariant Violations to Their Source**: When an assertion, crash, or invalid calculation occurs, identify the violated contract and trace where the data or state first stops satisfying it. Distinguish invalid values from supported sentinels, unbounded constraints, and legitimate absent or transient state.
+   - Correct the layer responsible for the violation. Do not hide an established upstream defect with downstream null checks, finite-value checks, or clamping. Consumer validation is appropriate when it enforces that consumer's contract or handles valid input states.
+   - Verify the intended behavior with a regression test; merely eliminating the exception does not establish correctness.
 
 7. **Delegating Constructor Parity and Complete Platform Support**:
    - **Mandatory Caller Audit**: When extending a primitive, helper, parameter, or callback, inspect all affected callers, including delegating named constructors, factories, and adapters. Completion includes customizable constructors as well as default builders.
    - **Mandatory Forwarding**: Expose and forward the task-required parameters and capabilities through all affected wrappers. Optional parameters compiling successfully does not establish API parity; do not silently drop a required callback or leave it `null`.
+   - **Consumer Regression Coverage**: When a change spans core primitives and design-system consumers, test the core behavior and its integration through affected public wrappers. Exercise delegating or customizable constructors where their forwarding paths differ.
    - **Complete Required Support**: Follow the capability through companion packages, framework services, platform channels, and native embedders. Existing TODOs or missing-support comments identify dependencies to investigate and implement when the task requires that support. Complete the necessary plumbing, tests, and comment updates as part of the work.
    - **Companion Package Completion**: When affected wrappers reside in `material_ui` or `cupertino_ui`, use the [material-cupertino-packages skill](../material-cupertino-packages/SKILL.md) to update the companion package and export its `.patch`. The framework boundary is not the completion boundary for a capability that requires those wrappers.
 
 ---
 
 ## 3. General Contribution & Triage Workflow
+
+Before implementing, inspect comparable handlers, delegates, and recognizers in the affected subsystem. Identify the applicable callback contracts and associated state transitions, coordinate conversions, scrolling, toolbar dismissal, platform calls, and notifications.
+
+For bug fixes, write a focused regression test and run it against the unfixed behavior. Confirm that it fails at the bug-specific assertion or exception; compilation errors, setup failures, and unrelated assertions do not establish reproduction. Verify that the same test passes after implementing the fix.
+
+For test scope and interaction setup, follow [Focused Test Responsibilities](references/testing_text_stack.md#focused-test-responsibilities).
 
 Follow this step-by-step workflow when addressing an issue or PR in the Flutter text stack:
 
@@ -100,8 +110,10 @@ flowchart TD
     E --> G
     F --> G
 
-    G --> H["Implement Required Layers & Reproduce Bug in Test"]
-    H --> I["Verify Behavior:<br/>• Control elapsed time for tap and cursor assertions<br/>• Match pointer slop and gesture acceptance<br/>• Use TestTextInput for IME composing tests"]
+    G --> H["Write Focused Regression Test"]
+    H --> R["For Bug Fixes: Confirm Bug-Specific Failure"]
+    R --> M["Implement Required Layers"]
+    M --> I["Verify Behavior:<br/>• Control elapsed time for tap and cursor assertions<br/>• Match pointer slop and gesture acceptance<br/>• Use TestTextInput for IME composing tests"]
     I --> J["Run Static Analysis & Formatting:<br/>• ./bin/dart analyze --fatal-infos &lt;files&gt;<br/>• ./bin/dart format &lt;files&gt;"]
     J --> K["Run Target Tests:<br/>• ./bin/flutter test &lt;test_file&gt;"]
 ```
@@ -119,11 +131,13 @@ Keep updates limited to verified implementation facts. Leave accurate content un
 
 ### Pre-Completion Checklist
 Before declaring any Flutter text task complete:
+
+- [ ] For bug fixes, confirm the regression test fails for the bug-specific reason without the fix and passes with it.
 - [ ] Analyze modified Dart files and resolve diagnostics (`./bin/dart analyze --fatal-infos <modified_files>`).
 - [ ] Format modified Dart files (`./bin/dart format <modified_files>`).
 - [ ] Control elapsed time for multi-tap and cursor-phase tests. `pumpAndSettle()` waits for scheduled frames; a focused input alone does not make it hang.
 - [ ] Match drag tests to pointer kind, recognizer, gesture settings, and `DragStartBehavior`; the first accepted move can deliver both start and update callbacks.
 - [ ] Base geometry expectations on the actual font and coordinate space. Selection auto-scroll tests should distinguish inside/outside targets and eventual stability after release.
 - [ ] Verify that all layer boundary rules are respected.
-- [ ] Verify forwarding through all affected constructors and wrappers, including companion design-system packages, and complete platform support required by the task.
+- [ ] Verify forwarding through all affected constructors and wrappers, including companion design-system packages. Confirm regression coverage at the affected core and consumer layers, and complete platform support required by the task.
 - [ ] Execute target tests with `./bin/flutter test <test_file>`.

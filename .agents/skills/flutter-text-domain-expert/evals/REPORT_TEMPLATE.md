@@ -3,6 +3,8 @@
 **Target Issue**: [flutter/flutter#XXXXX](https://github.com/flutter/flutter/issues/XXXXX)  
 **Evaluated Model**: [e.g. Gemini 3.7 Flash (High)]
 
+**Eval Configuration Revision**: [Git SHA for the case, harness, rubric, and report template; describe any uncommitted configuration changes]
+
 ---
 
 ## 1. Executive Summary & Final Verdict

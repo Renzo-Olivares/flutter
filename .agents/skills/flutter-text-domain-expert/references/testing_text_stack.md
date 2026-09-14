@@ -69,6 +69,10 @@ Prefer existing helpers when they provide the setup required by the test:
 - [`TestWidgetsApp`](../../../../packages/flutter_test/lib/src/test_widgets_app.dart), exported by `package:flutter_test/flutter_test.dart`, supplies `WidgetsApp` defaults and a default route builder. Place the test widget in `home` for `Navigator` / `Overlay` support, including `SelectableRegion` and selection toolbars. Override routing only when the test requires different behavior.
 - [`TestTextField`](../../../../packages/flutter/test/widgets/editable_text_tester.dart) wraps `EditableText` with `TextSelectionGestureDetector` integration and manages a controller and focus node when none are supplied. Import this repository-local helper from the test file; it is not exported by `flutter_test`. Supply a `contextMenuBuilder` or suitable selection controls when testing toolbars or handle geometry.
 
+### Focused Test Responsibilities
+
+Test configuration, available actions, and callback payloads independently of gesture sequences when interaction is unnecessary for the assertion. Use focused interaction tests when verifying gesture routing, hit testing, visibility, or lifecycle behavior. If the reported bug depends on an interaction sequence, reproduce that sequence explicitly.
+
 ---
 
 ## 2. Multi-Tap Timing & The Consecutive Tap Reset Trap

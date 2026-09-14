@@ -4,6 +4,18 @@ This document tracks the canonical evolutionary versions of the `flutter-text-do
 
 ---
 
+## Evaluation Protocol Changes
+
+### 2026-09-13 — Move contribution guidance from candidate prompts into the skill
+
+- Move contract investigation, bug-specific regression failure verification, focused test responsibilities, and affected-consumer coverage into `SKILL.md` and the testing reference. Add contract-aware invariant tracing that permits supported sentinel values and necessary consumer validation or lifecycle fixes.
+- Simplify all six candidate prompt templates for #141775 and #162856, retaining issue-specific scope and basic regression-test, implementation, analysis, formatting, and passing-test deliverables. Baseline and treatment continue to use the same template, with only the checkout commit substituted.
+- Retain the moved expectations in the evaluator's rubric, including invariant ownership, without changing the six scoring dimensions or their weights.
+- Record the git revision of the eval configuration (case, harness, rubric, and report template) in new reports. Runs with these simplified prompts and revised criteria are not directly comparable with existing reports produced under the previous protocol.
+- Preserve historical reports and candidate commit pins. Those pins still evaluate historical skill versions; evaluating the new guidance requires a treatment revision containing it.
+
+---
+
 ## Canonical Skill Versions
 
 | Version | Commit SHA | Milestone / Theme | Primary Focus & Capabilities Added | Benchmark Role |

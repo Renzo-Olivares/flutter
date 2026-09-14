@@ -2,6 +2,8 @@
 
 This directory contains the benchmark harness, evaluation rubrics, report templates, and test cases used to evaluate and validate the effectiveness of the `flutter-text-domain-expert` skill.
 
+Candidate prompts specify the task and basic deliverables; reusable contribution guidance lives in the skill and is assessed by the evaluator's rubric. See [Evaluation Protocol Changes](CHANGELOG.md#evaluation-protocol-changes) for the 2026-09-13 prompt revision. Record the eval configuration's git revision in each new report; results from different prompt or rubric revisions are not directly comparable. Existing candidate commit pins still select historical skill versions.
+
 ---
 
 ## Directory Structure

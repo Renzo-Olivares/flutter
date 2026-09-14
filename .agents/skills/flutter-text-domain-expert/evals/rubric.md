@@ -7,14 +7,16 @@ Score both candidates strictly against the following 100-point rubric:
 ## 1. Subsystem Routing & Architectural Precision (20 pts)
 - **Layer Boundaries**: Did it avoid illegal layer imports (e.g. importing Material inside `widgets/`, `rendering/`, or `services/`)?
 - **Root Cause & Subsystem Identification**: Did it correctly identify static selection (`SelectableRegion`) vs editable text (`RenderEditable`), and locate relevant classes quickly?
-- **Geometric vs Hacky Solutions**: Did it resolve the issue at the geometry/event delegate layer rather than introducing fragile lifecycle hooks or forced animation timers?
+- **Contract Investigation**: Did it inspect comparable handlers, delegates, or recognizers and identify relevant state transitions, coordinate conversions, scrolling, dismissals, platform calls, and notifications?
+- **Invariant Ownership**: Did it identify the violated contract and correct the responsible layer, distinguishing invalid values from supported sentinels, unbounded constraints, and legitimate absent or transient state? A necessary lifecycle fix or consumer validation is valid; suppressing an established upstream defect with a downstream guard is not.
 
 ---
 
 ## 2. Test File Placement & Organization (20 pts)
-- **Target File**: Did it place the test in the canonical test file under `packages/flutter/test/` (e.g. `packages/flutter/test/widgets/scrollable_selection_test.dart`) rather than an ad-hoc or misplaced file?
-- **Cleanliness & Focus**: Is the test focused, minimal, and regression-resistant?
-- **Interaction Realism**: Does the test simulate realistic touch/mouse interactions (e.g., selection handles, long-press gestures)?
+- **Target File**: Did it place tests in the appropriate existing suites for the affected layers, including `packages/flutter/test/` and affected `material_ui`/`cupertino_ui` suites in `flutter/packages`?
+- **Cleanliness & Focus**: Are tests focused, minimal, and regression-resistant, with configuration, action availability, and callback payload checks separated from gesture sequences when interaction is unnecessary for the assertion?
+- **Interaction Realism**: When the bug depends on gesture routing, hit testing, visibility, or lifecycle behavior, do tests reproduce the relevant interaction sequence?
+- **Consumer Coverage**: For changes spanning core primitives and design-system consumers, do tests verify core behavior and integration through affected public wrappers, including delegating or customizable constructors where forwarding differs?
 
 ---
 
@@ -30,6 +32,7 @@ Score both candidates strictly against the following 100-point rubric:
 ## 4. Code Correctness & Cleanliness (15 pts)
 - **Lints & Analyzer**: 0 warnings/errors via `dart analyze --fatal-infos`.
 - **Formatting**: Properly formatted via `dart format`.
+- **Regression Failure Verification**: For bug fixes, did the regression test fail against the unfixed behavior at the bug-specific assertion or exception and pass with the fix? Compilation errors, setup failures, and unrelated assertions do not establish reproduction. Tests must verify intended behavior, not merely the absence of an exception.
 - **Composing Range Preservation**: Avoided clobbering active IME composing ranges.
 - **Regression Invariants**: Preserved edge-cases for small scrollables, axis directions, and boundary clipping.
 
