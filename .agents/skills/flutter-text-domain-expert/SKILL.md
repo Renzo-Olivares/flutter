@@ -25,11 +25,23 @@ description: >
 
 Use this skill to locate text-subsystem code, understand its current behavior, and choose focused regression tests in `flutter/flutter`. The references describe the implementation in this repository; verify the relevant source and tests when working on a change.
 
-> [!IMPORTANT]
-> **Start with the relevant reference**:
-> 1. Read the corresponding document under `references/` with an available file-reading tool before investigating its implementation. Load only the references relevant to the task.
-> 2. Treat current source, tests, and in-code assertions as authoritative. Use the references as navigation and architectural notes; resolve disagreements in favor of verified repository behavior.
-> 3. Consult commit history or issue discussions when they help establish context, then check that the described behavior still applies. Keep these reference documents about the current implementation, without proposed changes or speculative algorithms.
+## Start here: load the relevant reference
+
+After understanding the issue and reading this `SKILL.md`, select the primary reference using the routing table below.
+
+Before searching or reading implementation/test code, or making edits:
+
+- Open the relevant reference content with a file-reading tool.
+- For a long reference, use its contents/index to locate and read the sections covering the reported behavior. Reading the index alone does not complete this step.
+- Use those sections to identify the initial implementation entry points, affected callers, and contracts to verify.
+
+A reference link in this file, a directory listing, or a search result alone does not substitute for reading the relevant section.
+
+Load additional references when the investigation crosses into their subsystems. Before writing tests, read the applicable guidance in `references/testing_text_stack.md`.
+
+If the relevant content is already present in the conversation, reuse it. If a reference cannot be read, report that limitation and continue from source.
+
+Verify reference guidance against current source and tests; repository behavior remains authoritative.
 
 ---
 
