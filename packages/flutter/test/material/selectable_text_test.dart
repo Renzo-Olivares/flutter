@@ -5586,7 +5586,6 @@ void main() {
             child: SelectableText(
               'abc def ghi',
               onSelectionChanged: (TextSelection selection, SelectionChangedCause? cause) {
-                // TODO(Renzo-Olivares): Fails because SelectionArea triggers onSelectionChanged multiple times (noisy callback).
                 expect(newSelection, isNull);
                 newSelection = selection;
               },
@@ -5725,6 +5724,8 @@ void main() {
         ),
       ),
     );
+    // Selectables register a frame after the first build.
+    await tester.pump();
 
     // Long press to select 'abc'.
     final Offset aLocation = textOffsetToPosition(tester, 1);
