@@ -2052,7 +2052,7 @@ void main() {
 
     await tester.tapAt(textOffsetToPosition(tester, 0));
     await tester.pumpAndSettle();
-    expect(newSelection!, const TextSelection.collapsed(offset: 0));
+    expect(newSelection, const TextSelection.collapsed(offset: 0));
     newSelection = null;
 
     // Select the first 5 characters.
