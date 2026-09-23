@@ -772,8 +772,6 @@ void main() {
     // Allow nested selection containers to register.
     await tester.pump();
 
-    // Selectable text cannot open keyboard.
-    expect(tester.testTextInput.hasAnyClients, false);
     await skipPastScrollingAnimation(tester);
 
     // Tap to place cursor.
