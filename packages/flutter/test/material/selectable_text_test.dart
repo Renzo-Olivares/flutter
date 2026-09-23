@@ -309,8 +309,7 @@ void main() {
       ),
     );
 
-    // Focus the SelectableText first
-    await tester.tap(find.byType(SelectableText));
+    // Allow SelectionArea to register its selectables.
     await tester.pump();
 
     // Long press the 'e' to select 'def'.
