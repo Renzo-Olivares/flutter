@@ -2615,19 +2615,8 @@ void main() {
   testWidgets('SelectableText semantics for selections', (WidgetTester tester) async {
     final semantics = SemanticsTester(tester);
     final Key key = UniqueKey();
-    TextSelection? currentSelection;
 
-    await tester.pumpWidget(
-      overlay(
-        child: SelectableText(
-          'Hello',
-          key: key,
-          onSelectionChanged: (TextSelection selection, SelectionChangedCause? cause) {
-            currentSelection = selection;
-          },
-        ),
-      ),
-    );
+    await tester.pumpWidget(overlay(child: SelectableText('Hello', key: key)));
     await tester.pump(); // Allow nested selection containers to register.
 
     expect(
@@ -2638,14 +2627,15 @@ void main() {
             TestSemantics.rootChild(
               children: <TestSemantics>[
                 TestSemantics(
+                  value: 'Hello',
+                  textDirection: TextDirection.ltr,
+                  inputType: ui.SemanticsInputType.text,
                   actions: <SemanticsAction>[SemanticsAction.longPress],
-                  children: <TestSemantics>[
-                    TestSemantics(
-                      flags: <SemanticsFlag>[SemanticsFlag.hasImplicitScrolling],
-                      children: <TestSemantics>[
-                        TestSemantics(label: 'Hello', textDirection: TextDirection.ltr),
-                      ],
-                    ),
+                  flags: <SemanticsFlag>[
+                    SemanticsFlag.isReadOnly,
+                    SemanticsFlag.isTextField,
+                    SemanticsFlag.isFocusable,
+                    SemanticsFlag.isMultiline,
                   ],
                 ),
               ],
@@ -2658,12 +2648,12 @@ void main() {
       ),
     );
 
-    // Focus the selectable text and select it.
-    final Offset middleOfTextPos = textOffsetToPosition(tester, 2);
-    await tester.longPressAt(middleOfTextPos);
-    await tester.pumpAndSettle();
+    // Focus the selectable text
+    await tester.tap(find.byKey(key));
+    await tester.pump();
 
-    expect(currentSelection, const TextSelection(baseOffset: 0, extentOffset: 5));
+    await tester.tapAt(textOffsetToPosition(tester, 5));
+    await tester.pump();
 
     expect(
       semantics,
@@ -2673,48 +2663,22 @@ void main() {
             TestSemantics.rootChild(
               children: <TestSemantics>[
                 TestSemantics(
-                  label: 'Copy',
-                  actions: <SemanticsAction>[SemanticsAction.tap, SemanticsAction.focus],
-                  flags: <SemanticsFlag>[
-                    SemanticsFlag.isButton,
-                    SemanticsFlag.hasEnabledState,
-                    SemanticsFlag.isEnabled,
-                    SemanticsFlag.isFocusable,
+                  value: 'Hello',
+                  textSelection: const TextSelection.collapsed(offset: 5),
+                  textDirection: TextDirection.ltr,
+                  inputType: ui.SemanticsInputType.text,
+                  actions: <SemanticsAction>[
+                    SemanticsAction.longPress,
+                    SemanticsAction.moveCursorBackwardByCharacter,
+                    SemanticsAction.moveCursorBackwardByWord,
+                    SemanticsAction.setSelection,
                   ],
-                ),
-                TestSemantics(
-                  label: 'Share',
-                  actions: <SemanticsAction>[SemanticsAction.tap, SemanticsAction.focus],
                   flags: <SemanticsFlag>[
-                    SemanticsFlag.isButton,
-                    SemanticsFlag.hasEnabledState,
-                    SemanticsFlag.isEnabled,
+                    SemanticsFlag.isReadOnly,
+                    SemanticsFlag.isTextField,
                     SemanticsFlag.isFocusable,
-                  ],
-                ),
-                TestSemantics(
-                  label: 'Select all',
-                  actions: <SemanticsAction>[SemanticsAction.tap, SemanticsAction.focus],
-                  flags: <SemanticsFlag>[
-                    SemanticsFlag.isButton,
-                    SemanticsFlag.hasEnabledState,
-                    SemanticsFlag.isEnabled,
-                    SemanticsFlag.isFocusable,
-                  ],
-                ),
-                TestSemantics(
-                  actions: <SemanticsAction>[SemanticsAction.longPress],
-                  children: <TestSemantics>[
-                    TestSemantics(
-                      flags: <SemanticsFlag>[SemanticsFlag.hasImplicitScrolling],
-                      children: <TestSemantics>[
-                        TestSemantics(
-                          label: 'Hello',
-                          textDirection: TextDirection.ltr,
-                          textSelection: const TextSelection(baseOffset: 0, extentOffset: 5),
-                        ),
-                      ],
-                    ),
+                    SemanticsFlag.isMultiline,
+                    SemanticsFlag.isFocused,
                   ],
                 ),
               ],
@@ -2727,16 +2691,15 @@ void main() {
       ),
     );
 
-    // Set selection to [5, 3] using semantics action.
-    final SemanticsOwner semanticsOwner = tester.binding.pipelineOwner.semanticsOwner!;
-    final int semanticsId = tester.getSemantics(find.text('Hello')).id;
-    semanticsOwner.performAction(semanticsId, SemanticsAction.setSelection, <dynamic, dynamic>{
-      'base': 5,
-      'extent': 3,
-    });
-    await tester.pumpAndSettle();
-
-    expect(currentSelection, const TextSelection(baseOffset: 5, extentOffset: 3));
+    final TestGesture gesture = await tester.startGesture(
+      textOffsetToPosition(tester, 5),
+      kind: PointerDeviceKind.mouse,
+    );
+    await tester.pump();
+    await gesture.moveTo(textOffsetToPosition(tester, 3));
+    await tester.pump();
+    await gesture.up();
+    await tester.pump();
 
     expect(
       semantics,
@@ -2746,38 +2709,25 @@ void main() {
             TestSemantics.rootChild(
               children: <TestSemantics>[
                 TestSemantics(
-                  label: 'Copy',
-                  actions: <SemanticsAction>[SemanticsAction.tap, SemanticsAction.focus],
-                  flags: <SemanticsFlag>[
-                    SemanticsFlag.isButton,
-                    SemanticsFlag.hasEnabledState,
-                    SemanticsFlag.isEnabled,
-                    SemanticsFlag.isFocusable,
+                  value: 'Hello',
+                  textSelection: const TextSelection(baseOffset: 5, extentOffset: 3),
+                  textDirection: TextDirection.ltr,
+                  inputType: ui.SemanticsInputType.text,
+                  actions: <SemanticsAction>[
+                    SemanticsAction.longPress,
+                    SemanticsAction.moveCursorBackwardByCharacter,
+                    SemanticsAction.moveCursorForwardByCharacter,
+                    SemanticsAction.moveCursorBackwardByWord,
+                    SemanticsAction.moveCursorForwardByWord,
+                    SemanticsAction.setSelection,
+                    SemanticsAction.copy,
                   ],
-                ),
-                TestSemantics(
-                  label: 'Share',
-                  actions: <SemanticsAction>[SemanticsAction.tap, SemanticsAction.focus],
                   flags: <SemanticsFlag>[
-                    SemanticsFlag.isButton,
-                    SemanticsFlag.hasEnabledState,
-                    SemanticsFlag.isEnabled,
+                    SemanticsFlag.isReadOnly,
+                    SemanticsFlag.isTextField,
                     SemanticsFlag.isFocusable,
-                  ],
-                ),
-                TestSemantics(
-                  actions: <SemanticsAction>[SemanticsAction.longPress],
-                  children: <TestSemantics>[
-                    TestSemantics(
-                      flags: <SemanticsFlag>[SemanticsFlag.hasImplicitScrolling],
-                      children: <TestSemantics>[
-                        TestSemantics(
-                          label: 'Hello',
-                          textDirection: TextDirection.ltr,
-                          textSelection: const TextSelection(baseOffset: 5, extentOffset: 3),
-                        ),
-                      ],
-                    ),
+                    SemanticsFlag.isMultiline,
+                    SemanticsFlag.isFocused,
                   ],
                 ),
               ],
@@ -2907,12 +2857,12 @@ void main() {
     );
     await tester.pump(); // Allow nested selection containers to register.
 
-    // Focus the selectable text and select it.
-    final Offset middleOfTextPos = textOffsetToPosition(tester, 2);
-    await tester.longPressAt(middleOfTextPos);
-    await tester.pumpAndSettle();
+    // Focus the selectable text.
+    await tester.tap(find.byKey(key));
+    await tester.pump();
 
-    expect(currentSelection, const TextSelection(baseOffset: 0, extentOffset: 5));
+    await tester.tapAt(textOffsetToPosition(tester, 5));
+    await tester.pump();
 
     final int inputFieldId = tester.getSemantics(find.text('Hello')).id;
 
@@ -2922,50 +2872,26 @@ void main() {
         TestSemantics.root(
           children: <TestSemantics>[
             TestSemantics.rootChild(
+              id: 1,
               children: <TestSemantics>[
                 TestSemantics(
-                  label: 'Copy',
-                  actions: <SemanticsAction>[SemanticsAction.tap, SemanticsAction.focus],
-                  flags: <SemanticsFlag>[
-                    SemanticsFlag.isButton,
-                    SemanticsFlag.hasEnabledState,
-                    SemanticsFlag.isEnabled,
-                    SemanticsFlag.isFocusable,
+                  id: inputFieldId,
+                  value: 'Hello',
+                  textSelection: const TextSelection.collapsed(offset: 5),
+                  textDirection: TextDirection.ltr,
+                  inputType: ui.SemanticsInputType.text,
+                  actions: <SemanticsAction>[
+                    SemanticsAction.longPress,
+                    SemanticsAction.moveCursorBackwardByCharacter,
+                    SemanticsAction.moveCursorBackwardByWord,
+                    SemanticsAction.setSelection,
                   ],
-                ),
-                TestSemantics(
-                  label: 'Share',
-                  actions: <SemanticsAction>[SemanticsAction.tap, SemanticsAction.focus],
                   flags: <SemanticsFlag>[
-                    SemanticsFlag.isButton,
-                    SemanticsFlag.hasEnabledState,
-                    SemanticsFlag.isEnabled,
+                    SemanticsFlag.isReadOnly,
+                    SemanticsFlag.isTextField,
                     SemanticsFlag.isFocusable,
-                  ],
-                ),
-                TestSemantics(
-                  label: 'Select all',
-                  actions: <SemanticsAction>[SemanticsAction.tap, SemanticsAction.focus],
-                  flags: <SemanticsFlag>[
-                    SemanticsFlag.isButton,
-                    SemanticsFlag.hasEnabledState,
-                    SemanticsFlag.isEnabled,
-                    SemanticsFlag.isFocusable,
-                  ],
-                ),
-                TestSemantics(
-                  actions: <SemanticsAction>[SemanticsAction.longPress],
-                  children: <TestSemantics>[
-                    TestSemantics(
-                      flags: <SemanticsFlag>[SemanticsFlag.hasImplicitScrolling],
-                      children: <TestSemantics>[
-                        TestSemantics(
-                          label: 'Hello',
-                          textDirection: TextDirection.ltr,
-                          textSelection: const TextSelection(baseOffset: 0, extentOffset: 5),
-                        ),
-                      ],
-                    ),
+                    SemanticsFlag.isMultiline,
+                    SemanticsFlag.isFocused,
                   ],
                 ),
               ],
@@ -3007,40 +2933,27 @@ void main() {
         TestSemantics.root(
           children: <TestSemantics>[
             TestSemantics.rootChild(
+              id: 1,
               children: <TestSemantics>[
                 TestSemantics(
-                  label: 'Copy',
-                  actions: <SemanticsAction>[SemanticsAction.tap, SemanticsAction.focus],
-                  flags: <SemanticsFlag>[
-                    SemanticsFlag.isButton,
-                    SemanticsFlag.hasEnabledState,
-                    SemanticsFlag.isEnabled,
-                    SemanticsFlag.isFocusable,
+                  id: inputFieldId,
+                  value: 'Hello',
+                  textSelection: const TextSelection(baseOffset: 0, extentOffset: 5),
+                  textDirection: TextDirection.ltr,
+                  inputType: ui.SemanticsInputType.text,
+                  actions: <SemanticsAction>[
+                    SemanticsAction.longPress,
+                    SemanticsAction.moveCursorBackwardByCharacter,
+                    SemanticsAction.moveCursorBackwardByWord,
+                    SemanticsAction.setSelection,
+                    SemanticsAction.copy,
                   ],
-                ),
-                TestSemantics(
-                  label: 'Share',
-                  actions: <SemanticsAction>[SemanticsAction.tap, SemanticsAction.focus],
                   flags: <SemanticsFlag>[
-                    SemanticsFlag.isButton,
-                    SemanticsFlag.hasEnabledState,
-                    SemanticsFlag.isEnabled,
+                    SemanticsFlag.isReadOnly,
+                    SemanticsFlag.isTextField,
                     SemanticsFlag.isFocusable,
-                  ],
-                ),
-                TestSemantics(
-                  actions: <SemanticsAction>[SemanticsAction.longPress],
-                  children: <TestSemantics>[
-                    TestSemantics(
-                      flags: <SemanticsFlag>[SemanticsFlag.hasImplicitScrolling],
-                      children: <TestSemantics>[
-                        TestSemantics(
-                          label: 'Hello',
-                          textDirection: TextDirection.ltr,
-                          textSelection: const TextSelection(baseOffset: 0, extentOffset: 5),
-                        ),
-                      ],
-                    ),
+                    SemanticsFlag.isMultiline,
+                    SemanticsFlag.isFocused,
                   ],
                 ),
               ],
