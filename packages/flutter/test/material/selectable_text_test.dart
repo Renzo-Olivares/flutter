@@ -1417,7 +1417,9 @@ void main() {
         ),
       ),
     );
-    expect(tester.widget<Scrollable>(find.byType(Scrollable)).scrollBehavior, isNotNull);
+    // SingleChildScrollView delivers the behavior through the inherited
+    // ScrollConfiguration rather than the Scrollable's scrollBehavior field.
+    expect(ScrollConfiguration.of(tester.element(find.byType(Scrollable))), isNotNull);
 
     final behavior = const ScrollBehavior()..copyWith(scrollbars: false);
     await tester.pumpWidget(
@@ -1431,7 +1433,7 @@ void main() {
         ),
       ),
     );
-    expect(tester.widget<Scrollable>(find.byType(Scrollable)).scrollBehavior, equals(behavior));
+    expect(ScrollConfiguration.of(tester.element(find.byType(Scrollable))), same(behavior));
   });
 
   testWidgets('minLines cannot be greater than maxLines', (WidgetTester tester) async {
