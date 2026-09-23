@@ -4516,7 +4516,14 @@ void main() {
     await tester.pump(const Duration(milliseconds: 50));
 
     // First tap moves the cursor to the tapped position.
-    expect(currentSelection, const TextSelection.collapsed(offset: 11));
+    // This fails because SelectedContentRange carries no TextAffinity, so
+    // SelectableText always reports downstream. Once affinity is supported
+    // the test will still fail on the macOS toolbar button count, because
+    // SelectableRegion always offers Select All.
+    expect(
+      currentSelection,
+      const TextSelection.collapsed(offset: 11, affinity: TextAffinity.upstream),
+    );
     await tester.tapAt(selectableTextStart + const Offset(150.0, 5.0));
     await tester.pump(const Duration(milliseconds: 500));
 
@@ -4647,7 +4654,12 @@ void main() {
       currentSelection,
       defaultTargetPlatform == TargetPlatform.iOS
           ? const TextSelection(baseOffset: 0, extentOffset: 7)
-          : const TextSelection.collapsed(offset: 1),
+          // This fails on macOS because SelectedContentRange carries no
+          // TextAffinity, so SelectableText always reports downstream. Once
+          // affinity is supported the test will still fail on the macOS
+          // toolbar button count (Select All is always offered) and on the
+          // iOS tap not snapping to the word edge.
+          : const TextSelection.collapsed(offset: 1, affinity: TextAffinity.upstream),
     );
     await tester.tapAt(selectableTextStart + const Offset(10.0, 5.0));
     await tester.pump(const Duration(milliseconds: 50));
