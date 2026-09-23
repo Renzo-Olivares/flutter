@@ -5674,18 +5674,16 @@ void main() {
 
       await tester.pumpWidget(
         MaterialApp(
-          home: Material(
-            child: Center(
-              child: SelectableText(
-                ' blah blah',
-                onSelectionChanged: (TextSelection newSelection, SelectionChangedCause? cause) {
-                  selection = newSelection;
-                },
-              ),
-            ),
+          home: SelectableText(
+            ' blah blah',
+            onSelectionChanged: (TextSelection newSelection, SelectionChangedCause? cause) {
+              selection = newSelection;
+            },
           ),
         ),
       );
+      // Allow SelectionArea to register its selectables.
+      await tester.pump();
 
       expect(selection, isNull);
 
