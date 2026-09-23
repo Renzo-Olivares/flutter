@@ -1030,6 +1030,7 @@ void main() {
             'abc def ghi',
             dragStartBehavior: DragStartBehavior.down,
             onSelectionChanged: (TextSelection selection, SelectionChangedCause? cause) {
+              expect(newSelection, isNull);
               newSelection = selection;
             },
           ),
