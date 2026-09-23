@@ -2206,7 +2206,9 @@ void main() {
     expect(selection1, isNotNull);
     // TODO(Renzo-Olivares): Fails because SelectionArea always extends forward on keyboard selection, yielding a positive delta (5) instead of negative (-5).
     expect(selection1!.extentOffset - selection1!.baseOffset, -5);
-    expect(selection2!.extentOffset - selection2!.baseOffset, 0);
+    // The second SelectableText has never had a selection, so it has never
+    // fired onSelectionChanged.
+    expect(selection2, isNull);
 
     // Tap the second SelectableText (key2) at the end to focus it.
     await tester.tapAt(textOffsetToPosition(tester, 17, index: 1));
