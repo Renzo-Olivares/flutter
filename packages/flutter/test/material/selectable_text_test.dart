@@ -557,7 +557,6 @@ void main() {
     // TODO(Renzo-Olivares): Cursor not supported by SelectionArea
   );
 
-  // TODO(Renzo-Olivares): Fails because SelectionArea might not show 'Select all' button.
   testWidgets('selectable text selection toolbar renders correctly inside opacity', (
     WidgetTester tester,
   ) async {
@@ -1915,8 +1914,9 @@ void main() {
       await tester.sendKeyUpEvent(LogicalKeyboardKey.shift);
       await tester.pumpAndSettle();
 
-      // SelectionArea might not support moving to 0 on ArrowUp at top line,
-      // or it might collapse. If it collapses, diff is 0.
+      // Plain arrow keys do not move a collapsed selection in SelectableRegion
+      // (collapseSelection intents are ignored), so the caret never leaves 0 and
+      // the final shift+up has nothing to extend.
       expect(selection!.extentOffset - selection!.baseOffset, -5);
     }, variant: KeySimulatorTransitModeVariant.all());
   });
@@ -2115,7 +2115,9 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(selection1, isNotNull);
-    // TODO(Renzo-Olivares): Fails because SelectionArea always extends forward on keyboard selection, yielding a positive delta (5) instead of negative (-5).
+    // TODO(Renzo-Olivares): Fails because SelectableRegion moves the start edge when
+    // extending backward and SelectableText maps start to baseOffset, so base and
+    // extent come back swapped; the magnitude is correct.
     expect(selection1!.extentOffset - selection1!.baseOffset, -5);
 
     await tester.pumpWidget(
@@ -2153,7 +2155,9 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(selection1, isNotNull);
-    // TODO(Renzo-Olivares): Fails because SelectionArea always extends forward on keyboard selection, yielding a positive delta (10) instead of negative (-10).
+    // TODO(Renzo-Olivares): Fails because SelectableRegion moves the start edge when
+    // extending backward and SelectableText maps start to baseOffset, so base and
+    // extent come back swapped; the magnitude is correct.
     expect(selection1!.extentOffset - selection1!.baseOffset, -10);
   }, variant: KeySimulatorTransitModeVariant.all());
 
@@ -2214,7 +2218,9 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(selection1, isNotNull);
-    // TODO(Renzo-Olivares): Fails because SelectionArea always extends forward on keyboard selection, yielding a positive delta (5) instead of negative (-5).
+    // TODO(Renzo-Olivares): Fails because SelectableRegion moves the start edge when
+    // extending backward and SelectableText maps start to baseOffset, so base and
+    // extent come back swapped; the magnitude is correct.
     expect(selection1!.extentOffset - selection1!.baseOffset, -5);
     // The second SelectableText has never had a selection, so it has never
     // fired onSelectionChanged.
@@ -2233,10 +2239,14 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(selection1, isNotNull);
-    // TODO(Renzo-Olivares): Fails because SelectionArea always extends forward on keyboard selection, yielding a positive delta (5) instead of negative (-5).
+    // TODO(Renzo-Olivares): Fails because SelectableRegion moves the start edge when
+    // extending backward and SelectableText maps start to baseOffset, so base and
+    // extent come back swapped; the magnitude is correct.
     expect(selection1!.extentOffset - selection1!.baseOffset, -5);
     expect(selection2, isNotNull);
-    // TODO(Renzo-Olivares): Fails because SelectionArea always extends forward on keyboard selection, yielding a positive delta (5) instead of negative (-5).
+    // TODO(Renzo-Olivares): Fails because SelectableRegion moves the start edge when
+    // extending backward and SelectableText maps start to baseOffset, so base and
+    // extent come back swapped; the magnitude is correct.
     expect(selection2!.extentOffset - selection2!.baseOffset, -5);
   }, variant: KeySimulatorTransitModeVariant.all());
 
@@ -3530,7 +3540,6 @@ void main() {
     }),
   );
 
-  // TODO(Renzo-Olivares): Fails because SelectionArea/Semantics does not correctly handle double tap selection on spans with semantics labels.
   testWidgets(
     'double tap selects word with semantics label',
     (WidgetTester tester) async {
@@ -5347,8 +5356,6 @@ void main() {
     );
   });
 
-  // TODO(Renzo-Olivares): This test fails because SelectionArea intercepts tap gestures
-  // and prevents TextSpan recognizers from receiving them. This is a behavioral gap.
   testWidgets('text span with tap gesture recognizer works in selectable rich text', (
     WidgetTester tester,
   ) async {
@@ -5409,9 +5416,8 @@ void main() {
     expect(spyTaps, 1);
   });
 
-  // TODO(Renzo-Olivares): This test fails because SelectionArea intercepts long press gestures
-  // and triggers selection instead of allowing TextSpan recognizers to consume them.
-  // This is a behavioral gap.
+  // TODO(Renzo-Olivares): The span's LongPressGestureRecognizer wins the arena; the only
+  // failure is the missing TextAffinity (SelectableText always reports downstream).
   testWidgets('text span with long press gesture recognizer works in selectable rich text', (
     WidgetTester tester,
   ) async {
@@ -5467,7 +5473,8 @@ void main() {
 
     // Long press does not trigger selection if there is text span with long
     // press recognizer.
-    // TODO(Renzo-Olivares): Fails because SelectionArea intercepts long press and/or doesn't support collapsed selection on tap in this context.
+    // TODO(Renzo-Olivares): The span's LongPressGestureRecognizer wins the arena; this
+    // fails only on the missing TextAffinity (SelectableText always reports downstream).
     expect(
       selection,
       const TextSelection(baseOffset: 11, extentOffset: 11, affinity: TextAffinity.upstream),
@@ -6000,7 +6007,6 @@ void main() {
     );
   });
 
-  // TODO(Renzo-Olivares): This test fails because SelectionArea/SelectableText does not yet implement KeepAlive support when focused/selected.
   testWidgets('keeps alive when has focus', (WidgetTester tester) async {
     TextSelection? selection;
 
