@@ -475,7 +475,8 @@ class SelectableText extends StatefulWidget {
   }
 }
 
-class _SelectableTextState extends State<SelectableText> {
+class _SelectableTextState extends State<SelectableText>
+    with AutomaticKeepAliveClientMixin<SelectableText> {
   FocusNode? _focusNode;
   FocusNode get _effectiveFocusNode =>
       widget.focusNode ?? (_focusNode ??= FocusNode(skipTraversal: true));
@@ -486,13 +487,33 @@ class _SelectableTextState extends State<SelectableText> {
   @override
   void initState() {
     super.initState();
+    _effectiveFocusNode.addListener(_handleFocusChanged);
     if (widget.autofocus) {
       _effectiveFocusNode.requestFocus();
     }
   }
 
   @override
+  void didUpdateWidget(SelectableText oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.focusNode != oldWidget.focusNode) {
+      (oldWidget.focusNode ?? _focusNode)?.removeListener(_handleFocusChanged);
+      (widget.focusNode ?? _focusNode)?.addListener(_handleFocusChanged);
+      updateKeepAlive();
+    }
+  }
+
+  // Like EditableText, keep this widget alive in a lazy list while it has focus.
+  @override
+  bool get wantKeepAlive => _effectiveFocusNode.hasFocus;
+
+  void _handleFocusChanged() {
+    updateKeepAlive();
+  }
+
+  @override
   void dispose() {
+    _effectiveFocusNode.removeListener(_handleFocusChanged);
     _focusNode?.dispose();
     super.dispose();
   }
@@ -503,6 +524,7 @@ class _SelectableTextState extends State<SelectableText> {
 
   @override
   Widget build(BuildContext context) {
+    super.build(context); // AutomaticKeepAliveClientMixin.
     assert(debugCheckHasMediaQuery(context));
     assert(debugCheckHasDirectionality(context));
     assert(
