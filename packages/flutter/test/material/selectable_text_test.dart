@@ -2014,7 +2014,7 @@ void main() {
   testWidgets('keyboard selection should call onSelectionChanged', (WidgetTester tester) async {
     final focusNode = FocusNode();
     addTearDown(focusNode.dispose);
-    final selections = <TextSelection>[];
+    TextSelection? newSelection;
     const testValue = 'a big house\njumped over a mouse';
     await tester.pumpWidget(
       MaterialApp(
@@ -2024,8 +2024,10 @@ void main() {
             child: SelectableText(
               testValue,
               maxLines: 3,
+              // The callback must fire exactly once per user action.
               onSelectionChanged: (TextSelection selection, SelectionChangedCause? cause) {
-                selections.add(selection);
+                expect(newSelection, isNull);
+                newSelection = selection;
               },
             ),
           ),
@@ -2036,30 +2038,25 @@ void main() {
     focusNode.requestFocus();
     await tester.pump();
 
-    expect(selections, isEmpty);
-
-    // Tap at the end of the text to focus and position caret.
-    await tester.tapAt(textOffsetToPosition(tester, 31));
+    await tester.tap(find.byType(SelectableText));
     await tester.pumpAndSettle();
-
-    expect(selections, isNotEmpty);
-    expect(selections.last, const TextSelection.collapsed(offset: 31));
-    selections.clear();
+    expect(newSelection!.baseOffset, 31);
+    expect(newSelection!.extentOffset, 31);
+    newSelection = null;
 
     await tester.tapAt(textOffsetToPosition(tester, 0));
     await tester.pumpAndSettle();
-
-    expect(selections.last, const TextSelection.collapsed(offset: 0));
-    selections.clear();
+    expect(newSelection!, const TextSelection.collapsed(offset: 0));
+    newSelection = null;
 
     // Select the first 5 characters.
     await tester.sendKeyDownEvent(LogicalKeyboardKey.shift);
     for (var i = 0; i < 5; i += 1) {
       await tester.sendKeyEvent(LogicalKeyboardKey.arrowRight);
       await tester.pumpAndSettle();
-      expect(selections.last.baseOffset, 0);
-      expect(selections.last.extentOffset, i + 1);
-      selections.clear();
+      expect(newSelection!.baseOffset, 0);
+      expect(newSelection!.extentOffset, i + 1);
+      newSelection = null;
     }
   }, variant: KeySimulatorTransitModeVariant.all());
 
@@ -5631,6 +5628,7 @@ void main() {
             child: SelectableText(
               string,
               onSelectionChanged: (TextSelection selection, SelectionChangedCause? cause) {
+                expect(newSelection, isNull);
                 newSelection = selection;
               },
             ),
