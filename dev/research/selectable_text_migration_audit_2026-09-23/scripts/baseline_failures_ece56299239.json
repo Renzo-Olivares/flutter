@@ -1,0 +1,590 @@
+[
+ {
+  "idx": 13,
+  "name": "Cursor blinks when showCursor is true",
+  "variant": "",
+  "file": "013.txt",
+  "lines": 19
+ },
+ {
+  "idx": 22,
+  "name": "selectable text can disable toolbar options",
+  "variant": "",
+  "file": "022.txt",
+  "lines": 23
+ },
+ {
+  "idx": 29,
+  "name": "Cannot drag one handle past the other",
+  "variant": "",
+  "file": "029.txt",
+  "lines": 20
+ },
+ {
+  "idx": 33,
+  "name": "Can scroll multiline input",
+  "variant": "",
+  "file": "033.txt",
+  "lines": 20
+ },
+ {
+  "idx": 34,
+  "name": "ScrollBehavior can be overridden",
+  "variant": "",
+  "file": "034.txt",
+  "lines": 20
+ },
+ {
+  "idx": 41,
+  "name": "Selectable text identifies as text field in semantics",
+  "variant": "",
+  "file": "041.txt",
+  "lines": 27
+ },
+ {
+  "idx": 42,
+  "name": "Selectable text rich text with spell out in semantics",
+  "variant": "",
+  "file": "042.txt",
+  "lines": 27
+ },
+ {
+  "idx": 43,
+  "name": "Selectable text rich text with locale in semantics",
+  "variant": "",
+  "file": "043.txt",
+  "lines": 27
+ },
+ {
+  "idx": 44,
+  "name": "Selectable rich text with gesture recognizer has correct semantics",
+  "variant": "",
+  "file": "044.txt",
+  "lines": 142
+ },
+ {
+  "idx": 45,
+  "name": "Shift test 1",
+  "variant": "RawKeyEvent",
+  "file": "045_RawKeyEvent.txt",
+  "lines": 20
+ },
+ {
+  "idx": 45,
+  "name": "Shift test 1",
+  "variant": "ui.KeyData then RawKeyEvent",
+  "file": "045_ui.KeyData_then_RawKeyEvent.txt",
+  "lines": 20
+ },
+ {
+  "idx": 47,
+  "name": "Control Shift test",
+  "variant": "RawKeyEvent",
+  "file": "047_RawKeyEvent.txt",
+  "lines": 20
+ },
+ {
+  "idx": 47,
+  "name": "Control Shift test",
+  "variant": "ui.KeyData then RawKeyEvent",
+  "file": "047_ui.KeyData_then_RawKeyEvent.txt",
+  "lines": 20
+ },
+ {
+  "idx": 48,
+  "name": "Down and up test",
+  "variant": "RawKeyEvent",
+  "file": "048_RawKeyEvent.txt",
+  "lines": 20
+ },
+ {
+  "idx": 48,
+  "name": "Down and up test",
+  "variant": "ui.KeyData then RawKeyEvent",
+  "file": "048_ui.KeyData_then_RawKeyEvent.txt",
+  "lines": 20
+ },
+ {
+  "idx": 49,
+  "name": "Down and up test 2",
+  "variant": "RawKeyEvent",
+  "file": "049_RawKeyEvent.txt",
+  "lines": 20
+ },
+ {
+  "idx": 49,
+  "name": "Down and up test 2",
+  "variant": "ui.KeyData then RawKeyEvent",
+  "file": "049_ui.KeyData_then_RawKeyEvent.txt",
+  "lines": 20
+ },
+ {
+  "idx": 53,
+  "name": "Changing positions of selectable text",
+  "variant": "RawKeyEvent",
+  "file": "053_RawKeyEvent.txt",
+  "lines": 20
+ },
+ {
+  "idx": 53,
+  "name": "Changing positions of selectable text",
+  "variant": "ui.KeyData then RawKeyEvent",
+  "file": "053_ui.KeyData_then_RawKeyEvent.txt",
+  "lines": 20
+ },
+ {
+  "idx": 54,
+  "name": "Changing focus test",
+  "variant": "RawKeyEvent",
+  "file": "054_RawKeyEvent.txt",
+  "lines": 20
+ },
+ {
+  "idx": 54,
+  "name": "Changing focus test",
+  "variant": "ui.KeyData then RawKeyEvent",
+  "file": "054_ui.KeyData_then_RawKeyEvent.txt",
+  "lines": 20
+ },
+ {
+  "idx": 56,
+  "name": "SelectableText baseline alignment no-strut",
+  "variant": "",
+  "file": "056.txt",
+  "lines": 20
+ },
+ {
+  "idx": 57,
+  "name": "SelectableText baseline alignment",
+  "variant": "",
+  "file": "057.txt",
+  "lines": 20
+ },
+ {
+  "idx": 58,
+  "name": "SelectableText semantics",
+  "variant": "",
+  "file": "058.txt",
+  "lines": 108
+ },
+ {
+  "idx": 60,
+  "name": "SelectableText semantics, enableInteractiveSelection = false",
+  "variant": "",
+  "file": "060.txt",
+  "lines": 103
+ },
+ {
+  "idx": 61,
+  "name": "SelectableText semantics for selections",
+  "variant": "",
+  "file": "061.txt",
+  "lines": 182
+ },
+ {
+  "idx": 62,
+  "name": "semantic nodes of offscreen recognizers are marked hidden",
+  "variant": "",
+  "file": "062.txt",
+  "lines": 222
+ },
+ {
+  "idx": 63,
+  "name": "SelectableText change selection with semantics",
+  "variant": "",
+  "file": "063.txt",
+  "lines": 182
+ },
+ {
+  "idx": 64,
+  "name": "Can activate SelectableText with explicit controller via semantics",
+  "variant": "",
+  "file": "064.txt",
+  "lines": 105
+ },
+ {
+  "idx": 68,
+  "name": "tap moves cursor to the edge of the word it tapped",
+  "variant": "TargetPlatform.iOS",
+  "file": "068_TargetPlatform.iOS.txt",
+  "lines": 22
+ },
+ {
+  "idx": 69,
+  "name": "tap moves cursor to the position tapped (Android)",
+  "variant": "TargetPlatform.android",
+  "file": "069_TargetPlatform.android.txt",
+  "lines": 22
+ },
+ {
+  "idx": 69,
+  "name": "tap moves cursor to the position tapped (Android)",
+  "variant": "TargetPlatform.fuchsia",
+  "file": "069_TargetPlatform.fuchsia.txt",
+  "lines": 22
+ },
+ {
+  "idx": 69,
+  "name": "tap moves cursor to the position tapped (Android)",
+  "variant": "TargetPlatform.linux",
+  "file": "069_TargetPlatform.linux.txt",
+  "lines": 22
+ },
+ {
+  "idx": 69,
+  "name": "tap moves cursor to the position tapped (Android)",
+  "variant": "TargetPlatform.macOS",
+  "file": "069_TargetPlatform.macOS.txt",
+  "lines": 22
+ },
+ {
+  "idx": 69,
+  "name": "tap moves cursor to the position tapped (Android)",
+  "variant": "TargetPlatform.windows",
+  "file": "069_TargetPlatform.windows.txt",
+  "lines": 22
+ },
+ {
+  "idx": 70,
+  "name": "two slow taps do not trigger a word selection on iOS",
+  "variant": "TargetPlatform.iOS",
+  "file": "070_TargetPlatform.iOS.txt",
+  "lines": 22
+ },
+ {
+  "idx": 71,
+  "name": "two slow taps do not trigger a word selection",
+  "variant": "TargetPlatform.android",
+  "file": "071_TargetPlatform.android.txt",
+  "lines": 22
+ },
+ {
+  "idx": 71,
+  "name": "two slow taps do not trigger a word selection",
+  "variant": "TargetPlatform.fuchsia",
+  "file": "071_TargetPlatform.fuchsia.txt",
+  "lines": 22
+ },
+ {
+  "idx": 71,
+  "name": "two slow taps do not trigger a word selection",
+  "variant": "TargetPlatform.linux",
+  "file": "071_TargetPlatform.linux.txt",
+  "lines": 22
+ },
+ {
+  "idx": 71,
+  "name": "two slow taps do not trigger a word selection",
+  "variant": "TargetPlatform.macOS",
+  "file": "071_TargetPlatform.macOS.txt",
+  "lines": 22
+ },
+ {
+  "idx": 71,
+  "name": "two slow taps do not trigger a word selection",
+  "variant": "TargetPlatform.windows",
+  "file": "071_TargetPlatform.windows.txt",
+  "lines": 22
+ },
+ {
+  "idx": 72,
+  "name": "double tap selects word and first tap of double tap moves cursor",
+  "variant": "TargetPlatform.iOS",
+  "file": "072_TargetPlatform.iOS.txt",
+  "lines": 22
+ },
+ {
+  "idx": 72,
+  "name": "double tap selects word and first tap of double tap moves cursor",
+  "variant": "TargetPlatform.macOS",
+  "file": "072_TargetPlatform.macOS.txt",
+  "lines": 22
+ },
+ {
+  "idx": 73,
+  "name": "double tap selects word and first tap of double tap moves cursor and shows toolbar (Android)",
+  "variant": "",
+  "file": "073.txt",
+  "lines": 22
+ },
+ {
+  "idx": 75,
+  "name": "double tap hold selects word",
+  "variant": "TargetPlatform.iOS",
+  "file": "075_TargetPlatform.iOS.txt",
+  "lines": 27
+ },
+ {
+  "idx": 77,
+  "name": "tap after a double tap select is not affected (iOS)",
+  "variant": "TargetPlatform.iOS",
+  "file": "077_TargetPlatform.iOS.txt",
+  "lines": 20
+ },
+ {
+  "idx": 78,
+  "name": "tap after a double tap select is not affected (macOS)",
+  "variant": "TargetPlatform.macOS",
+  "file": "078_TargetPlatform.macOS.txt",
+  "lines": 20
+ },
+ {
+  "idx": 79,
+  "name": "long press selects word and shows toolbar (iOS)",
+  "variant": "TargetPlatform.iOS",
+  "file": "079_TargetPlatform.iOS.txt",
+  "lines": 27
+ },
+ {
+  "idx": 79,
+  "name": "long press selects word and shows toolbar (iOS)",
+  "variant": "TargetPlatform.macOS",
+  "file": "079_TargetPlatform.macOS.txt",
+  "lines": 27
+ },
+ {
+  "idx": 85,
+  "name": "long press tap cannot initiate a double tap on macOS",
+  "variant": "TargetPlatform.macOS",
+  "file": "085_TargetPlatform.macOS.txt",
+  "lines": 22
+ },
+ {
+  "idx": 86,
+  "name": "long press tap cannot initiate a double tap on iOS",
+  "variant": "TargetPlatform.iOS",
+  "file": "086_TargetPlatform.iOS.txt",
+  "lines": 26
+ },
+ {
+  "idx": 88,
+  "name": "long press drag extends the selection to the word under the drag and shows toolbar on lift (iOS)",
+  "variant": "TargetPlatform.iOS",
+  "file": "088_TargetPlatform.iOS.txt",
+  "lines": 28
+ },
+ {
+  "idx": 89,
+  "name": "long press drag moves the cursor under the drag and shows toolbar on lift (macOS)",
+  "variant": "TargetPlatform.macOS",
+  "file": "089_TargetPlatform.macOS.txt",
+  "lines": 28
+ },
+ {
+  "idx": 90,
+  "name": "long press drag can edge scroll when inside a scrollable",
+  "variant": "TargetPlatform.iOS",
+  "file": "090_TargetPlatform.iOS.txt",
+  "lines": 27
+ },
+ {
+  "idx": 91,
+  "name": "Desktop mouse drag can edge scroll when inside a horizontal scrollable",
+  "variant": "TargetPlatform.linux",
+  "file": "091_TargetPlatform.linux.txt",
+  "lines": 22
+ },
+ {
+  "idx": 91,
+  "name": "Desktop mouse drag can edge scroll when inside a horizontal scrollable",
+  "variant": "TargetPlatform.macOS",
+  "file": "091_TargetPlatform.macOS.txt",
+  "lines": 22
+ },
+ {
+  "idx": 91,
+  "name": "Desktop mouse drag can edge scroll when inside a horizontal scrollable",
+  "variant": "TargetPlatform.windows",
+  "file": "091_TargetPlatform.windows.txt",
+  "lines": 22
+ },
+ {
+  "idx": 92,
+  "name": "long press drag can edge scroll",
+  "variant": "TargetPlatform.android",
+  "file": "092_TargetPlatform.android.txt",
+  "lines": 20
+ },
+ {
+  "idx": 92,
+  "name": "long press drag can edge scroll",
+  "variant": "TargetPlatform.iOS",
+  "file": "092_TargetPlatform.iOS.txt",
+  "lines": 27
+ },
+ {
+  "idx": 93,
+  "name": "long tap still selects after a double tap select (iOS)",
+  "variant": "TargetPlatform.iOS",
+  "file": "093_TargetPlatform.iOS.txt",
+  "lines": 22
+ },
+ {
+  "idx": 94,
+  "name": "long tap still selects after a double tap select (macOS)",
+  "variant": "TargetPlatform.macOS",
+  "file": "094_TargetPlatform.macOS.txt",
+  "lines": 27
+ },
+ {
+  "idx": 95,
+  "name": "double tap after a long tap is not affected",
+  "variant": "TargetPlatform.iOS",
+  "file": "095_TargetPlatform.iOS.txt",
+  "lines": 22
+ },
+ {
+  "idx": 95,
+  "name": "double tap after a long tap is not affected",
+  "variant": "TargetPlatform.macOS",
+  "file": "095_TargetPlatform.macOS.txt",
+  "lines": 22
+ },
+ {
+  "idx": 96,
+  "name": "double tap chains work",
+  "variant": "TargetPlatform.iOS",
+  "file": "096_TargetPlatform.iOS.txt",
+  "lines": 22
+ },
+ {
+  "idx": 96,
+  "name": "double tap chains work",
+  "variant": "TargetPlatform.macOS",
+  "file": "096_TargetPlatform.macOS.txt",
+  "lines": 22
+ },
+ {
+  "idx": 98,
+  "name": "force press selects word",
+  "variant": "TargetPlatform.iOS",
+  "file": "098_TargetPlatform.iOS.txt",
+  "lines": 20
+ },
+ {
+  "idx": 99,
+  "name": "tap on non-force-press-supported devices work",
+  "variant": "TargetPlatform.iOS",
+  "file": "099_TargetPlatform.iOS.txt",
+  "lines": 22
+ },
+ {
+  "idx": 119,
+  "name": "text span with long press gesture recognizer works in selectable rich text",
+  "variant": "",
+  "file": "119.txt",
+  "lines": 22
+ },
+ {
+  "idx": 121,
+  "name": "The handles show after pressing Select All",
+  "variant": "TargetPlatform.android",
+  "file": "121_TargetPlatform.android.txt",
+  "lines": 23
+ },
+ {
+  "idx": 121,
+  "name": "The handles show after pressing Select All",
+  "variant": "TargetPlatform.fuchsia",
+  "file": "121_TargetPlatform.fuchsia.txt",
+  "lines": 23
+ },
+ {
+  "idx": 122,
+  "name": "The Select All calls on selection changed",
+  "variant": "TargetPlatform.android",
+  "file": "122_TargetPlatform.android.txt",
+  "lines": 91
+ },
+ {
+  "idx": 122,
+  "name": "The Select All calls on selection changed",
+  "variant": "TargetPlatform.fuchsia",
+  "file": "122_TargetPlatform.fuchsia.txt",
+  "lines": 91
+ },
+ {
+  "idx": 125,
+  "name": "onSelectionChanged is called when selection changes",
+  "variant": "",
+  "file": "125.txt",
+  "lines": 20
+ },
+ {
+  "idx": 126,
+  "name": "selecting a space selects the previous word on mobile",
+  "variant": "TargetPlatform.android",
+  "file": "126_TargetPlatform.android.txt",
+  "lines": 20
+ },
+ {
+  "idx": 126,
+  "name": "selecting a space selects the previous word on mobile",
+  "variant": "TargetPlatform.iOS",
+  "file": "126_TargetPlatform.iOS.txt",
+  "lines": 20
+ },
+ {
+  "idx": 127,
+  "name": "selecting a space selects the space on non-mobile platforms",
+  "variant": "TargetPlatform.fuchsia",
+  "file": "127_TargetPlatform.fuchsia.txt",
+  "lines": 20
+ },
+ {
+  "idx": 127,
+  "name": "selecting a space selects the space on non-mobile platforms",
+  "variant": "TargetPlatform.linux",
+  "file": "127_TargetPlatform.linux.txt",
+  "lines": 20
+ },
+ {
+  "idx": 127,
+  "name": "selecting a space selects the space on non-mobile platforms",
+  "variant": "TargetPlatform.macOS",
+  "file": "127_TargetPlatform.macOS.txt",
+  "lines": 20
+ },
+ {
+  "idx": 127,
+  "name": "selecting a space selects the space on non-mobile platforms",
+  "variant": "TargetPlatform.windows",
+  "file": "127_TargetPlatform.windows.txt",
+  "lines": 20
+ },
+ {
+  "idx": 128,
+  "name": "double tapping a space selects the previous word on mobile",
+  "variant": "TargetPlatform.android",
+  "file": "128_TargetPlatform.android.txt",
+  "lines": 20
+ },
+ {
+  "idx": 128,
+  "name": "double tapping a space selects the previous word on mobile",
+  "variant": "TargetPlatform.iOS",
+  "file": "128_TargetPlatform.iOS.txt",
+  "lines": 20
+ },
+ {
+  "idx": 129,
+  "name": "text selection style 1",
+  "variant": "",
+  "file": "129.txt",
+  "lines": 29
+ },
+ {
+  "idx": 130,
+  "name": "text selection style 2",
+  "variant": "",
+  "file": "130.txt",
+  "lines": 29
+ },
+ {
+  "idx": 136,
+  "name": "SelectableText respects MediaQueryData.lineHeightScaleFactorOverride, MediaQueryData.letterSpacingOverride, and MediaQueryData.wordSpacingOverride",
+  "variant": "",
+  "file": "136.txt",
+  "lines": 138
+ }
+]

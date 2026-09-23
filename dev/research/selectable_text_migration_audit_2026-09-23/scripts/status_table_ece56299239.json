@@ -1,0 +1,1753 @@
+[
+ {
+  "idx": 1,
+  "name": "throw if no Overlay widget exists above",
+  "change": "MODIFIED",
+  "diff_lines": 5,
+  "head": "FAILING",
+  "head_variants": [],
+  "orig_on_new": "FAILING",
+  "orig_variants": [],
+  "orig_textoffsetfix": "FAILING"
+ },
+ {
+  "idx": 2,
+  "name": "Do not crash when remove SelectableText during handle drag",
+  "change": "MODIFIED",
+  "diff_lines": 23,
+  "head": "PASSING",
+  "head_variants": [],
+  "orig_on_new": "FAILING",
+  "orig_variants": [],
+  "orig_textoffsetfix": "FAILING"
+ },
+ {
+  "idx": 3,
+  "name": "has expected defaults",
+  "change": "UNCHANGED",
+  "diff_lines": 0,
+  "head": "PASSING",
+  "head_variants": [],
+  "orig_on_new": "PASSING",
+  "orig_variants": [],
+  "orig_textoffsetfix": "PASSING"
+ },
+ {
+  "idx": 4,
+  "name": "Rich selectable text has expected defaults",
+  "change": "MODIFIED",
+  "diff_lines": 34,
+  "head": "PASSING",
+  "head_variants": [],
+  "orig_on_new": "FAILING",
+  "orig_variants": [],
+  "orig_textoffsetfix": "FAILING"
+ },
+ {
+  "idx": 5,
+  "name": "Rich selectable text supports WidgetSpan",
+  "change": "MODIFIED",
+  "diff_lines": 38,
+  "head": "PASSING",
+  "head_variants": [],
+  "orig_on_new": "FAILING",
+  "orig_variants": [],
+  "orig_textoffsetfix": "FAILING"
+ },
+ {
+  "idx": 6,
+  "name": "no text keyboard when widget is focused",
+  "change": "UNCHANGED",
+  "diff_lines": 0,
+  "head": "PASSING",
+  "head_variants": [],
+  "orig_on_new": "PASSING",
+  "orig_variants": [],
+  "orig_textoffsetfix": "PASSING"
+ },
+ {
+  "idx": 7,
+  "name": "uses DefaultSelectionStyle for selection colors if provided",
+  "change": "ADDED",
+  "diff_lines": 0,
+  "head": "PASSING",
+  "head_variants": [],
+  "orig_on_new": "FAILING",
+  "orig_variants": [],
+  "orig_textoffsetfix": "FAILING"
+ },
+ {
+  "idx": 8,
+  "name": "Selectable Text can have custom selection color",
+  "change": "MODIFIED",
+  "diff_lines": 4,
+  "head": "PASSING",
+  "head_variants": [],
+  "orig_on_new": "FAILING",
+  "orig_variants": [],
+  "orig_textoffsetfix": "FAILING"
+ },
+ {
+  "idx": 9,
+  "name": "Selectable Text has adaptive size",
+  "change": "MODIFIED",
+  "diff_lines": 4,
+  "head": "PASSING",
+  "head_variants": [],
+  "orig_on_new": "FAILING",
+  "orig_variants": [],
+  "orig_textoffsetfix": "FAILING"
+ },
+ {
+  "idx": 10,
+  "name": "can scale with textScaleFactor",
+  "change": "UNCHANGED",
+  "diff_lines": 0,
+  "head": "PASSING",
+  "head_variants": [],
+  "orig_on_new": "PASSING",
+  "orig_variants": [],
+  "orig_textoffsetfix": "PASSING"
+ },
+ {
+  "idx": 11,
+  "name": "can switch between textWidthBasis",
+  "change": "MODIFIED",
+  "diff_lines": 2,
+  "head": "PASSING",
+  "head_variants": [],
+  "orig_on_new": "FAILING",
+  "orig_variants": [],
+  "orig_textoffsetfix": "FAILING"
+ },
+ {
+  "idx": 12,
+  "name": "can switch between textHeightBehavior",
+  "change": "MODIFIED",
+  "diff_lines": 4,
+  "head": "PASSING",
+  "head_variants": [],
+  "orig_on_new": "FAILING",
+  "orig_variants": [],
+  "orig_textoffsetfix": "FAILING"
+ },
+ {
+  "idx": 13,
+  "name": "Cursor blinks when showCursor is true",
+  "change": "MODIFIED",
+  "diff_lines": 40,
+  "head": "FAILING",
+  "head_variants": [],
+  "orig_on_new": "FAILING",
+  "orig_variants": [],
+  "orig_textoffsetfix": "FAILING"
+ },
+ {
+  "idx": 14,
+  "name": "selectable text selection toolbar renders correctly inside opacity",
+  "change": "MODIFIED",
+  "diff_lines": 11,
+  "head": "PASSING",
+  "head_variants": [],
+  "orig_on_new": "FAILING",
+  "orig_variants": [],
+  "orig_textoffsetfix": "FAILING"
+ },
+ {
+  "idx": 15,
+  "name": "Caret position is updated on tap",
+  "change": "MODIFIED",
+  "diff_lines": 23,
+  "head": "PASSING",
+  "head_variants": [],
+  "orig_on_new": "FAILING",
+  "orig_variants": [],
+  "orig_textoffsetfix": "FAILING"
+ },
+ {
+  "idx": 16,
+  "name": "enableInteractiveSelection = false, tap",
+  "change": "MODIFIED",
+  "diff_lines": 20,
+  "head": "PASSING",
+  "head_variants": [],
+  "orig_on_new": "FAILING",
+  "orig_variants": [],
+  "orig_textoffsetfix": "FAILING"
+ },
+ {
+  "idx": 17,
+  "name": "enableInteractiveSelection = false, long-press",
+  "change": "MODIFIED",
+  "diff_lines": 21,
+  "head": "PASSING",
+  "head_variants": [],
+  "orig_on_new": "FAILING",
+  "orig_variants": [],
+  "orig_textoffsetfix": "FAILING"
+ },
+ {
+  "idx": 18,
+  "name": "Can long press to select",
+  "change": "MODIFIED",
+  "diff_lines": 27,
+  "head": "PASSING",
+  "head_variants": [],
+  "orig_on_new": "FAILING",
+  "orig_variants": [],
+  "orig_textoffsetfix": "FAILING"
+ },
+ {
+  "idx": 19,
+  "name": "Slight movements in longpress don't hide/show handles",
+  "change": "MODIFIED",
+  "diff_lines": 5,
+  "head": "PASSING",
+  "head_variants": [],
+  "orig_on_new": "FAILING",
+  "orig_variants": [],
+  "orig_textoffsetfix": "FAILING"
+ },
+ {
+  "idx": 20,
+  "name": "Mouse long press is just like a tap",
+  "change": "MODIFIED",
+  "diff_lines": 19,
+  "head": "PASSING",
+  "head_variants": [],
+  "orig_on_new": "FAILING",
+  "orig_variants": [],
+  "orig_textoffsetfix": "FAILING"
+ },
+ {
+  "idx": 21,
+  "name": "selectable text basic",
+  "change": "MODIFIED",
+  "diff_lines": 34,
+  "head": "PASSING",
+  "head_variants": [],
+  "orig_on_new": "FAILING",
+  "orig_variants": [],
+  "orig_textoffsetfix": "FAILING"
+ },
+ {
+  "idx": 22,
+  "name": "selectable text can disable toolbar options",
+  "change": "MODIFIED",
+  "diff_lines": 5,
+  "head": "FAILING",
+  "head_variants": [],
+  "orig_on_new": "FAILING",
+  "orig_variants": [],
+  "orig_textoffsetfix": "FAILING"
+ },
+ {
+  "idx": 23,
+  "name": "Can select text by dragging with a mouse",
+  "change": "MODIFIED",
+  "diff_lines": 18,
+  "head": "PASSING",
+  "head_variants": [],
+  "orig_on_new": "FAILING",
+  "orig_variants": [],
+  "orig_textoffsetfix": "FAILING"
+ },
+ {
+  "idx": 24,
+  "name": "Continuous dragging does not cause flickering",
+  "change": "MODIFIED",
+  "diff_lines": 26,
+  "head": "PASSING",
+  "head_variants": [],
+  "orig_on_new": "FAILING",
+  "orig_variants": [],
+  "orig_textoffsetfix": "FAILING"
+ },
+ {
+  "idx": 25,
+  "name": "Dragging in opposite direction also works",
+  "change": "MODIFIED",
+  "diff_lines": 18,
+  "head": "PASSING",
+  "head_variants": [],
+  "orig_on_new": "FAILING",
+  "orig_variants": [],
+  "orig_textoffsetfix": "FAILING"
+ },
+ {
+  "idx": 26,
+  "name": "Slow mouse dragging also selects text",
+  "change": "MODIFIED",
+  "diff_lines": 19,
+  "head": "PASSING",
+  "head_variants": [],
+  "orig_on_new": "FAILING",
+  "orig_variants": [],
+  "orig_textoffsetfix": "FAILING"
+ },
+ {
+  "idx": 27,
+  "name": "Can drag handles to change selection",
+  "change": "MODIFIED",
+  "diff_lines": 45,
+  "head": "PASSING",
+  "head_variants": [],
+  "orig_on_new": "FAILING",
+  "orig_variants": [],
+  "orig_textoffsetfix": "FAILING"
+ },
+ {
+  "idx": 28,
+  "name": "Dragging handles calls onSelectionChanged",
+  "change": "MODIFIED",
+  "diff_lines": 16,
+  "head": "PASSING",
+  "head_variants": [],
+  "orig_on_new": "FAILING",
+  "orig_variants": [],
+  "orig_textoffsetfix": "FAILING"
+ },
+ {
+  "idx": 29,
+  "name": "Cannot drag one handle past the other",
+  "change": "MODIFIED",
+  "diff_lines": 95,
+  "head": "FAILING",
+  "head_variants": [],
+  "orig_on_new": "FAILING",
+  "orig_variants": [],
+  "orig_textoffsetfix": "FAILING"
+ },
+ {
+  "idx": 30,
+  "name": "Can use selection toolbar",
+  "change": "MODIFIED",
+  "diff_lines": 52,
+  "head": "PASSING",
+  "head_variants": [],
+  "orig_on_new": "FAILING",
+  "orig_variants": [],
+  "orig_textoffsetfix": "FAILING"
+ },
+ {
+  "idx": 31,
+  "name": "Selectable height with maxLine",
+  "change": "UNCHANGED",
+  "diff_lines": 0,
+  "head": "PASSING",
+  "head_variants": [],
+  "orig_on_new": "PASSING",
+  "orig_variants": [],
+  "orig_textoffsetfix": "PASSING"
+ },
+ {
+  "idx": 32,
+  "name": "Can drag handles to change selection in multiline",
+  "change": "MODIFIED",
+  "diff_lines": 50,
+  "head": "PASSING",
+  "head_variants": [],
+  "orig_on_new": "FAILING",
+  "orig_variants": [],
+  "orig_textoffsetfix": "FAILING"
+ },
+ {
+  "idx": 33,
+  "name": "Can scroll multiline input",
+  "change": "MODIFIED",
+  "diff_lines": 24,
+  "head": "FAILING",
+  "head_variants": [],
+  "orig_on_new": "FAILING",
+  "orig_variants": [],
+  "orig_textoffsetfix": "FAILING"
+ },
+ {
+  "idx": 34,
+  "name": "ScrollBehavior can be overridden",
+  "change": "MODIFIED",
+  "diff_lines": 2,
+  "head": "FAILING",
+  "head_variants": [],
+  "orig_on_new": "FAILING",
+  "orig_variants": [],
+  "orig_textoffsetfix": "FAILING"
+ },
+ {
+  "idx": 35,
+  "name": "minLines cannot be greater than maxLines",
+  "change": "UNCHANGED",
+  "diff_lines": 0,
+  "head": "PASSING",
+  "head_variants": [],
+  "orig_on_new": "PASSING",
+  "orig_variants": [],
+  "orig_textoffsetfix": "PASSING"
+ },
+ {
+  "idx": 36,
+  "name": "Selectable height with minLine",
+  "change": "UNCHANGED",
+  "diff_lines": 0,
+  "head": "PASSING",
+  "head_variants": [],
+  "orig_on_new": "PASSING",
+  "orig_variants": [],
+  "orig_textoffsetfix": "PASSING"
+ },
+ {
+  "idx": 37,
+  "name": "Can align to center",
+  "change": "MODIFIED",
+  "diff_lines": 8,
+  "head": "PASSING",
+  "head_variants": [],
+  "orig_on_new": "FAILING",
+  "orig_variants": [],
+  "orig_textoffsetfix": "FAILING"
+ },
+ {
+  "idx": 38,
+  "name": "Can align to center within center",
+  "change": "MODIFIED",
+  "diff_lines": 8,
+  "head": "PASSING",
+  "head_variants": [],
+  "orig_on_new": "FAILING",
+  "orig_variants": [],
+  "orig_textoffsetfix": "FAILING"
+ },
+ {
+  "idx": 39,
+  "name": "Tapping outside SelectableText clears the selection",
+  "change": "MODIFIED",
+  "diff_lines": 60,
+  "head": "PASSING",
+  "head_variants": [],
+  "orig_on_new": "FAILING",
+  "orig_variants": [],
+  "orig_textoffsetfix": "FAILING"
+ },
+ {
+  "idx": 40,
+  "name": "Selectable text is skipped during focus traversal",
+  "change": "UNCHANGED",
+  "diff_lines": 0,
+  "head": "PASSING",
+  "head_variants": [],
+  "orig_on_new": "PASSING",
+  "orig_variants": [],
+  "orig_textoffsetfix": "PASSING"
+ },
+ {
+  "idx": 41,
+  "name": "Selectable text identifies as text field in semantics",
+  "change": "UNCHANGED",
+  "diff_lines": 0,
+  "head": "FAILING",
+  "head_variants": [],
+  "orig_on_new": "FAILING",
+  "orig_variants": [],
+  "orig_textoffsetfix": "FAILING"
+ },
+ {
+  "idx": 42,
+  "name": "Selectable text rich text with spell out in semantics",
+  "change": "UNCHANGED",
+  "diff_lines": 0,
+  "head": "FAILING",
+  "head_variants": [],
+  "orig_on_new": "FAILING",
+  "orig_variants": [],
+  "orig_textoffsetfix": "FAILING"
+ },
+ {
+  "idx": 43,
+  "name": "Selectable text rich text with locale in semantics",
+  "change": "UNCHANGED",
+  "diff_lines": 0,
+  "head": "FAILING",
+  "head_variants": [],
+  "orig_on_new": "FAILING",
+  "orig_variants": [],
+  "orig_textoffsetfix": "FAILING"
+ },
+ {
+  "idx": 44,
+  "name": "Selectable rich text with gesture recognizer has correct semantics",
+  "change": "UNCHANGED",
+  "diff_lines": 0,
+  "head": "FAILING",
+  "head_variants": [],
+  "orig_on_new": "FAILING",
+  "orig_variants": [],
+  "orig_textoffsetfix": "FAILING"
+ },
+ {
+  "idx": 45,
+  "name": "Shift test 1",
+  "change": "MODIFIED",
+  "diff_lines": 16,
+  "head": "FAILING",
+  "head_variants": [
+   "RawKeyEvent",
+   "ui.KeyData then RawKeyEvent"
+  ],
+  "orig_on_new": "FAILING",
+  "orig_variants": [
+   "RawKeyEvent",
+   "ui.KeyData then RawKeyEvent"
+  ],
+  "orig_textoffsetfix": "FAILING"
+ },
+ {
+  "idx": 46,
+  "name": "Shift test 2",
+  "change": "MODIFIED",
+  "diff_lines": 4,
+  "head": "PASSING",
+  "head_variants": [],
+  "orig_on_new": "FAILING",
+  "orig_variants": [
+   "RawKeyEvent",
+   "ui.KeyData then RawKeyEvent"
+  ],
+  "orig_textoffsetfix": "FAILING"
+ },
+ {
+  "idx": 47,
+  "name": "Control Shift test",
+  "change": "MODIFIED",
+  "diff_lines": 20,
+  "head": "FAILING",
+  "head_variants": [
+   "RawKeyEvent",
+   "ui.KeyData then RawKeyEvent"
+  ],
+  "orig_on_new": "FAILING",
+  "orig_variants": [
+   "RawKeyEvent",
+   "ui.KeyData then RawKeyEvent"
+  ],
+  "orig_textoffsetfix": "FAILING"
+ },
+ {
+  "idx": 48,
+  "name": "Down and up test",
+  "change": "MODIFIED",
+  "diff_lines": 30,
+  "head": "FAILING",
+  "head_variants": [
+   "RawKeyEvent",
+   "ui.KeyData then RawKeyEvent"
+  ],
+  "orig_on_new": "FAILING",
+  "orig_variants": [
+   "RawKeyEvent",
+   "ui.KeyData then RawKeyEvent"
+  ],
+  "orig_textoffsetfix": "FAILING"
+ },
+ {
+  "idx": 49,
+  "name": "Down and up test 2",
+  "change": "MODIFIED",
+  "diff_lines": 14,
+  "head": "FAILING",
+  "head_variants": [
+   "RawKeyEvent",
+   "ui.KeyData then RawKeyEvent"
+  ],
+  "orig_on_new": "FAILING",
+  "orig_variants": [
+   "RawKeyEvent",
+   "ui.KeyData then RawKeyEvent"
+  ],
+  "orig_textoffsetfix": "FAILING"
+ },
+ {
+  "idx": 50,
+  "name": "Copy test",
+  "change": "MODIFIED",
+  "diff_lines": 5,
+  "head": "PASSING",
+  "head_variants": [],
+  "orig_on_new": "FAILING",
+  "orig_variants": [
+   "RawKeyEvent",
+   "ui.KeyData then RawKeyEvent"
+  ],
+  "orig_textoffsetfix": "FAILING"
+ },
+ {
+  "idx": 51,
+  "name": "Select all test",
+  "change": "MODIFIED",
+  "diff_lines": 17,
+  "head": "PASSING",
+  "head_variants": [],
+  "orig_on_new": "FAILING",
+  "orig_variants": [
+   "RawKeyEvent",
+   "ui.KeyData then RawKeyEvent"
+  ],
+  "orig_textoffsetfix": "FAILING"
+ },
+ {
+  "idx": 52,
+  "name": "keyboard selection should call onSelectionChanged",
+  "change": "MODIFIED",
+  "diff_lines": 33,
+  "head": "PASSING",
+  "head_variants": [],
+  "orig_on_new": "FAILING",
+  "orig_variants": [
+   "RawKeyEvent",
+   "ui.KeyData then RawKeyEvent"
+  ],
+  "orig_textoffsetfix": "FAILING"
+ },
+ {
+  "idx": 53,
+  "name": "Changing positions of selectable text",
+  "change": "MODIFIED",
+  "diff_lines": 40,
+  "head": "FAILING",
+  "head_variants": [
+   "RawKeyEvent",
+   "ui.KeyData then RawKeyEvent"
+  ],
+  "orig_on_new": "FAILING",
+  "orig_variants": [
+   "RawKeyEvent",
+   "ui.KeyData then RawKeyEvent"
+  ],
+  "orig_textoffsetfix": "FAILING"
+ },
+ {
+  "idx": 54,
+  "name": "Changing focus test",
+  "change": "MODIFIED",
+  "diff_lines": 48,
+  "head": "FAILING",
+  "head_variants": [
+   "RawKeyEvent",
+   "ui.KeyData then RawKeyEvent"
+  ],
+  "orig_on_new": "FAILING",
+  "orig_variants": [
+   "RawKeyEvent",
+   "ui.KeyData then RawKeyEvent"
+  ],
+  "orig_textoffsetfix": "FAILING"
+ },
+ {
+  "idx": 55,
+  "name": "Caret works when maxLines is null",
+  "change": "MODIFIED",
+  "diff_lines": 21,
+  "head": "PASSING",
+  "head_variants": [],
+  "orig_on_new": "FAILING",
+  "orig_variants": [],
+  "orig_textoffsetfix": "FAILING"
+ },
+ {
+  "idx": 56,
+  "name": "SelectableText baseline alignment no-strut",
+  "change": "MODIFIED",
+  "diff_lines": 4,
+  "head": "FAILING",
+  "head_variants": [],
+  "orig_on_new": "FAILING",
+  "orig_variants": [],
+  "orig_textoffsetfix": "FAILING"
+ },
+ {
+  "idx": 57,
+  "name": "SelectableText baseline alignment",
+  "change": "MODIFIED",
+  "diff_lines": 4,
+  "head": "FAILING",
+  "head_variants": [],
+  "orig_on_new": "FAILING",
+  "orig_variants": [],
+  "orig_textoffsetfix": "FAILING"
+ },
+ {
+  "idx": 58,
+  "name": "SelectableText semantics",
+  "change": "MODIFIED",
+  "diff_lines": 10,
+  "head": "FAILING",
+  "head_variants": [],
+  "orig_on_new": "FAILING",
+  "orig_variants": [],
+  "orig_textoffsetfix": "FAILING"
+ },
+ {
+  "idx": 59,
+  "name": "SelectableText semantics, with semanticsLabel",
+  "change": "UNCHANGED",
+  "diff_lines": 0,
+  "head": "PASSING",
+  "head_variants": [],
+  "orig_on_new": "PASSING",
+  "orig_variants": [],
+  "orig_textoffsetfix": "PASSING"
+ },
+ {
+  "idx": 60,
+  "name": "SelectableText semantics, enableInteractiveSelection = false",
+  "change": "UNCHANGED",
+  "diff_lines": 0,
+  "head": "FAILING",
+  "head_variants": [],
+  "orig_on_new": "FAILING",
+  "orig_variants": [],
+  "orig_textoffsetfix": "FAILING"
+ },
+ {
+  "idx": 61,
+  "name": "SelectableText semantics for selections",
+  "change": "MODIFIED",
+  "diff_lines": 151,
+  "head": "FAILING",
+  "head_variants": [],
+  "orig_on_new": "FAILING",
+  "orig_variants": [],
+  "orig_textoffsetfix": "FAILING"
+ },
+ {
+  "idx": 62,
+  "name": "semantic nodes of offscreen recognizers are marked hidden",
+  "change": "UNCHANGED",
+  "diff_lines": 0,
+  "head": "FAILING",
+  "head_variants": [],
+  "orig_on_new": "FAILING",
+  "orig_variants": [],
+  "orig_textoffsetfix": "FAILING"
+ },
+ {
+  "idx": 63,
+  "name": "SelectableText change selection with semantics",
+  "change": "MODIFIED",
+  "diff_lines": 142,
+  "head": "FAILING",
+  "head_variants": [],
+  "orig_on_new": "FAILING",
+  "orig_variants": [],
+  "orig_textoffsetfix": "FAILING"
+ },
+ {
+  "idx": 64,
+  "name": "Can activate SelectableText with explicit controller via semantics",
+  "change": "UNCHANGED",
+  "diff_lines": 0,
+  "head": "FAILING",
+  "head_variants": [],
+  "orig_on_new": "FAILING",
+  "orig_variants": [],
+  "orig_textoffsetfix": "FAILING"
+ },
+ {
+  "idx": 65,
+  "name": "onTap is called upon tap",
+  "change": "UNCHANGED",
+  "diff_lines": 0,
+  "head": "PASSING",
+  "head_variants": [],
+  "orig_on_new": "PASSING",
+  "orig_variants": [],
+  "orig_textoffsetfix": "PASSING"
+ },
+ {
+  "idx": 66,
+  "name": "SelectableText style is merged with default text style",
+  "change": "MODIFIED",
+  "diff_lines": 31,
+  "head": "PASSING",
+  "head_variants": [],
+  "orig_on_new": "FAILING",
+  "orig_variants": [],
+  "orig_textoffsetfix": "FAILING"
+ },
+ {
+  "idx": 67,
+  "name": "style enforces required fields",
+  "change": "UNCHANGED",
+  "diff_lines": 0,
+  "head": "PASSING",
+  "head_variants": [],
+  "orig_on_new": "PASSING",
+  "orig_variants": [],
+  "orig_textoffsetfix": "PASSING"
+ },
+ {
+  "idx": 68,
+  "name": "tap moves cursor to the edge of the word it tapped",
+  "change": "MODIFIED",
+  "diff_lines": 50,
+  "head": "FAILING",
+  "head_variants": [
+   "TargetPlatform.iOS"
+  ],
+  "orig_on_new": "FAILING",
+  "orig_variants": [
+   "TargetPlatform.iOS"
+  ],
+  "orig_textoffsetfix": "FAILING"
+ },
+ {
+  "idx": 69,
+  "name": "tap moves cursor to the position tapped (Android)",
+  "change": "MODIFIED",
+  "diff_lines": 51,
+  "head": "FAILING",
+  "head_variants": [
+   "TargetPlatform.android",
+   "TargetPlatform.fuchsia",
+   "TargetPlatform.linux",
+   "TargetPlatform.macOS",
+   "TargetPlatform.windows"
+  ],
+  "orig_on_new": "FAILING",
+  "orig_variants": [
+   "TargetPlatform.android",
+   "TargetPlatform.fuchsia",
+   "TargetPlatform.linux",
+   "TargetPlatform.macOS",
+   "TargetPlatform.windows"
+  ],
+  "orig_textoffsetfix": "FAILING"
+ },
+ {
+  "idx": 70,
+  "name": "two slow taps do not trigger a word selection on iOS",
+  "change": "MODIFIED",
+  "diff_lines": 55,
+  "head": "FAILING",
+  "head_variants": [
+   "TargetPlatform.iOS"
+  ],
+  "orig_on_new": "FAILING",
+  "orig_variants": [
+   "TargetPlatform.iOS"
+  ],
+  "orig_textoffsetfix": "FAILING"
+ },
+ {
+  "idx": 71,
+  "name": "two slow taps do not trigger a word selection",
+  "change": "MODIFIED",
+  "diff_lines": 55,
+  "head": "FAILING",
+  "head_variants": [
+   "TargetPlatform.android",
+   "TargetPlatform.fuchsia",
+   "TargetPlatform.linux",
+   "TargetPlatform.macOS",
+   "TargetPlatform.windows"
+  ],
+  "orig_on_new": "FAILING",
+  "orig_variants": [
+   "TargetPlatform.android",
+   "TargetPlatform.fuchsia",
+   "TargetPlatform.linux",
+   "TargetPlatform.macOS",
+   "TargetPlatform.windows"
+  ],
+  "orig_textoffsetfix": "FAILING"
+ },
+ {
+  "idx": 72,
+  "name": "double tap selects word and first tap of double tap moves cursor",
+  "change": "MODIFIED",
+  "diff_lines": 30,
+  "head": "FAILING",
+  "head_variants": [
+   "TargetPlatform.iOS",
+   "TargetPlatform.macOS"
+  ],
+  "orig_on_new": "FAILING",
+  "orig_variants": [
+   "TargetPlatform.iOS",
+   "TargetPlatform.macOS"
+  ],
+  "orig_textoffsetfix": "FAILING"
+ },
+ {
+  "idx": 73,
+  "name": "double tap selects word and first tap of double tap moves cursor and shows toolbar (Android)",
+  "change": "MODIFIED",
+  "diff_lines": 22,
+  "head": "FAILING",
+  "head_variants": [],
+  "orig_on_new": "FAILING",
+  "orig_variants": [],
+  "orig_textoffsetfix": "FAILING"
+ },
+ {
+  "idx": 74,
+  "name": "double tap on top of cursor also selects word (Android)",
+  "change": "MODIFIED",
+  "diff_lines": 32,
+  "head": "PASSING",
+  "head_variants": [],
+  "orig_on_new": "FAILING",
+  "orig_variants": [],
+  "orig_textoffsetfix": "FAILING"
+ },
+ {
+  "idx": 75,
+  "name": "double tap hold selects word",
+  "change": "MODIFIED",
+  "diff_lines": 31,
+  "head": "FAILING",
+  "head_variants": [
+   "TargetPlatform.iOS"
+  ],
+  "orig_on_new": "FAILING",
+  "orig_variants": [
+   "TargetPlatform.iOS",
+   "TargetPlatform.macOS"
+  ],
+  "orig_textoffsetfix": "FAILING"
+ },
+ {
+  "idx": 76,
+  "name": "double tap selects word with semantics label",
+  "change": "MODIFIED",
+  "diff_lines": 16,
+  "head": "PASSING",
+  "head_variants": [],
+  "orig_on_new": "FAILING",
+  "orig_variants": [
+   "TargetPlatform.iOS",
+   "TargetPlatform.macOS"
+  ],
+  "orig_textoffsetfix": "FAILING"
+ },
+ {
+  "idx": 77,
+  "name": "tap after a double tap select is not affected (iOS)",
+  "change": "MODIFIED",
+  "diff_lines": 70,
+  "head": "FAILING",
+  "head_variants": [
+   "TargetPlatform.iOS"
+  ],
+  "orig_on_new": "FAILING",
+  "orig_variants": [
+   "TargetPlatform.iOS"
+  ],
+  "orig_textoffsetfix": "FAILING"
+ },
+ {
+  "idx": 78,
+  "name": "tap after a double tap select is not affected (macOS)",
+  "change": "MODIFIED",
+  "diff_lines": 65,
+  "head": "FAILING",
+  "head_variants": [
+   "TargetPlatform.macOS"
+  ],
+  "orig_on_new": "FAILING",
+  "orig_variants": [
+   "TargetPlatform.macOS"
+  ],
+  "orig_textoffsetfix": "FAILING"
+ },
+ {
+  "idx": 79,
+  "name": "long press selects word and shows toolbar (iOS)",
+  "change": "MODIFIED",
+  "diff_lines": 18,
+  "head": "FAILING",
+  "head_variants": [
+   "TargetPlatform.iOS",
+   "TargetPlatform.macOS"
+  ],
+  "orig_on_new": "FAILING",
+  "orig_variants": [
+   "TargetPlatform.iOS",
+   "TargetPlatform.macOS"
+  ],
+  "orig_textoffsetfix": "FAILING"
+ },
+ {
+  "idx": 80,
+  "name": "long press selects word and shows toolbar (Android)",
+  "change": "MODIFIED",
+  "diff_lines": 20,
+  "head": "PASSING",
+  "head_variants": [],
+  "orig_on_new": "FAILING",
+  "orig_variants": [],
+  "orig_textoffsetfix": "FAILING"
+ },
+ {
+  "idx": 81,
+  "name": "long press selects word and shows custom toolbar (Cupertino)",
+  "change": "MODIFIED",
+  "diff_lines": 52,
+  "head": "PASSING",
+  "head_variants": [],
+  "orig_on_new": "FAILING",
+  "orig_variants": [
+   "TargetPlatform.android",
+   "TargetPlatform.fuchsia",
+   "TargetPlatform.iOS",
+   "TargetPlatform.linux",
+   "TargetPlatform.macOS",
+   "TargetPlatform.windows"
+  ],
+  "orig_textoffsetfix": "FAILING"
+ },
+ {
+  "idx": 82,
+  "name": "long press selects word and shows custom toolbar (Material)",
+  "change": "MODIFIED",
+  "diff_lines": 52,
+  "head": "PASSING",
+  "head_variants": [],
+  "orig_on_new": "FAILING",
+  "orig_variants": [
+   "TargetPlatform.android",
+   "TargetPlatform.fuchsia",
+   "TargetPlatform.iOS",
+   "TargetPlatform.linux",
+   "TargetPlatform.macOS",
+   "TargetPlatform.windows"
+  ],
+  "orig_textoffsetfix": "FAILING"
+ },
+ {
+  "idx": 83,
+  "name": "textSelectionControls is passed to SelectionArea",
+  "change": "ADDED",
+  "diff_lines": 0,
+  "head": "PASSING",
+  "head_variants": [],
+  "orig_on_new": "FAILING",
+  "orig_variants": [],
+  "orig_textoffsetfix": "FAILING"
+ },
+ {
+  "idx": 84,
+  "name": "PageView beats SelectableText drag gestures (iOS)",
+  "change": "MODIFIED",
+  "diff_lines": 114,
+  "head": "PASSING",
+  "head_variants": [],
+  "orig_on_new": "FAILING",
+  "orig_variants": [
+   "TargetPlatform.iOS"
+  ],
+  "orig_textoffsetfix": "FAILING"
+ },
+ {
+  "idx": 85,
+  "name": "long press tap cannot initiate a double tap on macOS",
+  "change": "MODIFIED",
+  "diff_lines": 25,
+  "head": "FAILING",
+  "head_variants": [
+   "TargetPlatform.macOS"
+  ],
+  "orig_on_new": "FAILING",
+  "orig_variants": [
+   "TargetPlatform.macOS"
+  ],
+  "orig_textoffsetfix": "FAILING"
+ },
+ {
+  "idx": 86,
+  "name": "long press tap cannot initiate a double tap on iOS",
+  "change": "MODIFIED",
+  "diff_lines": 59,
+  "head": "FAILING",
+  "head_variants": [
+   "TargetPlatform.iOS"
+  ],
+  "orig_on_new": "FAILING",
+  "orig_variants": [
+   "TargetPlatform.iOS"
+  ],
+  "orig_textoffsetfix": "FAILING"
+ },
+ {
+  "idx": 87,
+  "name": "long press drag extends the selection to the word under the drag and shows toolbar on lift on non-Apple platforms",
+  "change": "MODIFIED",
+  "diff_lines": 27,
+  "head": "PASSING",
+  "head_variants": [],
+  "orig_on_new": "FAILING",
+  "orig_variants": [
+   "TargetPlatform.android",
+   "TargetPlatform.fuchsia",
+   "TargetPlatform.linux",
+   "TargetPlatform.windows"
+  ],
+  "orig_textoffsetfix": "FAILING"
+ },
+ {
+  "idx": 88,
+  "name": "long press drag extends the selection to the word under the drag and shows toolbar on lift (iOS)",
+  "change": "MODIFIED",
+  "diff_lines": 27,
+  "head": "FAILING",
+  "head_variants": [
+   "TargetPlatform.iOS"
+  ],
+  "orig_on_new": "FAILING",
+  "orig_variants": [
+   "TargetPlatform.iOS"
+  ],
+  "orig_textoffsetfix": "FAILING"
+ },
+ {
+  "idx": 89,
+  "name": "long press drag moves the cursor under the drag and shows toolbar on lift (macOS)",
+  "change": "MODIFIED",
+  "diff_lines": 24,
+  "head": "FAILING",
+  "head_variants": [
+   "TargetPlatform.macOS"
+  ],
+  "orig_on_new": "FAILING",
+  "orig_variants": [
+   "TargetPlatform.macOS"
+  ],
+  "orig_textoffsetfix": "FAILING"
+ },
+ {
+  "idx": 90,
+  "name": "long press drag can edge scroll when inside a scrollable",
+  "change": "MODIFIED",
+  "diff_lines": 36,
+  "head": "FAILING",
+  "head_variants": [
+   "TargetPlatform.iOS"
+  ],
+  "orig_on_new": "FAILING",
+  "orig_variants": [
+   "TargetPlatform.iOS"
+  ],
+  "orig_textoffsetfix": "FAILING"
+ },
+ {
+  "idx": 91,
+  "name": "Desktop mouse drag can edge scroll when inside a horizontal scrollable",
+  "change": "MODIFIED",
+  "diff_lines": 102,
+  "head": "FAILING",
+  "head_variants": [
+   "TargetPlatform.linux",
+   "TargetPlatform.macOS",
+   "TargetPlatform.windows"
+  ],
+  "orig_on_new": "FAILING",
+  "orig_variants": [
+   "TargetPlatform.linux",
+   "TargetPlatform.macOS",
+   "TargetPlatform.windows"
+  ],
+  "orig_textoffsetfix": "FAILING"
+ },
+ {
+  "idx": 92,
+  "name": "long press drag can edge scroll",
+  "change": "MODIFIED",
+  "diff_lines": 24,
+  "head": "FAILING",
+  "head_variants": [
+   "TargetPlatform.android",
+   "TargetPlatform.iOS"
+  ],
+  "orig_on_new": "FAILING",
+  "orig_variants": [
+   "TargetPlatform.android",
+   "TargetPlatform.iOS"
+  ],
+  "orig_textoffsetfix": "FAILING"
+ },
+ {
+  "idx": 93,
+  "name": "long tap still selects after a double tap select (iOS)",
+  "change": "MODIFIED",
+  "diff_lines": 66,
+  "head": "FAILING",
+  "head_variants": [
+   "TargetPlatform.iOS"
+  ],
+  "orig_on_new": "FAILING",
+  "orig_variants": [
+   "TargetPlatform.iOS"
+  ],
+  "orig_textoffsetfix": "FAILING"
+ },
+ {
+  "idx": 94,
+  "name": "long tap still selects after a double tap select (macOS)",
+  "change": "MODIFIED",
+  "diff_lines": 61,
+  "head": "FAILING",
+  "head_variants": [
+   "TargetPlatform.macOS"
+  ],
+  "orig_on_new": "FAILING",
+  "orig_variants": [
+   "TargetPlatform.macOS"
+  ],
+  "orig_textoffsetfix": "FAILING"
+ },
+ {
+  "idx": 95,
+  "name": "double tap after a long tap is not affected",
+  "change": "MODIFIED",
+  "diff_lines": 35,
+  "head": "FAILING",
+  "head_variants": [
+   "TargetPlatform.iOS",
+   "TargetPlatform.macOS"
+  ],
+  "orig_on_new": "FAILING",
+  "orig_variants": [
+   "TargetPlatform.iOS",
+   "TargetPlatform.macOS"
+  ],
+  "orig_textoffsetfix": "FAILING"
+ },
+ {
+  "idx": 96,
+  "name": "double tap chains work",
+  "change": "MODIFIED",
+  "diff_lines": 158,
+  "head": "FAILING",
+  "head_variants": [
+   "TargetPlatform.iOS",
+   "TargetPlatform.macOS"
+  ],
+  "orig_on_new": "FAILING",
+  "orig_variants": [
+   "TargetPlatform.iOS",
+   "TargetPlatform.macOS"
+  ],
+  "orig_textoffsetfix": "FAILING"
+ },
+ {
+  "idx": 97,
+  "name": "force press does not select a word on (android)",
+  "change": "MODIFIED",
+  "diff_lines": 18,
+  "head": "PASSING",
+  "head_variants": [],
+  "orig_on_new": "FAILING",
+  "orig_variants": [],
+  "orig_textoffsetfix": "FAILING"
+ },
+ {
+  "idx": 98,
+  "name": "force press selects word",
+  "change": "MODIFIED",
+  "diff_lines": 82,
+  "head": "FAILING",
+  "head_variants": [
+   "TargetPlatform.iOS"
+  ],
+  "orig_on_new": "FAILING",
+  "orig_variants": [
+   "TargetPlatform.iOS"
+  ],
+  "orig_textoffsetfix": "FAILING"
+ },
+ {
+  "idx": 99,
+  "name": "tap on non-force-press-supported devices work",
+  "change": "MODIFIED",
+  "diff_lines": 102,
+  "head": "FAILING",
+  "head_variants": [
+   "TargetPlatform.iOS"
+  ],
+  "orig_on_new": "FAILING",
+  "orig_variants": [
+   "TargetPlatform.iOS"
+  ],
+  "orig_textoffsetfix": "FAILING"
+ },
+ {
+  "idx": 100,
+  "name": "default SelectableText debugFillProperties",
+  "change": "UNCHANGED",
+  "diff_lines": 0,
+  "head": "PASSING",
+  "head_variants": [],
+  "orig_on_new": "PASSING",
+  "orig_variants": [],
+  "orig_textoffsetfix": "PASSING"
+ },
+ {
+  "idx": 101,
+  "name": "SelectableText implements debugFillProperties",
+  "change": "UNCHANGED",
+  "diff_lines": 0,
+  "head": "PASSING",
+  "head_variants": [],
+  "orig_on_new": "PASSING",
+  "orig_variants": [],
+  "orig_textoffsetfix": "PASSING"
+ },
+ {
+  "idx": 102,
+  "name": "strut basic single line",
+  "change": "MODIFIED",
+  "diff_lines": 2,
+  "head": "PASSING",
+  "head_variants": [],
+  "orig_on_new": "FAILING",
+  "orig_variants": [],
+  "orig_textoffsetfix": "FAILING"
+ },
+ {
+  "idx": 103,
+  "name": "strut TextStyle increases height",
+  "change": "MODIFIED",
+  "diff_lines": 4,
+  "head": "PASSING",
+  "head_variants": [],
+  "orig_on_new": "FAILING",
+  "orig_variants": [],
+  "orig_textoffsetfix": "FAILING"
+ },
+ {
+  "idx": 104,
+  "name": "strut basic multi line",
+  "change": "MODIFIED",
+  "diff_lines": 2,
+  "head": "PASSING",
+  "head_variants": [],
+  "orig_on_new": "FAILING",
+  "orig_variants": [],
+  "orig_textoffsetfix": "FAILING"
+ },
+ {
+  "idx": 105,
+  "name": "strut no force small strut",
+  "change": "MODIFIED",
+  "diff_lines": 2,
+  "head": "PASSING",
+  "head_variants": [],
+  "orig_on_new": "FAILING",
+  "orig_variants": [],
+  "orig_textoffsetfix": "FAILING"
+ },
+ {
+  "idx": 106,
+  "name": "strut no force large strut",
+  "change": "MODIFIED",
+  "diff_lines": 2,
+  "head": "PASSING",
+  "head_variants": [],
+  "orig_on_new": "FAILING",
+  "orig_variants": [],
+  "orig_textoffsetfix": "FAILING"
+ },
+ {
+  "idx": 107,
+  "name": "strut height override",
+  "change": "MODIFIED",
+  "diff_lines": 2,
+  "head": "PASSING",
+  "head_variants": [],
+  "orig_on_new": "FAILING",
+  "orig_variants": [],
+  "orig_textoffsetfix": "FAILING"
+ },
+ {
+  "idx": 108,
+  "name": "strut forces field taller",
+  "change": "MODIFIED",
+  "diff_lines": 2,
+  "head": "PASSING",
+  "head_variants": [],
+  "orig_on_new": "FAILING",
+  "orig_variants": [],
+  "orig_textoffsetfix": "FAILING"
+ },
+ {
+  "idx": 109,
+  "name": "Caret center position",
+  "change": "MODIFIED",
+  "diff_lines": 28,
+  "head": "PASSING",
+  "head_variants": [],
+  "orig_on_new": "FAILING",
+  "orig_variants": [],
+  "orig_textoffsetfix": "FAILING"
+ },
+ {
+  "idx": 110,
+  "name": "Caret indexes into trailing whitespace center align",
+  "change": "MODIFIED",
+  "diff_lines": 40,
+  "head": "PASSING",
+  "head_variants": [],
+  "orig_on_new": "FAILING",
+  "orig_variants": [],
+  "orig_textoffsetfix": "FAILING"
+ },
+ {
+  "idx": 111,
+  "name": "selection handles are rendered and not faded away",
+  "change": "MODIFIED",
+  "diff_lines": 9,
+  "head": "PASSING",
+  "head_variants": [],
+  "orig_on_new": "PASSING",
+  "orig_variants": [],
+  "orig_textoffsetfix": "PASSING"
+ },
+ {
+  "idx": 112,
+  "name": "selection handles are rendered and not faded away",
+  "change": "MODIFIED",
+  "diff_lines": 55,
+  "head": "PASSING",
+  "head_variants": [],
+  "orig_on_new": "FAILING",
+  "orig_variants": [
+   "TargetPlatform.iOS",
+   "TargetPlatform.macOS"
+  ],
+  "orig_textoffsetfix": "FAILING"
+ },
+ {
+  "idx": 113,
+  "name": "Long press shows handles and toolbar",
+  "change": "MODIFIED",
+  "diff_lines": 12,
+  "head": "PASSING",
+  "head_variants": [],
+  "orig_on_new": "FAILING",
+  "orig_variants": [],
+  "orig_textoffsetfix": "FAILING"
+ },
+ {
+  "idx": 114,
+  "name": "Double tap shows handles and toolbar",
+  "change": "MODIFIED",
+  "diff_lines": 14,
+  "head": "PASSING",
+  "head_variants": [],
+  "orig_on_new": "FAILING",
+  "orig_variants": [],
+  "orig_textoffsetfix": "FAILING"
+ },
+ {
+  "idx": 115,
+  "name": "Mouse tap does not show handles nor toolbar",
+  "change": "MODIFIED",
+  "diff_lines": 19,
+  "head": "PASSING",
+  "head_variants": [],
+  "orig_on_new": "FAILING",
+  "orig_variants": [],
+  "orig_textoffsetfix": "FAILING"
+ },
+ {
+  "idx": 116,
+  "name": "Mouse long press does not show handles nor toolbar",
+  "change": "MODIFIED",
+  "diff_lines": 19,
+  "head": "PASSING",
+  "head_variants": [],
+  "orig_on_new": "FAILING",
+  "orig_variants": [],
+  "orig_textoffsetfix": "FAILING"
+ },
+ {
+  "idx": 117,
+  "name": "Mouse double tap does not show handles nor toolbar",
+  "change": "MODIFIED",
+  "diff_lines": 19,
+  "head": "PASSING",
+  "head_variants": [],
+  "orig_on_new": "FAILING",
+  "orig_variants": [],
+  "orig_textoffsetfix": "FAILING"
+ },
+ {
+  "idx": 118,
+  "name": "text span with tap gesture recognizer works in selectable rich text",
+  "change": "MODIFIED",
+  "diff_lines": 18,
+  "head": "PASSING",
+  "head_variants": [],
+  "orig_on_new": "FAILING",
+  "orig_variants": [],
+  "orig_textoffsetfix": "FAILING"
+ },
+ {
+  "idx": 119,
+  "name": "text span with long press gesture recognizer works in selectable rich text",
+  "change": "MODIFIED",
+  "diff_lines": 15,
+  "head": "FAILING",
+  "head_variants": [],
+  "orig_on_new": "FAILING",
+  "orig_variants": [],
+  "orig_textoffsetfix": "FAILING"
+ },
+ {
+  "idx": 120,
+  "name": "SelectableText changes mouse cursor when hovered",
+  "change": "UNCHANGED",
+  "diff_lines": 0,
+  "head": "PASSING",
+  "head_variants": [],
+  "orig_on_new": "PASSING",
+  "orig_variants": [],
+  "orig_textoffsetfix": "PASSING"
+ },
+ {
+  "idx": 121,
+  "name": "The handles show after pressing Select All",
+  "change": "MODIFIED",
+  "diff_lines": 23,
+  "head": "FAILING",
+  "head_variants": [
+   "TargetPlatform.android",
+   "TargetPlatform.fuchsia"
+  ],
+  "orig_on_new": "FAILING",
+  "orig_variants": [
+   "TargetPlatform.android",
+   "TargetPlatform.fuchsia"
+  ],
+  "orig_textoffsetfix": "FAILING"
+ },
+ {
+  "idx": 122,
+  "name": "The Select All calls on selection changed",
+  "change": "MODIFIED",
+  "diff_lines": 3,
+  "head": "FAILING",
+  "head_variants": [
+   "TargetPlatform.android",
+   "TargetPlatform.fuchsia"
+  ],
+  "orig_on_new": "FAILING",
+  "orig_variants": [
+   "TargetPlatform.android",
+   "TargetPlatform.fuchsia"
+  ],
+  "orig_textoffsetfix": "FAILING"
+ },
+ {
+  "idx": 123,
+  "name": "The Select All calls on selection changed with a mouse on windows and linux",
+  "change": "MODIFIED",
+  "diff_lines": 3,
+  "head": "PASSING",
+  "head_variants": [],
+  "orig_on_new": "FAILING",
+  "orig_variants": [
+   "TargetPlatform.linux",
+   "TargetPlatform.windows"
+  ],
+  "orig_textoffsetfix": "FAILING"
+ },
+ {
+  "idx": 124,
+  "name": "Does not show handles when updated from the web engine",
+  "change": "MODIFIED",
+  "diff_lines": 26,
+  "head": "PASSING",
+  "head_variants": [],
+  "orig_on_new": "FAILING",
+  "orig_variants": [],
+  "orig_textoffsetfix": "FAILING"
+ },
+ {
+  "idx": 125,
+  "name": "onSelectionChanged is called when selection changes",
+  "change": "UNCHANGED",
+  "diff_lines": 0,
+  "head": "FAILING",
+  "head_variants": [],
+  "orig_on_new": "FAILING",
+  "orig_variants": [],
+  "orig_textoffsetfix": "FAILING"
+ },
+ {
+  "idx": 126,
+  "name": "selecting a space selects the previous word on mobile",
+  "change": "MODIFIED",
+  "diff_lines": 15,
+  "head": "FAILING",
+  "head_variants": [
+   "TargetPlatform.android",
+   "TargetPlatform.iOS"
+  ],
+  "orig_on_new": "FAILING",
+  "orig_variants": [
+   "TargetPlatform.android",
+   "TargetPlatform.iOS"
+  ],
+  "orig_textoffsetfix": "FAILING"
+ },
+ {
+  "idx": 127,
+  "name": "selecting a space selects the space on non-mobile platforms",
+  "change": "UNCHANGED",
+  "diff_lines": 0,
+  "head": "FAILING",
+  "head_variants": [
+   "TargetPlatform.fuchsia",
+   "TargetPlatform.linux",
+   "TargetPlatform.macOS",
+   "TargetPlatform.windows"
+  ],
+  "orig_on_new": "FAILING",
+  "orig_variants": [
+   "TargetPlatform.fuchsia",
+   "TargetPlatform.linux",
+   "TargetPlatform.macOS",
+   "TargetPlatform.windows"
+  ],
+  "orig_textoffsetfix": "FAILING"
+ },
+ {
+  "idx": 128,
+  "name": "double tapping a space selects the previous word on mobile",
+  "change": "MODIFIED",
+  "diff_lines": 1,
+  "head": "FAILING",
+  "head_variants": [
+   "TargetPlatform.android",
+   "TargetPlatform.iOS"
+  ],
+  "orig_on_new": "FAILING",
+  "orig_variants": [
+   "TargetPlatform.android",
+   "TargetPlatform.iOS"
+  ],
+  "orig_textoffsetfix": "FAILING"
+ },
+ {
+  "idx": 129,
+  "name": "text selection style 1",
+  "change": "MODIFIED",
+  "diff_lines": 8,
+  "head": "FAILING",
+  "head_variants": [],
+  "orig_on_new": "FAILING",
+  "orig_variants": [],
+  "orig_textoffsetfix": "FAILING"
+ },
+ {
+  "idx": 130,
+  "name": "text selection style 2",
+  "change": "MODIFIED",
+  "diff_lines": 8,
+  "head": "FAILING",
+  "head_variants": [],
+  "orig_on_new": "FAILING",
+  "orig_variants": [],
+  "orig_textoffsetfix": "FAILING"
+ },
+ {
+  "idx": 131,
+  "name": "keeps alive when has focus",
+  "change": "MODIFIED",
+  "diff_lines": 31,
+  "head": "PASSING",
+  "head_variants": [],
+  "orig_on_new": "FAILING",
+  "orig_variants": [],
+  "orig_textoffsetfix": "FAILING"
+ },
+ {
+  "idx": 132,
+  "name": "Can drag handles to show, unshow, and update magnifier",
+  "change": "MODIFIED",
+  "diff_lines": 18,
+  "head": "PASSING",
+  "head_variants": [],
+  "orig_on_new": "FAILING",
+  "orig_variants": [],
+  "orig_textoffsetfix": "FAILING"
+ },
+ {
+  "idx": 133,
+  "name": "SelectableText text span style is merged with default text style",
+  "change": "MODIFIED",
+  "diff_lines": 7,
+  "head": "PASSING",
+  "head_variants": [],
+  "orig_on_new": "FAILING",
+  "orig_variants": [],
+  "orig_textoffsetfix": "FAILING"
+ },
+ {
+  "idx": 134,
+  "name": "SelectableText selection update on tap",
+  "change": "ADDED",
+  "diff_lines": 0,
+  "head": "PASSING",
+  "head_variants": [],
+  "orig_on_new": "PASSING",
+  "orig_variants": [],
+  "orig_textoffsetfix": "PASSING"
+ },
+ {
+  "idx": 135,
+  "name": "Off-screen selected text doesn't throw exception",
+  "change": "MODIFIED",
+  "diff_lines": 2,
+  "head": "PASSING",
+  "head_variants": [],
+  "orig_on_new": "FAILING",
+  "orig_variants": [],
+  "orig_textoffsetfix": "FAILING"
+ },
+ {
+  "idx": 136,
+  "name": "SelectableText respects MediaQueryData.lineHeightScaleFactorOverride, MediaQueryData.letterSpacingOverride, and MediaQueryData.wordSpacingOverride",
+  "change": "MODIFIED",
+  "diff_lines": 9,
+  "head": "FAILING",
+  "head_variants": [],
+  "orig_on_new": "FAILING",
+  "orig_variants": [],
+  "orig_textoffsetfix": "FAILING"
+ },
+ {
+  "idx": 137,
+  "name": "iOS does not use the system context menu by default even when supported",
+  "change": "UNCHANGED",
+  "diff_lines": 0,
+  "head": "PASSING",
+  "head_variants": [],
+  "orig_on_new": "FAILING",
+  "orig_variants": [
+   "TargetPlatform.iOS"
+  ],
+  "orig_textoffsetfix": "PASSING"
+ },
+ {
+  "idx": 138,
+  "name": "SelectableText does not crash at zero area",
+  "change": "MODIFIED",
+  "diff_lines": 7,
+  "head": "PASSING",
+  "head_variants": [],
+  "orig_on_new": "FAILING",
+  "orig_variants": [],
+  "orig_textoffsetfix": "FAILING"
+ }
+]

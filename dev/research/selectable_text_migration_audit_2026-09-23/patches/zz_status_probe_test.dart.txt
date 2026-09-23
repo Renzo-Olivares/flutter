@@ -1,0 +1,208 @@
+// Probe: interleaved trace of onSelectionChanged callbacks and
+// SelectableRegionSelectionStatus notifications for many user paths.
+import 'package:flutter/foundation.dart';
+import 'package:flutter/gestures.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_test/flutter_test.dart';
+
+Offset pos(WidgetTester tester, int offset) {
+  final RenderParagraph p = tester.renderObject(find.byType(RichText).first);
+  const Rect caret = Rect.fromLTWH(0.0, 0.0, 2.0, 20.0);
+  final Offset local =
+      p.getOffsetForCaret(TextPosition(offset: offset), caret) + Offset(0.0, p.preferredLineHeight);
+  return p.localToGlobal(local) + const Offset(0.0, -2.0);
+}
+
+String fmt(TextSelection s) =>
+    s.isCollapsed ? 'c(${s.baseOffset})' : '(${s.baseOffset},${s.extentOffset})';
+
+void main() {
+  final List<String> log = <String>[];
+  late FocusNode other;
+  ValueListenable<SelectableRegionSelectionStatus>? statusListenable;
+
+  Future<void> setup(WidgetTester tester) async {
+    log.clear();
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+    other = FocusNode();
+    addTearDown(other.dispose);
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Material(
+          child: Column(
+            children: <Widget>[
+              SelectableText(
+                'abc def ghi',
+                style: const TextStyle(fontSize: 20),
+                onSelectionChanged: (TextSelection s, SelectionChangedCause? cause) {
+                  log.add('CB${fmt(s)}[${statusListenable?.value.name}]');
+                },
+              ),
+              Focus(focusNode: other, child: const SizedBox(width: 10, height: 10)),
+            ],
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+    final BuildContext ctx = tester.element(find.byType(RichText).first);
+    final ValueListenable<SelectableRegionSelectionStatus> st =
+        SelectableRegionSelectionStatusScope.maybeOf(ctx)!;
+    statusListenable = st;
+    st.addListener(() => log.add('ST:${st.value.name}'));
+  }
+
+  void step(String name) => log.add('|| $name:');
+  void dump(String title) => debugPrint('TRACE $title: ${log.join(' ')}');
+
+  SelectableRegionState region(WidgetTester tester) =>
+      tester.state<SelectableRegionState>(find.byType(SelectableRegion));
+
+  testWidgets('touch paths', (WidgetTester tester) async {
+    await setup(tester);
+    step('tap5');
+    await tester.tapAt(pos(tester, 5));
+    await tester.pumpAndSettle(kDoubleTapTimeout);
+    step('longpress5');
+    await tester.longPressAt(pos(tester, 5));
+    await tester.pumpAndSettle();
+    step('tap1-onto-selection');
+    await tester.tapAt(pos(tester, 1));
+    await tester.pumpAndSettle(kDoubleTapTimeout);
+    step('longpress-drag 1->9');
+    TestGesture g = await tester.startGesture(pos(tester, 1));
+    await tester.pump(const Duration(seconds: 1));
+    log.add('(pump)');
+    await g.moveTo(pos(tester, 9));
+    await tester.pump();
+    log.add('(pump)');
+    await g.up();
+    await tester.pumpAndSettle();
+    step('handle-drag end->10');
+    final SelectionOverlay overlay = region(tester).selectionOverlay!;
+    final RenderBox box = tester.renderObject(find.byType(SelectableRegion));
+    final Offset endHandle = box.localToGlobal(overlay.selectionEndpoints.last.point) + const Offset(1, 1);
+    g = await tester.startGesture(endHandle);
+    await tester.pump();
+    log.add('(pump)');
+    await g.moveTo(pos(tester, 10) + const Offset(0, 0));
+    await tester.pump();
+    log.add('(pump)');
+    await g.up();
+    await tester.pumpAndSettle();
+    step('toolbar-selectall');
+    if (find.text('Select all').evaluate().isNotEmpty) {
+      await tester.tap(find.text('Select all'));
+      log.add('(no pump yet)');
+      await tester.pumpAndSettle();
+    } else {
+      log.add('NO-SELECTALL-BUTTON');
+    }
+    step('double-tap9');
+    await tester.tapAt(pos(tester, 9));
+    await tester.pump(const Duration(milliseconds: 50));
+    log.add('(pump)');
+    await tester.tapAt(pos(tester, 9));
+    await tester.pumpAndSettle();
+    step('focus-loss');
+    other.requestFocus();
+    await tester.pumpAndSettle();
+    dump('touch ${defaultTargetPlatform.name}');
+  }, variant: const TargetPlatformVariant(<TargetPlatform>{TargetPlatform.android, TargetPlatform.iOS}));
+
+  testWidgets('mouse paths', (WidgetTester tester) async {
+    await setup(tester);
+    step('click1');
+    TestGesture g = await tester.startGesture(pos(tester, 1), kind: PointerDeviceKind.mouse);
+    log.add('(down)');
+    await g.up();
+    await tester.pumpAndSettle(kDoubleTapTimeout);
+    step('click5');
+    g = await tester.startGesture(pos(tester, 5), kind: PointerDeviceKind.mouse);
+    log.add('(down)');
+    await tester.pump();
+    log.add('(pump)');
+    await g.up();
+    await tester.pumpAndSettle(kDoubleTapTimeout);
+    step('shift+click9');
+    await tester.sendKeyDownEvent(LogicalKeyboardKey.shiftLeft);
+    g = await tester.startGesture(pos(tester, 9), kind: PointerDeviceKind.mouse);
+    log.add('(down)');
+    await g.up();
+    await tester.sendKeyUpEvent(LogicalKeyboardKey.shiftLeft);
+    await tester.pumpAndSettle(kDoubleTapTimeout);
+    step('double-click5');
+    g = await tester.startGesture(pos(tester, 5), kind: PointerDeviceKind.mouse);
+    await g.up();
+    await tester.pump(const Duration(milliseconds: 50));
+    log.add('(pump)');
+    await g.down(pos(tester, 5));
+    log.add('(down2)');
+    await g.up();
+    step('triple');
+    await tester.pump(const Duration(milliseconds: 50));
+    await g.down(pos(tester, 5));
+    log.add('(down3)');
+    await g.up();
+    await tester.pumpAndSettle(kDoubleTapTimeout);
+    step('mouse-long-press5');
+    g = await tester.startGesture(pos(tester, 5), kind: PointerDeviceKind.mouse);
+    await tester.pump(const Duration(seconds: 2));
+    log.add('(pump2s)');
+    await g.up();
+    await tester.pumpAndSettle(kDoubleTapTimeout);
+    step('drag 2->8->9');
+    g = await tester.startGesture(pos(tester, 2), kind: PointerDeviceKind.mouse);
+    await tester.pump();
+    log.add('(pump)');
+    await g.moveTo(pos(tester, 8));
+    await tester.pumpAndSettle();
+    log.add('(settle)');
+    await g.moveTo(pos(tester, 9));
+    await tester.pump();
+    log.add('(pump)');
+    await g.up();
+    await tester.pumpAndSettle(kDoubleTapTimeout);
+    step('shift+right');
+    await tester.sendKeyDownEvent(LogicalKeyboardKey.shiftLeft);
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowRight);
+    step('ctrl+shift+left');
+    await tester.sendKeyDownEvent(LogicalKeyboardKey.controlLeft);
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowLeft);
+    await tester.sendKeyUpEvent(LogicalKeyboardKey.controlLeft);
+    step('shift+down');
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+    await tester.sendKeyUpEvent(LogicalKeyboardKey.shiftLeft);
+    await tester.pumpAndSettle();
+    step('ctrl+A');
+    await tester.sendKeyDownEvent(LogicalKeyboardKey.controlLeft);
+    await tester.sendKeyEvent(LogicalKeyboardKey.keyA);
+    await tester.sendKeyUpEvent(LogicalKeyboardKey.controlLeft);
+    await tester.pumpAndSettle();
+    step('right-click5');
+    g = await tester.startGesture(pos(tester, 5), kind: PointerDeviceKind.mouse, buttons: kSecondaryMouseButton);
+    await g.up();
+    await tester.pumpAndSettle();
+    step('toolbar-selectall');
+    if (find.text('Select all').evaluate().isNotEmpty) {
+      await tester.tap(find.text('Select all'));
+      await tester.pumpAndSettle();
+    } else {
+      log.add('NO-SELECTALL-BUTTON');
+    }
+    step('programmatic clearSelection');
+    region(tester).clearSelection();
+    await tester.pump();
+    log.add('(pump)');
+    await tester.pumpAndSettle();
+    step('programmatic selectAll');
+    region(tester).selectAll();
+    await tester.pumpAndSettle();
+    step('focus-loss');
+    other.requestFocus();
+    await tester.pumpAndSettle();
+    dump('mouse ${defaultTargetPlatform.name}');
+  }, variant: const TargetPlatformVariant(<TargetPlatform>{TargetPlatform.linux, TargetPlatform.windows, TargetPlatform.macOS}));
+}

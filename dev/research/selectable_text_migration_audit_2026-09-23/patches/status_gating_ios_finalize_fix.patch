@@ -1,0 +1,12 @@
+diff --git a/packages/flutter/lib/src/widgets/selectable_region.dart b/packages/flutter/lib/src/widgets/selectable_region.dart
+index 2864b2d78b9..5d8a27a6969 100644
+--- a/packages/flutter/lib/src/widgets/selectable_region.dart
++++ b/packages/flutter/lib/src/widgets/selectable_region.dart
+@@ -944,6 +944,7 @@ class SelectableRegionState extends State<SelectableRegion>
+       } else {
+         _showToolbar();
+       }
++      _finalizeSelectableRegionStatus();
+       return;
+     }
+     switch (_getEffectiveConsecutiveTapCount(details.consecutiveTapCount)) {

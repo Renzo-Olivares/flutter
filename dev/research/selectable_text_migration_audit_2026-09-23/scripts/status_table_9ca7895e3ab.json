@@ -1,0 +1,1606 @@
+[
+ {
+  "idx": 1,
+  "name": "throw if no Overlay widget exists above",
+  "change_now": "MODIFIED",
+  "change_ece": "MODIFIED",
+  "fail_ece": true,
+  "fail_now": true,
+  "variants_now": [],
+  "edited_since_audit": false,
+  "skipped": false
+ },
+ {
+  "idx": 2,
+  "name": "Do not crash when remove SelectableText during handle drag",
+  "change_now": "MODIFIED",
+  "change_ece": "MODIFIED",
+  "fail_ece": false,
+  "fail_now": false,
+  "variants_now": [],
+  "edited_since_audit": true,
+  "skipped": false
+ },
+ {
+  "idx": 3,
+  "name": "has expected defaults",
+  "change_now": "UNCHANGED",
+  "change_ece": "UNCHANGED",
+  "fail_ece": false,
+  "fail_now": false,
+  "variants_now": [],
+  "edited_since_audit": false,
+  "skipped": false
+ },
+ {
+  "idx": 4,
+  "name": "Rich selectable text has expected defaults",
+  "change_now": "MODIFIED",
+  "change_ece": "MODIFIED",
+  "fail_ece": false,
+  "fail_now": false,
+  "variants_now": [],
+  "edited_since_audit": false,
+  "skipped": false
+ },
+ {
+  "idx": 5,
+  "name": "Rich selectable text supports WidgetSpan",
+  "change_now": "MODIFIED",
+  "change_ece": "MODIFIED",
+  "fail_ece": false,
+  "fail_now": false,
+  "variants_now": [],
+  "edited_since_audit": false,
+  "skipped": false
+ },
+ {
+  "idx": 6,
+  "name": "no text keyboard when widget is focused",
+  "change_now": "UNCHANGED",
+  "change_ece": "UNCHANGED",
+  "fail_ece": false,
+  "fail_now": false,
+  "variants_now": [],
+  "edited_since_audit": false,
+  "skipped": false
+ },
+ {
+  "idx": 7,
+  "name": "uses DefaultSelectionStyle for selection colors if provided",
+  "change_now": "ADDED",
+  "change_ece": "ADDED",
+  "fail_ece": false,
+  "fail_now": false,
+  "variants_now": [],
+  "edited_since_audit": true,
+  "skipped": false
+ },
+ {
+  "idx": 8,
+  "name": "Selectable Text can have custom selection color",
+  "change_now": "MODIFIED",
+  "change_ece": "MODIFIED",
+  "fail_ece": false,
+  "fail_now": false,
+  "variants_now": [],
+  "edited_since_audit": false,
+  "skipped": false
+ },
+ {
+  "idx": 9,
+  "name": "Selectable Text has adaptive size",
+  "change_now": "MODIFIED",
+  "change_ece": "MODIFIED",
+  "fail_ece": false,
+  "fail_now": false,
+  "variants_now": [],
+  "edited_since_audit": true,
+  "skipped": false
+ },
+ {
+  "idx": 10,
+  "name": "can scale with textScaleFactor",
+  "change_now": "UNCHANGED",
+  "change_ece": "UNCHANGED",
+  "fail_ece": false,
+  "fail_now": false,
+  "variants_now": [],
+  "edited_since_audit": false,
+  "skipped": false
+ },
+ {
+  "idx": 11,
+  "name": "can switch between textWidthBasis",
+  "change_now": "MODIFIED",
+  "change_ece": "MODIFIED",
+  "fail_ece": false,
+  "fail_now": false,
+  "variants_now": [],
+  "edited_since_audit": true,
+  "skipped": false
+ },
+ {
+  "idx": 12,
+  "name": "can switch between textHeightBehavior",
+  "change_now": "MODIFIED",
+  "change_ece": "MODIFIED",
+  "fail_ece": false,
+  "fail_now": false,
+  "variants_now": [],
+  "edited_since_audit": false,
+  "skipped": false
+ },
+ {
+  "idx": 13,
+  "name": "Cursor blinks when showCursor is true",
+  "change_now": "MODIFIED",
+  "change_ece": "MODIFIED",
+  "fail_ece": true,
+  "fail_now": true,
+  "variants_now": [],
+  "edited_since_audit": false,
+  "skipped": false
+ },
+ {
+  "idx": 14,
+  "name": "selectable text selection toolbar renders correctly inside opacity",
+  "change_now": "MODIFIED",
+  "change_ece": "MODIFIED",
+  "fail_ece": false,
+  "fail_now": false,
+  "variants_now": [],
+  "edited_since_audit": false,
+  "skipped": false
+ },
+ {
+  "idx": 15,
+  "name": "Caret position is updated on tap",
+  "change_now": "MODIFIED",
+  "change_ece": "MODIFIED",
+  "fail_ece": false,
+  "fail_now": false,
+  "variants_now": [],
+  "edited_since_audit": false,
+  "skipped": false
+ },
+ {
+  "idx": 16,
+  "name": "enableInteractiveSelection = false, tap",
+  "change_now": "MODIFIED",
+  "change_ece": "MODIFIED",
+  "fail_ece": false,
+  "fail_now": false,
+  "variants_now": [],
+  "edited_since_audit": false,
+  "skipped": false
+ },
+ {
+  "idx": 17,
+  "name": "enableInteractiveSelection = false, long-press",
+  "change_now": "MODIFIED",
+  "change_ece": "MODIFIED",
+  "fail_ece": false,
+  "fail_now": false,
+  "variants_now": [],
+  "edited_since_audit": false,
+  "skipped": false
+ },
+ {
+  "idx": 18,
+  "name": "Can long press to select",
+  "change_now": "MODIFIED",
+  "change_ece": "MODIFIED",
+  "fail_ece": false,
+  "fail_now": false,
+  "variants_now": [],
+  "edited_since_audit": false,
+  "skipped": false
+ },
+ {
+  "idx": 19,
+  "name": "Slight movements in longpress don't hide/show handles",
+  "change_now": "MODIFIED",
+  "change_ece": "MODIFIED",
+  "fail_ece": false,
+  "fail_now": false,
+  "variants_now": [],
+  "edited_since_audit": false,
+  "skipped": false
+ },
+ {
+  "idx": 20,
+  "name": "Mouse long press is just like a tap",
+  "change_now": "MODIFIED",
+  "change_ece": "MODIFIED",
+  "fail_ece": false,
+  "fail_now": false,
+  "variants_now": [],
+  "edited_since_audit": false,
+  "skipped": false
+ },
+ {
+  "idx": 21,
+  "name": "selectable text basic",
+  "change_now": "MODIFIED",
+  "change_ece": "MODIFIED",
+  "fail_ece": false,
+  "fail_now": false,
+  "variants_now": [],
+  "edited_since_audit": true,
+  "skipped": false
+ },
+ {
+  "idx": 22,
+  "name": "selectable text can disable toolbar options",
+  "change_now": "MODIFIED",
+  "change_ece": "MODIFIED",
+  "fail_ece": true,
+  "fail_now": true,
+  "variants_now": [],
+  "edited_since_audit": false,
+  "skipped": false
+ },
+ {
+  "idx": 23,
+  "name": "Can select text by dragging with a mouse",
+  "change_now": "MODIFIED",
+  "change_ece": "MODIFIED",
+  "fail_ece": false,
+  "fail_now": false,
+  "variants_now": [],
+  "edited_since_audit": false,
+  "skipped": false
+ },
+ {
+  "idx": 24,
+  "name": "Continuous dragging does not cause flickering",
+  "change_now": "MODIFIED",
+  "change_ece": "MODIFIED",
+  "fail_ece": false,
+  "fail_now": false,
+  "variants_now": [],
+  "edited_since_audit": false,
+  "skipped": false
+ },
+ {
+  "idx": 25,
+  "name": "Dragging in opposite direction also works",
+  "change_now": "MODIFIED",
+  "change_ece": "MODIFIED",
+  "fail_ece": false,
+  "fail_now": false,
+  "variants_now": [],
+  "edited_since_audit": false,
+  "skipped": false
+ },
+ {
+  "idx": 26,
+  "name": "Slow mouse dragging also selects text",
+  "change_now": "MODIFIED",
+  "change_ece": "MODIFIED",
+  "fail_ece": false,
+  "fail_now": false,
+  "variants_now": [],
+  "edited_since_audit": false,
+  "skipped": false
+ },
+ {
+  "idx": 27,
+  "name": "Can drag handles to change selection",
+  "change_now": "MODIFIED",
+  "change_ece": "MODIFIED",
+  "fail_ece": false,
+  "fail_now": false,
+  "variants_now": [],
+  "edited_since_audit": false,
+  "skipped": false
+ },
+ {
+  "idx": 28,
+  "name": "Dragging handles calls onSelectionChanged",
+  "change_now": "MODIFIED",
+  "change_ece": "MODIFIED",
+  "fail_ece": false,
+  "fail_now": false,
+  "variants_now": [],
+  "edited_since_audit": true,
+  "skipped": false
+ },
+ {
+  "idx": 29,
+  "name": "Cannot drag one handle past the other",
+  "change_now": "MODIFIED",
+  "change_ece": "MODIFIED",
+  "fail_ece": true,
+  "fail_now": true,
+  "variants_now": [],
+  "edited_since_audit": false,
+  "skipped": false
+ },
+ {
+  "idx": 30,
+  "name": "Can use selection toolbar",
+  "change_now": "MODIFIED",
+  "change_ece": "MODIFIED",
+  "fail_ece": false,
+  "fail_now": false,
+  "variants_now": [],
+  "edited_since_audit": true,
+  "skipped": false
+ },
+ {
+  "idx": 31,
+  "name": "Selectable height with maxLine",
+  "change_now": "UNCHANGED",
+  "change_ece": "UNCHANGED",
+  "fail_ece": false,
+  "fail_now": false,
+  "variants_now": [],
+  "edited_since_audit": false,
+  "skipped": false
+ },
+ {
+  "idx": 32,
+  "name": "Can drag handles to change selection in multiline",
+  "change_now": "MODIFIED",
+  "change_ece": "MODIFIED",
+  "fail_ece": false,
+  "fail_now": false,
+  "variants_now": [],
+  "edited_since_audit": true,
+  "skipped": false
+ },
+ {
+  "idx": 33,
+  "name": "Can scroll multiline input",
+  "change_now": "MODIFIED",
+  "change_ece": "MODIFIED",
+  "fail_ece": true,
+  "fail_now": true,
+  "variants_now": [],
+  "edited_since_audit": false,
+  "skipped": false
+ },
+ {
+  "idx": 34,
+  "name": "ScrollBehavior can be overridden",
+  "change_now": "MODIFIED",
+  "change_ece": "MODIFIED",
+  "fail_ece": true,
+  "fail_now": false,
+  "variants_now": [],
+  "edited_since_audit": true,
+  "skipped": false
+ },
+ {
+  "idx": 35,
+  "name": "minLines cannot be greater than maxLines",
+  "change_now": "UNCHANGED",
+  "change_ece": "UNCHANGED",
+  "fail_ece": false,
+  "fail_now": false,
+  "variants_now": [],
+  "edited_since_audit": false,
+  "skipped": false
+ },
+ {
+  "idx": 36,
+  "name": "Selectable height with minLine",
+  "change_now": "UNCHANGED",
+  "change_ece": "UNCHANGED",
+  "fail_ece": false,
+  "fail_now": false,
+  "variants_now": [],
+  "edited_since_audit": false,
+  "skipped": false
+ },
+ {
+  "idx": 37,
+  "name": "Can align to center",
+  "change_now": "MODIFIED",
+  "change_ece": "MODIFIED",
+  "fail_ece": false,
+  "fail_now": false,
+  "variants_now": [],
+  "edited_since_audit": true,
+  "skipped": false
+ },
+ {
+  "idx": 38,
+  "name": "Can align to center within center",
+  "change_now": "MODIFIED",
+  "change_ece": "MODIFIED",
+  "fail_ece": false,
+  "fail_now": false,
+  "variants_now": [],
+  "edited_since_audit": true,
+  "skipped": false
+ },
+ {
+  "idx": 39,
+  "name": "Tapping outside SelectableText clears the selection",
+  "change_now": "MODIFIED",
+  "change_ece": "MODIFIED",
+  "fail_ece": false,
+  "fail_now": false,
+  "variants_now": [],
+  "edited_since_audit": true,
+  "skipped": false
+ },
+ {
+  "idx": 40,
+  "name": "Selectable text is skipped during focus traversal",
+  "change_now": "UNCHANGED",
+  "change_ece": "UNCHANGED",
+  "fail_ece": false,
+  "fail_now": false,
+  "variants_now": [],
+  "edited_since_audit": false,
+  "skipped": false
+ },
+ {
+  "idx": 41,
+  "name": "Selectable text identifies as text field in semantics",
+  "change_now": "UNCHANGED",
+  "change_ece": "UNCHANGED",
+  "fail_ece": true,
+  "fail_now": true,
+  "variants_now": [],
+  "edited_since_audit": false,
+  "skipped": false
+ },
+ {
+  "idx": 42,
+  "name": "Selectable text rich text with spell out in semantics",
+  "change_now": "UNCHANGED",
+  "change_ece": "UNCHANGED",
+  "fail_ece": true,
+  "fail_now": true,
+  "variants_now": [],
+  "edited_since_audit": false,
+  "skipped": false
+ },
+ {
+  "idx": 43,
+  "name": "Selectable text rich text with locale in semantics",
+  "change_now": "UNCHANGED",
+  "change_ece": "UNCHANGED",
+  "fail_ece": true,
+  "fail_now": true,
+  "variants_now": [],
+  "edited_since_audit": false,
+  "skipped": false
+ },
+ {
+  "idx": 44,
+  "name": "Selectable rich text with gesture recognizer has correct semantics",
+  "change_now": "UNCHANGED",
+  "change_ece": "UNCHANGED",
+  "fail_ece": true,
+  "fail_now": true,
+  "variants_now": [],
+  "edited_since_audit": false,
+  "skipped": false
+ },
+ {
+  "idx": 45,
+  "name": "Shift test 1",
+  "change_now": "MODIFIED",
+  "change_ece": "MODIFIED",
+  "fail_ece": true,
+  "fail_now": true,
+  "variants_now": [
+   "RawKeyEvent",
+   "ui.KeyData then RawKeyEvent"
+  ],
+  "edited_since_audit": false,
+  "skipped": false
+ },
+ {
+  "idx": 46,
+  "name": "Shift test 2",
+  "change_now": "MODIFIED",
+  "change_ece": "MODIFIED",
+  "fail_ece": false,
+  "fail_now": false,
+  "variants_now": [],
+  "edited_since_audit": false,
+  "skipped": false
+ },
+ {
+  "idx": 47,
+  "name": "Control Shift test",
+  "change_now": "MODIFIED",
+  "change_ece": "MODIFIED",
+  "fail_ece": true,
+  "fail_now": true,
+  "variants_now": [
+   "RawKeyEvent",
+   "ui.KeyData then RawKeyEvent"
+  ],
+  "edited_since_audit": false,
+  "skipped": false
+ },
+ {
+  "idx": 48,
+  "name": "Down and up test",
+  "change_now": "MODIFIED",
+  "change_ece": "MODIFIED",
+  "fail_ece": true,
+  "fail_now": true,
+  "variants_now": [
+   "RawKeyEvent",
+   "ui.KeyData then RawKeyEvent"
+  ],
+  "edited_since_audit": false,
+  "skipped": false
+ },
+ {
+  "idx": 49,
+  "name": "Down and up test 2",
+  "change_now": "MODIFIED",
+  "change_ece": "MODIFIED",
+  "fail_ece": true,
+  "fail_now": true,
+  "variants_now": [
+   "RawKeyEvent",
+   "ui.KeyData then RawKeyEvent"
+  ],
+  "edited_since_audit": true,
+  "skipped": false
+ },
+ {
+  "idx": 50,
+  "name": "Copy test",
+  "change_now": "MODIFIED",
+  "change_ece": "MODIFIED",
+  "fail_ece": false,
+  "fail_now": false,
+  "variants_now": [],
+  "edited_since_audit": false,
+  "skipped": false
+ },
+ {
+  "idx": 51,
+  "name": "Select all test",
+  "change_now": "MODIFIED",
+  "change_ece": "MODIFIED",
+  "fail_ece": false,
+  "fail_now": false,
+  "variants_now": [],
+  "edited_since_audit": false,
+  "skipped": false
+ },
+ {
+  "idx": 52,
+  "name": "keyboard selection should call onSelectionChanged",
+  "change_now": "MODIFIED",
+  "change_ece": "MODIFIED",
+  "fail_ece": false,
+  "fail_now": false,
+  "variants_now": [],
+  "edited_since_audit": true,
+  "skipped": false
+ },
+ {
+  "idx": 53,
+  "name": "Changing positions of selectable text",
+  "change_now": "MODIFIED",
+  "change_ece": "MODIFIED",
+  "fail_ece": true,
+  "fail_now": true,
+  "variants_now": [
+   "RawKeyEvent",
+   "ui.KeyData then RawKeyEvent"
+  ],
+  "edited_since_audit": true,
+  "skipped": false
+ },
+ {
+  "idx": 54,
+  "name": "Changing focus test",
+  "change_now": "MODIFIED",
+  "change_ece": "MODIFIED",
+  "fail_ece": true,
+  "fail_now": true,
+  "variants_now": [
+   "RawKeyEvent",
+   "ui.KeyData then RawKeyEvent"
+  ],
+  "edited_since_audit": true,
+  "skipped": false
+ },
+ {
+  "idx": 55,
+  "name": "Caret works when maxLines is null",
+  "change_now": "MODIFIED",
+  "change_ece": "MODIFIED",
+  "fail_ece": false,
+  "fail_now": false,
+  "variants_now": [],
+  "edited_since_audit": false,
+  "skipped": false
+ },
+ {
+  "idx": 56,
+  "name": "SelectableText baseline alignment no-strut",
+  "change_now": "MODIFIED",
+  "change_ece": "MODIFIED",
+  "fail_ece": true,
+  "fail_now": true,
+  "variants_now": [],
+  "edited_since_audit": false,
+  "skipped": false
+ },
+ {
+  "idx": 57,
+  "name": "SelectableText baseline alignment",
+  "change_now": "MODIFIED",
+  "change_ece": "MODIFIED",
+  "fail_ece": true,
+  "fail_now": true,
+  "variants_now": [],
+  "edited_since_audit": false,
+  "skipped": false
+ },
+ {
+  "idx": 58,
+  "name": "SelectableText semantics",
+  "change_now": "MODIFIED",
+  "change_ece": "MODIFIED",
+  "fail_ece": true,
+  "fail_now": true,
+  "variants_now": [],
+  "edited_since_audit": false,
+  "skipped": false
+ },
+ {
+  "idx": 59,
+  "name": "SelectableText semantics, with semanticsLabel",
+  "change_now": "UNCHANGED",
+  "change_ece": "UNCHANGED",
+  "fail_ece": false,
+  "fail_now": false,
+  "variants_now": [],
+  "edited_since_audit": false,
+  "skipped": false
+ },
+ {
+  "idx": 60,
+  "name": "SelectableText semantics, enableInteractiveSelection = false",
+  "change_now": "UNCHANGED",
+  "change_ece": "UNCHANGED",
+  "fail_ece": true,
+  "fail_now": true,
+  "variants_now": [],
+  "edited_since_audit": false,
+  "skipped": false
+ },
+ {
+  "idx": 61,
+  "name": "SelectableText semantics for selections",
+  "change_now": "MODIFIED",
+  "change_ece": "MODIFIED",
+  "fail_ece": true,
+  "fail_now": true,
+  "variants_now": [],
+  "edited_since_audit": true,
+  "skipped": false
+ },
+ {
+  "idx": 62,
+  "name": "semantic nodes of offscreen recognizers are marked hidden",
+  "change_now": "MODIFIED",
+  "change_ece": "UNCHANGED",
+  "fail_ece": true,
+  "fail_now": true,
+  "variants_now": [],
+  "edited_since_audit": true,
+  "skipped": false
+ },
+ {
+  "idx": 63,
+  "name": "SelectableText change selection with semantics",
+  "change_now": "MODIFIED",
+  "change_ece": "MODIFIED",
+  "fail_ece": true,
+  "fail_now": true,
+  "variants_now": [],
+  "edited_since_audit": true,
+  "skipped": false
+ },
+ {
+  "idx": 64,
+  "name": "Can activate SelectableText with explicit controller via semantics",
+  "change_now": "UNCHANGED",
+  "change_ece": "UNCHANGED",
+  "fail_ece": true,
+  "fail_now": true,
+  "variants_now": [],
+  "edited_since_audit": false,
+  "skipped": false
+ },
+ {
+  "idx": 65,
+  "name": "onTap is called upon tap",
+  "change_now": "UNCHANGED",
+  "change_ece": "UNCHANGED",
+  "fail_ece": false,
+  "fail_now": false,
+  "variants_now": [],
+  "edited_since_audit": false,
+  "skipped": false
+ },
+ {
+  "idx": 66,
+  "name": "SelectableText style is merged with default text style",
+  "change_now": "MODIFIED",
+  "change_ece": "MODIFIED",
+  "fail_ece": false,
+  "fail_now": false,
+  "variants_now": [],
+  "edited_since_audit": false,
+  "skipped": false
+ },
+ {
+  "idx": 67,
+  "name": "style enforces required fields",
+  "change_now": "UNCHANGED",
+  "change_ece": "UNCHANGED",
+  "fail_ece": false,
+  "fail_now": false,
+  "variants_now": [],
+  "edited_since_audit": false,
+  "skipped": false
+ },
+ {
+  "idx": 68,
+  "name": "tap moves cursor to the edge of the word it tapped",
+  "change_now": "MODIFIED",
+  "change_ece": "MODIFIED",
+  "fail_ece": true,
+  "fail_now": true,
+  "variants_now": [
+   "TargetPlatform.iOS"
+  ],
+  "edited_since_audit": false,
+  "skipped": false
+ },
+ {
+  "idx": 69,
+  "name": "tap moves cursor to the position tapped (Android)",
+  "change_now": "MODIFIED",
+  "change_ece": "MODIFIED",
+  "fail_ece": true,
+  "fail_now": true,
+  "variants_now": [
+   "TargetPlatform.android",
+   "TargetPlatform.fuchsia",
+   "TargetPlatform.linux",
+   "TargetPlatform.macOS",
+   "TargetPlatform.windows"
+  ],
+  "edited_since_audit": false,
+  "skipped": false
+ },
+ {
+  "idx": 70,
+  "name": "two slow taps do not trigger a word selection on iOS",
+  "change_now": "MODIFIED",
+  "change_ece": "MODIFIED",
+  "fail_ece": true,
+  "fail_now": true,
+  "variants_now": [
+   "TargetPlatform.iOS"
+  ],
+  "edited_since_audit": false,
+  "skipped": false
+ },
+ {
+  "idx": 71,
+  "name": "two slow taps do not trigger a word selection",
+  "change_now": "MODIFIED",
+  "change_ece": "MODIFIED",
+  "fail_ece": true,
+  "fail_now": true,
+  "variants_now": [
+   "TargetPlatform.android",
+   "TargetPlatform.fuchsia",
+   "TargetPlatform.linux",
+   "TargetPlatform.macOS",
+   "TargetPlatform.windows"
+  ],
+  "edited_since_audit": false,
+  "skipped": false
+ },
+ {
+  "idx": 72,
+  "name": "double tap selects word and first tap of double tap moves cursor",
+  "change_now": "MODIFIED",
+  "change_ece": "MODIFIED",
+  "fail_ece": true,
+  "fail_now": true,
+  "variants_now": [
+   "TargetPlatform.iOS",
+   "TargetPlatform.macOS"
+  ],
+  "edited_since_audit": true,
+  "skipped": false
+ },
+ {
+  "idx": 73,
+  "name": "double tap selects word and first tap of double tap moves cursor and shows toolbar (Android)",
+  "change_now": "MODIFIED",
+  "change_ece": "MODIFIED",
+  "fail_ece": true,
+  "fail_now": true,
+  "variants_now": [],
+  "edited_since_audit": false,
+  "skipped": false
+ },
+ {
+  "idx": 74,
+  "name": "double tap on top of cursor also selects word (Android)",
+  "change_now": "MODIFIED",
+  "change_ece": "MODIFIED",
+  "fail_ece": false,
+  "fail_now": false,
+  "variants_now": [],
+  "edited_since_audit": false,
+  "skipped": false
+ },
+ {
+  "idx": 75,
+  "name": "double tap hold selects word",
+  "change_now": "MODIFIED",
+  "change_ece": "MODIFIED",
+  "fail_ece": true,
+  "fail_now": true,
+  "variants_now": [
+   "TargetPlatform.iOS"
+  ],
+  "edited_since_audit": true,
+  "skipped": false
+ },
+ {
+  "idx": 76,
+  "name": "double tap selects word with semantics label",
+  "change_now": "MODIFIED",
+  "change_ece": "MODIFIED",
+  "fail_ece": false,
+  "fail_now": false,
+  "variants_now": [],
+  "edited_since_audit": false,
+  "skipped": false
+ },
+ {
+  "idx": 77,
+  "name": "tap after a double tap select is not affected (iOS)",
+  "change_now": "MODIFIED",
+  "change_ece": "MODIFIED",
+  "fail_ece": true,
+  "fail_now": true,
+  "variants_now": [
+   "TargetPlatform.iOS"
+  ],
+  "edited_since_audit": false,
+  "skipped": false
+ },
+ {
+  "idx": 78,
+  "name": "tap after a double tap select is not affected (macOS)",
+  "change_now": "MODIFIED",
+  "change_ece": "MODIFIED",
+  "fail_ece": true,
+  "fail_now": true,
+  "variants_now": [
+   "TargetPlatform.macOS"
+  ],
+  "edited_since_audit": false,
+  "skipped": false
+ },
+ {
+  "idx": 79,
+  "name": "long press selects word and shows toolbar (iOS)",
+  "change_now": "MODIFIED",
+  "change_ece": "MODIFIED",
+  "fail_ece": true,
+  "fail_now": true,
+  "variants_now": [
+   "TargetPlatform.iOS",
+   "TargetPlatform.macOS"
+  ],
+  "edited_since_audit": false,
+  "skipped": false
+ },
+ {
+  "idx": 80,
+  "name": "long press selects word and shows toolbar (Android)",
+  "change_now": "MODIFIED",
+  "change_ece": "MODIFIED",
+  "fail_ece": false,
+  "fail_now": false,
+  "variants_now": [],
+  "edited_since_audit": false,
+  "skipped": false
+ },
+ {
+  "idx": 81,
+  "name": "long press selects word and shows custom toolbar (Cupertino)",
+  "change_now": "MODIFIED",
+  "change_ece": "MODIFIED",
+  "fail_ece": false,
+  "fail_now": false,
+  "variants_now": [],
+  "edited_since_audit": false,
+  "skipped": false
+ },
+ {
+  "idx": 82,
+  "name": "long press selects word and shows custom toolbar (Material)",
+  "change_now": "MODIFIED",
+  "change_ece": "MODIFIED",
+  "fail_ece": false,
+  "fail_now": false,
+  "variants_now": [],
+  "edited_since_audit": false,
+  "skipped": false
+ },
+ {
+  "idx": 83,
+  "name": "textSelectionControls is passed to SelectionArea",
+  "change_now": "ADDED",
+  "change_ece": "ADDED",
+  "fail_ece": false,
+  "fail_now": false,
+  "variants_now": [],
+  "edited_since_audit": false,
+  "skipped": false
+ },
+ {
+  "idx": 84,
+  "name": "PageView beats SelectableText drag gestures (iOS)",
+  "change_now": "MODIFIED",
+  "change_ece": "MODIFIED",
+  "fail_ece": false,
+  "fail_now": false,
+  "variants_now": [],
+  "edited_since_audit": false,
+  "skipped": false
+ },
+ {
+  "idx": 85,
+  "name": "long press tap cannot initiate a double tap on macOS",
+  "change_now": "MODIFIED",
+  "change_ece": "MODIFIED",
+  "fail_ece": true,
+  "fail_now": true,
+  "variants_now": [
+   "TargetPlatform.macOS"
+  ],
+  "edited_since_audit": false,
+  "skipped": false
+ },
+ {
+  "idx": 86,
+  "name": "long press tap cannot initiate a double tap on iOS",
+  "change_now": "MODIFIED",
+  "change_ece": "MODIFIED",
+  "fail_ece": true,
+  "fail_now": true,
+  "variants_now": [
+   "TargetPlatform.iOS"
+  ],
+  "edited_since_audit": false,
+  "skipped": false
+ },
+ {
+  "idx": 87,
+  "name": "long press drag extends the selection to the word under the drag and shows toolbar on lift on non-Apple platforms",
+  "change_now": "MODIFIED",
+  "change_ece": "MODIFIED",
+  "fail_ece": false,
+  "fail_now": false,
+  "variants_now": [],
+  "edited_since_audit": false,
+  "skipped": false
+ },
+ {
+  "idx": 88,
+  "name": "long press drag extends the selection to the word under the drag and shows toolbar on lift (iOS)",
+  "change_now": "MODIFIED",
+  "change_ece": "MODIFIED",
+  "fail_ece": true,
+  "fail_now": true,
+  "variants_now": [
+   "TargetPlatform.iOS"
+  ],
+  "edited_since_audit": false,
+  "skipped": false
+ },
+ {
+  "idx": 89,
+  "name": "long press drag moves the cursor under the drag and shows toolbar on lift (macOS)",
+  "change_now": "MODIFIED",
+  "change_ece": "MODIFIED",
+  "fail_ece": true,
+  "fail_now": true,
+  "variants_now": [
+   "TargetPlatform.macOS"
+  ],
+  "edited_since_audit": false,
+  "skipped": false
+ },
+ {
+  "idx": 90,
+  "name": "long press drag can edge scroll when inside a scrollable",
+  "change_now": "MODIFIED",
+  "change_ece": "MODIFIED",
+  "fail_ece": true,
+  "fail_now": true,
+  "variants_now": [
+   "TargetPlatform.iOS"
+  ],
+  "edited_since_audit": true,
+  "skipped": false
+ },
+ {
+  "idx": 91,
+  "name": "Desktop mouse drag can edge scroll when inside a horizontal scrollable",
+  "change_now": "MODIFIED",
+  "change_ece": "MODIFIED",
+  "fail_ece": true,
+  "fail_now": true,
+  "variants_now": [
+   "TargetPlatform.linux",
+   "TargetPlatform.macOS",
+   "TargetPlatform.windows"
+  ],
+  "edited_since_audit": true,
+  "skipped": false
+ },
+ {
+  "idx": 92,
+  "name": "long press drag can edge scroll",
+  "change_now": "MODIFIED",
+  "change_ece": "MODIFIED",
+  "fail_ece": true,
+  "fail_now": true,
+  "variants_now": [
+   "TargetPlatform.android",
+   "TargetPlatform.iOS"
+  ],
+  "edited_since_audit": false,
+  "skipped": false
+ },
+ {
+  "idx": 93,
+  "name": "long tap still selects after a double tap select (iOS)",
+  "change_now": "MODIFIED",
+  "change_ece": "MODIFIED",
+  "fail_ece": true,
+  "fail_now": true,
+  "variants_now": [
+   "TargetPlatform.iOS"
+  ],
+  "edited_since_audit": false,
+  "skipped": false
+ },
+ {
+  "idx": 94,
+  "name": "long tap still selects after a double tap select (macOS)",
+  "change_now": "MODIFIED",
+  "change_ece": "MODIFIED",
+  "fail_ece": true,
+  "fail_now": true,
+  "variants_now": [
+   "TargetPlatform.macOS"
+  ],
+  "edited_since_audit": true,
+  "skipped": false
+ },
+ {
+  "idx": 95,
+  "name": "double tap after a long tap is not affected",
+  "change_now": "MODIFIED",
+  "change_ece": "MODIFIED",
+  "fail_ece": true,
+  "fail_now": true,
+  "variants_now": [
+   "TargetPlatform.iOS",
+   "TargetPlatform.macOS"
+  ],
+  "edited_since_audit": true,
+  "skipped": false
+ },
+ {
+  "idx": 96,
+  "name": "double tap chains work",
+  "change_now": "MODIFIED",
+  "change_ece": "MODIFIED",
+  "fail_ece": true,
+  "fail_now": true,
+  "variants_now": [
+   "TargetPlatform.iOS",
+   "TargetPlatform.macOS"
+  ],
+  "edited_since_audit": true,
+  "skipped": false
+ },
+ {
+  "idx": 97,
+  "name": "force press does not select a word on (android)",
+  "change_now": "MODIFIED",
+  "change_ece": "MODIFIED",
+  "fail_ece": false,
+  "fail_now": false,
+  "variants_now": [],
+  "edited_since_audit": false,
+  "skipped": false
+ },
+ {
+  "idx": 98,
+  "name": "force press selects word",
+  "change_now": "MODIFIED",
+  "change_ece": "MODIFIED",
+  "fail_ece": true,
+  "fail_now": true,
+  "variants_now": [
+   "TargetPlatform.iOS"
+  ],
+  "edited_since_audit": false,
+  "skipped": false
+ },
+ {
+  "idx": 99,
+  "name": "tap on non-force-press-supported devices work",
+  "change_now": "MODIFIED",
+  "change_ece": "MODIFIED",
+  "fail_ece": true,
+  "fail_now": true,
+  "variants_now": [
+   "TargetPlatform.iOS"
+  ],
+  "edited_since_audit": false,
+  "skipped": false
+ },
+ {
+  "idx": 100,
+  "name": "default SelectableText debugFillProperties",
+  "change_now": "UNCHANGED",
+  "change_ece": "UNCHANGED",
+  "fail_ece": false,
+  "fail_now": false,
+  "variants_now": [],
+  "edited_since_audit": false,
+  "skipped": false
+ },
+ {
+  "idx": 101,
+  "name": "SelectableText implements debugFillProperties",
+  "change_now": "UNCHANGED",
+  "change_ece": "UNCHANGED",
+  "fail_ece": false,
+  "fail_now": false,
+  "variants_now": [],
+  "edited_since_audit": false,
+  "skipped": false
+ },
+ {
+  "idx": 102,
+  "name": "strut basic single line",
+  "change_now": "MODIFIED",
+  "change_ece": "MODIFIED",
+  "fail_ece": false,
+  "fail_now": false,
+  "variants_now": [],
+  "edited_since_audit": false,
+  "skipped": false
+ },
+ {
+  "idx": 103,
+  "name": "strut TextStyle increases height",
+  "change_now": "MODIFIED",
+  "change_ece": "MODIFIED",
+  "fail_ece": false,
+  "fail_now": false,
+  "variants_now": [],
+  "edited_since_audit": false,
+  "skipped": false
+ },
+ {
+  "idx": 104,
+  "name": "strut basic multi line",
+  "change_now": "MODIFIED",
+  "change_ece": "MODIFIED",
+  "fail_ece": false,
+  "fail_now": false,
+  "variants_now": [],
+  "edited_since_audit": false,
+  "skipped": false
+ },
+ {
+  "idx": 105,
+  "name": "strut no force small strut",
+  "change_now": "MODIFIED",
+  "change_ece": "MODIFIED",
+  "fail_ece": false,
+  "fail_now": false,
+  "variants_now": [],
+  "edited_since_audit": false,
+  "skipped": false
+ },
+ {
+  "idx": 106,
+  "name": "strut no force large strut",
+  "change_now": "MODIFIED",
+  "change_ece": "MODIFIED",
+  "fail_ece": false,
+  "fail_now": false,
+  "variants_now": [],
+  "edited_since_audit": false,
+  "skipped": false
+ },
+ {
+  "idx": 107,
+  "name": "strut height override",
+  "change_now": "MODIFIED",
+  "change_ece": "MODIFIED",
+  "fail_ece": false,
+  "fail_now": false,
+  "variants_now": [],
+  "edited_since_audit": false,
+  "skipped": false
+ },
+ {
+  "idx": 108,
+  "name": "strut forces field taller",
+  "change_now": "MODIFIED",
+  "change_ece": "MODIFIED",
+  "fail_ece": false,
+  "fail_now": false,
+  "variants_now": [],
+  "edited_since_audit": false,
+  "skipped": false
+ },
+ {
+  "idx": 109,
+  "name": "Caret center position",
+  "change_now": "MODIFIED",
+  "change_ece": "MODIFIED",
+  "fail_ece": false,
+  "fail_now": false,
+  "variants_now": [],
+  "edited_since_audit": true,
+  "skipped": false
+ },
+ {
+  "idx": 110,
+  "name": "Caret indexes into trailing whitespace center align",
+  "change_now": "MODIFIED",
+  "change_ece": "MODIFIED",
+  "fail_ece": false,
+  "fail_now": false,
+  "variants_now": [],
+  "edited_since_audit": true,
+  "skipped": false
+ },
+ {
+  "idx": 111,
+  "name": "selection handles are rendered and not faded away",
+  "change_now": "MODIFIED",
+  "change_ece": "MODIFIED",
+  "fail_ece": false,
+  "fail_now": false,
+  "variants_now": [],
+  "edited_since_audit": false,
+  "skipped": false
+ },
+ {
+  "idx": 112,
+  "name": "selection handles are rendered and not faded away",
+  "change_now": "MODIFIED",
+  "change_ece": "MODIFIED",
+  "fail_ece": false,
+  "fail_now": false,
+  "variants_now": [],
+  "edited_since_audit": false,
+  "skipped": false
+ },
+ {
+  "idx": 113,
+  "name": "Long press shows handles and toolbar",
+  "change_now": "MODIFIED",
+  "change_ece": "MODIFIED",
+  "fail_ece": false,
+  "fail_now": false,
+  "variants_now": [],
+  "edited_since_audit": false,
+  "skipped": false
+ },
+ {
+  "idx": 114,
+  "name": "Double tap shows handles and toolbar",
+  "change_now": "MODIFIED",
+  "change_ece": "MODIFIED",
+  "fail_ece": false,
+  "fail_now": false,
+  "variants_now": [],
+  "edited_since_audit": false,
+  "skipped": false
+ },
+ {
+  "idx": 115,
+  "name": "Mouse tap does not show handles nor toolbar",
+  "change_now": "MODIFIED",
+  "change_ece": "MODIFIED",
+  "fail_ece": false,
+  "fail_now": false,
+  "variants_now": [],
+  "edited_since_audit": false,
+  "skipped": false
+ },
+ {
+  "idx": 116,
+  "name": "Mouse long press does not show handles nor toolbar",
+  "change_now": "MODIFIED",
+  "change_ece": "MODIFIED",
+  "fail_ece": false,
+  "fail_now": false,
+  "variants_now": [],
+  "edited_since_audit": false,
+  "skipped": false
+ },
+ {
+  "idx": 117,
+  "name": "Mouse double tap does not show handles nor toolbar",
+  "change_now": "MODIFIED",
+  "change_ece": "MODIFIED",
+  "fail_ece": false,
+  "fail_now": false,
+  "variants_now": [],
+  "edited_since_audit": false,
+  "skipped": false
+ },
+ {
+  "idx": 118,
+  "name": "text span with tap gesture recognizer works in selectable rich text",
+  "change_now": "MODIFIED",
+  "change_ece": "MODIFIED",
+  "fail_ece": false,
+  "fail_now": false,
+  "variants_now": [],
+  "edited_since_audit": false,
+  "skipped": false
+ },
+ {
+  "idx": 119,
+  "name": "text span with long press gesture recognizer works in selectable rich text",
+  "change_now": "MODIFIED",
+  "change_ece": "MODIFIED",
+  "fail_ece": true,
+  "fail_now": true,
+  "variants_now": [],
+  "edited_since_audit": true,
+  "skipped": false
+ },
+ {
+  "idx": 120,
+  "name": "SelectableText changes mouse cursor when hovered",
+  "change_now": "UNCHANGED",
+  "change_ece": "UNCHANGED",
+  "fail_ece": false,
+  "fail_now": false,
+  "variants_now": [],
+  "edited_since_audit": false,
+  "skipped": false
+ },
+ {
+  "idx": 121,
+  "name": "The handles show after pressing Select All",
+  "change_now": "MODIFIED",
+  "change_ece": "MODIFIED",
+  "fail_ece": true,
+  "fail_now": true,
+  "variants_now": [
+   "TargetPlatform.android",
+   "TargetPlatform.fuchsia"
+  ],
+  "edited_since_audit": false,
+  "skipped": false
+ },
+ {
+  "idx": 122,
+  "name": "The Select All calls on selection changed",
+  "change_now": "MODIFIED",
+  "change_ece": "MODIFIED",
+  "fail_ece": true,
+  "fail_now": false,
+  "variants_now": [],
+  "edited_since_audit": true,
+  "skipped": false
+ },
+ {
+  "idx": 123,
+  "name": "The Select All calls on selection changed with a mouse on windows and linux",
+  "change_now": "MODIFIED",
+  "change_ece": "MODIFIED",
+  "fail_ece": false,
+  "fail_now": false,
+  "variants_now": [],
+  "edited_since_audit": true,
+  "skipped": false
+ },
+ {
+  "idx": 124,
+  "name": "Does not show handles when updated from the web engine",
+  "change_now": "MODIFIED",
+  "change_ece": "MODIFIED",
+  "fail_ece": false,
+  "fail_now": false,
+  "variants_now": [],
+  "edited_since_audit": true,
+  "skipped": true
+ },
+ {
+  "idx": 125,
+  "name": "onSelectionChanged is called when selection changes",
+  "change_now": "MODIFIED",
+  "change_ece": "UNCHANGED",
+  "fail_ece": true,
+  "fail_now": false,
+  "variants_now": [],
+  "edited_since_audit": true,
+  "skipped": false
+ },
+ {
+  "idx": 126,
+  "name": "selecting a space selects the previous word on mobile",
+  "change_now": "MODIFIED",
+  "change_ece": "MODIFIED",
+  "fail_ece": true,
+  "fail_now": true,
+  "variants_now": [
+   "TargetPlatform.android",
+   "TargetPlatform.iOS"
+  ],
+  "edited_since_audit": true,
+  "skipped": false
+ },
+ {
+  "idx": 127,
+  "name": "selecting a space selects the space on non-mobile platforms",
+  "change_now": "MODIFIED",
+  "change_ece": "UNCHANGED",
+  "fail_ece": true,
+  "fail_now": false,
+  "variants_now": [],
+  "edited_since_audit": true,
+  "skipped": false
+ },
+ {
+  "idx": 128,
+  "name": "double tapping a space selects the previous word on mobile",
+  "change_now": "MODIFIED",
+  "change_ece": "MODIFIED",
+  "fail_ece": true,
+  "fail_now": true,
+  "variants_now": [
+   "TargetPlatform.android",
+   "TargetPlatform.iOS"
+  ],
+  "edited_since_audit": true,
+  "skipped": false
+ },
+ {
+  "idx": 129,
+  "name": "text selection style 1",
+  "change_now": "MODIFIED",
+  "change_ece": "MODIFIED",
+  "fail_ece": true,
+  "fail_now": true,
+  "variants_now": [],
+  "edited_since_audit": false,
+  "skipped": false
+ },
+ {
+  "idx": 130,
+  "name": "text selection style 2",
+  "change_now": "MODIFIED",
+  "change_ece": "MODIFIED",
+  "fail_ece": true,
+  "fail_now": true,
+  "variants_now": [],
+  "edited_since_audit": false,
+  "skipped": false
+ },
+ {
+  "idx": 131,
+  "name": "keeps alive when has focus",
+  "change_now": "MODIFIED",
+  "change_ece": "MODIFIED",
+  "fail_ece": false,
+  "fail_now": false,
+  "variants_now": [],
+  "edited_since_audit": false,
+  "skipped": false
+ },
+ {
+  "idx": 132,
+  "name": "Can drag handles to show, unshow, and update magnifier",
+  "change_now": "MODIFIED",
+  "change_ece": "MODIFIED",
+  "fail_ece": false,
+  "fail_now": false,
+  "variants_now": [],
+  "edited_since_audit": false,
+  "skipped": false
+ },
+ {
+  "idx": 133,
+  "name": "SelectableText text span style is merged with default text style",
+  "change_now": "MODIFIED",
+  "change_ece": "MODIFIED",
+  "fail_ece": false,
+  "fail_now": false,
+  "variants_now": [],
+  "edited_since_audit": false,
+  "skipped": false
+ },
+ {
+  "idx": 134,
+  "name": "SelectableText selection update on tap",
+  "change_now": "ADDED",
+  "change_ece": "ADDED",
+  "fail_ece": false,
+  "fail_now": false,
+  "variants_now": [],
+  "edited_since_audit": false,
+  "skipped": false
+ },
+ {
+  "idx": 135,
+  "name": "Off-screen selected text doesn't throw exception",
+  "change_now": "MODIFIED",
+  "change_ece": "MODIFIED",
+  "fail_ece": false,
+  "fail_now": false,
+  "variants_now": [],
+  "edited_since_audit": false,
+  "skipped": false
+ },
+ {
+  "idx": 136,
+  "name": "SelectableText respects MediaQueryData.lineHeightScaleFactorOverride, MediaQueryData.letterSpacingOverride, and MediaQueryData.wordSpacingOverride",
+  "change_now": "MODIFIED",
+  "change_ece": "MODIFIED",
+  "fail_ece": true,
+  "fail_now": false,
+  "variants_now": [],
+  "edited_since_audit": true,
+  "skipped": false
+ },
+ {
+  "idx": 137,
+  "name": "iOS does not use the system context menu by default even when supported",
+  "change_now": "UNCHANGED",
+  "change_ece": "UNCHANGED",
+  "fail_ece": false,
+  "fail_now": false,
+  "variants_now": [],
+  "edited_since_audit": false,
+  "skipped": false
+ },
+ {
+  "idx": 138,
+  "name": "SelectableText does not crash at zero area",
+  "change_now": "MODIFIED",
+  "change_ece": "MODIFIED",
+  "fail_ece": false,
+  "fail_now": false,
+  "variants_now": [],
+  "edited_since_audit": false,
+  "skipped": false
+ }
+]
