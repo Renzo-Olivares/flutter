@@ -8,6 +8,7 @@
 /// @docImport 'text_field.dart';
 library;
 
+import 'dart:async';
 import 'dart:ui' as ui show BoxHeightStyle, BoxWidthStyle;
 
 import 'package:flutter/cupertino.dart';
@@ -479,16 +480,12 @@ class _SelectableTextState extends State<SelectableText> {
   FocusNode get _effectiveFocusNode =>
       widget.focusNode ?? (_focusNode ??= FocusNode(skipTraversal: true));
 
-  late final SelectionListenerNotifier _selectionNotifier;
-
   // To match EditableText's internal scrollable.
   bool get _isMultiline => widget.maxLines != 1;
 
   @override
   void initState() {
     super.initState();
-    _selectionNotifier = SelectionListenerNotifier();
-    _selectionNotifier.addListener(_handleSelectionDetailsChanged);
     if (widget.autofocus) {
       _effectiveFocusNode.requestFocus();
     }
@@ -496,29 +493,12 @@ class _SelectableTextState extends State<SelectableText> {
 
   @override
   void dispose() {
-    _selectionNotifier.removeListener(_handleSelectionDetailsChanged);
-    _selectionNotifier.dispose();
     _focusNode?.dispose();
     super.dispose();
   }
 
-  void _handleSelectionDetailsChanged() {
-    if (widget.onSelectionChanged == null) {
-      return;
-    }
-    if (_selectionNotifier.registered) {
-      final SelectionDetails details = _selectionNotifier.selection;
-      final SelectedContentRange? range = details.range;
-      if (range != null) {
-        final selection = TextSelection(
-          baseOffset: range.startOffset,
-          extentOffset: range.endOffset,
-        );
-        widget.onSelectionChanged!(selection, null);
-      } else {
-        widget.onSelectionChanged!(const TextSelection.collapsed(offset: -1), null);
-      }
-    }
+  void _handleSelectionChanged(TextSelection selection) {
+    widget.onSelectionChanged?.call(selection, null);
   }
 
   @override
@@ -638,7 +618,10 @@ class _SelectableTextState extends State<SelectableText> {
         selectionControls: textSelectionControls,
         magnifierConfiguration: widget.magnifierConfiguration,
         contextMenuBuilder: _adaptContextMenuBuilder,
-        child: SelectionListener(selectionNotifier: _selectionNotifier, child: scrollableChild),
+        child: _SelectionChangedDispatcher(
+          onSelectionChanged: _handleSelectionChanged,
+          child: scrollableChild,
+        ),
       );
     } else {
       result = SelectionContainer.disabled(child: scrollableChild);
@@ -663,5 +646,110 @@ class _SelectableTextState extends State<SelectableText> {
     return AdaptiveTextSelectionToolbar.selectableRegion(
       selectableRegionState: selectableRegionState,
     );
+  }
+}
+
+/// Reports the selection of [child] to [onSelectionChanged] once per
+/// selection change made by a user action, instead of once per
+/// [SelectionListenerNotifier] notification.
+///
+/// [SelectableRegion] applies a single user action as several selection
+/// events. For example a tap collapses the selection with a start edge update
+/// followed by an end edge update, and select all first clears the selection.
+/// [SelectionListenerNotifier] notifies after each of these events, so
+/// forwarding every notification would report intermediate selections.
+///
+/// Every [SelectableRegion] gesture and keyboard handler notifies the
+/// [SelectableRegionSelectionStatusScope] listenable synchronously after it
+/// has applied all of its selection events (with
+/// [SelectableRegionSelectionStatus.changing] while a gesture is in progress
+/// and [SelectableRegionSelectionStatus.finalized] when it ends). This widget
+/// must be placed below the [SelectableRegion] to read that scope. It reports
+/// the latest selection on each status notification, and only if it differs
+/// from the last reported selection.
+class _SelectionChangedDispatcher extends StatefulWidget {
+  const _SelectionChangedDispatcher({required this.onSelectionChanged, required this.child});
+
+  final ValueChanged<TextSelection> onSelectionChanged;
+
+  final Widget child;
+
+  @override
+  State<_SelectionChangedDispatcher> createState() => _SelectionChangedDispatcherState();
+}
+
+class _SelectionChangedDispatcherState extends State<_SelectionChangedDispatcher> {
+  final SelectionListenerNotifier _selectionNotifier = SelectionListenerNotifier();
+  ValueListenable<SelectableRegionSelectionStatus>? _selectionStatus;
+  TextSelection _lastReportedSelection = const TextSelection.collapsed(offset: -1);
+  bool _flushScheduled = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _selectionNotifier.addListener(_handleSelectionDetailsChanged);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final ValueListenable<SelectableRegionSelectionStatus>? selectionStatus =
+        SelectableRegionSelectionStatusScope.maybeOf(context);
+    if (selectionStatus != _selectionStatus) {
+      _selectionStatus?.removeListener(_reportSelection);
+      _selectionStatus = selectionStatus;
+      _selectionStatus?.addListener(_reportSelection);
+    }
+  }
+
+  @override
+  void dispose() {
+    _selectionStatus?.removeListener(_reportSelection);
+    _selectionNotifier.removeListener(_handleSelectionDetailsChanged);
+    _selectionNotifier.dispose();
+    super.dispose();
+  }
+
+  void _reportSelection() {
+    if (!_selectionNotifier.registered) {
+      return;
+    }
+    final SelectedContentRange? range = _selectionNotifier.selection.range;
+    final selection = range == null
+        ? const TextSelection.collapsed(offset: -1)
+        : TextSelection(baseOffset: range.startOffset, extentOffset: range.endOffset);
+    if (selection == _lastReportedSelection) {
+      return;
+    }
+    _lastReportedSelection = selection;
+    widget.onSelectionChanged(selection);
+  }
+
+  void _handleSelectionDetailsChanged() {
+    if (_selectionStatus == null) {
+      _reportSelection();
+      return;
+    }
+    // Selection changes made by a SelectableRegion gesture or keyboard handler
+    // are reported by the status notification that follows them in the same
+    // call stack. Changes that are not followed by a status notification (for
+    // example a direct call to SelectableRegionState.clearSelection, a
+    // canceled gesture, or a continuous edge update scheduled for a later
+    // frame) are reported in a microtask.
+    if (_flushScheduled) {
+      return;
+    }
+    _flushScheduled = true;
+    scheduleMicrotask(() {
+      _flushScheduled = false;
+      if (mounted) {
+        _reportSelection();
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SelectionListener(selectionNotifier: _selectionNotifier, child: widget.child);
   }
 }
