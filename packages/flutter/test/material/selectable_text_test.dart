@@ -1567,12 +1567,8 @@ void main() {
     expect(selectionB, null);
 
     // Tapping on the second SelectableText should clear the selection from the first.
-    final Offset secondTextStart = textOffsetToPosition(
-      tester,
-      0,
-      ancestor: find.text('second selectable text'),
-    );
-    await tester.tapAt(secondTextStart);
+    final Offset selectableTextStart = tester.getTopLeft(find.byType(SelectableText).last);
+    await tester.tapAt(selectableTextStart);
     await tester.pumpAndSettle();
 
     expect(selectionA, TextRange.empty); // Cleared
