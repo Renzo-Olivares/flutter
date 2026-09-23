@@ -6260,15 +6260,19 @@ void main() {
     'SelectableText respects MediaQueryData.lineHeightScaleFactorOverride, MediaQueryData.letterSpacingOverride, and MediaQueryData.wordSpacingOverride',
     (WidgetTester tester) async {
       await tester.pumpWidget(
-        const Directionality(
-          textDirection: TextDirection.ltr,
-          child: MediaQuery(
-            data: MediaQueryData(
-              lineHeightScaleFactorOverride: 2.0,
-              letterSpacingOverride: 2.0,
-              wordSpacingOverride: 2.0,
+        // SelectionArea requires MaterialLocalizations and SelectableRegion
+        // requires an Overlay at build time.
+        const MaterialApp(
+          home: Directionality(
+            textDirection: TextDirection.ltr,
+            child: MediaQuery(
+              data: MediaQueryData(
+                lineHeightScaleFactorOverride: 2.0,
+                letterSpacingOverride: 2.0,
+                wordSpacingOverride: 2.0,
+              ),
+              child: SelectableText('hello world', strutStyle: StrutStyle(height: 0.9)),
             ),
-            child: SelectableText('hello world', strutStyle: StrutStyle(height: 0.9)),
           ),
         ),
       );
