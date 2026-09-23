@@ -5721,7 +5721,6 @@ void main() {
     }),
   );
 
-  // TODO(Renzo-Olivares): Fails because SelectionArea does not support selecting space on non-mobile platforms in the same way (or tap assertions fail).
   testWidgets(
     'selecting a space selects the space on non-mobile platforms',
     (WidgetTester tester) async {
@@ -5741,11 +5740,15 @@ void main() {
           ),
         ),
       );
+      // Allow SelectionArea to register its selectables.
+      await tester.pump();
 
       expect(selection, isNull);
 
       // Put the cursor at the end of the field.
-      await tester.tapAt(textOffsetToPosition(tester, 10));
+      // Without RenderEditable's caret margin, a tap exactly at the trailing
+      // edge of the text lands outside the SelectableRegion.
+      await tester.tapAt(textOffsetToPosition(tester, 10) - const Offset(1.0, 0.0));
       expect(selection, isNotNull);
       expect(selection!.baseOffset, 10);
       expect(selection!.extentOffset, 10);
@@ -5765,7 +5768,9 @@ void main() {
       // otherwise block a tap on the end of the field.
       await tester.tapAt(textOffsetToPosition(tester, 0));
       await tester.pumpAndSettle();
-      await tester.tapAt(textOffsetToPosition(tester, 10));
+      // Without RenderEditable's caret margin, a tap exactly at the trailing
+      // edge of the text lands outside the SelectableRegion.
+      await tester.tapAt(textOffsetToPosition(tester, 10) - const Offset(1.0, 0.0));
       expect(selection, isNotNull);
       expect(selection!.baseOffset, 10);
       expect(selection!.extentOffset, 10);
