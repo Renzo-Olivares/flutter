@@ -4133,8 +4133,6 @@ void main() {
     (WidgetTester tester) async {
       // This is a regression test for https://github.com/flutter/flutter/issues/129590.
       TextSelection? currentSelection;
-      final scrollController = ScrollController();
-      addTearDown(scrollController.dispose);
 
       await tester.pumpWidget(
         MaterialApp(
@@ -4143,7 +4141,6 @@ void main() {
               child: SizedBox(
                 width: 300.0,
                 child: SingleChildScrollView(
-                  controller: scrollController,
                   scrollDirection: Axis.horizontal,
                   child: SelectableText(
                     'Atwater Peel Sherbrooke Bonaventure Angrignon Peel Côte-des-Neiges ' * 2,
@@ -4178,7 +4175,7 @@ void main() {
       expect(currentSelection, const TextSelection(baseOffset: 13, extentOffset: 35));
 
       await gesture.moveBy(const Offset(1600, 0));
-      await tester.pump(const Duration(seconds: 1));
+      await tester.pump();
       expect(currentSelection, const TextSelection(baseOffset: 13, extentOffset: 134));
 
       await gesture.up();
