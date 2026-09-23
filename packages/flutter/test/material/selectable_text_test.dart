@@ -4247,6 +4247,8 @@ void main() {
 
     final TestGesture gesture = await tester.startGesture(
       selectableTextStart + const Offset(200.0, 0.0),
+      // A touch drag pans the scroll view on desktop; drag-to-select requires
+      // a precise pointer, and touch selection uses a long-press drag.
       kind: PointerDeviceKind.mouse,
     );
     await tester.pump();
@@ -4272,7 +4274,22 @@ void main() {
     // The selection isn't affected by the gesture lift.
     expect(currentSelection, const TextSelection(baseOffset: 14, extentOffset: 134));
 
-    final List<TextSelectionPoint> endpoints = getSelectionEndpoints(tester);
+    // A desktop mouse drag creates no selection overlay, so the endpoints
+    // come from the paragraph.
+    final RenderParagraph paragraph = tester.renderObject<RenderParagraph>(
+      find.descendant(of: find.byType(SelectableText), matching: find.byType(RichText)).first,
+    );
+    final List<TextBox> boxes = paragraph.getBoxesForSelection(currentSelection!);
+    final endpoints = <TextSelectionPoint>[
+      TextSelectionPoint(
+        paragraph.localToGlobal(Offset(boxes.first.left, boxes.first.top)),
+        TextDirection.ltr,
+      ),
+      TextSelectionPoint(
+        paragraph.localToGlobal(Offset(boxes.last.right, boxes.last.top)),
+        TextDirection.ltr,
+      ),
+    ];
     expect(endpoints.isNotEmpty, isTrue);
     expect(endpoints.length, 2);
     expect(endpoints[0].point.dx, isNegative);
