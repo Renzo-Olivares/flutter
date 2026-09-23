@@ -447,6 +447,8 @@ void main() {
     await tester.pump();
     final Text textWidget = tester.widget<Text>(find.byType(Text));
     expect(textWidget.selectionColor, selectionColor);
+    // cursorColor is not asserted because static text has no cursor; the old
+    // value was a side effect of the EditableText-based implementation.
   });
 
   testWidgets('Selectable Text can have custom selection color', (WidgetTester tester) async {
@@ -474,11 +476,13 @@ void main() {
     RenderBox findSelectableTextBox() => tester.renderObject(find.byType(SelectableText));
 
     final RenderBox textBox = findSelectableTextBox();
+    // 3px narrower than under EditableText, which reserved a caret margin.
     expect(textBox.size, const Size(14.0, 14.0));
 
     await tester.pumpWidget(boilerplate(child: const SelectableText('very very long')));
 
     final RenderBox longtextBox = findSelectableTextBox();
+    // 3px narrower than under EditableText, which reserved a caret margin.
     expect(longtextBox.size, const Size(196.0, 14.0));
   });
 
@@ -509,6 +513,7 @@ void main() {
       boilerplate(child: const SelectableText(text, textWidthBasis: TextWidthBasis.longestLine)),
     );
     textBox = findTextBox();
+    // 3px narrower than under EditableText, which reserved a caret margin.
     expect(textBox.size, const Size(630.0, 28.0));
   });
 
@@ -1143,7 +1148,8 @@ void main() {
     // Allow nested selection containers to register.
     await tester.pump();
 
-    // Long press 'e' to select 'def' and show toolbar.
+    // Long press 'e' to select 'def' and show toolbar. Static text has no caret
+    // handle to tap, so a long press opens the toolbar.
     final Offset ePos = textOffsetToPosition(tester, testValue.indexOf('e'));
     await tester.longPressAt(ePos);
     await tester.pumpAndSettle();
@@ -1237,6 +1243,8 @@ void main() {
     final Offset thirdPos = textOffsetToPosition(tester, testValue.indexOf('Third'));
     final Offset middleStringPos = textOffsetToPosition(tester, testValue.indexOf('irst'));
 
+    // 1.5px right of the EditableText-based values: the removed caret margin
+    // shifts the centered text.
     expect(firstPos.dx, 26.0);
     expect(secondPos.dx, 26.0);
     expect(thirdPos.dx, 26.0);
@@ -1487,6 +1495,7 @@ void main() {
       paragraph.getOffsetForCaret(const TextPosition(offset: 2), Rect.zero),
     );
 
+    // Exact center; the old 399.0 came from the caret margin.
     expect(topLeft.dx, equals(400.0));
   });
 
@@ -1506,6 +1515,7 @@ void main() {
       paragraph.getOffsetForCaret(const TextPosition(offset: 2), Rect.zero),
     );
 
+    // Exact center; the old 399.0 came from the caret margin.
     expect(topLeft.dx, equals(400.0));
   });
 
@@ -3360,8 +3370,9 @@ void main() {
       // Second tap selects the word around the cursor.
       expect(latestSelection, const TextSelection(baseOffset: 8, extentOffset: 12));
 
-      // The toolbar is showing on iOS. On macOS SelectableRegion is
-      // not wired up to show the toolbar on touch interaction.
+      // The toolbar is showing on iOS. SelectableRegion shows no toolbar on a
+      // macOS touch double tap; macOS has no touch input, so this is accepted
+      // (a macOS touch long press does show the toolbar).
       if (defaultTargetPlatform == TargetPlatform.iOS) {
         expectCupertinoSelectionToolbar();
       } else {
@@ -3495,6 +3506,8 @@ void main() {
       // Hold the press.
       await tester.pump(const Duration(milliseconds: 500));
 
+      // SelectableRegion shows the toolbar on the second tap-up, so none is
+      // visible while the second tap is held; it is checked after release.
       expect(latestSelection, const TextSelection(baseOffset: 8, extentOffset: 12));
 
       await gesture.up();
@@ -3502,8 +3515,9 @@ void main() {
 
       // Still selected.
       expect(latestSelection, const TextSelection(baseOffset: 8, extentOffset: 12));
-      // The toolbar is still showing on iOS. On macOS SelectableRegion is
-      // not wired up to show the toolbar on touch interaction.
+      // The toolbar is showing on iOS. SelectableRegion shows no toolbar on a
+      // macOS touch double tap; macOS has no touch input, so this is accepted
+      // (a macOS touch long press does show the toolbar).
       if (defaultTargetPlatform == TargetPlatform.iOS) {
         expectCupertinoSelectionToolbar();
       } else {
@@ -4529,8 +4543,9 @@ void main() {
       // Double tap selection.
       expect(currentSelection, const TextSelection(baseOffset: 8, extentOffset: 12));
 
-      // The toolbar is showing on iOS. On macOS SelectableRegion is
-      // not wired up to show the toolbar on touch interaction.
+      // The toolbar is showing on iOS. SelectableRegion shows no toolbar on a
+      // macOS touch double tap; macOS has no touch input, so this is accepted
+      // (a macOS touch long press does show the toolbar).
       if (defaultTargetPlatform == TargetPlatform.iOS) {
         expectCupertinoSelectionToolbar();
       } else {
@@ -4577,8 +4592,9 @@ void main() {
     await tester.pump(const Duration(milliseconds: 50));
     expect(currentSelection, const TextSelection(baseOffset: 0, extentOffset: 7));
 
-    // The toolbar showing on iOS. On macOS SelectableRegion is
-    // not wired up to show the toolbar on touch interaction.
+    // The toolbar is showing on iOS. SelectableRegion shows no toolbar on a
+    // macOS touch double tap; macOS has no touch input, so this is accepted
+    // (a macOS touch long press does show the toolbar).
     if (defaultTargetPlatform == TargetPlatform.iOS) {
       expectCupertinoSelectionToolbar();
     } else {
@@ -4609,8 +4625,9 @@ void main() {
     // On iOS the selection remains the same.
     expect(currentSelection, const TextSelection(baseOffset: 0, extentOffset: 7));
 
-    // The toolbar showing on iOS. On macOS SelectableRegion is
-    // not wired up to show the toolbar on touch interaction.
+    // The toolbar is showing on iOS. SelectableRegion shows no toolbar on a
+    // macOS touch double tap; macOS has no touch input, so this is accepted
+    // (a macOS touch long press does show the toolbar).
     if (defaultTargetPlatform == TargetPlatform.iOS) {
       expectCupertinoSelectionToolbar();
     } else {
@@ -4640,8 +4657,9 @@ void main() {
     await tester.pump(const Duration(milliseconds: 50));
     expect(currentSelection, const TextSelection(baseOffset: 8, extentOffset: 12));
 
-    // The toolbar showing on iOS. On macOS SelectableRegion is
-    // not wired up to show the toolbar on touch interaction.
+    // The toolbar is showing on iOS. SelectableRegion shows no toolbar on a
+    // macOS touch double tap; macOS has no touch input, so this is accepted
+    // (a macOS touch long press does show the toolbar).
     if (defaultTargetPlatform == TargetPlatform.iOS) {
       expectCupertinoSelectionToolbar();
     } else {
@@ -4867,17 +4885,11 @@ void main() {
     ]);
   });
 
-  // The following "strut" tests fail under the new SelectionArea + Text architecture.
-  //
-  // Behavioral Gap: Text-based SelectableText does not reserve vertical space for
-  // maxLines when the content is short, unlike the old EditableText-based implementation.
-  // For example, 'something' (1 line) with maxLines: 6 now renders with a height of 1 line
-  // (14.0) instead of 6 lines (84.0).
-  //
-  // Additionally, there are minor width discrepancies (e.g., 126.0 vs 129.0) due to
-  // different intrinsic sizing between RenderParagraph and RenderEditable.
-  //
-  // These tests are kept unskipped and failing to document this behavioral gap.
+  // The following "strut" tests expect widths 3px narrower than under the
+  // EditableText-based implementation: RenderEditable reserved
+  // _kCaretGap + cursorWidth for the caret, while RenderParagraph reports the
+  // exact text width. This was accepted in the SelectionArea migration, and
+  // cursorWidth no longer affects layout. Heights are unchanged.
   testWidgets('strut basic single line', (WidgetTester tester) async {
     await tester.pumpWidget(
       MaterialApp(
@@ -5055,6 +5067,9 @@ void main() {
       find.descendant(of: find.byType(SelectableText), matching: find.byType(RichText)),
     );
 
+    // Values are 1px larger than under EditableText because the caret margin is
+    // gone. They assert TextPainter caret offsets rather than a painted caret
+    // rect because SelectableText paints no caret.
     Offset globalCaretPos = paragraph.localToGlobal(
       paragraph.getOffsetForCaret(const TextPosition(offset: 4), Rect.zero),
     );
@@ -5090,6 +5105,9 @@ void main() {
       find.descendant(of: find.byType(SelectableText), matching: find.byType(RichText)),
     );
 
+    // Values are 1px larger than under EditableText because the caret margin is
+    // gone. They assert TextPainter caret offsets rather than a painted caret
+    // rect because SelectableText paints no caret.
     Offset globalCaretPos = paragraph.localToGlobal(
       paragraph.getOffsetForCaret(const TextPosition(offset: 7), Rect.zero),
     );
