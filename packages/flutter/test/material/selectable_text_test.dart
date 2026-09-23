@@ -2828,8 +2828,25 @@ void main() {
     );
 
     // Test shows on screen.
+    SemanticsNode? findNodeWithLabel(SemanticsNode node, String label) {
+      if (node.label == label) {
+        return node;
+      }
+      SemanticsNode? result;
+      node.visitChildren((SemanticsNode child) {
+        result = findNodeWithLabel(child, label);
+        return result == null;
+      });
+      return result;
+    }
+
+    final SemanticsOwner semanticsOwner = tester.binding.pipelineOwner.semanticsOwner!;
+    final SemanticsNode offScreenNode = findNodeWithLabel(
+      semanticsOwner.rootSemanticsNode!,
+      offScreenText,
+    )!;
     expect(controller.offset, 0.0);
-    tester.binding.pipelineOwner.semanticsOwner!.performAction(8, SemanticsAction.showOnScreen);
+    semanticsOwner.performAction(offScreenNode.id, SemanticsAction.showOnScreen);
     await tester.pumpAndSettle();
     expect(controller.offset != 0.0, isTrue);
 
