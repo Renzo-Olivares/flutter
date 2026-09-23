@@ -5809,6 +5809,8 @@ void main() {
           ),
         ),
       );
+      // Allow SelectionArea to register its selectables.
+      await tester.pump();
 
       expect(selection, isNull);
 
