@@ -196,7 +196,7 @@ Each group: mechanism with code citations, the tests it currently breaks, and th
 
 **GAP 12: Handles.**
 - 12a Handles can cross (G-HANDLE-CLAMP): `_handleSelectionEndHandleDragUpdate` (`selectable_region.dart:1247-1262`) feeds raw edge updates; old `TextSelectionOverlay` refused order swapping (`text_selection.dart:855-856`, start-handle mirror :987; Apple platforms swap base/extent instead, :806-833). Exposed: #029 "Cannot drag one handle past the other" [`(4,2)` vs `(4,5)`].
-- 12b Handle visibility (G-HANDLES-VISIBILITY): Android shows handles only on long-press END (:1014-1016, :1032; old: any long-press cause, `impl_base:643-660`); off-screen handles are not faded because SelectableRegion builds `SelectionOverlay` without `startHandlesVisible/endHandlesVisible` notifiers (params exist at `text_selection.dart:1064/1260`). Exposed: #092 (Android: start handle opacity 1.0 ≠ 0.0; iOS would fail the same behind the toolbar). Masked: #019 (iOS-only variant).
+- 12b Handle visibility (G-HANDLES-VISIBILITY): Android shows handles only on long-press END (:1014-1016, :1032; old: any long-press cause, `impl_base:643-660`). Masked: #019 (iOS-only variant; accepted, §7). **Corrected 2026-09-23 (groups/M_handle_visibility.md):** the off-screen-handle part is NOT a user-visible gap. SelectableRegion hides an edge's handle by unlinking its `LayerLink` when the point leaves the container's drawable area (`_updateHandleLayersAndOwners`, `selectable_region.dart:2766-2820`, 5px margin); RenderParagraph then pushes no `LeaderLayer` (`paragraph.dart:3623`) and the `CompositedTransformFollower(showWhenUnlinked: false)` handle is neither painted nor hit-testable. The check re-runs after every scroll and at every nested container (region root, SelectableText's own scroll view, a ListView under a SelectionArea). What differs from EditableText is only the mechanism: an instant unlink instead of a 150 ms fade, and a 5px margin instead of 0.5px. #092's `opacity == 0.0` assertion reads the fade that is never driven; the correct assertion is that the start handle's follower is unlinked (`RenderFollowerLayer.link.leader == null`) or not hit-testable. Recommended: accepted difference; update #092's assertion.
 - 12c Handle-drag autoscroll (G-HANDLE-DRAG-AUTOSCROLL): see #033 in 3.2.
 
 **GAP 13: Selection drag does not edge-scroll an ANCESTOR Scrollable (G-ANCESTOR-SCROLLABLE-EDGE-SCROLL).** `_ScrollableSelectionContainerDelegate` (`scrollable.dart:1171`) auto-scrolls only Scrollables that are descendants of the SelectionArea; SelectableText's own scroll view does edge-scroll (#092 probe endpoints `-924.1, 800.0`). Old builder tracked the ancestor scroll position (`text_selection.dart:2785-2806`) and called `bringIntoView` on iOS/macOS long press (`impl_base:611-625`). Probe: ancestor pixels stay 0.0; start endpoint +435/+449. Regression coverage for #129590 is broken.
@@ -482,8 +482,8 @@ checkout, versus which need framework work. APIs were verified in the tree.
   (`SingleChildScrollView` does not expose the flag).
 
 **B. API exists, wiring belongs in SelectableRegion.**
-- GAP 12b off-screen handle fade: `SelectionOverlay` accepts `startHandlesVisible`/`endHandlesVisible`
-  (`text_selection.dart:1064/1260`); SelectableRegion constructs the overlay without them.
+- GAP 12b off-screen handle fade: withdrawn (see §3.3 12b correction). Handles are already hidden by
+  layer unlinking; only the fade animation differs. Test-side change to #092, no framework work.
 - iOS stuck-`changing` after a double tap: `patches/status_gating_ios_finalize_fix.patch`.
 
 **C. Needs new API or a behavior change in SelectableRegion / RenderParagraph.**
@@ -517,7 +517,7 @@ noise, keep-alive). Cross-layer items are listed under the primary layer with th
   of keeping an anchor). Tests 045, 047, 048, 053, 054.
 - Plain arrow keys cannot move a collapsed selection (collapse intents dropped). Test 049.
 - Handles can cross (`_handleSelectionEndHandleDragUpdate`; `TextSelectionOverlay` clamps/swaps). Test 029.
-- Off-screen handles never fade (`SelectionOverlay` visibility listenables not wired). Test 092.
+- (withdrawn) Off-screen handles: already hidden by layer unlinking; mechanism differs (instant vs fade). Test 092 assertion to change.
 - Handle drag past the edge overshoots (scrollable selection delegate + `EdgeDraggingAutoScroller`). Test 033.
 - No edge scroll of an ancestor Scrollable (no bridge to parent scroll views; old path `showOnScreen`).
   Tests 090, 091. SelectableText workaround possible via `showOnScreen`.
@@ -585,7 +585,7 @@ edge on tap up" row). **#182628** [open, P2] is the SelectableRegion keyboard-sh
 | Keyboard base/extent swapped | #182628 lists missing intents, not edge ordering; #104541 closed by PR #112584 (shift-extension only) | partial | File new, reference #182628 |
 | Arrow keys cannot move a collapsed selection | #104541 (closed), #182628 | partial | File new as a policy question ("caret navigation in SelectionArea"), reference both |
 | Handles can cross | #106705 "SelectionArea handles swap order on Android" | exact, **closed as intended** (matches native Android on non-editable text) | **Reclassify as accepted**; decide whether SelectableText follows SelectionArea or the old clamp |
-| Off-screen handles not faded | #13182 [open umbrella] handles overlap UI when anchor scrolled away; #120892 closed; fix PR #186491 closed unmerged 2026-08 | partial | Link to #13182; note the unwired `SelectionOverlay` visibility notifiers there |
+| Off-screen handles not faded (withdrawn) | #13182 [open umbrella] is the TextField-side issue; SelectionArea already unlinks off-screen handles (groups/M_handle_visibility.md) | not a gap | Update #092 to assert the handle is unlinked; no issue |
 | Handle-drag autoscroll overshoot | none (related: #110788, #64059, #162856, #190737) | none | File new |
 | Ancestor scrollable edge scroll | #129590 (closed) covered the old SelectableText only | related | File new against SelectionArea, cite #129590 as the regression test |
 | Force press | none; not a row in #129583 | none | File new (policy: should SelectionArea support force-press word selection) |
@@ -632,7 +632,7 @@ Test numbers refer to `per_test_index.md` at head 9ca7895e3ab; "behind" = the te
 | Arrow keys cannot move a collapsed selection (SelectableRegion, policy) | Partial: [#104541](https://github.com/flutter/flutter/issues/104541), [#182628](https://github.com/flutter/flutter/issues/182628). File new | 049 |
 | Toolbar: iOS Look Up / Search Web / Share | Exact: [#141775](https://github.com/flutter/flutter/issues/141775) open P2 | 079, 086, 088, 090 (iOS), 092 (iOS), 093, 095, 096, 098, 075 (iOS); macOS count 089, 094 |
 | Toolbar: Select all when all selected / on macOS | Partial: comments on [#141775](https://github.com/flutter/flutter/issues/141775); macOS umbrella [#74255](https://github.com/flutter/flutter/issues/74255). File new | 121; macOS count in 079, 089, 094 |
-| Toolbar: Share on Android read-only | Intended: [PR #141447](https://github.com/flutter/flutter/pull/141447) for [#138728](https://github.com/flutter/flutter/issues/138728). Not a gap | none |
+| Toolbar: Share on Android (was listed as a gap) | Not a difference: the old read-only SelectableText already showed Copy / Share / Select all on Android (`expectMaterialSelectionToolbar` expects 3 buttons; `EditableTextState.shareEnabled` does not check `readOnly`), and SelectableRegion added Share on purpose in [PR #141447](https://github.com/flutter/flutter/pull/141447) for [#138728](https://github.com/flutter/flutter/issues/138728). Share only disappeared under the deprecated `toolbarOptions` path, which used the legacy `TextSelectionControls.buildToolbar` menu (copy/cut/paste/selectAll only); that is part of the `toolbarOptions` row | none |
 | `toolbarOptions` ignored / `contextMenuBuilder` type (SelectableText) | None specific ([#42593](https://github.com/flutter/flutter/issues/42593) fixed 2019; [#142806](https://github.com/flutter/flutter/issues/142806), [#125375](https://github.com/flutter/flutter/issues/125375) loose). Fix in SelectableText; file the builder-type question | 022; 137 passes by construction |
 | Programmatic selection API on `SelectableRegionState` | Partial: [#127025](https://github.com/flutter/flutter/issues/127025) closed stale; [#126980](https://github.com/flutter/flutter/issues/126980) fixed; [PR #138654](https://github.com/flutter/flutter/pull/138654) unmerged. File new (prerequisite) | 058, 061, 063, 064 |
 | Semantics: `value`, text-field flags, `textSelection`, actions (Text/RenderParagraph + SelectableText) | Partial: [#182909](https://github.com/flutter/flutter/issues/182909) open P2; tracker [#185220](https://github.com/flutter/flutter/issues/185220). File new for identity/value, link #182909 | 041, 042, 043, 044, 058, 060, 061, 062, 063, 064 |
@@ -641,7 +641,7 @@ Test numbers refer to `per_test_index.md` at head 9ca7895e3ab; "behind" = the te
 | Selection highlight box styles (Text/RenderParagraph + DefaultSelectionStyle) | Exact: [#161010](https://github.com/flutter/flutter/issues/161010) open P3, fix [PR #186802](https://github.com/flutter/flutter/pull/186802) open; theme variant [#104429](https://github.com/flutter/flutter/issues/104429); closed unmerged [PR #140982](https://github.com/flutter/flutter/pull/140982), [PR #186630](https://github.com/flutter/flutter/pull/186630); EditableText default changed by [PR #167762](https://github.com/flutter/flutter/pull/167762) for [#162197](https://github.com/flutter/flutter/issues/162197) | 129, 130 |
 | Default `StrutStyle()` / default selection color (SelectableText) | Related: [#131581](https://github.com/flutter/flutter/issues/131581) closed as dup of #104547; [#104703](https://github.com/flutter/flutter/issues/104703) closed by [PR #128375](https://github.com/flutter/flutter/pull/128375) (paint order). Fix in SelectableText | contributes to 057, 129, 130 |
 | Handles can cross (SelectableRegion) | Exact: [#106705](https://github.com/flutter/flutter/issues/106705) closed as intended (native Android). Reclassify as accepted unless SelectableText keeps the old clamp | 029 |
-| Off-screen handles not faded (SelectableRegion) | Partial: [#13182](https://github.com/flutter/flutter/issues/13182) open umbrella; [#120892](https://github.com/flutter/flutter/issues/120892) closed; [PR #186491](https://github.com/flutter/flutter/pull/186491) closed unmerged 2026-08. Link | 092 (android; iOS behind toolbar) |
+| Off-screen handles not faded (withdrawn 2026-09-23) | Not a gap: SelectableRegion unlinks an off-screen handle's layer so it is not painted or hit-testable; only the fade animation differs from EditableText ([#13182](https://github.com/flutter/flutter/issues/13182) is the TextField-side umbrella). Action: change #092's assertion from `opacity == 0.0` to "follower unlinked" | 092 (android; iOS behind toolbar) |
 | Handle-drag autoscroll overshoot (Scrollable selection delegate) | None (related [#110788](https://github.com/flutter/flutter/issues/110788), [#64059](https://github.com/flutter/flutter/issues/64059), [#162856](https://github.com/flutter/flutter/issues/162856), [#190737](https://github.com/flutter/flutter/issues/190737)). File new | 033 |
 | Ancestor scrollable edge scroll (SelectableRegion) | Related: [#129590](https://github.com/flutter/flutter/issues/129590) closed (old SelectableText). File new, cite it | 091; 090 behind toolbar |
 | Force press (SelectableRegion, policy) | None. File new | 098 |
@@ -667,3 +667,13 @@ The one failing test not in the table is #013 "Cursor blinks when showCursor is 
 G-NO-CARET, accepted as by-design in the #007 verdict, so it is excluded from the filing list on
 purpose. Follow-up (not applied): under that verdict it should become a documented removal, skipped
 with a comment like #124, rather than remain a red test.
+
+### 11.3 Correction to the audit, and two observations not investigated (2026-09-23)
+
+The group H finding that off-screen selection handles stay visible in the SelectionArea-based
+SelectableText was wrong on impact; see the 12b correction in §3.3 and `groups/M_handle_visibility.md`.
+While probing, the agent observed two SelectionArea behaviors it did not investigate: (1) with a
+SelectionArea over a ListView, scrolling far enough that the selected items are disposed (both edge
+points null, overlay disposed) and scrolling back does not bring the handles back; (2) a touch long
+press on a SelectableText placed inside a vertical ListView did not select, while a double tap did.
+Both are outside this audit's test suite and may deserve their own reproduction before filing.
