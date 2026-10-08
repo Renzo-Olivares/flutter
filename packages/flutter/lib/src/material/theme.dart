@@ -59,7 +59,13 @@ class Theme extends StatelessWidget {
   /// {@macro flutter.widgets.ProxyWidget.child}
   final Widget child;
 
-  static final ThemeData _kFallbackTheme = ThemeData.fallback();
+  static ThemeData? _kFallbackTheme;
+  static ThemeData get _fallbackTheme {
+    if (_kFallbackTheme?.platform != defaultTargetPlatform) {
+      _kFallbackTheme = ThemeData.fallback();
+    }
+    return _kFallbackTheme!;
+  }
 
   /// The data from the closest [Theme] instance that encloses the given
   /// context.
@@ -134,7 +140,7 @@ class Theme extends StatelessWidget {
         (inheritedCupertinoTheme != null
             ? CupertinoBasedMaterialThemeData(themeData: inheritedCupertinoTheme.theme.data)
                   .materialTheme
-            : _kFallbackTheme);
+            : _fallbackTheme);
     return ThemeData.localize(theme, theme.typography.geometryThemeFor(category));
   }
 

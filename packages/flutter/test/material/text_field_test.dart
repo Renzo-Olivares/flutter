@@ -3180,8 +3180,11 @@ void main() {
       final TextEditingController controller = _textEditingController();
 
       await tester.pumpWidget(
-        overlay(
-          child: TextField(dragStartBehavior: DragStartBehavior.down, controller: controller),
+        Theme(
+          data: ThemeData(platform: TargetPlatform.android),
+          child: overlay(
+            child: TextField(dragStartBehavior: DragStartBehavior.down, controller: controller),
+          ),
         ),
       );
 
@@ -3296,8 +3299,11 @@ void main() {
       final TextEditingController controller = _textEditingController();
 
       await tester.pumpWidget(
-        overlay(
-          child: TextField(dragStartBehavior: DragStartBehavior.down, controller: controller),
+        Theme(
+          data: ThemeData(platform: TargetPlatform.android),
+          child: overlay(
+            child: TextField(dragStartBehavior: DragStartBehavior.down, controller: controller),
+          ),
         ),
       );
 
