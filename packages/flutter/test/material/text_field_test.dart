@@ -5,12 +5,7 @@
 // reduced-test-set:
 //   This file is run as part of a reduced test set in CI on Mac and Windows
 //   machines.
-// no-shuffle:
-// TODO(122950): Remove this tag once this test's state leaks/test
-// dependencies have been fixed.
-// https://github.com/flutter/flutter/issues/122950
-// Fails with "flutter test --test-randomize-ordering-seed=20230318"
-@Tags(<String>['reduced-test-set', 'no-shuffle'])
+@Tags(<String>['reduced-test-set'])
 library;
 
 import 'dart:math' as math;
@@ -1055,19 +1050,17 @@ void main() {
   testWidgets('Overflow clipBehavior none golden', (WidgetTester tester) async {
     final controller = OverflowWidgetTextEditingController();
     addTearDown(controller.dispose);
-    final Widget widget = Theme(
-      data: ThemeData(useMaterial3: false),
-      child: overlay(
-        child: RepaintBoundary(
-          key: const ValueKey<int>(1),
-          child: SizedBox.square(
-            dimension: 200,
-            child: Center(
-              child: SizedBox(
-                // Make sure the input field is not high enough for the WidgetSpan.
-                height: 50,
-                child: TextField(controller: controller, clipBehavior: Clip.none),
-              ),
+    final Widget widget = overlay(
+      theme: ThemeData(useMaterial3: false),
+      child: RepaintBoundary(
+        key: const ValueKey<int>(1),
+        child: SizedBox.square(
+          dimension: 200,
+          child: Center(
+            child: SizedBox(
+              // Make sure the input field is not high enough for the WidgetSpan.
+              height: 50,
+              child: TextField(controller: controller, clipBehavior: Clip.none),
             ),
           ),
         ),
@@ -1088,16 +1081,14 @@ void main() {
   });
 
   testWidgets('Material cursor android golden', (WidgetTester tester) async {
-    final Widget widget = Theme(
-      data: ThemeData(useMaterial3: false),
-      child: overlay(
-        child: const RepaintBoundary(
-          key: ValueKey<int>(1),
-          child: TextField(
-            cursorColor: Colors.blue,
-            cursorWidth: 15,
-            cursorRadius: Radius.circular(3.0),
-          ),
+    final Widget widget = overlay(
+      theme: ThemeData(useMaterial3: false),
+      child: const RepaintBoundary(
+        key: ValueKey<int>(1),
+        child: TextField(
+          cursorColor: Colors.blue,
+          cursorWidth: 15,
+          cursorRadius: Radius.circular(3.0),
         ),
       ),
     );
@@ -1119,16 +1110,14 @@ void main() {
   testWidgets(
     'Material cursor golden',
     (WidgetTester tester) async {
-      final Widget widget = Theme(
-        data: ThemeData(useMaterial3: false),
-        child: overlay(
-          child: const RepaintBoundary(
-            key: ValueKey<int>(1),
-            child: TextField(
-              cursorColor: Colors.blue,
-              cursorWidth: 15,
-              cursorRadius: Radius.circular(3.0),
-            ),
+      final Widget widget = overlay(
+        theme: ThemeData(useMaterial3: false),
+        child: const RepaintBoundary(
+          key: ValueKey<int>(1),
+          child: TextField(
+            cursorColor: Colors.blue,
+            cursorWidth: 15,
+            cursorRadius: Radius.circular(3.0),
           ),
         ),
       );
@@ -1459,12 +1448,10 @@ void main() {
     final FocusNode focusNode = _focusNode();
     EditableText.debugDeterministicCursor = true;
     await tester.pumpWidget(
-      Theme(
-        data: ThemeData(useMaterial3: false),
-        child: overlay(
-          child: RepaintBoundary(
-            child: TextField(cursorWidth: 15.0, controller: controller, focusNode: focusNode),
-          ),
+      overlay(
+        theme: ThemeData(useMaterial3: false),
+        child: RepaintBoundary(
+          child: TextField(cursorWidth: 15.0, controller: controller, focusNode: focusNode),
         ),
       ),
     );
@@ -1486,16 +1473,14 @@ void main() {
     final FocusNode focusNode = _focusNode();
     EditableText.debugDeterministicCursor = true;
     await tester.pumpWidget(
-      Theme(
-        data: ThemeData(useMaterial3: false),
-        child: overlay(
-          child: RepaintBoundary(
-            child: TextField(
-              cursorWidth: 15.0,
-              cursorRadius: const Radius.circular(3.0),
-              controller: controller,
-              focusNode: focusNode,
-            ),
+      overlay(
+        theme: ThemeData(useMaterial3: false),
+        child: RepaintBoundary(
+          child: TextField(
+            cursorWidth: 15.0,
+            cursorRadius: const Radius.circular(3.0),
+            controller: controller,
+            focusNode: focusNode,
           ),
         ),
       ),
@@ -1519,16 +1504,14 @@ void main() {
 
     EditableText.debugDeterministicCursor = true;
     await tester.pumpWidget(
-      Theme(
-        data: ThemeData(useMaterial3: false),
-        child: overlay(
-          child: RepaintBoundary(
-            child: TextField(
-              cursorWidth: 15.0,
-              cursorHeight: 30.0,
-              controller: controller,
-              focusNode: focusNode,
-            ),
+      overlay(
+        theme: ThemeData(useMaterial3: false),
+        child: RepaintBoundary(
+          child: TextField(
+            cursorWidth: 15.0,
+            cursorHeight: 30.0,
+            controller: controller,
+            focusNode: focusNode,
           ),
         ),
       ),
@@ -1549,11 +1532,9 @@ void main() {
     final TextEditingController controller = _textEditingController();
 
     await tester.pumpWidget(
-      Theme(
-        data: ThemeData(useMaterial3: false),
-        child: overlay(
-          child: TextField(key: textFieldKey, controller: controller, maxLines: null),
-        ),
+      overlay(
+        theme: ThemeData(useMaterial3: false),
+        child: TextField(key: textFieldKey, controller: controller, maxLines: null),
       ),
     );
     expect(controller.selection.baseOffset, -1);
@@ -3174,8 +3155,119 @@ void main() {
     expect(controller.selection.extentOffset, testValue.indexOf('g'));
   });
 
+  testWidgets('Can drag handles to change selection on iOS', (WidgetTester tester) async {
+    final TextEditingController controller = _textEditingController();
+
+    await tester.pumpWidget(
+      overlay(
+        child: TextField(dragStartBehavior: DragStartBehavior.down, controller: controller),
+      ),
+    );
+
+    const testValue = 'abc def ghi';
+    await tester.enterText(find.byType(TextField), testValue);
+    await skipPastScrollingAnimation(tester);
+
+    // Double tap the 'e' to select 'def'.
+    final Offset ePos = textOffsetToPosition(tester, testValue.indexOf('e'));
+    // The first tap.
+    TestGesture gesture = await tester.startGesture(ePos, pointer: 7);
+    await tester.pump();
+    await gesture.up();
+    await tester.pump();
+    await tester.pump(
+      const Duration(milliseconds: 200),
+    ); // skip past the frame where the opacity is zero
+
+    // The second tap.
+    await gesture.down(ePos);
+    await tester.pump();
+    await gesture.up();
+    await tester.pump();
+
+    final TextSelection selection = controller.selection;
+    expect(selection.baseOffset, 4);
+    expect(selection.extentOffset, 7);
+
+    final RenderEditable renderEditable = findRenderEditable(tester);
+    List<TextSelectionPoint> endpoints = globalize(
+      renderEditable.getEndpointsForSelection(selection),
+      renderEditable,
+    );
+    expect(endpoints.length, 2);
+
+    // Drag the right handle 2 letters to the right.
+    // We use a small offset because the endpoint is on the very corner
+    // of the handle.
+    Offset handlePos = endpoints[1].point + const Offset(1.0, 1.0);
+    Offset newHandlePos = textOffsetToPosition(tester, testValue.length);
+    gesture = await tester.startGesture(handlePos, pointer: 7);
+    await tester.pump();
+    await gesture.moveTo(newHandlePos);
+    await tester.pump();
+    await gesture.up();
+    await tester.pump();
+
+    expect(controller.selection.baseOffset, 4);
+    expect(controller.selection.extentOffset, 11);
+
+    // Drag the left handle 2 letters to the left. The Cupertino start handle
+    // sits above the line with its anchor at the line's bottom edge, so grab
+    // just inside its bottom-left corner.
+    handlePos = endpoints[0].point + const Offset(-1.0, -1.0);
+    newHandlePos = textOffsetToPosition(tester, 2);
+    gesture = await tester.startGesture(handlePos, pointer: 7);
+    await tester.pump();
+    await gesture.moveTo(newHandlePos);
+    await tester.pump();
+    await gesture.up();
+    await tester.pump();
+
+    switch (defaultTargetPlatform) {
+      // On Apple platforms, dragging the base handle makes it the extent.
+      case TargetPlatform.iOS:
+      case TargetPlatform.macOS:
+        expect(controller.selection.baseOffset, 11);
+        expect(controller.selection.extentOffset, 2);
+      case TargetPlatform.android:
+      case TargetPlatform.fuchsia:
+      case TargetPlatform.linux:
+      case TargetPlatform.windows:
+        expect(controller.selection.baseOffset, 2);
+        expect(controller.selection.extentOffset, 11);
+    }
+
+    // Drag the left handle 2 letters to the left again.
+    endpoints = globalize(
+      renderEditable.getEndpointsForSelection(controller.selection),
+      renderEditable,
+    );
+    handlePos = endpoints[0].point + const Offset(-1.0, -1.0);
+    newHandlePos = textOffsetToPosition(tester, 0);
+    gesture = await tester.startGesture(handlePos, pointer: 7);
+    await tester.pump();
+    await gesture.moveTo(newHandlePos);
+    await tester.pump();
+    await gesture.up();
+    await tester.pump();
+
+    switch (defaultTargetPlatform) {
+      case TargetPlatform.iOS:
+      case TargetPlatform.macOS:
+        // The left handle was already the extent, and it remains so.
+        expect(controller.selection.baseOffset, 11);
+        expect(controller.selection.extentOffset, 0);
+      case TargetPlatform.android:
+      case TargetPlatform.fuchsia:
+      case TargetPlatform.linux:
+      case TargetPlatform.windows:
+        expect(controller.selection.baseOffset, 0);
+        expect(controller.selection.extentOffset, 11);
+    }
+  }, variant: TargetPlatformVariant.only(TargetPlatform.iOS));
+
   testWidgets(
-    'Can drag handles to change selection on Apple platforms',
+    'Can drag handles to change selection on Android and Fuchsia',
     (WidgetTester tester) async {
       final TextEditingController controller = _textEditingController();
 
@@ -3189,26 +3281,24 @@ void main() {
       await tester.enterText(find.byType(TextField), testValue);
       await skipPastScrollingAnimation(tester);
 
-      // Double tap the 'e' to select 'def'.
+      // Long press the 'e' to select 'def'.
       final Offset ePos = textOffsetToPosition(tester, testValue.indexOf('e'));
-      // The first tap.
       TestGesture gesture = await tester.startGesture(ePos, pointer: 7);
-      await tester.pump();
+      await tester.pump(const Duration(seconds: 2));
       await gesture.up();
       await tester.pump();
       await tester.pump(
         const Duration(milliseconds: 200),
       ); // skip past the frame where the opacity is zero
 
-      // The second tap.
-      await gesture.down(ePos);
-      await tester.pump();
-      await gesture.up();
-      await tester.pump();
-
       final TextSelection selection = controller.selection;
       expect(selection.baseOffset, 4);
       expect(selection.extentOffset, 7);
+
+      // On Fuchsia the desktop-style toolbar shown by the long press covers the
+      // handles; hide it so the drags below reach them.
+      tester.state<EditableTextState>(find.byType(EditableText)).hideToolbar(false);
+      await tester.pump();
 
       final RenderEditable renderEditable = findRenderEditable(tester);
       List<TextSelectionPoint> endpoints = globalize(
@@ -3285,118 +3375,46 @@ void main() {
       }
     },
     variant: const TargetPlatformVariant(<TargetPlatform>{
-      TargetPlatform.iOS,
-      TargetPlatform.macOS,
+      TargetPlatform.android,
+      TargetPlatform.fuchsia,
     }),
   );
 
-  testWidgets(
-    'Can drag handles to change selection on non-Apple platforms',
-    (WidgetTester tester) async {
-      final TextEditingController controller = _textEditingController();
+  testWidgets('Desktop platforms do not show selection handles', (WidgetTester tester) async {
+    final TextEditingController controller = _textEditingController();
 
-      await tester.pumpWidget(
-        overlay(
-          child: TextField(dragStartBehavior: DragStartBehavior.down, controller: controller),
-        ),
-      );
+    await tester.pumpWidget(
+      overlay(
+        child: TextField(dragStartBehavior: DragStartBehavior.down, controller: controller),
+      ),
+    );
 
-      const testValue = 'abc def ghi';
-      await tester.enterText(find.byType(TextField), testValue);
-      await skipPastScrollingAnimation(tester);
+    const testValue = 'abc def ghi';
+    await tester.enterText(find.byType(TextField), testValue);
+    await skipPastScrollingAnimation(tester);
 
-      // Long press the 'e' to select 'def'.
-      final Offset ePos = textOffsetToPosition(tester, testValue.indexOf('e'));
-      TestGesture gesture = await tester.startGesture(ePos, pointer: 7);
-      await tester.pump(const Duration(seconds: 2));
-      await gesture.up();
-      await tester.pump();
-      await tester.pump(
-        const Duration(milliseconds: 200),
-      ); // skip past the frame where the opacity is zero
+    // Double tap the 'e' to select 'def'.
+    final Offset ePos = textOffsetToPosition(tester, testValue.indexOf('e'));
+    final TestGesture gesture = await tester.startGesture(ePos, pointer: 7);
+    await tester.pump();
+    await gesture.up();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 200));
+    await gesture.down(ePos);
+    await tester.pump();
+    await gesture.up();
+    await tester.pump();
 
-      final TextSelection selection = controller.selection;
-      expect(selection.baseOffset, 4);
-      expect(selection.extentOffset, 7);
-
-      final RenderEditable renderEditable = findRenderEditable(tester);
-      List<TextSelectionPoint> endpoints = globalize(
-        renderEditable.getEndpointsForSelection(selection),
-        renderEditable,
-      );
-      expect(endpoints.length, 2);
-
-      // Drag the right handle 2 letters to the right.
-      // We use a small offset because the endpoint is on the very corner
-      // of the handle.
-      Offset handlePos = endpoints[1].point + const Offset(1.0, 1.0);
-      Offset newHandlePos = textOffsetToPosition(tester, testValue.length);
-      gesture = await tester.startGesture(handlePos, pointer: 7);
-      await tester.pump();
-      await gesture.moveTo(newHandlePos);
-      await tester.pump();
-      await gesture.up();
-      await tester.pump();
-
-      expect(controller.selection.baseOffset, 4);
-      expect(controller.selection.extentOffset, 11);
-
-      // Drag the left handle 2 letters to the left.
-      handlePos = endpoints[0].point + const Offset(-1.0, 1.0);
-      newHandlePos = textOffsetToPosition(tester, 2);
-      gesture = await tester.startGesture(handlePos, pointer: 7);
-      await tester.pump();
-      await gesture.moveTo(newHandlePos);
-      await tester.pump();
-      await gesture.up();
-      await tester.pump();
-
-      switch (defaultTargetPlatform) {
-        // On Apple platforms, dragging the base handle makes it the extent.
-        case TargetPlatform.iOS:
-        case TargetPlatform.macOS:
-          expect(controller.selection.baseOffset, 11);
-          expect(controller.selection.extentOffset, 2);
-        case TargetPlatform.android:
-        case TargetPlatform.fuchsia:
-        case TargetPlatform.linux:
-        case TargetPlatform.windows:
-          expect(controller.selection.baseOffset, 2);
-          expect(controller.selection.extentOffset, 11);
-      }
-
-      // Drag the left handle 2 letters to the left again.
-      endpoints = globalize(
-        renderEditable.getEndpointsForSelection(controller.selection),
-        renderEditable,
-      );
-      handlePos = endpoints[0].point + const Offset(-1.0, 1.0);
-      newHandlePos = textOffsetToPosition(tester, 0);
-      gesture = await tester.startGesture(handlePos, pointer: 7);
-      await tester.pump();
-      await gesture.moveTo(newHandlePos);
-      await tester.pump();
-      await gesture.up();
-      await tester.pump();
-
-      switch (defaultTargetPlatform) {
-        case TargetPlatform.iOS:
-        case TargetPlatform.macOS:
-          // The left handle was already the extent, and it remains so.
-          expect(controller.selection.baseOffset, 11);
-          expect(controller.selection.extentOffset, 0);
-        case TargetPlatform.android:
-        case TargetPlatform.fuchsia:
-        case TargetPlatform.linux:
-        case TargetPlatform.windows:
-          expect(controller.selection.baseOffset, 0);
-          expect(controller.selection.extentOffset, 11);
-      }
-    },
-    variant: TargetPlatformVariant.all(
-      excluding: <TargetPlatform>{TargetPlatform.iOS, TargetPlatform.macOS},
-    ),
-  );
+    expect(controller.selection.baseOffset, 4);
+    expect(controller.selection.extentOffset, 7);
+    expect(
+      find.descendant(
+        of: find.byWidgetPredicate((Widget w) => '${w.runtimeType}' == '_SelectionHandleOverlay'),
+        matching: find.byType(CustomPaint),
+      ),
+      findsNothing,
+    );
+  }, variant: TargetPlatformVariant.desktop());
 
   testWidgets('assertion error is not thrown when attempting to drag both selection handles', (
     WidgetTester tester,
@@ -4138,15 +4156,13 @@ void main() {
       );
 
       await tester.pumpWidget(
-        Theme(
-          data: ThemeData(useMaterial3: false),
-          child: overlay(
-            child: TextField(
-              dragStartBehavior: DragStartBehavior.down,
-              controller: controller,
-              maxLines: 3,
-              minLines: 3,
-            ),
+        overlay(
+          theme: ThemeData(useMaterial3: false),
+          child: TextField(
+            dragStartBehavior: DragStartBehavior.down,
+            controller: controller,
+            maxLines: 3,
+            minLines: 3,
           ),
         ),
       );
@@ -5247,15 +5263,13 @@ void main() {
     final TextEditingController controller = _textEditingController();
 
     await tester.pumpWidget(
-      Theme(
-        data: ThemeData(useMaterial3: false),
-        child: overlay(
-          child: TextField(
-            dragStartBehavior: DragStartBehavior.down,
-            controller: controller,
-            style: const TextStyle(color: Colors.black, fontSize: 34.0),
-            maxLines: 3,
-          ),
+      overlay(
+        theme: ThemeData(useMaterial3: false),
+        child: TextField(
+          dragStartBehavior: DragStartBehavior.down,
+          controller: controller,
+          style: const TextStyle(color: Colors.black, fontSize: 34.0),
+          maxLines: 3,
         ),
       ),
     );
@@ -5507,12 +5521,10 @@ void main() {
 
   testWidgets('TextField errorText trumps helperText', (WidgetTester tester) async {
     await tester.pumpWidget(
-      Theme(
-        data: ThemeData(useMaterial3: false),
-        child: overlay(
-          child: const TextField(
-            decoration: InputDecoration(errorText: 'error text', helperText: 'helper text'),
-          ),
+      overlay(
+        theme: ThemeData(useMaterial3: false),
+        child: const TextField(
+          decoration: InputDecoration(errorText: 'error text', helperText: 'helper text'),
         ),
       ),
     );
@@ -5929,13 +5941,11 @@ void main() {
 
   testWidgets('Collapsed hint text placement', (WidgetTester tester) async {
     await tester.pumpWidget(
-      Theme(
-        data: ThemeData(useMaterial3: false),
-        child: overlay(
-          child: const TextField(
-            decoration: InputDecoration.collapsed(hintText: 'hint'),
-            strutStyle: StrutStyle.disabled,
-          ),
+      overlay(
+        theme: ThemeData(useMaterial3: false),
+        child: const TextField(
+          decoration: InputDecoration.collapsed(hintText: 'hint'),
+          strutStyle: StrutStyle.disabled,
         ),
       ),
     );
@@ -6298,11 +6308,9 @@ void main() {
     final TextEditingController controller = _textEditingController();
 
     await tester.pumpWidget(
-      Theme(
-        data: ThemeData(useMaterial3: false),
-        child: overlay(
-          child: SizedBox(width: 100.0, child: TextField(controller: controller)),
-        ),
+      overlay(
+        theme: ThemeData(useMaterial3: false),
+        child: SizedBox(width: 100.0, child: TextField(controller: controller)),
       ),
     );
 
@@ -8163,43 +8171,41 @@ void main() {
     final Key keyB = UniqueKey();
 
     await tester.pumpWidget(
-      Theme(
-        data: ThemeData(useMaterial3: false),
-        child: overlay(
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.baseline,
-            textBaseline: TextBaseline.alphabetic,
-            children: <Widget>[
-              Expanded(
-                child: TextField(
-                  key: keyA,
-                  decoration: null,
-                  controller: controllerA,
-                  // The point size of the font must be a multiple of 4 until
-                  // https://github.com/flutter/flutter/issues/122066 is resolved.
-                  style: const TextStyle(fontFamily: 'FlutterTest', fontSize: 12.0),
-                  strutStyle: StrutStyle.disabled,
-                ),
-              ),
-              const Text(
-                'abc',
+      overlay(
+        theme: ThemeData(useMaterial3: false),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.baseline,
+          textBaseline: TextBaseline.alphabetic,
+          children: <Widget>[
+            Expanded(
+              child: TextField(
+                key: keyA,
+                decoration: null,
+                controller: controllerA,
                 // The point size of the font must be a multiple of 4 until
                 // https://github.com/flutter/flutter/issues/122066 is resolved.
-                style: TextStyle(fontFamily: 'FlutterTest', fontSize: 24.0),
+                style: const TextStyle(fontFamily: 'FlutterTest', fontSize: 12.0),
+                strutStyle: StrutStyle.disabled,
               ),
-              Expanded(
-                child: TextField(
-                  key: keyB,
-                  decoration: null,
-                  controller: controllerB,
-                  // The point size of the font must be a multiple of 4 until
-                  // https://github.com/flutter/flutter/issues/122066 is resolved.
-                  style: const TextStyle(fontFamily: 'FlutterTest', fontSize: 36.0),
-                  strutStyle: StrutStyle.disabled,
-                ),
+            ),
+            const Text(
+              'abc',
+              // The point size of the font must be a multiple of 4 until
+              // https://github.com/flutter/flutter/issues/122066 is resolved.
+              style: TextStyle(fontFamily: 'FlutterTest', fontSize: 24.0),
+            ),
+            Expanded(
+              child: TextField(
+                key: keyB,
+                decoration: null,
+                controller: controllerB,
+                // The point size of the font must be a multiple of 4 until
+                // https://github.com/flutter/flutter/issues/122066 is resolved.
+                style: const TextStyle(fontFamily: 'FlutterTest', fontSize: 36.0),
+                strutStyle: StrutStyle.disabled,
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
@@ -8225,41 +8231,39 @@ void main() {
     final Key keyB = UniqueKey();
 
     await tester.pumpWidget(
-      Theme(
-        data: ThemeData(useMaterial3: false),
-        child: overlay(
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.baseline,
-            textBaseline: TextBaseline.alphabetic,
-            children: <Widget>[
-              Expanded(
-                child: TextField(
-                  key: keyA,
-                  decoration: null,
-                  controller: controllerA,
-                  // The point size of the font must be a multiple of 4 until
-                  // https://github.com/flutter/flutter/issues/122066 is resolved.
-                  style: const TextStyle(fontFamily: 'FlutterTest', fontSize: 12.0),
-                ),
-              ),
-              const Text(
-                'abc',
+      overlay(
+        theme: ThemeData(useMaterial3: false),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.baseline,
+          textBaseline: TextBaseline.alphabetic,
+          children: <Widget>[
+            Expanded(
+              child: TextField(
+                key: keyA,
+                decoration: null,
+                controller: controllerA,
                 // The point size of the font must be a multiple of 4 until
                 // https://github.com/flutter/flutter/issues/122066 is resolved.
-                style: TextStyle(fontFamily: 'FlutterTest', fontSize: 24.0),
+                style: const TextStyle(fontFamily: 'FlutterTest', fontSize: 12.0),
               ),
-              Expanded(
-                child: TextField(
-                  key: keyB,
-                  decoration: null,
-                  controller: controllerB,
-                  // The point size of the font must be a multiple of 4 until
-                  // https://github.com/flutter/flutter/issues/122066 is resolved.
-                  style: const TextStyle(fontFamily: 'FlutterTest', fontSize: 36.0),
-                ),
+            ),
+            const Text(
+              'abc',
+              // The point size of the font must be a multiple of 4 until
+              // https://github.com/flutter/flutter/issues/122066 is resolved.
+              style: TextStyle(fontFamily: 'FlutterTest', fontSize: 24.0),
+            ),
+            Expanded(
+              child: TextField(
+                key: keyB,
+                decoration: null,
+                controller: controllerB,
+                // The point size of the font must be a multiple of 4 until
+                // https://github.com/flutter/flutter/issues/122066 is resolved.
+                style: const TextStyle(fontFamily: 'FlutterTest', fontSize: 36.0),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
@@ -19391,7 +19395,7 @@ class WidgetsLocalizationsDelegate extends LocalizationsDelegate<WidgetsLocaliza
   bool shouldReload(WidgetsLocalizationsDelegate old) => false;
 }
 
-Widget overlay({required Widget child}) {
+Widget overlay({required Widget child, ThemeData? theme}) {
   final entry = OverlayEntry(
     builder: (BuildContext context) {
       return Center(child: Material(child: child));
@@ -19402,10 +19406,10 @@ Widget overlay({required Widget child}) {
       ..remove()
       ..dispose(),
   );
-  return overlayWithEntry(entry);
+  return overlayWithEntry(entry, theme: theme);
 }
 
-Widget overlayWithEntry(OverlayEntry entry) {
+Widget overlayWithEntry(OverlayEntry entry, {ThemeData? theme}) {
   return Localizations(
     locale: const Locale('en', 'US'),
     delegates: <LocalizationsDelegate<dynamic>>[
@@ -19418,7 +19422,18 @@ Widget overlayWithEntry(OverlayEntry entry) {
         textDirection: TextDirection.ltr,
         child: MediaQuery(
           data: const MediaQueryData(size: Size(800.0, 600.0)),
-          child: Overlay(initialEntries: <OverlayEntry>[entry]),
+          // Provide a Theme built for the platform in effect. Without a Theme
+          // ancestor, Theme.of falls back to a ThemeData built once per process
+          // at the first such call, whose `platform` is frozen to whatever the
+          // test running at that moment had set, which made this file's results
+          // depend on test order (https://github.com/flutter/flutter/issues/194008).
+          // Building the ThemeData here makes it follow the TargetPlatformVariant.
+          // Tests that need a different theme pass one explicitly, as with
+          // boilerplate().
+          child: Theme(
+            data: theme ?? ThemeData(platform: defaultTargetPlatform),
+            child: Overlay(initialEntries: <OverlayEntry>[entry]),
+          ),
         ),
       ),
     ),
