@@ -24,9 +24,12 @@ static NSString* const kAccessibilityMenuItemSelectedNotification = @"AXMenuItem
 // SelectableRegion) post NSAccessibilitySelectedTextChangedNotification.
 //
 // The framework's SelectableRegion announces those changes itself on macOS
-// while its `_kMacOSVoiceOverSpeaksNodeSelection` is false. Both flip together,
-// once probe P1 of flutter/flutter#182909 shows that VoiceOver speaks the
-// delta from these notifications, so that VoiceOver never hears both.
+// while its `_kMacOSVoiceOverSpeaksNodeSelection` is false. Both must have the
+// same value, so that VoiceOver never hears a change twice.
+//
+// TODO(Renzo-Olivares): Flip both once VoiceOver is shown to speak the
+// selection delta from these notifications.
+// https://github.com/flutter/flutter/issues/182909
 constexpr bool kPostStaticSelectionNotifications = false;
 
 AccessibilityBridgeMac::AccessibilityBridgeMac(__weak FlutterEngine* flutter_engine,

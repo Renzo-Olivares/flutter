@@ -713,8 +713,8 @@ bool AlsoUseShowMenuActionForDefaultAction(const ui::AXNodeData& data) {
   NSString* value = [self getAXValueAsString];
   NSUInteger length = [value length];
   NSUInteger location = std::min(range.location, length);
-  NSUInteger clamped_length = std::min(range.length, length - location);
-  return [value substringWithRange:NSMakeRange(location, clamped_length)];
+  NSUInteger clampedLength = std::min(range.length, length - location);
+  return [value substringWithRange:NSMakeRange(location, clampedLength)];
 }
 
 - (NSValue*)AXSelectedTextRangeInternal {
@@ -1013,8 +1013,8 @@ bool AlsoUseShowMenuActionForDefaultAction(const ui::AXNodeData& data) {
   NSInteger length = [value length];
   if (length == 0)
     return NSMakeRange(0, 0);
-  NSInteger clamped_index = std::clamp<NSInteger>(index, 0, length - 1);
-  return [value rangeOfComposedCharacterSequenceAtIndex:clamped_index];
+  NSInteger clampedIndex = std::clamp<NSInteger>(index, 0, length - 1);
+  return [value rangeOfComposedCharacterSequenceAtIndex:clampedIndex];
 }
 
 - (NSRange)accessibilityStyleRangeForIndex:(NSInteger)index {
