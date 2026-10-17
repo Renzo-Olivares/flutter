@@ -7,6 +7,7 @@
 #include "flutter/fml/platform/darwin/string_range_sanitization.h"
 #import "flutter/shell/platform/darwin/common/framework/Headers/FlutterCodecs.h"
 #import "flutter/shell/platform/darwin/ios/framework/Source/FlutterTextInputPlugin.h"
+#include "third_party/skia/include/core/SkMatrix.h"
 
 FLUTTER_ASSERT_ARC
 
@@ -20,8 +21,6 @@ namespace {
 // route before iOS 18.1. Set this to true if VoiceOver offers the Text
 // Selection rotor only for the backing text view.
 constexpr BOOL kUsesBackingTextViewByDefault = NO;
-
-BOOL gUsesBackingTextView = kUsesBackingTextViewByDefault;
 
 // The keys of the argument map that the framework decodes for
 // `SemanticsAction.setSelection`.
@@ -41,12 +40,17 @@ NSUInteger IndexOfPosition(UITextPosition* position) {
   return ((FlutterTextPosition*)position).index;
 }
 
-}  // namespace
+// The range between two offsets, in either order.
+NSRange RangeBetween(NSUInteger a, NSUInteger b) {
+  return NSMakeRange(MIN(a, b), MAX(a, b) - MIN(a, b));
+}
 
-// The node's `frame` in its `coordinateSpace`, implemented in
-// SemanticsObject+UIFocusSystem.mm.
-@interface SemanticsObject (UIFocusSystem) <UIFocusItem, UIFocusItemContainer>
-@end
+// Whether `direction` points towards the beginning of the text.
+bool IsBackward(UITextLayoutDirection direction) {
+  return direction == UITextLayoutDirectionLeft || direction == UITextLayoutDirectionUp;
+}
+
+}  // namespace
 
 @interface FlutterSelectableTextSemanticsObject () <UITextViewDelegate>
 @end
@@ -66,21 +70,16 @@ NSUInteger IndexOfPosition(UITextPosition* position) {
   // The caret reported while there is no selection.
   NSUInteger _caret;
   UITextInputStringTokenizer* _tokenizer;
+  BOOL _usesBackingTextView;
   UITextView* _backingTextView;
   BOOL _isUpdatingBackingTextView;
+  // Returned as `textInputView` once the bridge is gone.
+  UIView* _detachedTextInputView;
 }
 
 + (BOOL)isSelectableStaticText:(const flutter::SemanticsNode&)node {
   return !node.flags.isTextField && node.value.empty() &&
          node.HasAction(flutter::SemanticsAction::kSetSelection);
-}
-
-+ (BOOL)usesBackingTextView {
-  return gUsesBackingTextView;
-}
-
-+ (void)setUsesBackingTextView:(BOOL)usesBackingTextView {
-  gUsesBackingTextView = usesBackingTextView;
 }
 
 - (instancetype)initWithBridge:(fml::WeakPtr<flutter::AccessibilityBridgeIos>)bridge
@@ -90,12 +89,21 @@ NSUInteger IndexOfPosition(UITextPosition* position) {
     _text = @"";
     _publishedBase = -1;
     _publishedExtent = -1;
+    _usesBackingTextView = kUsesBackingTextViewByDefault;
   }
   return self;
 }
 
 - (void)dealloc {
   [_backingTextView removeFromSuperview];
+}
+
+- (BOOL)usesBackingTextView {
+  return _usesBackingTextView;
+}
+
+- (void)setUsesBackingTextView:(BOOL)usesBackingTextView {
+  _usesBackingTextView = usesBackingTextView;
 }
 
 - (UITextView*)backingTextView {
@@ -142,7 +150,8 @@ NSUInteger IndexOfPosition(UITextPosition* position) {
 #pragma mark - Selection
 
 - (NSUInteger)clampIndex:(NSInteger)index {
-  return (NSUInteger)MAX((NSInteger)0, MIN(index, (NSInteger)_text.length));
+  return static_cast<NSUInteger>(
+      MAX(static_cast<NSInteger>(0), MIN(index, static_cast<NSInteger>(_text.length))));
 }
 
 // The selection as base and extent offsets into `_text`.
@@ -163,7 +172,7 @@ NSUInteger IndexOfPosition(UITextPosition* position) {
   NSUInteger base;
   NSUInteger extent;
   [self getSelectionBase:&base extent:&extent];
-  return NSMakeRange(MIN(base, extent), MAX(base, extent) - MIN(base, extent));
+  return RangeBetween(base, extent);
 }
 
 // Asks the framework to select `range`, which an assistive technology chose.
@@ -195,12 +204,29 @@ NSUInteger IndexOfPosition(UITextPosition* position) {
   NSData* encoded = [[FlutterStandardMessageCodec sharedInstance] encode:arguments];
   bridge->DispatchSemanticsAction(self.uid, flutter::SemanticsAction::kSetSelection,
                                   fml::MallocMapping::Copy(encoded.bytes, encoded.length));
+  [self updateBackingTextView];
+}
+
+// The word that encloses or touches the caret, or nil if there is none (for
+// example, when the caret is between two spaces).
+- (FlutterTextRange*)wordRangeAtCaret {
+  UITextPosition* caret = [FlutterTextPosition positionWithIndex:[self selectedRange].location];
+  for (UITextStorageDirection direction :
+       {UITextStorageDirectionForward, UITextStorageDirectionBackward}) {
+    UITextRange* word = [self.tokenizer rangeEnclosingPosition:caret
+                                               withGranularity:UITextGranularityWord
+                                                   inDirection:direction];
+    if ([word isKindOfClass:[FlutterTextRange class]] && !word.isEmpty) {
+      return (FlutterTextRange*)word;
+    }
+  }
+  return nil;
 }
 
 #pragma mark - Backing text view
 
 - (void)updateBackingTextView {
-  if (!gUsesBackingTextView) {
+  if (!_usesBackingTextView || _isUpdatingBackingTextView) {
     return;
   }
   if (@available(iOS 18.1, *)) {
@@ -273,20 +299,10 @@ NSUInteger IndexOfPosition(UITextPosition* position) {
 }
 
 - (void)select:(id)sender {
-  NSRange selection = [self selectedRange];
-  UITextPosition* caret = [FlutterTextPosition positionWithIndex:selection.location];
-  UITextRange* word = [self.tokenizer rangeEnclosingPosition:caret
-                                             withGranularity:UITextGranularityWord
-                                                 inDirection:UITextStorageDirectionForward];
-  if (![word isKindOfClass:[FlutterTextRange class]]) {
-    word = [self.tokenizer rangeEnclosingPosition:caret
-                                  withGranularity:UITextGranularityWord
-                                      inDirection:UITextStorageDirectionBackward];
+  FlutterTextRange* word = [self wordRangeAtCaret];
+  if (word) {
+    [self requestSelectionOfRange:word.range];
   }
-  if (![word isKindOfClass:[FlutterTextRange class]]) {
-    return;
-  }
-  [self requestSelectionOfRange:((FlutterTextRange*)word).range];
 }
 
 - (void)selectAll:(id)sender {
@@ -302,8 +318,8 @@ NSUInteger IndexOfPosition(UITextPosition* position) {
     return selection.length > 0 && self.node.HasAction(flutter::SemanticsAction::kCopy);
   }
   if (action == @selector(select:)) {
-    return selection.length == 0 && _text.length > 0 &&
-           self.node.HasAction(flutter::SemanticsAction::kSetSelection);
+    return selection.length == 0 && self.node.HasAction(flutter::SemanticsAction::kSetSelection) &&
+           [self wordRangeAtCaret] != nil;
   }
   if (action == @selector(selectAll:)) {
     return selection.length < _text.length &&
@@ -374,42 +390,26 @@ NSUInteger IndexOfPosition(UITextPosition* position) {
 
 - (UITextRange*)textRangeFromPosition:(UITextPosition*)fromPosition
                            toPosition:(UITextPosition*)toPosition {
-  NSUInteger from = [self clampIndex:IndexOfPosition(fromPosition)];
-  NSUInteger to = [self clampIndex:IndexOfPosition(toPosition)];
-  return
-      [FlutterTextRange rangeWithNSRange:NSMakeRange(MIN(from, to), MAX(from, to) - MIN(from, to))];
+  return [FlutterTextRange
+      rangeWithNSRange:RangeBetween([self clampIndex:IndexOfPosition(fromPosition)],
+                                    [self clampIndex:IndexOfPosition(toPosition)])];
 }
 
 - (UITextPosition*)positionFromPosition:(UITextPosition*)position offset:(NSInteger)offset {
-  NSUInteger index = IndexOfPosition(position);
-  NSInteger newIndex = (NSInteger)index + offset;
-  if (newIndex < 0 || newIndex > (NSInteger)_text.length) {
+  // Offsets are UTF-16 code units, the same unit as `offsetFromPosition:toPosition:`
+  // and the framework's selection offsets. Character-wise movement goes
+  // through the tokenizer.
+  NSInteger index = static_cast<NSInteger>(IndexOfPosition(position)) + offset;
+  if (index < 0 || index > static_cast<NSInteger>(_text.length)) {
     return nil;
   }
-  // Move by whole grapheme clusters, as FlutterTextInputView does.
-  if (offset >= 0) {
-    for (NSInteger i = 0; i < offset && index < _text.length; ++i) {
-      index = MIN(NSMaxRange(fml::RangeForCharacterAtIndex(_text, index)), _text.length);
-    }
-  } else {
-    for (NSInteger i = 0; i < -offset && index > 0; ++i) {
-      index = fml::RangeForCharacterAtIndex(_text, index - 1).location;
-    }
-  }
-  return [FlutterTextPosition positionWithIndex:index];
+  return [FlutterTextPosition positionWithIndex:static_cast<NSUInteger>(index)];
 }
 
 - (UITextPosition*)positionFromPosition:(UITextPosition*)position
                             inDirection:(UITextLayoutDirection)direction
                                  offset:(NSInteger)offset {
-  switch (direction) {
-    case UITextLayoutDirectionLeft:
-    case UITextLayoutDirectionUp:
-      return [self positionFromPosition:position offset:-offset];
-    case UITextLayoutDirectionRight:
-    case UITextLayoutDirectionDown:
-      return [self positionFromPosition:position offset:offset];
-  }
+  return [self positionFromPosition:position offset:IsBackward(direction) ? -offset : offset];
 }
 
 - (NSComparisonResult)comparePosition:(UITextPosition*)position toPosition:(UITextPosition*)other {
@@ -425,7 +425,8 @@ NSUInteger IndexOfPosition(UITextPosition* position) {
 }
 
 - (NSInteger)offsetFromPosition:(UITextPosition*)from toPosition:(UITextPosition*)toPosition {
-  return (NSInteger)IndexOfPosition(toPosition) - (NSInteger)IndexOfPosition(from);
+  return static_cast<NSInteger>(IndexOfPosition(toPosition)) -
+         static_cast<NSInteger>(IndexOfPosition(from));
 }
 
 - (id<UITextInputDelegate>)inputDelegate {
@@ -435,6 +436,7 @@ NSUInteger IndexOfPosition(UITextPosition* position) {
 }
 
 - (void)setInputDelegate:(id<UITextInputDelegate>)inputDelegate {
+  // See `inputDelegate`.
 }
 
 - (id<UITextInputTokenizer>)tokenizer {
@@ -450,27 +452,15 @@ NSUInteger IndexOfPosition(UITextPosition* position) {
 
 - (UITextPosition*)positionWithinRange:(UITextRange*)range
                    farthestInDirection:(UITextLayoutDirection)direction {
-  switch (direction) {
-    case UITextLayoutDirectionLeft:
-    case UITextLayoutDirectionUp:
-      return range.start;
-    case UITextLayoutDirectionRight:
-    case UITextLayoutDirectionDown:
-      return range.end;
-  }
+  return IsBackward(direction) ? range.start : range.end;
 }
 
 - (UITextRange*)characterRangeByExtendingPosition:(UITextPosition*)position
                                       inDirection:(UITextLayoutDirection)direction {
   NSUInteger index = [self clampIndex:IndexOfPosition(position)];
-  switch (direction) {
-    case UITextLayoutDirectionLeft:
-    case UITextLayoutDirectionUp:
-      return [FlutterTextRange rangeWithNSRange:NSMakeRange(0, index)];
-    case UITextLayoutDirectionRight:
-    case UITextLayoutDirectionDown:
-      return [FlutterTextRange rangeWithNSRange:NSMakeRange(index, _text.length - index)];
-  }
+  return
+      [FlutterTextRange rangeWithNSRange:IsBackward(direction) ? RangeBetween(0, index)
+                                                               : RangeBetween(index, _text.length)];
 }
 
 - (NSWritingDirection)baseWritingDirectionForPosition:(UITextPosition*)position
@@ -492,20 +482,39 @@ NSUInteger IndexOfPosition(UITextPosition* position) {
 #pragma mark - UITextInput geometry
 
 // The framework sends no text layout, so every range is reported as the whole
-// node, and carets and points are mapped linearly across the node's width.
+// node, and carets and points are mapped linearly across the node's width,
+// which is exact only for a single line of evenly spaced text.
 
 - (UIView*)textInputView {
-  return self.bridgeView;
+  UIView* view = self.bridgeView;
+  if (view) {
+    return view;
+  }
+  if (!_detachedTextInputView) {
+    _detachedTextInputView = [[UIView alloc] initWithFrame:CGRectZero];
+  }
+  return _detachedTextInputView;
 }
 
-// The node's frame in the coordinate space of `textInputView`.
+// The node's rect in the coordinate space of `textInputView`.
 - (CGRect)textRect {
   UIView* view = self.bridgeView;
-  id<UICoordinateSpace> coordinateSpace = self.coordinateSpace;
-  if (!view || !coordinateSpace) {
+  if (!view) {
     return CGRectZero;
   }
-  return [coordinateSpace convertRect:self.frame toCoordinateSpace:view];
+  // As for the accessibility frame, the framework's transforms map the node
+  // into the root view's physical pixels, scroll offsets included, and
+  // dividing by the screen scale gives the Flutter view's points.
+  SkM44 transform = self.node.transform;
+  for (SemanticsObject* ancestor = self.parent; ancestor; ancestor = ancestor.parent) {
+    transform = ancestor.node.transform * transform;
+  }
+  SkRect rect = transform.asM33().mapRect(self.node.rect);
+  // The screen can be nil if the Flutter view is covered by another native
+  // view.
+  CGFloat scale = (view.window.screen ?: UIScreen.mainScreen).scale;
+  return CGRectMake(rect.x() / scale, rect.y() / scale, rect.width() / scale,
+                    rect.height() / scale);
 }
 
 - (BOOL)isRightToLeft {
@@ -516,7 +525,7 @@ NSUInteger IndexOfPosition(UITextPosition* position) {
   if (_text.length == 0) {
     return self.isRightToLeft ? CGRectGetMaxX(rect) : CGRectGetMinX(rect);
   }
-  CGFloat fraction = (CGFloat)[self clampIndex:index] / _text.length;
+  CGFloat fraction = static_cast<CGFloat>([self clampIndex:index]) / _text.length;
   if (self.isRightToLeft) {
     fraction = 1.0 - fraction;
   }

@@ -313,6 +313,8 @@ if (enable_ios_unittests) {
       "framework/Source/FlutterRestorationPluginTest.mm",
       "framework/Source/FlutterSceneDelegateTest.m",
       "framework/Source/FlutterSceneLifeCycleTest.mm",
+      "framework/Source/FlutterSelectableTextSemanticsObject+Test.h",
+      "framework/Source/FlutterSelectableTextSemanticsObjectTest.mm",
       "framework/Source/FlutterSharedApplicationTest.mm",
       "framework/Source/FlutterSpellCheckPluginTest.mm",
       "framework/Source/FlutterTextInputPluginTest.mm",

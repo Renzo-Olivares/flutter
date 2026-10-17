@@ -38,26 +38,6 @@ NS_ASSUME_NONNULL_BEGIN
  */
 + (BOOL)isSelectableStaticText:(const flutter::SemanticsNode&)node;
 
-/**
- * Whether new objects mirror their text and selection into a hidden
- * `UITextView` and name it as their `accessibilityTextInputResponder` on
- * iOS 18.1 and later, instead of answering `UITextInput` only themselves.
- *
- * Defaults to `NO`.
- *
- * Visible for testing.
- */
-@property(class, nonatomic) BOOL usesBackingTextView;
-
-/**
- * The hidden text view that mirrors this object's text and selection, or nil
- * if `usesBackingTextView` is `NO`, the system is older than iOS 18.1, or the
- * bridge has no view.
- *
- * Visible for testing.
- */
-@property(nonatomic, readonly, nullable) UITextView* backingTextView;
-
 @end
 
 NS_ASSUME_NONNULL_END
