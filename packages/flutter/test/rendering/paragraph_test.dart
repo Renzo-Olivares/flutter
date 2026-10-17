@@ -1681,6 +1681,130 @@ void main() {
       expect(() => paragraph.positionInlineChildren(boxes), returnsNormally);
     });
   });
+
+  group('SelectContentRangeSelectionEvent', () {
+    RenderParagraph paragraphWith(String text, TestSelectionRegistrar registrar) {
+      final paragraph = RenderParagraph(
+        TextSpan(text: text),
+        textDirection: TextDirection.ltr,
+        registrar: registrar,
+      );
+      layout(paragraph);
+      return paragraph;
+    }
+
+    test('selects the requested range in the target fragment', () {
+      final registrar = TestSelectionRegistrar();
+      final RenderParagraph paragraph = paragraphWith('1234567', registrar);
+      final Selectable fragment = registrar.selectables.single;
+
+      final SelectionResult result = fragment.dispatchSelectionEvent(
+        SelectContentRangeSelectionEvent(target: fragment, startOffset: 1, endOffset: 4),
+      );
+      expect(result, SelectionResult.end);
+      expect(paragraph.selections, const <TextSelection>[
+        TextSelection(baseOffset: 1, extentOffset: 4),
+      ]);
+      expect(fragment.getSelectedContent()!.plainText, '234');
+      expect(fragment.value.status, SelectionStatus.uncollapsed);
+    });
+
+    test('keeps the direction of a reversed range', () {
+      final registrar = TestSelectionRegistrar();
+      final RenderParagraph paragraph = paragraphWith('1234567', registrar);
+      final Selectable fragment = registrar.selectables.single;
+
+      fragment.dispatchSelectionEvent(
+        SelectContentRangeSelectionEvent(target: fragment, startOffset: 4, endOffset: 1),
+      );
+      expect(paragraph.selections, const <TextSelection>[
+        TextSelection(baseOffset: 4, extentOffset: 1),
+      ]);
+    });
+
+    test('clamps the offsets to the fragment range', () {
+      final registrar = TestSelectionRegistrar();
+      final RenderParagraph paragraph = paragraphWith('1234567', registrar);
+      final Selectable fragment = registrar.selectables.single;
+
+      fragment.dispatchSelectionEvent(
+        SelectContentRangeSelectionEvent(target: fragment, startOffset: -3, endOffset: 100),
+      );
+      expect(paragraph.selections, const <TextSelection>[
+        TextSelection(baseOffset: 0, extentOffset: 7),
+      ]);
+    });
+
+    test('a collapsed range is a caret', () {
+      final registrar = TestSelectionRegistrar();
+      final RenderParagraph paragraph = paragraphWith('1234567', registrar);
+      final Selectable fragment = registrar.selectables.single;
+
+      final SelectionResult result = fragment.dispatchSelectionEvent(
+        SelectContentRangeSelectionEvent(target: fragment, startOffset: 3, endOffset: 3),
+      );
+      expect(result, SelectionResult.end);
+      expect(paragraph.selections, const <TextSelection>[TextSelection.collapsed(offset: 3)]);
+      expect(fragment.value.status, SelectionStatus.collapsed);
+    });
+
+    test('a fragment that is not the target returns none and is unchanged', () {
+      final registrar = TestSelectionRegistrar();
+      final RenderParagraph first = paragraphWith('abc', registrar);
+      paragraphWith('def', registrar);
+      final Selectable firstFragment = registrar.selectables[0];
+      final Selectable secondFragment = registrar.selectables[1];
+
+      firstFragment.dispatchSelectionEvent(
+        SelectContentRangeSelectionEvent(target: firstFragment, startOffset: 0, endOffset: 2),
+      );
+      final SelectionResult result = firstFragment.dispatchSelectionEvent(
+        SelectContentRangeSelectionEvent(target: secondFragment, startOffset: 0, endOffset: 1),
+      );
+      expect(result, SelectionResult.none);
+      expect(first.selections, const <TextSelection>[
+        TextSelection(baseOffset: 0, extentOffset: 2),
+      ]);
+    });
+
+    test('an edge event places a caret at the start or end of a visible fragment', () {
+      final registrar = TestSelectionRegistrar();
+      final RenderParagraph paragraph = paragraphWith('1234567', registrar);
+      final Selectable fragment = registrar.selectables.single;
+
+      SelectionResult result = fragment.dispatchSelectionEvent(
+        const SelectContentRangeSelectionEvent.atEdge(edge: SelectionEdge.start),
+      );
+      expect(result, SelectionResult.end);
+      expect(paragraph.selections, const <TextSelection>[TextSelection.collapsed(offset: 0)]);
+
+      result = fragment.dispatchSelectionEvent(
+        const SelectContentRangeSelectionEvent.atEdge(edge: SelectionEdge.end),
+      );
+      expect(result, SelectionResult.end);
+      expect(paragraph.selections, const <TextSelection>[TextSelection.collapsed(offset: 7)]);
+
+      // A fragment outside the visible rect does not take the caret.
+      result = fragment.dispatchSelectionEvent(
+        const SelectContentRangeSelectionEvent.atEdge(
+          edge: SelectionEdge.start,
+          globalVisibleRect: Rect.fromLTWH(1000, 1000, 10, 10),
+        ),
+      );
+      expect(result, SelectionResult.none);
+      expect(paragraph.selections, const <TextSelection>[TextSelection.collapsed(offset: 7)]);
+
+      // A fragment inside the visible rect does.
+      result = fragment.dispatchSelectionEvent(
+        const SelectContentRangeSelectionEvent.atEdge(
+          edge: SelectionEdge.start,
+          globalVisibleRect: Rect.fromLTWH(0, 0, 10, 10),
+        ),
+      );
+      expect(result, SelectionResult.end);
+      expect(paragraph.selections, const <TextSelection>[TextSelection.collapsed(offset: 0)]);
+    });
+  });
 }
 
 class MockCanvas extends Fake implements Canvas {

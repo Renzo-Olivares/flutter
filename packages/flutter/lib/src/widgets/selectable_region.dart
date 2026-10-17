@@ -448,6 +448,28 @@ class SelectableRegionState extends State<SelectableRegion>
   final _SelectableRegionSelectionStatusNotifier _selectionStatusNotifier =
       _SelectableRegionSelectionStatusNotifier._();
 
+  /// What caused the selection change that is being committed.
+  ///
+  /// Set before the status goes to [SelectableRegionSelectionStatus.changing]
+  /// and reset to [_SelectionChangeSource.pointerOrKeyboard] after it is
+  /// finalized, so listeners of [_selectionStatusNotifier] can tell screen
+  /// reader driven changes from pointer and keyboard ones.
+  // Read by the selection change announcer (landing step 6).
+  // ignore: unused_field
+  _SelectionChangeSource _pendingSource = _SelectionChangeSource.pointerOrKeyboard;
+
+  /// Where the assistive technology last placed a caret or started a range,
+  /// used as the starting point of a keyboard selection.
+  // Read by the keyboard start rule (landing step 4).
+  // ignore: unused_field
+  ({Selectable target, int offset})? _accessibilityAnchor;
+
+  /// The bridge through which selectable paragraphs report screen reader
+  /// requests.
+  late final _SelectionSemanticsDelegate _selectionSemanticsDelegate = _SelectionSemanticsDelegate(
+    this,
+  );
+
   /// Preserves the selection status scope and root selection container when the
   /// desktop web context menu wrapper is added or removed.
   final GlobalKey _selectionStatusScopeKey = GlobalKey(debugLabel: 'selectionStatusScopeKey');
@@ -545,8 +567,7 @@ class SelectableRegionState extends State<SelectableRegion>
         // case we want to retain the selection so it remains when we return to
         // the Flutter application.
         clearSelection();
-        _selectionStatusNotifier.value = SelectableRegionSelectionStatus.changing;
-        _finalizeSelectableRegionStatus();
+        _commitSelectionChange(_SelectionChangeSource.focusLoss);
       }
     } else if (_webContextMenuEnabled) {
       PlatformSelectableRegionContextMenu.attach(_selectionDelegate);
@@ -602,6 +623,40 @@ class SelectableRegionState extends State<SelectableRegion>
       return;
     }
     _selectionStatusNotifier.value = SelectableRegionSelectionStatus.finalized;
+    _pendingSource = _SelectionChangeSource.pointerOrKeyboard;
+  }
+
+  /// Commits a discrete selection change tagged with its [source]: the status
+  /// goes to [SelectableRegionSelectionStatus.changing] and is finalized in
+  /// the same call.
+  void _commitSelectionChange(_SelectionChangeSource source) {
+    _pendingSource = source;
+    _selectionStatusNotifier.value = SelectableRegionSelectionStatus.changing;
+    _finalizeSelectableRegionStatus();
+  }
+
+  /// Applies a selection requested through accessibility to the [target]
+  /// selectable, in the target's own offsets.
+  ///
+  /// A collapsed range only records [_accessibilityAnchor]: screen readers
+  /// write carets while merely reading, so a caret must not take focus,
+  /// clear the user's selection or commit anything. A non-empty range takes
+  /// keyboard focus (as every pointer path does), replaces the current
+  /// selection and commits once, tagged
+  /// [_SelectionChangeSource.assistiveTechnology].
+  void _selectRangeByAccessibility(Selectable target, int start, int end) {
+    if (start == end) {
+      _accessibilityAnchor = (target: target, offset: start);
+      return;
+    }
+    _focusNode.requestFocus();
+    clearSelection();
+    _selectable?.dispatchSelectionEvent(
+      SelectContentRangeSelectionEvent(target: target, startOffset: start, endOffset: end),
+    );
+    _accessibilityAnchor = (target: target, offset: start);
+    _updateSelectedContentIfNeeded();
+    _commitSelectionChange(_SelectionChangeSource.assistiveTechnology);
   }
 
   // Converts the details.consecutiveTapCount from a TapAndDrag*Details object,
@@ -1965,6 +2020,7 @@ class SelectableRegionState extends State<SelectableRegion>
     Widget result = SelectableRegionSelectionStatusScope._(
       key: _selectionStatusScopeKey,
       selectionStatusNotifier: _selectionStatusNotifier,
+      selectionSemanticsDelegate: _selectionSemanticsDelegate,
       child: SelectionContainer(registrar: this, delegate: _selectionDelegate, child: widget.child),
     );
     if (_webContextMenuEnabled) {
@@ -2281,6 +2337,13 @@ class StaticSelectionContainerDelegate extends MultiSelectableSelectionContainer
   }
 
   @override
+  SelectionResult handleSelectContentRange(SelectContentRangeSelectionEvent event) {
+    final SelectionResult result = super.handleSelectContentRange(event);
+    didReceiveSelectionBoundaryEvents();
+    return result;
+  }
+
+  @override
   SelectionResult handleSelectionEdgeUpdate(SelectionEdgeUpdateEvent event) {
     updateLastSelectionEdgeLocation(
       globalSelectionEdgeLocation: event.globalPosition,
@@ -2309,6 +2372,7 @@ class StaticSelectionContainerDelegate extends MultiSelectableSelectionContainer
       case SelectionEventType.selectAll:
       case SelectionEventType.selectWord:
       case SelectionEventType.selectParagraph:
+      case SelectionEventType.selectContentRange:
         break;
       case SelectionEventType.granularlyExtendSelection:
       case SelectionEventType.directionallyExtendSelection:
@@ -3075,6 +3139,28 @@ abstract class MultiSelectableSelectionContainerDelegate extends SelectionContai
     return _handleSelectBoundary(event);
   }
 
+  /// Selects a range of content in the [Selectable] named by
+  /// [SelectContentRangeSelectionEvent.target], or places a caret at the edge
+  /// named by [SelectContentRangeSelectionEvent.edge].
+  ///
+  /// The event is forwarded to the children in screen order (reversed for an
+  /// end edge) until one of them answers [SelectionResult.end]; that child
+  /// then holds both selection edges. Returns [SelectionResult.none] when no
+  /// child answered.
+  @protected
+  SelectionResult handleSelectContentRange(SelectContentRangeSelectionEvent event) {
+    final bool fromEnd = event.target == null && event.edge == SelectionEdge.end;
+    for (var step = 0; step < selectables.length; step += 1) {
+      final int index = fromEnd ? selectables.length - 1 - step : step;
+      if (dispatchSelectionEventToChild(selectables[index], event) == SelectionResult.end) {
+        currentSelectionStartIndex = index;
+        currentSelectionEndIndex = index;
+        return SelectionResult.end;
+      }
+    }
+    return SelectionResult.none;
+  }
+
   /// Removes the selection of all [Selectable]s this delegate manages.
   @protected
   SelectionResult handleClearSelection(ClearSelectionEvent event) {
@@ -3218,6 +3304,9 @@ abstract class MultiSelectableSelectionContainerDelegate extends SelectionContai
       case SelectionEventType.directionallyExtendSelection:
         _extendSelectionInProgress = true;
         result = handleDirectionallyExtendSelection(event as DirectionallyExtendSelectionEvent);
+      case SelectionEventType.selectContentRange:
+        _extendSelectionInProgress = false;
+        result = handleSelectContentRange(event as SelectContentRangeSelectionEvent);
     }
     _isHandlingSelectionEvent = false;
     _updateSelectionGeometry();
@@ -3478,6 +3567,35 @@ enum SelectableRegionSelectionStatus {
   finalized,
 }
 
+/// What caused a committed selection change in a [SelectableRegion].
+enum _SelectionChangeSource {
+  /// Pointer, touch, keyboard, select-all, or any other app-driven change.
+  pointerOrKeyboard,
+
+  /// A range written by an assistive technology through a semantics action.
+  assistiveTechnology,
+
+  /// The selection was cleared because the region lost focus.
+  focusLoss,
+}
+
+/// The [SelectionSemanticsDelegate] of a [SelectableRegionState].
+class _SelectionSemanticsDelegate implements SelectionSemanticsDelegate {
+  _SelectionSemanticsDelegate(this._state);
+
+  final SelectableRegionState _state;
+
+  @override
+  void select(Selectable target, int start, int end) {
+    _state._selectRangeByAccessibility(target, start, end);
+  }
+
+  @override
+  void copy() {
+    _state._copy();
+  }
+}
+
 /// Notifies its listeners when the [SelectableRegion] that created this object
 /// is changing or finalizes its selection.
 ///
@@ -3525,6 +3643,7 @@ final class SelectableRegionSelectionStatusScope extends InheritedWidget {
   const SelectableRegionSelectionStatusScope._({
     super.key,
     required this.selectionStatusNotifier,
+    required this.selectionSemanticsDelegate,
     required super.child,
   });
 
@@ -3534,6 +3653,13 @@ final class SelectableRegionSelectionStatusScope extends InheritedWidget {
   /// Listeners will be called even when the value of the [SelectableRegionSelectionStatus]
   /// does not change. The selection under the [SelectableRegion] still may have changed.
   final ValueListenable<SelectableRegionSelectionStatus> selectionStatusNotifier;
+
+  /// The bridge through which selectable paragraphs under the owning
+  /// [SelectableRegion] report screen reader selection requests.
+  ///
+  /// Framework-internal; read by the selectable text container of [Text].
+  @internal
+  final SelectionSemanticsDelegate selectionSemanticsDelegate;
 
   /// The closest instance of this class that encloses the given context.
   ///

@@ -412,6 +412,23 @@ enum SelectionEventType {
 
   /// An event that extends the selection in a specific direction.
   directionallyExtendSelection,
+
+  /// An event to select a range of content in one [Selectable] by offsets.
+  ///
+  /// Used by [SelectContentRangeSelectionEvent].
+  selectContentRange,
+}
+
+/// An edge of the selectable content in screen order.
+///
+/// Used by [SelectContentRangeSelectionEvent.atEdge] to name the first or the
+/// last [Selectable].
+enum SelectionEdge {
+  /// The beginning of the first [Selectable] in screen order.
+  start,
+
+  /// The end of the last [Selectable] in screen order.
+  end,
 }
 
 /// The unit of how selection handles move in text.
@@ -480,6 +497,75 @@ class SelectWordSelectionEvent extends SelectionEvent {
 
   /// The position in global coordinates to select word at.
   final Offset globalPosition;
+}
+
+/// Selects a range of content in one [Selectable], given as offsets into that
+/// selectable's own content.
+///
+/// This event carries a selection that was requested through accessibility
+/// (for example a screen reader writing a range onto a paragraph's semantics
+/// node) back to the [Selectable] that owns the content, without converting
+/// offsets into screen positions. Only the [target] changes its selection and
+/// returns [SelectionResult.end]; every other [Selectable] returns
+/// [SelectionResult.none] and leaves its selection alone. Containers forward
+/// the event to their children and record which child answered.
+///
+/// For a paragraph fragment the offsets are code units of the paragraph's
+/// plain text. Offsets are clamped to the target's content; a reversed range
+/// (where [startOffset] is greater than [endOffset]) keeps its direction and a
+/// collapsed range places a caret.
+///
+/// The [SelectContentRangeSelectionEvent.atEdge] form has no target: it places
+/// a caret at the beginning of the first, or the end of the last, [Selectable]
+/// in screen order that intersects [globalVisibleRect] (or any selectable when
+/// that is null). [SelectableRegion] uses it to start a keyboard selection
+/// where no selection exists yet.
+///
+/// Custom [Selectable] and [SelectionContainerDelegate] implementations that
+/// switch exhaustively over [SelectionEventType] should handle
+/// [SelectionEventType.selectContentRange] by returning [SelectionResult.none]
+/// unless they are the [target].
+class SelectContentRangeSelectionEvent extends SelectionEvent {
+  /// Creates an event that selects `[startOffset, endOffset)` of [target].
+  const SelectContentRangeSelectionEvent({
+    required Selectable this.target,
+    required this.startOffset,
+    required this.endOffset,
+  }) : edge = null,
+       globalVisibleRect = null,
+       super._(SelectionEventType.selectContentRange);
+
+  /// Creates an event that places a caret at the [edge] of the first or last
+  /// [Selectable] in screen order that intersects [globalVisibleRect].
+  const SelectContentRangeSelectionEvent.atEdge({
+    required SelectionEdge this.edge,
+    this.globalVisibleRect,
+  }) : target = null,
+       startOffset = 0,
+       endOffset = 0,
+       super._(SelectionEventType.selectContentRange);
+
+  /// The [Selectable] whose content the offsets index, or null for an edge
+  /// event.
+  final Selectable? target;
+
+  /// The offset of the selection base in the [target]'s content.
+  ///
+  /// Ignored by an edge event.
+  final int startOffset;
+
+  /// The offset of the selection extent in the [target]'s content.
+  ///
+  /// Ignored by an edge event.
+  final int endOffset;
+
+  /// Which end of the content receives the caret, or null when [target] is
+  /// set.
+  final SelectionEdge? edge;
+
+  /// The rectangle, in global coordinates, that an edge event's [Selectable]
+  /// must intersect, or null to accept any [Selectable].
+  final Rect? globalVisibleRect;
 }
 
 /// Selects the entire paragraph at the location.
@@ -664,6 +750,26 @@ class DirectionallyExtendSelectionEvent extends SelectionEvent {
       direction: direction ?? this.direction,
     );
   }
+}
+
+/// A bridge from a selectable paragraph's semantics node to the object that
+/// owns the selection, typically a `SelectableRegion`.
+///
+/// This is a framework-internal contract: a paragraph render object under a
+/// selection registrar reports screen-reader requests through it, and the
+/// region applies them to its selection and commits them like any other
+/// change. It is not part of the stable API.
+@internal
+abstract class SelectionSemanticsDelegate {
+  /// Selects `[start, end)` of [target]'s content, in the target's own
+  /// offsets.
+  ///
+  /// A collapsed range (where `start == end`) only records where the
+  /// assistive technology is reading and has no other side effect.
+  void select(Selectable target, int start, int end);
+
+  /// Copies the current selection to the clipboard, keeping the selection.
+  void copy();
 }
 
 /// A registrar that keeps track of [Selectable]s in the subtree.

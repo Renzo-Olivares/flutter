@@ -1673,6 +1673,8 @@ class _SelectableFragment
           directionallyExtendSelection.isEnd,
           directionallyExtendSelection.direction,
         );
+      case SelectionEventType.selectContentRange:
+        result = _handleSelectContentRange(event as SelectContentRangeSelectionEvent);
     }
 
     if (existingSelectionStart != _textSelectionStart ||
@@ -3141,6 +3143,40 @@ class _SelectableFragment
     _textSelectionStart = TextPosition(offset: range.start);
     _textSelectionEnd = TextPosition(offset: range.end, affinity: TextAffinity.upstream);
     return SelectionResult.none;
+  }
+
+  SelectionResult _handleSelectContentRange(SelectContentRangeSelectionEvent event) {
+    final int start;
+    final int end;
+    if (event.target != null) {
+      if (!identical(event.target, this)) {
+        return SelectionResult.none;
+      }
+      start = math.max(range.start, math.min(range.end, event.startOffset));
+      end = math.max(range.start, math.min(range.end, event.endOffset));
+    } else {
+      if (event.globalVisibleRect != null && !_intersectsGlobalRect(event.globalVisibleRect!)) {
+        return SelectionResult.none;
+      }
+      start = end = switch (event.edge!) {
+        SelectionEdge.start => range.start,
+        SelectionEdge.end => range.end,
+      };
+    }
+    _textSelectionStart = _clampTextPosition(TextPosition(offset: start));
+    _textSelectionEnd = _clampTextPosition(TextPosition(offset: end));
+    _selectableContainsOriginTextBoundary = false;
+    return SelectionResult.end;
+  }
+
+  bool _intersectsGlobalRect(Rect globalRect) {
+    final Matrix4 transform = getTransformTo(null);
+    for (final Rect box in boundingBoxes) {
+      if (MatrixUtils.transformRect(transform, box).overlaps(globalRect)) {
+        return true;
+      }
+    }
+    return false;
   }
 
   SelectionResult _handleSelectTextBoundary(_TextBoundaryRecord textBoundary) {
