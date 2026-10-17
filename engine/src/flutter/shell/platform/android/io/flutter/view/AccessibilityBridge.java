@@ -250,6 +250,15 @@ public class AccessibilityBridge extends AccessibilityNodeProvider {
   // maintaining input focus on the original text field.
   @Nullable SemanticsNode inputFocusedSemanticsNode;
 
+  // The selectable static text node (see {@link SemanticsNode#isSelectableStaticText()}) that
+  // holds the selection a screen reader is working on, or null.
+  //
+  // TalkBack drops a TYPE_VIEW_TEXT_SELECTION_CHANGED event unless its source reports input focus,
+  // and a native selectable TextView takes input focus when it is selected. A Flutter paragraph
+  // cannot take input focus, so the bridge reports this node as focused instead, unless a focused
+  // text field holds the input focus (see {@link #getReportedFocusedSemanticsNode()}).
+  @Nullable SemanticsNode selectionFocusedSemanticsNode;
+
   // Keeps track of the last semantics node that had the input focus.
   //
   // This is used to determine if the input focus has changed since the last time the
@@ -1910,6 +1919,24 @@ public class AccessibilityBridge extends AccessibilityNodeProvider {
   }
 
   /**
+   * Returns the node that the accessibility node infos report as input-focused.
+   *
+   * <p>This is {@link #inputFocusedSemanticsNode}, except while {@link
+   * #selectionFocusedSemanticsNode} is set and no other focused node holds the input focus: a
+   * focused text field (or any focused node that is not selectable static text) always wins.
+   */
+  @Nullable
+  SemanticsNode getReportedFocusedSemanticsNode() {
+    if (selectionFocusedSemanticsNode != null
+        && (inputFocusedSemanticsNode == null
+            || !inputFocusedSemanticsNode.hasFlag(Flag.IS_FOCUSED)
+            || inputFocusedSemanticsNode.isSelectableStaticText())) {
+      return selectionFocusedSemanticsNode;
+    }
+    return inputFocusedSemanticsNode;
+  }
+
+  /**
    * Hook called just before a {@link SemanticsNode} is removed from the Android cache of Flutter's
    * semantics tree.
    */
@@ -2376,6 +2403,41 @@ public class AccessibilityBridge extends AccessibilityNodeProvider {
         Log.e(TAG, "Attempted to check hadFlag but had no previous config.");
       }
       return (previousFlags & flag.value) != 0;
+    }
+
+    /**
+     * Returns true if this node is selectable static text: a node that is not a text field and
+     * accepts {@link Action#SET_SELECTION}.
+     *
+     * <p>The framework publishes such nodes for the paragraphs of a {@code SelectableRegion}; its
+     * {@code textSelectionBase} and {@code textSelectionExtent} index the label, not the value.
+     */
+    boolean isSelectableStaticText() {
+      return !hasFlag(Flag.IS_TEXT_FIELD) && hasAction(Action.SET_SELECTION);
+    }
+
+    /** The text of a selectable static text node, which its selection indexes. */
+    @Nullable
+    CharSequence getSelectableText() {
+      return getLabel();
+    }
+
+    /**
+     * Returns the selection the framework published for this selectable static text node as
+     * {base, extent} label offsets, or null if it has none or the offsets do not fit the label.
+     */
+    @Nullable
+    int[] getPublishedTextSelection() {
+      return validTextSelection(textSelectionBase, textSelectionExtent);
+    }
+
+    @Nullable
+    private int[] validTextSelection(int base, int extent) {
+      final int length = label == null ? 0 : label.length();
+      if (base < 0 || extent < 0 || base > length || extent > length) {
+        return null;
+      }
+      return new int[] {base, extent};
     }
 
     boolean shouldBeTreatedAsButton() {

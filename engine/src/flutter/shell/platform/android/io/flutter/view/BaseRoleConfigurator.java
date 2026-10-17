@@ -57,9 +57,11 @@ public class BaseRoleConfigurator implements AccessibilityNodeConfigurator {
 
   private void configureFocusable(
       AccessibilityNodeInfo result, AccessibilityBridge.SemanticsNode node) {
-    result.setFocusable(node.isFocusable());
-    if (node.accessibilityBridge.inputFocusedSemanticsNode != null) {
-      result.setFocused(node.accessibilityBridge.inputFocusedSemanticsNode.id == node.id);
+    final AccessibilityBridge.SemanticsNode focusedNode =
+        node.accessibilityBridge.getReportedFocusedSemanticsNode();
+    result.setFocusable(node.isFocusable() || focusedNode == node);
+    if (focusedNode != null) {
+      result.setFocused(focusedNode.id == node.id);
     }
     if (node.accessibilityBridge.accessibilityFocusedSemanticsNode != null) {
       result.setAccessibilityFocused(
@@ -128,7 +130,8 @@ public class BaseRoleConfigurator implements AccessibilityNodeConfigurator {
 
   private void configureLiveRegion(
       AccessibilityNodeInfo result, AccessibilityBridge.SemanticsNode node) {
-    if (node.hasFlag(AccessibilityBridge.Flag.IS_LIVE_REGION)) {
+    // A live region would make TalkBack read the whole text again on every selection change.
+    if (node.hasFlag(AccessibilityBridge.Flag.IS_LIVE_REGION) && !node.isSelectableStaticText()) {
       result.setLiveRegion(View.ACCESSIBILITY_LIVE_REGION_POLITE);
     }
   }
@@ -193,7 +196,37 @@ public class BaseRoleConfigurator implements AccessibilityNodeConfigurator {
         final int length = node.value == null ? 0 : node.value.length();
         result.setMaxTextLength(length - node.currentValueLength + node.maxValueLength);
       }
+    } else if (node.isSelectableStaticText()) {
+      configureSelectableStaticText(result, node);
     }
+  }
+
+  /**
+   * Describes a selectable static text node (see {@link
+   * AccessibilityBridge.SemanticsNode#isSelectableStaticText()}) the way Android describes a
+   * non-editable {@code TextView} with {@code setTextIsSelectable(true)}, so that TalkBack can
+   * enter its selection mode on it.
+   *
+   * <p>The bridge handles the granularity actions itself, see {@code
+   * AccessibilityBridge#performSelectableTextMoveAction}.
+   */
+  private void configureSelectableStaticText(
+      AccessibilityNodeInfo result, AccessibilityBridge.SemanticsNode node) {
+    result.setClassName("android.widget.TextView");
+    result.setEditable(false);
+    if (Build.VERSION.SDK_INT >= API_LEVELS.API_33) {
+      result.setTextSelectable(true);
+    }
+    final int[] selection = node.getPublishedTextSelection();
+    if (selection != null) {
+      result.setTextSelection(selection[0], selection[1]);
+    }
+    result.addAction(AccessibilityNodeInfo.ACTION_NEXT_AT_MOVEMENT_GRANULARITY);
+    result.addAction(AccessibilityNodeInfo.ACTION_PREVIOUS_AT_MOVEMENT_GRANULARITY);
+    result.setMovementGranularities(
+        AccessibilityNodeInfo.MOVEMENT_GRANULARITY_CHARACTER
+            | AccessibilityNodeInfo.MOVEMENT_GRANULARITY_WORD
+            | AccessibilityNodeInfo.MOVEMENT_GRANULARITY_PARAGRAPH);
   }
 
   private void configureButton(
@@ -356,6 +389,19 @@ public class BaseRoleConfigurator implements AccessibilityNodeConfigurator {
       result.setText(node.getValue());
       if (Build.VERSION.SDK_INT >= API_LEVELS.API_28) {
         result.setHintText(node.getTextFieldHint());
+      }
+    } else if (node.isSelectableStaticText()) {
+      // TalkBack reads, iterates and selects the text of a selectable node, so the text is the
+      // label alone (the selection indexes the label). The description keeps the label as well, so
+      // UI tests that find Flutter text by its content description keep working.
+      final CharSequence label = node.getSelectableText();
+      result.setText(label);
+      CharSequence description = label;
+      if (Build.VERSION.SDK_INT < API_LEVELS.API_28 && node.tooltip != null) {
+        description = (description != null ? description : "") + "\n" + node.tooltip;
+      }
+      if (description != null) {
+        result.setContentDescription(description);
       }
     } else if (!node.hasFlag(AccessibilityBridge.Flag.SCOPES_ROUTE)) {
       CharSequence content = node.getValueLabelHint();
