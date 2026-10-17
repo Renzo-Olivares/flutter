@@ -1676,6 +1676,26 @@ const float kFloatCompareEpsilon = 0.001;
                         @"b");
 }
 
+- (void)testSelectableTextSemanticsObject_selectionActionsDoNotMakeItInteractive {
+  fml::WeakPtrFactory<flutter::AccessibilityBridgeIos> factory(
+      new flutter::testing::MockAccessibilityBridge());
+  fml::WeakPtr<flutter::AccessibilityBridgeIos> bridge = factory.GetWeakPtr();
+
+  flutter::SemanticsNode node;
+  node.label = "Hello world";
+  node.actions = static_cast<int32_t>(flutter::SemanticsAction::kSetSelection) |
+                 static_cast<int32_t>(flutter::SemanticsAction::kCopy);
+  FlutterSelectableTextSemanticsObject* object =
+      [[FlutterSelectableTextSemanticsObject alloc] initWithBridge:bridge uid:1];
+  [object setSemanticsNode:&node];
+  // Like a plain label, so Voice Control does not offer every paragraph.
+  XCTAssertFalse(object.accessibilityRespondsToUserInteraction);
+
+  node.actions |= static_cast<int32_t>(flutter::SemanticsAction::kTap);
+  [object setSemanticsNode:&node];
+  XCTAssertTrue(object.accessibilityRespondsToUserInteraction);
+}
+
 - (void)testSelectableTextSemanticsObject_tokenizerFindsWords {
   fml::WeakPtrFactory<flutter::AccessibilityBridgeIos> factory(
       new flutter::testing::MockAccessibilityBridge());
