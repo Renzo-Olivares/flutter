@@ -14,5 +14,15 @@
   "selectAllButtonLabel": "Избери ги сите",
   "searchResultsFound": "Најдени се резултати од пребарувањето",
   "noResultsFound": "Не се најдени резултати",
-  "radioButtonUnselectedLabel": "Не е избрано"
+  "radioButtonUnselectedLabel": "Не е избрано",
+  "selectedTextAnnouncement": "$text selected",
+  "unselectedTextAnnouncement": "$text unselected",
+  "selectionClearedAnnouncement": "Selection cleared",
+  "selectedCharacterCountAnnouncementOne": "$count character selected",
+  "selectedCharacterCountAnnouncementOther": "$count characters selected",
+  "allTextSelectedAnnouncement": "All text selected",
+  "selectionReplacedAnnouncement": "$unselected unselected, $selected selected",
+  "spaceCharacterName": "space",
+  "newLineCharacterName": "new line",
+  "tabCharacterName": "tab"
 }

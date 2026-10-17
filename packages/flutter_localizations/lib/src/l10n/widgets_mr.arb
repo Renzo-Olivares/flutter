@@ -14,5 +14,15 @@
   "selectAllButtonLabel": "सर्व निवडा",
   "searchResultsFound": "शोध परिणाम आढळले",
   "noResultsFound": "परिणाम आढळले नाहीत",
-  "radioButtonUnselectedLabel": "निवडलेले नाही"
+  "radioButtonUnselectedLabel": "निवडलेले नाही",
+  "selectedTextAnnouncement": "$text selected",
+  "unselectedTextAnnouncement": "$text unselected",
+  "selectionClearedAnnouncement": "Selection cleared",
+  "selectedCharacterCountAnnouncementOne": "$count character selected",
+  "selectedCharacterCountAnnouncementOther": "$count characters selected",
+  "allTextSelectedAnnouncement": "All text selected",
+  "selectionReplacedAnnouncement": "$unselected unselected, $selected selected",
+  "spaceCharacterName": "space",
+  "newLineCharacterName": "new line",
+  "tabCharacterName": "tab"
 }

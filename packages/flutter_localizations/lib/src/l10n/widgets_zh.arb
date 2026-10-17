@@ -14,5 +14,15 @@
   "selectAllButtonLabel": "全选",
   "searchResultsFound": "找到搜索结果",
   "noResultsFound": "未找到任何结果",
-  "radioButtonUnselectedLabel": "未选择"
+  "radioButtonUnselectedLabel": "未选择",
+  "selectedTextAnnouncement": "$text selected",
+  "unselectedTextAnnouncement": "$text unselected",
+  "selectionClearedAnnouncement": "Selection cleared",
+  "selectedCharacterCountAnnouncementOne": "$count character selected",
+  "selectedCharacterCountAnnouncementOther": "$count characters selected",
+  "allTextSelectedAnnouncement": "All text selected",
+  "selectionReplacedAnnouncement": "$unselected unselected, $selected selected",
+  "spaceCharacterName": "space",
+  "newLineCharacterName": "new line",
+  "tabCharacterName": "tab"
 }

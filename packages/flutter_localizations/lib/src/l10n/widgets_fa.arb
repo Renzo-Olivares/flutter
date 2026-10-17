@@ -14,5 +14,15 @@
   "selectAllButtonLabel": "انتخاب همه",
   "searchResultsFound": "نتایج جستجو پیدا شد",
   "noResultsFound": "نتیجه‌ای پیدا نشد",
-  "radioButtonUnselectedLabel": "انتخاب‌نشده"
+  "radioButtonUnselectedLabel": "انتخاب‌نشده",
+  "selectedTextAnnouncement": "$text selected",
+  "unselectedTextAnnouncement": "$text unselected",
+  "selectionClearedAnnouncement": "Selection cleared",
+  "selectedCharacterCountAnnouncementOne": "$count character selected",
+  "selectedCharacterCountAnnouncementOther": "$count characters selected",
+  "allTextSelectedAnnouncement": "All text selected",
+  "selectionReplacedAnnouncement": "$unselected unselected, $selected selected",
+  "spaceCharacterName": "space",
+  "newLineCharacterName": "new line",
+  "tabCharacterName": "tab"
 }

@@ -51,7 +51,7 @@ String generateWidgetsConstructor(LocaleInfo locale) {
   /// Create an instance of the translation bundle for ${describeLocale(localeName)}.
   ///
   /// For details on the meaning of the arguments, see [GlobalWidgetsLocalizations].
-  const WidgetsLocalization${locale.camelCase()}() : super($textDirection);''';
+  const WidgetsLocalization${locale.camelCase()}() : super($textDirection, localeName: '$localeName');''';
 }
 
 /// Returns the source of the constructor for a GlobalWidgetsLocalizations

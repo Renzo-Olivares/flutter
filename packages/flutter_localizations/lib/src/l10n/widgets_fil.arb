@@ -14,5 +14,15 @@
   "selectAllButtonLabel": "Piliin lahat",
   "searchResultsFound": "Nakakita ng mga resulta ng paghahanap",
   "noResultsFound": "Walang nakitang resulta",
-  "radioButtonUnselectedLabel": "Hindi napili"
+  "radioButtonUnselectedLabel": "Hindi napili",
+  "selectedTextAnnouncement": "$text selected",
+  "unselectedTextAnnouncement": "$text unselected",
+  "selectionClearedAnnouncement": "Selection cleared",
+  "selectedCharacterCountAnnouncementOne": "$count character selected",
+  "selectedCharacterCountAnnouncementOther": "$count characters selected",
+  "allTextSelectedAnnouncement": "All text selected",
+  "selectionReplacedAnnouncement": "$unselected unselected, $selected selected",
+  "spaceCharacterName": "space",
+  "newLineCharacterName": "new line",
+  "tabCharacterName": "tab"
 }

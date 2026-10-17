@@ -14,5 +14,15 @@
   "selectAllButtonLabel": "Khetha konke",
   "searchResultsFound": "Imiphumela yokusesha itholakele",
   "noResultsFound": "Ayikho imiphumela etholakele",
-  "radioButtonUnselectedLabel": "Ayikhethiwe"
+  "radioButtonUnselectedLabel": "Ayikhethiwe",
+  "selectedTextAnnouncement": "$text selected",
+  "unselectedTextAnnouncement": "$text unselected",
+  "selectionClearedAnnouncement": "Selection cleared",
+  "selectedCharacterCountAnnouncementOne": "$count character selected",
+  "selectedCharacterCountAnnouncementOther": "$count characters selected",
+  "allTextSelectedAnnouncement": "All text selected",
+  "selectionReplacedAnnouncement": "$unselected unselected, $selected selected",
+  "spaceCharacterName": "space",
+  "newLineCharacterName": "new line",
+  "tabCharacterName": "tab"
 }

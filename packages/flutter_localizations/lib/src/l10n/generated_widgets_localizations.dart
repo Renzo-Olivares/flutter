@@ -26,7 +26,10 @@ class WidgetsLocalizationAf extends GlobalWidgetsLocalizations {
   /// Create an instance of the translation bundle for Afrikaans.
   ///
   /// For details on the meaning of the arguments, see [GlobalWidgetsLocalizations].
-  const WidgetsLocalizationAf() : super(TextDirection.ltr);
+  const WidgetsLocalizationAf() : super(TextDirection.ltr, localeName: 'af');
+
+  @override
+  String get allTextSelectedAnnouncement => 'All text selected';
 
   @override
   String get copyButtonLabel => 'Kopieer';
@@ -36,6 +39,9 @@ class WidgetsLocalizationAf extends GlobalWidgetsLocalizations {
 
   @override
   String get lookUpButtonLabel => 'Kyk op';
+
+  @override
+  String get newLineCharacterName => 'new line';
 
   @override
   String get noResultsFound => 'Geen resultate gekry nie';
@@ -74,7 +80,31 @@ class WidgetsLocalizationAf extends GlobalWidgetsLocalizations {
   String get selectAllButtonLabel => 'Kies alles';
 
   @override
+  String? get selectedCharacterCountAnnouncementOne => r'$count character selected';
+
+  @override
+  String get selectedCharacterCountAnnouncementOther => r'$count characters selected';
+
+  @override
+  String get selectedTextAnnouncementRaw => r'$text selected';
+
+  @override
+  String get selectionClearedAnnouncement => 'Selection cleared';
+
+  @override
+  String get selectionReplacedAnnouncementRaw => r'$unselected unselected, $selected selected';
+
+  @override
   String get shareButtonLabel => 'Deel';
+
+  @override
+  String get spaceCharacterName => 'space';
+
+  @override
+  String get tabCharacterName => 'tab';
+
+  @override
+  String get unselectedTextAnnouncementRaw => r'$text unselected';
 }
 
 /// The translations for Amharic (`am`).
@@ -82,7 +112,10 @@ class WidgetsLocalizationAm extends GlobalWidgetsLocalizations {
   /// Create an instance of the translation bundle for Amharic.
   ///
   /// For details on the meaning of the arguments, see [GlobalWidgetsLocalizations].
-  const WidgetsLocalizationAm() : super(TextDirection.ltr);
+  const WidgetsLocalizationAm() : super(TextDirection.ltr, localeName: 'am');
+
+  @override
+  String get allTextSelectedAnnouncement => 'All text selected';
 
   @override
   String get copyButtonLabel => 'ቅዳ';
@@ -92,6 +125,9 @@ class WidgetsLocalizationAm extends GlobalWidgetsLocalizations {
 
   @override
   String get lookUpButtonLabel => 'ይመልከቱ';
+
+  @override
+  String get newLineCharacterName => 'new line';
 
   @override
   String get noResultsFound => 'ምንም ውጤቶች አልተገኙም';
@@ -130,7 +166,31 @@ class WidgetsLocalizationAm extends GlobalWidgetsLocalizations {
   String get selectAllButtonLabel => 'ሁሉንም ምረጥ';
 
   @override
+  String? get selectedCharacterCountAnnouncementOne => r'$count character selected';
+
+  @override
+  String get selectedCharacterCountAnnouncementOther => r'$count characters selected';
+
+  @override
+  String get selectedTextAnnouncementRaw => r'$text selected';
+
+  @override
+  String get selectionClearedAnnouncement => 'Selection cleared';
+
+  @override
+  String get selectionReplacedAnnouncementRaw => r'$unselected unselected, $selected selected';
+
+  @override
   String get shareButtonLabel => 'አጋራ';
+
+  @override
+  String get spaceCharacterName => 'space';
+
+  @override
+  String get tabCharacterName => 'tab';
+
+  @override
+  String get unselectedTextAnnouncementRaw => r'$text unselected';
 }
 
 /// The translations for Arabic (`ar`).
@@ -138,7 +198,10 @@ class WidgetsLocalizationAr extends GlobalWidgetsLocalizations {
   /// Create an instance of the translation bundle for Arabic.
   ///
   /// For details on the meaning of the arguments, see [GlobalWidgetsLocalizations].
-  const WidgetsLocalizationAr() : super(TextDirection.rtl);
+  const WidgetsLocalizationAr() : super(TextDirection.rtl, localeName: 'ar');
+
+  @override
+  String get allTextSelectedAnnouncement => 'All text selected';
 
   @override
   String get copyButtonLabel => 'نسخ';
@@ -148,6 +211,9 @@ class WidgetsLocalizationAr extends GlobalWidgetsLocalizations {
 
   @override
   String get lookUpButtonLabel => 'بحث عام';
+
+  @override
+  String get newLineCharacterName => 'new line';
 
   @override
   String get noResultsFound => 'لم يتم العثور على نتائج';
@@ -186,7 +252,31 @@ class WidgetsLocalizationAr extends GlobalWidgetsLocalizations {
   String get selectAllButtonLabel => 'اختيار الكل';
 
   @override
+  String? get selectedCharacterCountAnnouncementOne => r'$count character selected';
+
+  @override
+  String get selectedCharacterCountAnnouncementOther => r'$count characters selected';
+
+  @override
+  String get selectedTextAnnouncementRaw => r'$text selected';
+
+  @override
+  String get selectionClearedAnnouncement => 'Selection cleared';
+
+  @override
+  String get selectionReplacedAnnouncementRaw => r'$unselected unselected, $selected selected';
+
+  @override
   String get shareButtonLabel => 'مشاركة';
+
+  @override
+  String get spaceCharacterName => 'space';
+
+  @override
+  String get tabCharacterName => 'tab';
+
+  @override
+  String get unselectedTextAnnouncementRaw => r'$text unselected';
 }
 
 /// The translations for Assamese (`as`).
@@ -194,7 +284,10 @@ class WidgetsLocalizationAs extends GlobalWidgetsLocalizations {
   /// Create an instance of the translation bundle for Assamese.
   ///
   /// For details on the meaning of the arguments, see [GlobalWidgetsLocalizations].
-  const WidgetsLocalizationAs() : super(TextDirection.ltr);
+  const WidgetsLocalizationAs() : super(TextDirection.ltr, localeName: 'as');
+
+  @override
+  String get allTextSelectedAnnouncement => 'All text selected';
 
   @override
   String get copyButtonLabel => 'প্ৰতিলিপি কৰক';
@@ -204,6 +297,9 @@ class WidgetsLocalizationAs extends GlobalWidgetsLocalizations {
 
   @override
   String get lookUpButtonLabel => 'ওপৰলৈ চাওক';
+
+  @override
+  String get newLineCharacterName => 'new line';
 
   @override
   String get noResultsFound => 'কোনো ফলাফল পোৱা নগ’ল';
@@ -242,7 +338,31 @@ class WidgetsLocalizationAs extends GlobalWidgetsLocalizations {
   String get selectAllButtonLabel => 'আটাইবোৰ বাছনি কৰক';
 
   @override
+  String? get selectedCharacterCountAnnouncementOne => r'$count character selected';
+
+  @override
+  String get selectedCharacterCountAnnouncementOther => r'$count characters selected';
+
+  @override
+  String get selectedTextAnnouncementRaw => r'$text selected';
+
+  @override
+  String get selectionClearedAnnouncement => 'Selection cleared';
+
+  @override
+  String get selectionReplacedAnnouncementRaw => r'$unselected unselected, $selected selected';
+
+  @override
   String get shareButtonLabel => 'শ্বেয়াৰ কৰক';
+
+  @override
+  String get spaceCharacterName => 'space';
+
+  @override
+  String get tabCharacterName => 'tab';
+
+  @override
+  String get unselectedTextAnnouncementRaw => r'$text unselected';
 }
 
 /// The translations for Azerbaijani (`az`).
@@ -250,7 +370,10 @@ class WidgetsLocalizationAz extends GlobalWidgetsLocalizations {
   /// Create an instance of the translation bundle for Azerbaijani.
   ///
   /// For details on the meaning of the arguments, see [GlobalWidgetsLocalizations].
-  const WidgetsLocalizationAz() : super(TextDirection.ltr);
+  const WidgetsLocalizationAz() : super(TextDirection.ltr, localeName: 'az');
+
+  @override
+  String get allTextSelectedAnnouncement => 'All text selected';
 
   @override
   String get copyButtonLabel => 'Kopyalayın';
@@ -260,6 +383,9 @@ class WidgetsLocalizationAz extends GlobalWidgetsLocalizations {
 
   @override
   String get lookUpButtonLabel => 'Axtarın';
+
+  @override
+  String get newLineCharacterName => 'new line';
 
   @override
   String get noResultsFound => 'Nəticə tapılmadı';
@@ -298,7 +424,31 @@ class WidgetsLocalizationAz extends GlobalWidgetsLocalizations {
   String get selectAllButtonLabel => 'Hamısını seçin';
 
   @override
+  String? get selectedCharacterCountAnnouncementOne => r'$count character selected';
+
+  @override
+  String get selectedCharacterCountAnnouncementOther => r'$count characters selected';
+
+  @override
+  String get selectedTextAnnouncementRaw => r'$text selected';
+
+  @override
+  String get selectionClearedAnnouncement => 'Selection cleared';
+
+  @override
+  String get selectionReplacedAnnouncementRaw => r'$unselected unselected, $selected selected';
+
+  @override
   String get shareButtonLabel => 'Paylaşın';
+
+  @override
+  String get spaceCharacterName => 'space';
+
+  @override
+  String get tabCharacterName => 'tab';
+
+  @override
+  String get unselectedTextAnnouncementRaw => r'$text unselected';
 }
 
 /// The translations for Belarusian (`be`).
@@ -306,7 +456,10 @@ class WidgetsLocalizationBe extends GlobalWidgetsLocalizations {
   /// Create an instance of the translation bundle for Belarusian.
   ///
   /// For details on the meaning of the arguments, see [GlobalWidgetsLocalizations].
-  const WidgetsLocalizationBe() : super(TextDirection.ltr);
+  const WidgetsLocalizationBe() : super(TextDirection.ltr, localeName: 'be');
+
+  @override
+  String get allTextSelectedAnnouncement => 'All text selected';
 
   @override
   String get copyButtonLabel => 'Капіраваць';
@@ -316,6 +469,9 @@ class WidgetsLocalizationBe extends GlobalWidgetsLocalizations {
 
   @override
   String get lookUpButtonLabel => 'Знайсці';
+
+  @override
+  String get newLineCharacterName => 'new line';
 
   @override
   String get noResultsFound => 'Вынікі не знойдзены';
@@ -354,7 +510,31 @@ class WidgetsLocalizationBe extends GlobalWidgetsLocalizations {
   String get selectAllButtonLabel => 'Выбраць усе';
 
   @override
+  String? get selectedCharacterCountAnnouncementOne => r'$count character selected';
+
+  @override
+  String get selectedCharacterCountAnnouncementOther => r'$count characters selected';
+
+  @override
+  String get selectedTextAnnouncementRaw => r'$text selected';
+
+  @override
+  String get selectionClearedAnnouncement => 'Selection cleared';
+
+  @override
+  String get selectionReplacedAnnouncementRaw => r'$unselected unselected, $selected selected';
+
+  @override
   String get shareButtonLabel => 'Абагуліць';
+
+  @override
+  String get spaceCharacterName => 'space';
+
+  @override
+  String get tabCharacterName => 'tab';
+
+  @override
+  String get unselectedTextAnnouncementRaw => r'$text unselected';
 }
 
 /// The translations for Bulgarian (`bg`).
@@ -362,7 +542,10 @@ class WidgetsLocalizationBg extends GlobalWidgetsLocalizations {
   /// Create an instance of the translation bundle for Bulgarian.
   ///
   /// For details on the meaning of the arguments, see [GlobalWidgetsLocalizations].
-  const WidgetsLocalizationBg() : super(TextDirection.ltr);
+  const WidgetsLocalizationBg() : super(TextDirection.ltr, localeName: 'bg');
+
+  @override
+  String get allTextSelectedAnnouncement => 'All text selected';
 
   @override
   String get copyButtonLabel => 'Копиране';
@@ -372,6 +555,9 @@ class WidgetsLocalizationBg extends GlobalWidgetsLocalizations {
 
   @override
   String get lookUpButtonLabel => 'Look Up';
+
+  @override
+  String get newLineCharacterName => 'new line';
 
   @override
   String get noResultsFound => 'Няма намерени резултати';
@@ -410,7 +596,31 @@ class WidgetsLocalizationBg extends GlobalWidgetsLocalizations {
   String get selectAllButtonLabel => 'Избиране на всички';
 
   @override
+  String? get selectedCharacterCountAnnouncementOne => r'$count character selected';
+
+  @override
+  String get selectedCharacterCountAnnouncementOther => r'$count characters selected';
+
+  @override
+  String get selectedTextAnnouncementRaw => r'$text selected';
+
+  @override
+  String get selectionClearedAnnouncement => 'Selection cleared';
+
+  @override
+  String get selectionReplacedAnnouncementRaw => r'$unselected unselected, $selected selected';
+
+  @override
   String get shareButtonLabel => 'Споделяне';
+
+  @override
+  String get spaceCharacterName => 'space';
+
+  @override
+  String get tabCharacterName => 'tab';
+
+  @override
+  String get unselectedTextAnnouncementRaw => r'$text unselected';
 }
 
 /// The translations for Bengali Bangla (`bn`).
@@ -418,7 +628,10 @@ class WidgetsLocalizationBn extends GlobalWidgetsLocalizations {
   /// Create an instance of the translation bundle for Bengali Bangla.
   ///
   /// For details on the meaning of the arguments, see [GlobalWidgetsLocalizations].
-  const WidgetsLocalizationBn() : super(TextDirection.ltr);
+  const WidgetsLocalizationBn() : super(TextDirection.ltr, localeName: 'bn');
+
+  @override
+  String get allTextSelectedAnnouncement => 'All text selected';
 
   @override
   String get copyButtonLabel => 'কপি করুন';
@@ -428,6 +641,9 @@ class WidgetsLocalizationBn extends GlobalWidgetsLocalizations {
 
   @override
   String get lookUpButtonLabel => 'লুক-আপ';
+
+  @override
+  String get newLineCharacterName => 'new line';
 
   @override
   String get noResultsFound => 'কোনো ফলাফল পাওয়া যায়নি';
@@ -466,7 +682,31 @@ class WidgetsLocalizationBn extends GlobalWidgetsLocalizations {
   String get selectAllButtonLabel => 'সব বেছে নিন';
 
   @override
+  String? get selectedCharacterCountAnnouncementOne => r'$count character selected';
+
+  @override
+  String get selectedCharacterCountAnnouncementOther => r'$count characters selected';
+
+  @override
+  String get selectedTextAnnouncementRaw => r'$text selected';
+
+  @override
+  String get selectionClearedAnnouncement => 'Selection cleared';
+
+  @override
+  String get selectionReplacedAnnouncementRaw => r'$unselected unselected, $selected selected';
+
+  @override
   String get shareButtonLabel => 'শেয়ার করুন';
+
+  @override
+  String get spaceCharacterName => 'space';
+
+  @override
+  String get tabCharacterName => 'tab';
+
+  @override
+  String get unselectedTextAnnouncementRaw => r'$text unselected';
 }
 
 /// The translations for Tibetan (`bo`).
@@ -474,7 +714,10 @@ class WidgetsLocalizationBo extends GlobalWidgetsLocalizations {
   /// Create an instance of the translation bundle for Tibetan.
   ///
   /// For details on the meaning of the arguments, see [GlobalWidgetsLocalizations].
-  const WidgetsLocalizationBo() : super(TextDirection.ltr);
+  const WidgetsLocalizationBo() : super(TextDirection.ltr, localeName: 'bo');
+
+  @override
+  String get allTextSelectedAnnouncement => 'All text selected';
 
   @override
   String get copyButtonLabel => 'བཤུས།';
@@ -484,6 +727,9 @@ class WidgetsLocalizationBo extends GlobalWidgetsLocalizations {
 
   @override
   String get lookUpButtonLabel => 'འཚོལ་བ།';
+
+  @override
+  String get newLineCharacterName => 'new line';
 
   @override
   String get noResultsFound => 'འཚོལ་ཞིབ·གྲུབ་འབྲས·མེད';
@@ -522,7 +768,31 @@ class WidgetsLocalizationBo extends GlobalWidgetsLocalizations {
   String get selectAllButtonLabel => 'ཚང་འདེམས།';
 
   @override
+  String? get selectedCharacterCountAnnouncementOne => r'$count character selected';
+
+  @override
+  String get selectedCharacterCountAnnouncementOther => r'$count characters selected';
+
+  @override
+  String get selectedTextAnnouncementRaw => r'$text selected';
+
+  @override
+  String get selectionClearedAnnouncement => 'Selection cleared';
+
+  @override
+  String get selectionReplacedAnnouncementRaw => r'$unselected unselected, $selected selected';
+
+  @override
   String get shareButtonLabel => 'མཉམ་སྤྱོད།';
+
+  @override
+  String get spaceCharacterName => 'space';
+
+  @override
+  String get tabCharacterName => 'tab';
+
+  @override
+  String get unselectedTextAnnouncementRaw => r'$text unselected';
 }
 
 /// The translations for Bosnian (`bs`).
@@ -530,7 +800,10 @@ class WidgetsLocalizationBs extends GlobalWidgetsLocalizations {
   /// Create an instance of the translation bundle for Bosnian.
   ///
   /// For details on the meaning of the arguments, see [GlobalWidgetsLocalizations].
-  const WidgetsLocalizationBs() : super(TextDirection.ltr);
+  const WidgetsLocalizationBs() : super(TextDirection.ltr, localeName: 'bs');
+
+  @override
+  String get allTextSelectedAnnouncement => 'All text selected';
 
   @override
   String get copyButtonLabel => 'Kopiraj';
@@ -540,6 +813,9 @@ class WidgetsLocalizationBs extends GlobalWidgetsLocalizations {
 
   @override
   String get lookUpButtonLabel => 'Pogled nagore';
+
+  @override
+  String get newLineCharacterName => 'new line';
 
   @override
   String get noResultsFound => 'Nije pronađen nijedan rezultat';
@@ -578,7 +854,31 @@ class WidgetsLocalizationBs extends GlobalWidgetsLocalizations {
   String get selectAllButtonLabel => 'Odaberi sve';
 
   @override
+  String? get selectedCharacterCountAnnouncementOne => r'$count character selected';
+
+  @override
+  String get selectedCharacterCountAnnouncementOther => r'$count characters selected';
+
+  @override
+  String get selectedTextAnnouncementRaw => r'$text selected';
+
+  @override
+  String get selectionClearedAnnouncement => 'Selection cleared';
+
+  @override
+  String get selectionReplacedAnnouncementRaw => r'$unselected unselected, $selected selected';
+
+  @override
   String get shareButtonLabel => 'Dijeli';
+
+  @override
+  String get spaceCharacterName => 'space';
+
+  @override
+  String get tabCharacterName => 'tab';
+
+  @override
+  String get unselectedTextAnnouncementRaw => r'$text unselected';
 }
 
 /// The translations for Catalan Valencian (`ca`).
@@ -586,7 +886,10 @@ class WidgetsLocalizationCa extends GlobalWidgetsLocalizations {
   /// Create an instance of the translation bundle for Catalan Valencian.
   ///
   /// For details on the meaning of the arguments, see [GlobalWidgetsLocalizations].
-  const WidgetsLocalizationCa() : super(TextDirection.ltr);
+  const WidgetsLocalizationCa() : super(TextDirection.ltr, localeName: 'ca');
+
+  @override
+  String get allTextSelectedAnnouncement => 'All text selected';
 
   @override
   String get copyButtonLabel => 'Copia';
@@ -596,6 +899,9 @@ class WidgetsLocalizationCa extends GlobalWidgetsLocalizations {
 
   @override
   String get lookUpButtonLabel => 'Mira amunt';
+
+  @override
+  String get newLineCharacterName => 'new line';
 
   @override
   String get noResultsFound => "No s'ha trobat cap resultat";
@@ -634,7 +940,31 @@ class WidgetsLocalizationCa extends GlobalWidgetsLocalizations {
   String get selectAllButtonLabel => 'Selecciona-ho tot';
 
   @override
+  String? get selectedCharacterCountAnnouncementOne => r'$count character selected';
+
+  @override
+  String get selectedCharacterCountAnnouncementOther => r'$count characters selected';
+
+  @override
+  String get selectedTextAnnouncementRaw => r'$text selected';
+
+  @override
+  String get selectionClearedAnnouncement => 'Selection cleared';
+
+  @override
+  String get selectionReplacedAnnouncementRaw => r'$unselected unselected, $selected selected';
+
+  @override
   String get shareButtonLabel => 'Comparteix';
+
+  @override
+  String get spaceCharacterName => 'space';
+
+  @override
+  String get tabCharacterName => 'tab';
+
+  @override
+  String get unselectedTextAnnouncementRaw => r'$text unselected';
 }
 
 /// The translations for Czech (`cs`).
@@ -642,7 +972,10 @@ class WidgetsLocalizationCs extends GlobalWidgetsLocalizations {
   /// Create an instance of the translation bundle for Czech.
   ///
   /// For details on the meaning of the arguments, see [GlobalWidgetsLocalizations].
-  const WidgetsLocalizationCs() : super(TextDirection.ltr);
+  const WidgetsLocalizationCs() : super(TextDirection.ltr, localeName: 'cs');
+
+  @override
+  String get allTextSelectedAnnouncement => 'All text selected';
 
   @override
   String get copyButtonLabel => 'Kopírovat';
@@ -652,6 +985,9 @@ class WidgetsLocalizationCs extends GlobalWidgetsLocalizations {
 
   @override
   String get lookUpButtonLabel => 'Vyhledat';
+
+  @override
+  String get newLineCharacterName => 'new line';
 
   @override
   String get noResultsFound => 'Nebyly nalezeny žádné výsledky';
@@ -690,7 +1026,31 @@ class WidgetsLocalizationCs extends GlobalWidgetsLocalizations {
   String get selectAllButtonLabel => 'Vybrat vše';
 
   @override
+  String? get selectedCharacterCountAnnouncementOne => r'$count character selected';
+
+  @override
+  String get selectedCharacterCountAnnouncementOther => r'$count characters selected';
+
+  @override
+  String get selectedTextAnnouncementRaw => r'$text selected';
+
+  @override
+  String get selectionClearedAnnouncement => 'Selection cleared';
+
+  @override
+  String get selectionReplacedAnnouncementRaw => r'$unselected unselected, $selected selected';
+
+  @override
   String get shareButtonLabel => 'Sdílet';
+
+  @override
+  String get spaceCharacterName => 'space';
+
+  @override
+  String get tabCharacterName => 'tab';
+
+  @override
+  String get unselectedTextAnnouncementRaw => r'$text unselected';
 }
 
 /// The translations for Welsh (`cy`).
@@ -698,7 +1058,10 @@ class WidgetsLocalizationCy extends GlobalWidgetsLocalizations {
   /// Create an instance of the translation bundle for Welsh.
   ///
   /// For details on the meaning of the arguments, see [GlobalWidgetsLocalizations].
-  const WidgetsLocalizationCy() : super(TextDirection.ltr);
+  const WidgetsLocalizationCy() : super(TextDirection.ltr, localeName: 'cy');
+
+  @override
+  String get allTextSelectedAnnouncement => 'All text selected';
 
   @override
   String get copyButtonLabel => 'Copïo';
@@ -708,6 +1071,9 @@ class WidgetsLocalizationCy extends GlobalWidgetsLocalizations {
 
   @override
   String get lookUpButtonLabel => 'Chwilio';
+
+  @override
+  String get newLineCharacterName => 'new line';
 
   @override
   String get noResultsFound => 'Ni chanfuwyd unrhyw ganlyniadau';
@@ -746,7 +1112,31 @@ class WidgetsLocalizationCy extends GlobalWidgetsLocalizations {
   String get selectAllButtonLabel => 'Dewis y cyfan';
 
   @override
+  String? get selectedCharacterCountAnnouncementOne => r'$count character selected';
+
+  @override
+  String get selectedCharacterCountAnnouncementOther => r'$count characters selected';
+
+  @override
+  String get selectedTextAnnouncementRaw => r'$text selected';
+
+  @override
+  String get selectionClearedAnnouncement => 'Selection cleared';
+
+  @override
+  String get selectionReplacedAnnouncementRaw => r'$unselected unselected, $selected selected';
+
+  @override
   String get shareButtonLabel => 'Rhannu';
+
+  @override
+  String get spaceCharacterName => 'space';
+
+  @override
+  String get tabCharacterName => 'tab';
+
+  @override
+  String get unselectedTextAnnouncementRaw => r'$text unselected';
 }
 
 /// The translations for Danish (`da`).
@@ -754,7 +1144,10 @@ class WidgetsLocalizationDa extends GlobalWidgetsLocalizations {
   /// Create an instance of the translation bundle for Danish.
   ///
   /// For details on the meaning of the arguments, see [GlobalWidgetsLocalizations].
-  const WidgetsLocalizationDa() : super(TextDirection.ltr);
+  const WidgetsLocalizationDa() : super(TextDirection.ltr, localeName: 'da');
+
+  @override
+  String get allTextSelectedAnnouncement => 'All text selected';
 
   @override
   String get copyButtonLabel => 'Kopiér';
@@ -764,6 +1157,9 @@ class WidgetsLocalizationDa extends GlobalWidgetsLocalizations {
 
   @override
   String get lookUpButtonLabel => 'Slå op';
+
+  @override
+  String get newLineCharacterName => 'new line';
 
   @override
   String get noResultsFound => 'Der blev ikke fundet nogen resultater';
@@ -802,7 +1198,31 @@ class WidgetsLocalizationDa extends GlobalWidgetsLocalizations {
   String get selectAllButtonLabel => 'Markér alt';
 
   @override
+  String? get selectedCharacterCountAnnouncementOne => r'$count character selected';
+
+  @override
+  String get selectedCharacterCountAnnouncementOther => r'$count characters selected';
+
+  @override
+  String get selectedTextAnnouncementRaw => r'$text selected';
+
+  @override
+  String get selectionClearedAnnouncement => 'Selection cleared';
+
+  @override
+  String get selectionReplacedAnnouncementRaw => r'$unselected unselected, $selected selected';
+
+  @override
   String get shareButtonLabel => 'Del';
+
+  @override
+  String get spaceCharacterName => 'space';
+
+  @override
+  String get tabCharacterName => 'tab';
+
+  @override
+  String get unselectedTextAnnouncementRaw => r'$text unselected';
 }
 
 /// The translations for German (`de`).
@@ -810,7 +1230,10 @@ class WidgetsLocalizationDe extends GlobalWidgetsLocalizations {
   /// Create an instance of the translation bundle for German.
   ///
   /// For details on the meaning of the arguments, see [GlobalWidgetsLocalizations].
-  const WidgetsLocalizationDe() : super(TextDirection.ltr);
+  const WidgetsLocalizationDe() : super(TextDirection.ltr, localeName: 'de');
+
+  @override
+  String get allTextSelectedAnnouncement => 'All text selected';
 
   @override
   String get copyButtonLabel => 'Kopieren';
@@ -820,6 +1243,9 @@ class WidgetsLocalizationDe extends GlobalWidgetsLocalizations {
 
   @override
   String get lookUpButtonLabel => 'Nachschlagen';
+
+  @override
+  String get newLineCharacterName => 'new line';
 
   @override
   String get noResultsFound => 'Keine Ergebnisse gefunden';
@@ -858,7 +1284,31 @@ class WidgetsLocalizationDe extends GlobalWidgetsLocalizations {
   String get selectAllButtonLabel => 'Alle auswählen';
 
   @override
+  String? get selectedCharacterCountAnnouncementOne => r'$count character selected';
+
+  @override
+  String get selectedCharacterCountAnnouncementOther => r'$count characters selected';
+
+  @override
+  String get selectedTextAnnouncementRaw => r'$text selected';
+
+  @override
+  String get selectionClearedAnnouncement => 'Selection cleared';
+
+  @override
+  String get selectionReplacedAnnouncementRaw => r'$unselected unselected, $selected selected';
+
+  @override
   String get shareButtonLabel => 'Teilen';
+
+  @override
+  String get spaceCharacterName => 'space';
+
+  @override
+  String get tabCharacterName => 'tab';
+
+  @override
+  String get unselectedTextAnnouncementRaw => r'$text unselected';
 }
 
 /// The translations for German, as used in Switzerland (`de_CH`).
@@ -874,7 +1324,10 @@ class WidgetsLocalizationEl extends GlobalWidgetsLocalizations {
   /// Create an instance of the translation bundle for Modern Greek.
   ///
   /// For details on the meaning of the arguments, see [GlobalWidgetsLocalizations].
-  const WidgetsLocalizationEl() : super(TextDirection.ltr);
+  const WidgetsLocalizationEl() : super(TextDirection.ltr, localeName: 'el');
+
+  @override
+  String get allTextSelectedAnnouncement => 'All text selected';
 
   @override
   String get copyButtonLabel => 'Αντιγραφή';
@@ -884,6 +1337,9 @@ class WidgetsLocalizationEl extends GlobalWidgetsLocalizations {
 
   @override
   String get lookUpButtonLabel => 'Look Up';
+
+  @override
+  String get newLineCharacterName => 'new line';
 
   @override
   String get noResultsFound => 'Δεν βρέθηκαν αποτελέσματα';
@@ -922,7 +1378,31 @@ class WidgetsLocalizationEl extends GlobalWidgetsLocalizations {
   String get selectAllButtonLabel => 'Επιλογή όλων';
 
   @override
+  String? get selectedCharacterCountAnnouncementOne => r'$count character selected';
+
+  @override
+  String get selectedCharacterCountAnnouncementOther => r'$count characters selected';
+
+  @override
+  String get selectedTextAnnouncementRaw => r'$text selected';
+
+  @override
+  String get selectionClearedAnnouncement => 'Selection cleared';
+
+  @override
+  String get selectionReplacedAnnouncementRaw => r'$unselected unselected, $selected selected';
+
+  @override
   String get shareButtonLabel => 'Κοινή χρήση';
+
+  @override
+  String get spaceCharacterName => 'space';
+
+  @override
+  String get tabCharacterName => 'tab';
+
+  @override
+  String get unselectedTextAnnouncementRaw => r'$text unselected';
 }
 
 /// The translations for English (`en`).
@@ -930,7 +1410,10 @@ class WidgetsLocalizationEn extends GlobalWidgetsLocalizations {
   /// Create an instance of the translation bundle for English.
   ///
   /// For details on the meaning of the arguments, see [GlobalWidgetsLocalizations].
-  const WidgetsLocalizationEn() : super(TextDirection.ltr);
+  const WidgetsLocalizationEn() : super(TextDirection.ltr, localeName: 'en');
+
+  @override
+  String get allTextSelectedAnnouncement => 'All text selected';
 
   @override
   String get copyButtonLabel => 'Copy';
@@ -940,6 +1423,9 @@ class WidgetsLocalizationEn extends GlobalWidgetsLocalizations {
 
   @override
   String get lookUpButtonLabel => 'Look Up';
+
+  @override
+  String get newLineCharacterName => 'new line';
 
   @override
   String get noResultsFound => 'No results found';
@@ -978,7 +1464,31 @@ class WidgetsLocalizationEn extends GlobalWidgetsLocalizations {
   String get selectAllButtonLabel => 'Select all';
 
   @override
+  String? get selectedCharacterCountAnnouncementOne => r'$count character selected';
+
+  @override
+  String get selectedCharacterCountAnnouncementOther => r'$count characters selected';
+
+  @override
+  String get selectedTextAnnouncementRaw => r'$text selected';
+
+  @override
+  String get selectionClearedAnnouncement => 'Selection cleared';
+
+  @override
+  String get selectionReplacedAnnouncementRaw => r'$unselected unselected, $selected selected';
+
+  @override
   String get shareButtonLabel => 'Share';
+
+  @override
+  String get spaceCharacterName => 'space';
+
+  @override
+  String get tabCharacterName => 'tab';
+
+  @override
+  String get unselectedTextAnnouncementRaw => r'$text unselected';
 }
 
 /// The translations for English, as used in Australia (`en_AU`).
@@ -1119,7 +1629,10 @@ class WidgetsLocalizationEs extends GlobalWidgetsLocalizations {
   /// Create an instance of the translation bundle for Spanish Castilian.
   ///
   /// For details on the meaning of the arguments, see [GlobalWidgetsLocalizations].
-  const WidgetsLocalizationEs() : super(TextDirection.ltr);
+  const WidgetsLocalizationEs() : super(TextDirection.ltr, localeName: 'es');
+
+  @override
+  String get allTextSelectedAnnouncement => 'All text selected';
 
   @override
   String get copyButtonLabel => 'Copiar';
@@ -1129,6 +1642,9 @@ class WidgetsLocalizationEs extends GlobalWidgetsLocalizations {
 
   @override
   String get lookUpButtonLabel => 'Buscador visual';
+
+  @override
+  String get newLineCharacterName => 'new line';
 
   @override
   String get noResultsFound => 'No se han encontrado resultados';
@@ -1167,7 +1683,31 @@ class WidgetsLocalizationEs extends GlobalWidgetsLocalizations {
   String get selectAllButtonLabel => 'Seleccionar todo';
 
   @override
+  String? get selectedCharacterCountAnnouncementOne => r'$count character selected';
+
+  @override
+  String get selectedCharacterCountAnnouncementOther => r'$count characters selected';
+
+  @override
+  String get selectedTextAnnouncementRaw => r'$text selected';
+
+  @override
+  String get selectionClearedAnnouncement => 'Selection cleared';
+
+  @override
+  String get selectionReplacedAnnouncementRaw => r'$unselected unselected, $selected selected';
+
+  @override
   String get shareButtonLabel => 'Compartir';
+
+  @override
+  String get spaceCharacterName => 'space';
+
+  @override
+  String get tabCharacterName => 'tab';
+
+  @override
+  String get unselectedTextAnnouncementRaw => r'$text unselected';
 }
 
 /// The translations for Spanish Castilian, as used in Latin America and the Caribbean (`es_419`).
@@ -1658,7 +2198,10 @@ class WidgetsLocalizationEt extends GlobalWidgetsLocalizations {
   /// Create an instance of the translation bundle for Estonian.
   ///
   /// For details on the meaning of the arguments, see [GlobalWidgetsLocalizations].
-  const WidgetsLocalizationEt() : super(TextDirection.ltr);
+  const WidgetsLocalizationEt() : super(TextDirection.ltr, localeName: 'et');
+
+  @override
+  String get allTextSelectedAnnouncement => 'All text selected';
 
   @override
   String get copyButtonLabel => 'Kopeeri';
@@ -1668,6 +2211,9 @@ class WidgetsLocalizationEt extends GlobalWidgetsLocalizations {
 
   @override
   String get lookUpButtonLabel => 'Look Up';
+
+  @override
+  String get newLineCharacterName => 'new line';
 
   @override
   String get noResultsFound => 'Tulemusi ei leitud';
@@ -1706,7 +2252,31 @@ class WidgetsLocalizationEt extends GlobalWidgetsLocalizations {
   String get selectAllButtonLabel => 'Vali kõik';
 
   @override
+  String? get selectedCharacterCountAnnouncementOne => r'$count character selected';
+
+  @override
+  String get selectedCharacterCountAnnouncementOther => r'$count characters selected';
+
+  @override
+  String get selectedTextAnnouncementRaw => r'$text selected';
+
+  @override
+  String get selectionClearedAnnouncement => 'Selection cleared';
+
+  @override
+  String get selectionReplacedAnnouncementRaw => r'$unselected unselected, $selected selected';
+
+  @override
   String get shareButtonLabel => 'Jagamine';
+
+  @override
+  String get spaceCharacterName => 'space';
+
+  @override
+  String get tabCharacterName => 'tab';
+
+  @override
+  String get unselectedTextAnnouncementRaw => r'$text unselected';
 }
 
 /// The translations for Basque (`eu`).
@@ -1714,7 +2284,10 @@ class WidgetsLocalizationEu extends GlobalWidgetsLocalizations {
   /// Create an instance of the translation bundle for Basque.
   ///
   /// For details on the meaning of the arguments, see [GlobalWidgetsLocalizations].
-  const WidgetsLocalizationEu() : super(TextDirection.ltr);
+  const WidgetsLocalizationEu() : super(TextDirection.ltr, localeName: 'eu');
+
+  @override
+  String get allTextSelectedAnnouncement => 'All text selected';
 
   @override
   String get copyButtonLabel => 'Kopiatu';
@@ -1724,6 +2297,9 @@ class WidgetsLocalizationEu extends GlobalWidgetsLocalizations {
 
   @override
   String get lookUpButtonLabel => 'Bilatu';
+
+  @override
+  String get newLineCharacterName => 'new line';
 
   @override
   String get noResultsFound => 'Ez da aurkitu emaitzarik';
@@ -1762,7 +2338,31 @@ class WidgetsLocalizationEu extends GlobalWidgetsLocalizations {
   String get selectAllButtonLabel => 'Hautatu guztiak';
 
   @override
+  String? get selectedCharacterCountAnnouncementOne => r'$count character selected';
+
+  @override
+  String get selectedCharacterCountAnnouncementOther => r'$count characters selected';
+
+  @override
+  String get selectedTextAnnouncementRaw => r'$text selected';
+
+  @override
+  String get selectionClearedAnnouncement => 'Selection cleared';
+
+  @override
+  String get selectionReplacedAnnouncementRaw => r'$unselected unselected, $selected selected';
+
+  @override
   String get shareButtonLabel => 'Partekatu';
+
+  @override
+  String get spaceCharacterName => 'space';
+
+  @override
+  String get tabCharacterName => 'tab';
+
+  @override
+  String get unselectedTextAnnouncementRaw => r'$text unselected';
 }
 
 /// The translations for Persian (`fa`).
@@ -1770,7 +2370,10 @@ class WidgetsLocalizationFa extends GlobalWidgetsLocalizations {
   /// Create an instance of the translation bundle for Persian.
   ///
   /// For details on the meaning of the arguments, see [GlobalWidgetsLocalizations].
-  const WidgetsLocalizationFa() : super(TextDirection.rtl);
+  const WidgetsLocalizationFa() : super(TextDirection.rtl, localeName: 'fa');
+
+  @override
+  String get allTextSelectedAnnouncement => 'All text selected';
 
   @override
   String get copyButtonLabel => 'کپی کردن';
@@ -1780,6 +2383,9 @@ class WidgetsLocalizationFa extends GlobalWidgetsLocalizations {
 
   @override
   String get lookUpButtonLabel => 'جستجو';
+
+  @override
+  String get newLineCharacterName => 'new line';
 
   @override
   String get noResultsFound => 'نتیجه‌ای پیدا نشد';
@@ -1818,7 +2424,31 @@ class WidgetsLocalizationFa extends GlobalWidgetsLocalizations {
   String get selectAllButtonLabel => 'انتخاب همه';
 
   @override
+  String? get selectedCharacterCountAnnouncementOne => r'$count character selected';
+
+  @override
+  String get selectedCharacterCountAnnouncementOther => r'$count characters selected';
+
+  @override
+  String get selectedTextAnnouncementRaw => r'$text selected';
+
+  @override
+  String get selectionClearedAnnouncement => 'Selection cleared';
+
+  @override
+  String get selectionReplacedAnnouncementRaw => r'$unselected unselected, $selected selected';
+
+  @override
   String get shareButtonLabel => 'هم‌رسانی کردن';
+
+  @override
+  String get spaceCharacterName => 'space';
+
+  @override
+  String get tabCharacterName => 'tab';
+
+  @override
+  String get unselectedTextAnnouncementRaw => r'$text unselected';
 }
 
 /// The translations for Finnish (`fi`).
@@ -1826,7 +2456,10 @@ class WidgetsLocalizationFi extends GlobalWidgetsLocalizations {
   /// Create an instance of the translation bundle for Finnish.
   ///
   /// For details on the meaning of the arguments, see [GlobalWidgetsLocalizations].
-  const WidgetsLocalizationFi() : super(TextDirection.ltr);
+  const WidgetsLocalizationFi() : super(TextDirection.ltr, localeName: 'fi');
+
+  @override
+  String get allTextSelectedAnnouncement => 'All text selected';
 
   @override
   String get copyButtonLabel => 'Kopioi';
@@ -1836,6 +2469,9 @@ class WidgetsLocalizationFi extends GlobalWidgetsLocalizations {
 
   @override
   String get lookUpButtonLabel => 'Hae';
+
+  @override
+  String get newLineCharacterName => 'new line';
 
   @override
   String get noResultsFound => 'Ei tuloksia';
@@ -1874,7 +2510,31 @@ class WidgetsLocalizationFi extends GlobalWidgetsLocalizations {
   String get selectAllButtonLabel => 'Valitse kaikki';
 
   @override
+  String? get selectedCharacterCountAnnouncementOne => r'$count character selected';
+
+  @override
+  String get selectedCharacterCountAnnouncementOther => r'$count characters selected';
+
+  @override
+  String get selectedTextAnnouncementRaw => r'$text selected';
+
+  @override
+  String get selectionClearedAnnouncement => 'Selection cleared';
+
+  @override
+  String get selectionReplacedAnnouncementRaw => r'$unselected unselected, $selected selected';
+
+  @override
   String get shareButtonLabel => 'Jaa';
+
+  @override
+  String get spaceCharacterName => 'space';
+
+  @override
+  String get tabCharacterName => 'tab';
+
+  @override
+  String get unselectedTextAnnouncementRaw => r'$text unselected';
 }
 
 /// The translations for Filipino Pilipino (`fil`).
@@ -1882,7 +2542,10 @@ class WidgetsLocalizationFil extends GlobalWidgetsLocalizations {
   /// Create an instance of the translation bundle for Filipino Pilipino.
   ///
   /// For details on the meaning of the arguments, see [GlobalWidgetsLocalizations].
-  const WidgetsLocalizationFil() : super(TextDirection.ltr);
+  const WidgetsLocalizationFil() : super(TextDirection.ltr, localeName: 'fil');
+
+  @override
+  String get allTextSelectedAnnouncement => 'All text selected';
 
   @override
   String get copyButtonLabel => 'Kopyahin';
@@ -1892,6 +2555,9 @@ class WidgetsLocalizationFil extends GlobalWidgetsLocalizations {
 
   @override
   String get lookUpButtonLabel => 'Tumingin sa Itaas';
+
+  @override
+  String get newLineCharacterName => 'new line';
 
   @override
   String get noResultsFound => 'Walang nakitang resulta';
@@ -1930,7 +2596,31 @@ class WidgetsLocalizationFil extends GlobalWidgetsLocalizations {
   String get selectAllButtonLabel => 'Piliin lahat';
 
   @override
+  String? get selectedCharacterCountAnnouncementOne => r'$count character selected';
+
+  @override
+  String get selectedCharacterCountAnnouncementOther => r'$count characters selected';
+
+  @override
+  String get selectedTextAnnouncementRaw => r'$text selected';
+
+  @override
+  String get selectionClearedAnnouncement => 'Selection cleared';
+
+  @override
+  String get selectionReplacedAnnouncementRaw => r'$unselected unselected, $selected selected';
+
+  @override
   String get shareButtonLabel => 'I-share';
+
+  @override
+  String get spaceCharacterName => 'space';
+
+  @override
+  String get tabCharacterName => 'tab';
+
+  @override
+  String get unselectedTextAnnouncementRaw => r'$text unselected';
 }
 
 /// The translations for French (`fr`).
@@ -1938,7 +2628,10 @@ class WidgetsLocalizationFr extends GlobalWidgetsLocalizations {
   /// Create an instance of the translation bundle for French.
   ///
   /// For details on the meaning of the arguments, see [GlobalWidgetsLocalizations].
-  const WidgetsLocalizationFr() : super(TextDirection.ltr);
+  const WidgetsLocalizationFr() : super(TextDirection.ltr, localeName: 'fr');
+
+  @override
+  String get allTextSelectedAnnouncement => 'All text selected';
 
   @override
   String get copyButtonLabel => 'Copier';
@@ -1948,6 +2641,9 @@ class WidgetsLocalizationFr extends GlobalWidgetsLocalizations {
 
   @override
   String get lookUpButtonLabel => 'Recherche visuelle';
+
+  @override
+  String get newLineCharacterName => 'new line';
 
   @override
   String get noResultsFound => 'Aucun résultat';
@@ -1986,7 +2682,31 @@ class WidgetsLocalizationFr extends GlobalWidgetsLocalizations {
   String get selectAllButtonLabel => 'Tout sélectionner';
 
   @override
+  String? get selectedCharacterCountAnnouncementOne => r'$count character selected';
+
+  @override
+  String get selectedCharacterCountAnnouncementOther => r'$count characters selected';
+
+  @override
+  String get selectedTextAnnouncementRaw => r'$text selected';
+
+  @override
+  String get selectionClearedAnnouncement => 'Selection cleared';
+
+  @override
+  String get selectionReplacedAnnouncementRaw => r'$unselected unselected, $selected selected';
+
+  @override
   String get shareButtonLabel => 'Partager';
+
+  @override
+  String get spaceCharacterName => 'space';
+
+  @override
+  String get tabCharacterName => 'tab';
+
+  @override
+  String get unselectedTextAnnouncementRaw => r'$text unselected';
 }
 
 /// The translations for French, as used in Canada (`fr_CA`).
@@ -2014,7 +2734,10 @@ class WidgetsLocalizationGa extends GlobalWidgetsLocalizations {
   /// Create an instance of the translation bundle for Irish.
   ///
   /// For details on the meaning of the arguments, see [GlobalWidgetsLocalizations].
-  const WidgetsLocalizationGa() : super(TextDirection.ltr);
+  const WidgetsLocalizationGa() : super(TextDirection.ltr, localeName: 'ga');
+
+  @override
+  String get allTextSelectedAnnouncement => 'All text selected';
 
   @override
   String get copyButtonLabel => 'Cóipeáil';
@@ -2024,6 +2747,9 @@ class WidgetsLocalizationGa extends GlobalWidgetsLocalizations {
 
   @override
   String get lookUpButtonLabel => 'Cuardaigh';
+
+  @override
+  String get newLineCharacterName => 'new line';
 
   @override
   String get noResultsFound => 'Níor aimsíodh aon toradh';
@@ -2062,7 +2788,31 @@ class WidgetsLocalizationGa extends GlobalWidgetsLocalizations {
   String get selectAllButtonLabel => 'Roghnaigh gach rud';
 
   @override
+  String? get selectedCharacterCountAnnouncementOne => r'$count character selected';
+
+  @override
+  String get selectedCharacterCountAnnouncementOther => r'$count characters selected';
+
+  @override
+  String get selectedTextAnnouncementRaw => r'$text selected';
+
+  @override
+  String get selectionClearedAnnouncement => 'Selection cleared';
+
+  @override
+  String get selectionReplacedAnnouncementRaw => r'$unselected unselected, $selected selected';
+
+  @override
   String get shareButtonLabel => 'Comhroinn';
+
+  @override
+  String get spaceCharacterName => 'space';
+
+  @override
+  String get tabCharacterName => 'tab';
+
+  @override
+  String get unselectedTextAnnouncementRaw => r'$text unselected';
 }
 
 /// The translations for Galician (`gl`).
@@ -2070,7 +2820,10 @@ class WidgetsLocalizationGl extends GlobalWidgetsLocalizations {
   /// Create an instance of the translation bundle for Galician.
   ///
   /// For details on the meaning of the arguments, see [GlobalWidgetsLocalizations].
-  const WidgetsLocalizationGl() : super(TextDirection.ltr);
+  const WidgetsLocalizationGl() : super(TextDirection.ltr, localeName: 'gl');
+
+  @override
+  String get allTextSelectedAnnouncement => 'All text selected';
 
   @override
   String get copyButtonLabel => 'Copiar';
@@ -2080,6 +2833,9 @@ class WidgetsLocalizationGl extends GlobalWidgetsLocalizations {
 
   @override
   String get lookUpButtonLabel => 'Mirar cara arriba';
+
+  @override
+  String get newLineCharacterName => 'new line';
 
   @override
   String get noResultsFound => 'Ningún resultado atopado';
@@ -2118,7 +2874,31 @@ class WidgetsLocalizationGl extends GlobalWidgetsLocalizations {
   String get selectAllButtonLabel => 'Seleccionar todo';
 
   @override
+  String? get selectedCharacterCountAnnouncementOne => r'$count character selected';
+
+  @override
+  String get selectedCharacterCountAnnouncementOther => r'$count characters selected';
+
+  @override
+  String get selectedTextAnnouncementRaw => r'$text selected';
+
+  @override
+  String get selectionClearedAnnouncement => 'Selection cleared';
+
+  @override
+  String get selectionReplacedAnnouncementRaw => r'$unselected unselected, $selected selected';
+
+  @override
   String get shareButtonLabel => 'Compartir';
+
+  @override
+  String get spaceCharacterName => 'space';
+
+  @override
+  String get tabCharacterName => 'tab';
+
+  @override
+  String get unselectedTextAnnouncementRaw => r'$text unselected';
 }
 
 /// The translations for Swiss German Alemannic Alsatian (`gsw`).
@@ -2126,7 +2906,10 @@ class WidgetsLocalizationGsw extends GlobalWidgetsLocalizations {
   /// Create an instance of the translation bundle for Swiss German Alemannic Alsatian.
   ///
   /// For details on the meaning of the arguments, see [GlobalWidgetsLocalizations].
-  const WidgetsLocalizationGsw() : super(TextDirection.ltr);
+  const WidgetsLocalizationGsw() : super(TextDirection.ltr, localeName: 'gsw');
+
+  @override
+  String get allTextSelectedAnnouncement => 'All text selected';
 
   @override
   String get copyButtonLabel => 'Kopieren';
@@ -2136,6 +2919,9 @@ class WidgetsLocalizationGsw extends GlobalWidgetsLocalizations {
 
   @override
   String get lookUpButtonLabel => 'Nachschlagen';
+
+  @override
+  String get newLineCharacterName => 'new line';
 
   @override
   String get noResultsFound => 'Keine Ergebnisse gefunden';
@@ -2174,7 +2960,31 @@ class WidgetsLocalizationGsw extends GlobalWidgetsLocalizations {
   String get selectAllButtonLabel => 'Alle auswählen';
 
   @override
+  String? get selectedCharacterCountAnnouncementOne => r'$count character selected';
+
+  @override
+  String get selectedCharacterCountAnnouncementOther => r'$count characters selected';
+
+  @override
+  String get selectedTextAnnouncementRaw => r'$text selected';
+
+  @override
+  String get selectionClearedAnnouncement => 'Selection cleared';
+
+  @override
+  String get selectionReplacedAnnouncementRaw => r'$unselected unselected, $selected selected';
+
+  @override
   String get shareButtonLabel => 'Teilen';
+
+  @override
+  String get spaceCharacterName => 'space';
+
+  @override
+  String get tabCharacterName => 'tab';
+
+  @override
+  String get unselectedTextAnnouncementRaw => r'$text unselected';
 }
 
 /// The translations for Gujarati (`gu`).
@@ -2182,7 +2992,10 @@ class WidgetsLocalizationGu extends GlobalWidgetsLocalizations {
   /// Create an instance of the translation bundle for Gujarati.
   ///
   /// For details on the meaning of the arguments, see [GlobalWidgetsLocalizations].
-  const WidgetsLocalizationGu() : super(TextDirection.ltr);
+  const WidgetsLocalizationGu() : super(TextDirection.ltr, localeName: 'gu');
+
+  @override
+  String get allTextSelectedAnnouncement => 'All text selected';
 
   @override
   String get copyButtonLabel => 'કૉપિ કરો';
@@ -2192,6 +3005,9 @@ class WidgetsLocalizationGu extends GlobalWidgetsLocalizations {
 
   @override
   String get lookUpButtonLabel => 'શોધો';
+
+  @override
+  String get newLineCharacterName => 'new line';
 
   @override
   String get noResultsFound => 'કોઈ પરિણામ મળ્યું નથી';
@@ -2230,7 +3046,31 @@ class WidgetsLocalizationGu extends GlobalWidgetsLocalizations {
   String get selectAllButtonLabel => 'બધા પસંદ કરો';
 
   @override
+  String? get selectedCharacterCountAnnouncementOne => r'$count character selected';
+
+  @override
+  String get selectedCharacterCountAnnouncementOther => r'$count characters selected';
+
+  @override
+  String get selectedTextAnnouncementRaw => r'$text selected';
+
+  @override
+  String get selectionClearedAnnouncement => 'Selection cleared';
+
+  @override
+  String get selectionReplacedAnnouncementRaw => r'$unselected unselected, $selected selected';
+
+  @override
   String get shareButtonLabel => 'શેર કરો';
+
+  @override
+  String get spaceCharacterName => 'space';
+
+  @override
+  String get tabCharacterName => 'tab';
+
+  @override
+  String get unselectedTextAnnouncementRaw => r'$text unselected';
 }
 
 /// The translations for Hebrew (`he`).
@@ -2238,7 +3078,10 @@ class WidgetsLocalizationHe extends GlobalWidgetsLocalizations {
   /// Create an instance of the translation bundle for Hebrew.
   ///
   /// For details on the meaning of the arguments, see [GlobalWidgetsLocalizations].
-  const WidgetsLocalizationHe() : super(TextDirection.rtl);
+  const WidgetsLocalizationHe() : super(TextDirection.rtl, localeName: 'he');
+
+  @override
+  String get allTextSelectedAnnouncement => 'All text selected';
 
   @override
   String get copyButtonLabel => 'העתקה';
@@ -2248,6 +3091,9 @@ class WidgetsLocalizationHe extends GlobalWidgetsLocalizations {
 
   @override
   String get lookUpButtonLabel => 'חיפוש';
+
+  @override
+  String get newLineCharacterName => 'new line';
 
   @override
   String get noResultsFound => 'לא נמצאו תוצאות';
@@ -2286,7 +3132,31 @@ class WidgetsLocalizationHe extends GlobalWidgetsLocalizations {
   String get selectAllButtonLabel => 'בחירת הכול';
 
   @override
+  String? get selectedCharacterCountAnnouncementOne => r'$count character selected';
+
+  @override
+  String get selectedCharacterCountAnnouncementOther => r'$count characters selected';
+
+  @override
+  String get selectedTextAnnouncementRaw => r'$text selected';
+
+  @override
+  String get selectionClearedAnnouncement => 'Selection cleared';
+
+  @override
+  String get selectionReplacedAnnouncementRaw => r'$unselected unselected, $selected selected';
+
+  @override
   String get shareButtonLabel => 'שיתוף';
+
+  @override
+  String get spaceCharacterName => 'space';
+
+  @override
+  String get tabCharacterName => 'tab';
+
+  @override
+  String get unselectedTextAnnouncementRaw => r'$text unselected';
 }
 
 /// The translations for Hindi (`hi`).
@@ -2294,7 +3164,10 @@ class WidgetsLocalizationHi extends GlobalWidgetsLocalizations {
   /// Create an instance of the translation bundle for Hindi.
   ///
   /// For details on the meaning of the arguments, see [GlobalWidgetsLocalizations].
-  const WidgetsLocalizationHi() : super(TextDirection.ltr);
+  const WidgetsLocalizationHi() : super(TextDirection.ltr, localeName: 'hi');
+
+  @override
+  String get allTextSelectedAnnouncement => 'All text selected';
 
   @override
   String get copyButtonLabel => 'कॉपी करें';
@@ -2304,6 +3177,9 @@ class WidgetsLocalizationHi extends GlobalWidgetsLocalizations {
 
   @override
   String get lookUpButtonLabel => 'लुक अप बटन';
+
+  @override
+  String get newLineCharacterName => 'new line';
 
   @override
   String get noResultsFound => 'कोई नतीजा नहीं मिला';
@@ -2342,7 +3218,31 @@ class WidgetsLocalizationHi extends GlobalWidgetsLocalizations {
   String get selectAllButtonLabel => 'सभी को चुनें';
 
   @override
+  String? get selectedCharacterCountAnnouncementOne => r'$count character selected';
+
+  @override
+  String get selectedCharacterCountAnnouncementOther => r'$count characters selected';
+
+  @override
+  String get selectedTextAnnouncementRaw => r'$text selected';
+
+  @override
+  String get selectionClearedAnnouncement => 'Selection cleared';
+
+  @override
+  String get selectionReplacedAnnouncementRaw => r'$unselected unselected, $selected selected';
+
+  @override
   String get shareButtonLabel => 'शेयर करें';
+
+  @override
+  String get spaceCharacterName => 'space';
+
+  @override
+  String get tabCharacterName => 'tab';
+
+  @override
+  String get unselectedTextAnnouncementRaw => r'$text unselected';
 }
 
 /// The translations for Croatian (`hr`).
@@ -2350,7 +3250,10 @@ class WidgetsLocalizationHr extends GlobalWidgetsLocalizations {
   /// Create an instance of the translation bundle for Croatian.
   ///
   /// For details on the meaning of the arguments, see [GlobalWidgetsLocalizations].
-  const WidgetsLocalizationHr() : super(TextDirection.ltr);
+  const WidgetsLocalizationHr() : super(TextDirection.ltr, localeName: 'hr');
+
+  @override
+  String get allTextSelectedAnnouncement => 'All text selected';
 
   @override
   String get copyButtonLabel => 'Kopiraj';
@@ -2360,6 +3263,9 @@ class WidgetsLocalizationHr extends GlobalWidgetsLocalizations {
 
   @override
   String get lookUpButtonLabel => 'Pogled prema gore';
+
+  @override
+  String get newLineCharacterName => 'new line';
 
   @override
   String get noResultsFound => 'Nema rezultata';
@@ -2398,7 +3304,31 @@ class WidgetsLocalizationHr extends GlobalWidgetsLocalizations {
   String get selectAllButtonLabel => 'Odaberi sve';
 
   @override
+  String? get selectedCharacterCountAnnouncementOne => r'$count character selected';
+
+  @override
+  String get selectedCharacterCountAnnouncementOther => r'$count characters selected';
+
+  @override
+  String get selectedTextAnnouncementRaw => r'$text selected';
+
+  @override
+  String get selectionClearedAnnouncement => 'Selection cleared';
+
+  @override
+  String get selectionReplacedAnnouncementRaw => r'$unselected unselected, $selected selected';
+
+  @override
   String get shareButtonLabel => 'Dijeli';
+
+  @override
+  String get spaceCharacterName => 'space';
+
+  @override
+  String get tabCharacterName => 'tab';
+
+  @override
+  String get unselectedTextAnnouncementRaw => r'$text unselected';
 }
 
 /// The translations for Hungarian (`hu`).
@@ -2406,7 +3336,10 @@ class WidgetsLocalizationHu extends GlobalWidgetsLocalizations {
   /// Create an instance of the translation bundle for Hungarian.
   ///
   /// For details on the meaning of the arguments, see [GlobalWidgetsLocalizations].
-  const WidgetsLocalizationHu() : super(TextDirection.ltr);
+  const WidgetsLocalizationHu() : super(TextDirection.ltr, localeName: 'hu');
+
+  @override
+  String get allTextSelectedAnnouncement => 'All text selected';
 
   @override
   String get copyButtonLabel => 'Másolás';
@@ -2416,6 +3349,9 @@ class WidgetsLocalizationHu extends GlobalWidgetsLocalizations {
 
   @override
   String get lookUpButtonLabel => 'Felfelé nézés';
+
+  @override
+  String get newLineCharacterName => 'new line';
 
   @override
   String get noResultsFound => 'Nincs találat';
@@ -2454,7 +3390,31 @@ class WidgetsLocalizationHu extends GlobalWidgetsLocalizations {
   String get selectAllButtonLabel => 'Összes kijelölése';
 
   @override
+  String? get selectedCharacterCountAnnouncementOne => r'$count character selected';
+
+  @override
+  String get selectedCharacterCountAnnouncementOther => r'$count characters selected';
+
+  @override
+  String get selectedTextAnnouncementRaw => r'$text selected';
+
+  @override
+  String get selectionClearedAnnouncement => 'Selection cleared';
+
+  @override
+  String get selectionReplacedAnnouncementRaw => r'$unselected unselected, $selected selected';
+
+  @override
   String get shareButtonLabel => 'Megosztás';
+
+  @override
+  String get spaceCharacterName => 'space';
+
+  @override
+  String get tabCharacterName => 'tab';
+
+  @override
+  String get unselectedTextAnnouncementRaw => r'$text unselected';
 }
 
 /// The translations for Armenian (`hy`).
@@ -2462,7 +3422,10 @@ class WidgetsLocalizationHy extends GlobalWidgetsLocalizations {
   /// Create an instance of the translation bundle for Armenian.
   ///
   /// For details on the meaning of the arguments, see [GlobalWidgetsLocalizations].
-  const WidgetsLocalizationHy() : super(TextDirection.ltr);
+  const WidgetsLocalizationHy() : super(TextDirection.ltr, localeName: 'hy');
+
+  @override
+  String get allTextSelectedAnnouncement => 'All text selected';
 
   @override
   String get copyButtonLabel => 'Պատճենել';
@@ -2472,6 +3435,9 @@ class WidgetsLocalizationHy extends GlobalWidgetsLocalizations {
 
   @override
   String get lookUpButtonLabel => 'Փնտրել';
+
+  @override
+  String get newLineCharacterName => 'new line';
 
   @override
   String get noResultsFound => 'Ոչինչ չի գտնվել';
@@ -2510,7 +3476,31 @@ class WidgetsLocalizationHy extends GlobalWidgetsLocalizations {
   String get selectAllButtonLabel => 'Նշել բոլորը';
 
   @override
+  String? get selectedCharacterCountAnnouncementOne => r'$count character selected';
+
+  @override
+  String get selectedCharacterCountAnnouncementOther => r'$count characters selected';
+
+  @override
+  String get selectedTextAnnouncementRaw => r'$text selected';
+
+  @override
+  String get selectionClearedAnnouncement => 'Selection cleared';
+
+  @override
+  String get selectionReplacedAnnouncementRaw => r'$unselected unselected, $selected selected';
+
+  @override
   String get shareButtonLabel => 'Կիսվել';
+
+  @override
+  String get spaceCharacterName => 'space';
+
+  @override
+  String get tabCharacterName => 'tab';
+
+  @override
+  String get unselectedTextAnnouncementRaw => r'$text unselected';
 }
 
 /// The translations for Indonesian (`id`).
@@ -2518,7 +3508,10 @@ class WidgetsLocalizationId extends GlobalWidgetsLocalizations {
   /// Create an instance of the translation bundle for Indonesian.
   ///
   /// For details on the meaning of the arguments, see [GlobalWidgetsLocalizations].
-  const WidgetsLocalizationId() : super(TextDirection.ltr);
+  const WidgetsLocalizationId() : super(TextDirection.ltr, localeName: 'id');
+
+  @override
+  String get allTextSelectedAnnouncement => 'All text selected';
 
   @override
   String get copyButtonLabel => 'Salin';
@@ -2528,6 +3521,9 @@ class WidgetsLocalizationId extends GlobalWidgetsLocalizations {
 
   @override
   String get lookUpButtonLabel => 'Cari';
+
+  @override
+  String get newLineCharacterName => 'new line';
 
   @override
   String get noResultsFound => 'Tidak ditemukan hasil';
@@ -2566,7 +3562,31 @@ class WidgetsLocalizationId extends GlobalWidgetsLocalizations {
   String get selectAllButtonLabel => 'Pilih semua';
 
   @override
+  String? get selectedCharacterCountAnnouncementOne => r'$count character selected';
+
+  @override
+  String get selectedCharacterCountAnnouncementOther => r'$count characters selected';
+
+  @override
+  String get selectedTextAnnouncementRaw => r'$text selected';
+
+  @override
+  String get selectionClearedAnnouncement => 'Selection cleared';
+
+  @override
+  String get selectionReplacedAnnouncementRaw => r'$unselected unselected, $selected selected';
+
+  @override
   String get shareButtonLabel => 'Bagikan';
+
+  @override
+  String get spaceCharacterName => 'space';
+
+  @override
+  String get tabCharacterName => 'tab';
+
+  @override
+  String get unselectedTextAnnouncementRaw => r'$text unselected';
 }
 
 /// The translations for Icelandic (`is`).
@@ -2574,7 +3594,10 @@ class WidgetsLocalizationIs extends GlobalWidgetsLocalizations {
   /// Create an instance of the translation bundle for Icelandic.
   ///
   /// For details on the meaning of the arguments, see [GlobalWidgetsLocalizations].
-  const WidgetsLocalizationIs() : super(TextDirection.ltr);
+  const WidgetsLocalizationIs() : super(TextDirection.ltr, localeName: 'is');
+
+  @override
+  String get allTextSelectedAnnouncement => 'All text selected';
 
   @override
   String get copyButtonLabel => 'Afrita';
@@ -2584,6 +3607,9 @@ class WidgetsLocalizationIs extends GlobalWidgetsLocalizations {
 
   @override
   String get lookUpButtonLabel => 'Look Up';
+
+  @override
+  String get newLineCharacterName => 'new line';
 
   @override
   String get noResultsFound => 'Engar niðurstöður fundust';
@@ -2622,7 +3648,31 @@ class WidgetsLocalizationIs extends GlobalWidgetsLocalizations {
   String get selectAllButtonLabel => 'Velja allt';
 
   @override
+  String? get selectedCharacterCountAnnouncementOne => r'$count character selected';
+
+  @override
+  String get selectedCharacterCountAnnouncementOther => r'$count characters selected';
+
+  @override
+  String get selectedTextAnnouncementRaw => r'$text selected';
+
+  @override
+  String get selectionClearedAnnouncement => 'Selection cleared';
+
+  @override
+  String get selectionReplacedAnnouncementRaw => r'$unselected unselected, $selected selected';
+
+  @override
   String get shareButtonLabel => 'Deila';
+
+  @override
+  String get spaceCharacterName => 'space';
+
+  @override
+  String get tabCharacterName => 'tab';
+
+  @override
+  String get unselectedTextAnnouncementRaw => r'$text unselected';
 }
 
 /// The translations for Italian (`it`).
@@ -2630,7 +3680,10 @@ class WidgetsLocalizationIt extends GlobalWidgetsLocalizations {
   /// Create an instance of the translation bundle for Italian.
   ///
   /// For details on the meaning of the arguments, see [GlobalWidgetsLocalizations].
-  const WidgetsLocalizationIt() : super(TextDirection.ltr);
+  const WidgetsLocalizationIt() : super(TextDirection.ltr, localeName: 'it');
+
+  @override
+  String get allTextSelectedAnnouncement => 'All text selected';
 
   @override
   String get copyButtonLabel => 'Copia';
@@ -2640,6 +3693,9 @@ class WidgetsLocalizationIt extends GlobalWidgetsLocalizations {
 
   @override
   String get lookUpButtonLabel => 'Cerca';
+
+  @override
+  String get newLineCharacterName => 'new line';
 
   @override
   String get noResultsFound => 'Nessun risultato trovato';
@@ -2678,7 +3734,31 @@ class WidgetsLocalizationIt extends GlobalWidgetsLocalizations {
   String get selectAllButtonLabel => 'Seleziona tutto';
 
   @override
+  String? get selectedCharacterCountAnnouncementOne => r'$count character selected';
+
+  @override
+  String get selectedCharacterCountAnnouncementOther => r'$count characters selected';
+
+  @override
+  String get selectedTextAnnouncementRaw => r'$text selected';
+
+  @override
+  String get selectionClearedAnnouncement => 'Selection cleared';
+
+  @override
+  String get selectionReplacedAnnouncementRaw => r'$unselected unselected, $selected selected';
+
+  @override
   String get shareButtonLabel => 'Condividi';
+
+  @override
+  String get spaceCharacterName => 'space';
+
+  @override
+  String get tabCharacterName => 'tab';
+
+  @override
+  String get unselectedTextAnnouncementRaw => r'$text unselected';
 }
 
 /// The translations for Japanese (`ja`).
@@ -2686,7 +3766,10 @@ class WidgetsLocalizationJa extends GlobalWidgetsLocalizations {
   /// Create an instance of the translation bundle for Japanese.
   ///
   /// For details on the meaning of the arguments, see [GlobalWidgetsLocalizations].
-  const WidgetsLocalizationJa() : super(TextDirection.ltr);
+  const WidgetsLocalizationJa() : super(TextDirection.ltr, localeName: 'ja');
+
+  @override
+  String get allTextSelectedAnnouncement => 'All text selected';
 
   @override
   String get copyButtonLabel => 'コピー';
@@ -2696,6 +3779,9 @@ class WidgetsLocalizationJa extends GlobalWidgetsLocalizations {
 
   @override
   String get lookUpButtonLabel => '調べる';
+
+  @override
+  String get newLineCharacterName => 'new line';
 
   @override
   String get noResultsFound => '一致する検索結果はありません';
@@ -2734,7 +3820,31 @@ class WidgetsLocalizationJa extends GlobalWidgetsLocalizations {
   String get selectAllButtonLabel => 'すべてを選択';
 
   @override
+  String? get selectedCharacterCountAnnouncementOne => r'$count character selected';
+
+  @override
+  String get selectedCharacterCountAnnouncementOther => r'$count characters selected';
+
+  @override
+  String get selectedTextAnnouncementRaw => r'$text selected';
+
+  @override
+  String get selectionClearedAnnouncement => 'Selection cleared';
+
+  @override
+  String get selectionReplacedAnnouncementRaw => r'$unselected unselected, $selected selected';
+
+  @override
   String get shareButtonLabel => '共有';
+
+  @override
+  String get spaceCharacterName => 'space';
+
+  @override
+  String get tabCharacterName => 'tab';
+
+  @override
+  String get unselectedTextAnnouncementRaw => r'$text unselected';
 }
 
 /// The translations for Georgian (`ka`).
@@ -2742,7 +3852,10 @@ class WidgetsLocalizationKa extends GlobalWidgetsLocalizations {
   /// Create an instance of the translation bundle for Georgian.
   ///
   /// For details on the meaning of the arguments, see [GlobalWidgetsLocalizations].
-  const WidgetsLocalizationKa() : super(TextDirection.ltr);
+  const WidgetsLocalizationKa() : super(TextDirection.ltr, localeName: 'ka');
+
+  @override
+  String get allTextSelectedAnnouncement => 'All text selected';
 
   @override
   String get copyButtonLabel => 'კოპირება';
@@ -2752,6 +3865,9 @@ class WidgetsLocalizationKa extends GlobalWidgetsLocalizations {
 
   @override
   String get lookUpButtonLabel => 'აიხედეთ ზემოთ';
+
+  @override
+  String get newLineCharacterName => 'new line';
 
   @override
   String get noResultsFound => 'შედეგები ვერ მოიძებნა';
@@ -2790,7 +3906,31 @@ class WidgetsLocalizationKa extends GlobalWidgetsLocalizations {
   String get selectAllButtonLabel => 'ყველას არჩევა';
 
   @override
+  String? get selectedCharacterCountAnnouncementOne => r'$count character selected';
+
+  @override
+  String get selectedCharacterCountAnnouncementOther => r'$count characters selected';
+
+  @override
+  String get selectedTextAnnouncementRaw => r'$text selected';
+
+  @override
+  String get selectionClearedAnnouncement => 'Selection cleared';
+
+  @override
+  String get selectionReplacedAnnouncementRaw => r'$unselected unselected, $selected selected';
+
+  @override
   String get shareButtonLabel => 'გაზიარება';
+
+  @override
+  String get spaceCharacterName => 'space';
+
+  @override
+  String get tabCharacterName => 'tab';
+
+  @override
+  String get unselectedTextAnnouncementRaw => r'$text unselected';
 }
 
 /// The translations for Kazakh (`kk`).
@@ -2798,7 +3938,10 @@ class WidgetsLocalizationKk extends GlobalWidgetsLocalizations {
   /// Create an instance of the translation bundle for Kazakh.
   ///
   /// For details on the meaning of the arguments, see [GlobalWidgetsLocalizations].
-  const WidgetsLocalizationKk() : super(TextDirection.ltr);
+  const WidgetsLocalizationKk() : super(TextDirection.ltr, localeName: 'kk');
+
+  @override
+  String get allTextSelectedAnnouncement => 'All text selected';
 
   @override
   String get copyButtonLabel => 'Көшіру';
@@ -2808,6 +3951,9 @@ class WidgetsLocalizationKk extends GlobalWidgetsLocalizations {
 
   @override
   String get lookUpButtonLabel => 'Іздеу';
+
+  @override
+  String get newLineCharacterName => 'new line';
 
   @override
   String get noResultsFound => 'Ешбір нәтиже табылмады';
@@ -2846,7 +3992,31 @@ class WidgetsLocalizationKk extends GlobalWidgetsLocalizations {
   String get selectAllButtonLabel => 'Барлығын таңдау';
 
   @override
+  String? get selectedCharacterCountAnnouncementOne => r'$count character selected';
+
+  @override
+  String get selectedCharacterCountAnnouncementOther => r'$count characters selected';
+
+  @override
+  String get selectedTextAnnouncementRaw => r'$text selected';
+
+  @override
+  String get selectionClearedAnnouncement => 'Selection cleared';
+
+  @override
+  String get selectionReplacedAnnouncementRaw => r'$unselected unselected, $selected selected';
+
+  @override
   String get shareButtonLabel => 'Бөлісу';
+
+  @override
+  String get spaceCharacterName => 'space';
+
+  @override
+  String get tabCharacterName => 'tab';
+
+  @override
+  String get unselectedTextAnnouncementRaw => r'$text unselected';
 }
 
 /// The translations for Khmer Central Khmer (`km`).
@@ -2854,7 +4024,10 @@ class WidgetsLocalizationKm extends GlobalWidgetsLocalizations {
   /// Create an instance of the translation bundle for Khmer Central Khmer.
   ///
   /// For details on the meaning of the arguments, see [GlobalWidgetsLocalizations].
-  const WidgetsLocalizationKm() : super(TextDirection.ltr);
+  const WidgetsLocalizationKm() : super(TextDirection.ltr, localeName: 'km');
+
+  @override
+  String get allTextSelectedAnnouncement => 'All text selected';
 
   @override
   String get copyButtonLabel => 'ចម្លង';
@@ -2864,6 +4037,9 @@ class WidgetsLocalizationKm extends GlobalWidgetsLocalizations {
 
   @override
   String get lookUpButtonLabel => 'រកមើល';
+
+  @override
+  String get newLineCharacterName => 'new line';
 
   @override
   String get noResultsFound => 'រក​មិន​ឃើញ​លទ្ធផលទេ';
@@ -2902,7 +4078,31 @@ class WidgetsLocalizationKm extends GlobalWidgetsLocalizations {
   String get selectAllButtonLabel => 'ជ្រើសរើស​ទាំងអស់';
 
   @override
+  String? get selectedCharacterCountAnnouncementOne => r'$count character selected';
+
+  @override
+  String get selectedCharacterCountAnnouncementOther => r'$count characters selected';
+
+  @override
+  String get selectedTextAnnouncementRaw => r'$text selected';
+
+  @override
+  String get selectionClearedAnnouncement => 'Selection cleared';
+
+  @override
+  String get selectionReplacedAnnouncementRaw => r'$unselected unselected, $selected selected';
+
+  @override
   String get shareButtonLabel => 'ចែករំលែក';
+
+  @override
+  String get spaceCharacterName => 'space';
+
+  @override
+  String get tabCharacterName => 'tab';
+
+  @override
+  String get unselectedTextAnnouncementRaw => r'$text unselected';
 }
 
 /// The translations for Kannada (`kn`).
@@ -2910,7 +4110,10 @@ class WidgetsLocalizationKn extends GlobalWidgetsLocalizations {
   /// Create an instance of the translation bundle for Kannada.
   ///
   /// For details on the meaning of the arguments, see [GlobalWidgetsLocalizations].
-  const WidgetsLocalizationKn() : super(TextDirection.ltr);
+  const WidgetsLocalizationKn() : super(TextDirection.ltr, localeName: 'kn');
+
+  @override
+  String get allTextSelectedAnnouncement => 'All text selected';
 
   @override
   String get copyButtonLabel => '\u{c95}\u{cbe}\u{caa}\u{cbf}\u{20}\u{cae}\u{cbe}\u{ca1}\u{cbf}';
@@ -2920,6 +4123,9 @@ class WidgetsLocalizationKn extends GlobalWidgetsLocalizations {
 
   @override
   String get lookUpButtonLabel => '\u{cae}\u{cc7}\u{cb2}\u{cc6}\u{20}\u{ca8}\u{ccb}\u{ca1}\u{cbf}';
+
+  @override
+  String get newLineCharacterName => 'new line';
 
   @override
   String get noResultsFound => '\u{caf}\u{cbe}\u{cb5}\u{cc1}\u{ca6}\u{cc7}\u{20}\u{cab}\u{cb2}\u{cbf}\u{ca4}\u{cbe}\u{c82}\u{cb6}\u{c97}\u{cb3}\u{cc1}\u{20}\u{c95}\u{c82}\u{ca1}\u{cc1}\u{cac}\u{c82}\u{ca6}\u{cbf}\u{cb2}\u{ccd}\u{cb2}';
@@ -2958,7 +4164,31 @@ class WidgetsLocalizationKn extends GlobalWidgetsLocalizations {
   String get selectAllButtonLabel => '\u{c8e}\u{cb2}\u{ccd}\u{cb2}\u{cb5}\u{ca8}\u{ccd}\u{ca8}\u{cc2}\u{20}\u{c86}\u{caf}\u{ccd}\u{c95}\u{cc6}\u{20}\u{cae}\u{cbe}\u{ca1}\u{cbf}';
 
   @override
+  String? get selectedCharacterCountAnnouncementOne => '1 character selected';
+
+  @override
+  String get selectedCharacterCountAnnouncementOther => r'$count characters selected';
+
+  @override
+  String get selectedTextAnnouncementRaw => r'$text selected';
+
+  @override
+  String get selectionClearedAnnouncement => 'Selection cleared';
+
+  @override
+  String get selectionReplacedAnnouncementRaw => r'$unselected unselected, $selected selected';
+
+  @override
   String get shareButtonLabel => '\u{cb9}\u{c82}\u{c9a}\u{cbf}\u{c95}\u{cca}\u{cb3}\u{ccd}\u{cb3}\u{cbf}';
+
+  @override
+  String get spaceCharacterName => 'space';
+
+  @override
+  String get tabCharacterName => 'tab';
+
+  @override
+  String get unselectedTextAnnouncementRaw => r'$text unselected';
 }
 
 /// The translations for Korean (`ko`).
@@ -2966,7 +4196,10 @@ class WidgetsLocalizationKo extends GlobalWidgetsLocalizations {
   /// Create an instance of the translation bundle for Korean.
   ///
   /// For details on the meaning of the arguments, see [GlobalWidgetsLocalizations].
-  const WidgetsLocalizationKo() : super(TextDirection.ltr);
+  const WidgetsLocalizationKo() : super(TextDirection.ltr, localeName: 'ko');
+
+  @override
+  String get allTextSelectedAnnouncement => 'All text selected';
 
   @override
   String get copyButtonLabel => '복사';
@@ -2976,6 +4209,9 @@ class WidgetsLocalizationKo extends GlobalWidgetsLocalizations {
 
   @override
   String get lookUpButtonLabel => '찾기';
+
+  @override
+  String get newLineCharacterName => 'new line';
 
   @override
   String get noResultsFound => '검색 결과 없음';
@@ -3014,7 +4250,31 @@ class WidgetsLocalizationKo extends GlobalWidgetsLocalizations {
   String get selectAllButtonLabel => '전체 선택';
 
   @override
+  String? get selectedCharacterCountAnnouncementOne => r'$count character selected';
+
+  @override
+  String get selectedCharacterCountAnnouncementOther => r'$count characters selected';
+
+  @override
+  String get selectedTextAnnouncementRaw => r'$text selected';
+
+  @override
+  String get selectionClearedAnnouncement => 'Selection cleared';
+
+  @override
+  String get selectionReplacedAnnouncementRaw => r'$unselected unselected, $selected selected';
+
+  @override
   String get shareButtonLabel => '공유';
+
+  @override
+  String get spaceCharacterName => 'space';
+
+  @override
+  String get tabCharacterName => 'tab';
+
+  @override
+  String get unselectedTextAnnouncementRaw => r'$text unselected';
 }
 
 /// The translations for Kirghiz Kyrgyz (`ky`).
@@ -3022,7 +4282,10 @@ class WidgetsLocalizationKy extends GlobalWidgetsLocalizations {
   /// Create an instance of the translation bundle for Kirghiz Kyrgyz.
   ///
   /// For details on the meaning of the arguments, see [GlobalWidgetsLocalizations].
-  const WidgetsLocalizationKy() : super(TextDirection.ltr);
+  const WidgetsLocalizationKy() : super(TextDirection.ltr, localeName: 'ky');
+
+  @override
+  String get allTextSelectedAnnouncement => 'All text selected';
 
   @override
   String get copyButtonLabel => 'Көчүрүү';
@@ -3032,6 +4295,9 @@ class WidgetsLocalizationKy extends GlobalWidgetsLocalizations {
 
   @override
   String get lookUpButtonLabel => 'Издөө';
+
+  @override
+  String get newLineCharacterName => 'new line';
 
   @override
   String get noResultsFound => 'Эч нерсе табылган жок';
@@ -3070,7 +4336,31 @@ class WidgetsLocalizationKy extends GlobalWidgetsLocalizations {
   String get selectAllButtonLabel => 'Баарын тандоо';
 
   @override
+  String? get selectedCharacterCountAnnouncementOne => r'$count character selected';
+
+  @override
+  String get selectedCharacterCountAnnouncementOther => r'$count characters selected';
+
+  @override
+  String get selectedTextAnnouncementRaw => r'$text selected';
+
+  @override
+  String get selectionClearedAnnouncement => 'Selection cleared';
+
+  @override
+  String get selectionReplacedAnnouncementRaw => r'$unselected unselected, $selected selected';
+
+  @override
   String get shareButtonLabel => 'Бөлүшүү';
+
+  @override
+  String get spaceCharacterName => 'space';
+
+  @override
+  String get tabCharacterName => 'tab';
+
+  @override
+  String get unselectedTextAnnouncementRaw => r'$text unselected';
 }
 
 /// The translations for Lao (`lo`).
@@ -3078,7 +4368,10 @@ class WidgetsLocalizationLo extends GlobalWidgetsLocalizations {
   /// Create an instance of the translation bundle for Lao.
   ///
   /// For details on the meaning of the arguments, see [GlobalWidgetsLocalizations].
-  const WidgetsLocalizationLo() : super(TextDirection.ltr);
+  const WidgetsLocalizationLo() : super(TextDirection.ltr, localeName: 'lo');
+
+  @override
+  String get allTextSelectedAnnouncement => 'All text selected';
 
   @override
   String get copyButtonLabel => 'ສຳເນົາ';
@@ -3088,6 +4381,9 @@ class WidgetsLocalizationLo extends GlobalWidgetsLocalizations {
 
   @override
   String get lookUpButtonLabel => 'ຊອກຫາຂໍ້ມູນ';
+
+  @override
+  String get newLineCharacterName => 'new line';
 
   @override
   String get noResultsFound => 'ບໍ່ພົບຜົນການຊອກຫາ';
@@ -3126,7 +4422,31 @@ class WidgetsLocalizationLo extends GlobalWidgetsLocalizations {
   String get selectAllButtonLabel => 'ເລືອກທັງໝົດ';
 
   @override
+  String? get selectedCharacterCountAnnouncementOne => r'$count character selected';
+
+  @override
+  String get selectedCharacterCountAnnouncementOther => r'$count characters selected';
+
+  @override
+  String get selectedTextAnnouncementRaw => r'$text selected';
+
+  @override
+  String get selectionClearedAnnouncement => 'Selection cleared';
+
+  @override
+  String get selectionReplacedAnnouncementRaw => r'$unselected unselected, $selected selected';
+
+  @override
   String get shareButtonLabel => 'ແບ່ງປັນ';
+
+  @override
+  String get spaceCharacterName => 'space';
+
+  @override
+  String get tabCharacterName => 'tab';
+
+  @override
+  String get unselectedTextAnnouncementRaw => r'$text unselected';
 }
 
 /// The translations for Lithuanian (`lt`).
@@ -3134,7 +4454,10 @@ class WidgetsLocalizationLt extends GlobalWidgetsLocalizations {
   /// Create an instance of the translation bundle for Lithuanian.
   ///
   /// For details on the meaning of the arguments, see [GlobalWidgetsLocalizations].
-  const WidgetsLocalizationLt() : super(TextDirection.ltr);
+  const WidgetsLocalizationLt() : super(TextDirection.ltr, localeName: 'lt');
+
+  @override
+  String get allTextSelectedAnnouncement => 'All text selected';
 
   @override
   String get copyButtonLabel => 'Kopijuoti';
@@ -3144,6 +4467,9 @@ class WidgetsLocalizationLt extends GlobalWidgetsLocalizations {
 
   @override
   String get lookUpButtonLabel => 'Ieškoti';
+
+  @override
+  String get newLineCharacterName => 'new line';
 
   @override
   String get noResultsFound => 'Rezultatų nerasta';
@@ -3182,7 +4508,31 @@ class WidgetsLocalizationLt extends GlobalWidgetsLocalizations {
   String get selectAllButtonLabel => 'Pasirinkti viską';
 
   @override
+  String? get selectedCharacterCountAnnouncementOne => r'$count character selected';
+
+  @override
+  String get selectedCharacterCountAnnouncementOther => r'$count characters selected';
+
+  @override
+  String get selectedTextAnnouncementRaw => r'$text selected';
+
+  @override
+  String get selectionClearedAnnouncement => 'Selection cleared';
+
+  @override
+  String get selectionReplacedAnnouncementRaw => r'$unselected unselected, $selected selected';
+
+  @override
   String get shareButtonLabel => 'Bendrinti';
+
+  @override
+  String get spaceCharacterName => 'space';
+
+  @override
+  String get tabCharacterName => 'tab';
+
+  @override
+  String get unselectedTextAnnouncementRaw => r'$text unselected';
 }
 
 /// The translations for Latvian (`lv`).
@@ -3190,7 +4540,10 @@ class WidgetsLocalizationLv extends GlobalWidgetsLocalizations {
   /// Create an instance of the translation bundle for Latvian.
   ///
   /// For details on the meaning of the arguments, see [GlobalWidgetsLocalizations].
-  const WidgetsLocalizationLv() : super(TextDirection.ltr);
+  const WidgetsLocalizationLv() : super(TextDirection.ltr, localeName: 'lv');
+
+  @override
+  String get allTextSelectedAnnouncement => 'All text selected';
 
   @override
   String get copyButtonLabel => 'Kopēt';
@@ -3200,6 +4553,9 @@ class WidgetsLocalizationLv extends GlobalWidgetsLocalizations {
 
   @override
   String get lookUpButtonLabel => 'Meklēt';
+
+  @override
+  String get newLineCharacterName => 'new line';
 
   @override
   String get noResultsFound => 'Netika atrasts neviens rezultāts';
@@ -3238,7 +4594,31 @@ class WidgetsLocalizationLv extends GlobalWidgetsLocalizations {
   String get selectAllButtonLabel => 'Atlasīt visu';
 
   @override
+  String? get selectedCharacterCountAnnouncementOne => r'$count character selected';
+
+  @override
+  String get selectedCharacterCountAnnouncementOther => r'$count characters selected';
+
+  @override
+  String get selectedTextAnnouncementRaw => r'$text selected';
+
+  @override
+  String get selectionClearedAnnouncement => 'Selection cleared';
+
+  @override
+  String get selectionReplacedAnnouncementRaw => r'$unselected unselected, $selected selected';
+
+  @override
   String get shareButtonLabel => 'Kopīgot';
+
+  @override
+  String get spaceCharacterName => 'space';
+
+  @override
+  String get tabCharacterName => 'tab';
+
+  @override
+  String get unselectedTextAnnouncementRaw => r'$text unselected';
 }
 
 /// The translations for Macedonian (`mk`).
@@ -3246,7 +4626,10 @@ class WidgetsLocalizationMk extends GlobalWidgetsLocalizations {
   /// Create an instance of the translation bundle for Macedonian.
   ///
   /// For details on the meaning of the arguments, see [GlobalWidgetsLocalizations].
-  const WidgetsLocalizationMk() : super(TextDirection.ltr);
+  const WidgetsLocalizationMk() : super(TextDirection.ltr, localeName: 'mk');
+
+  @override
+  String get allTextSelectedAnnouncement => 'All text selected';
 
   @override
   String get copyButtonLabel => 'Копирај';
@@ -3256,6 +4639,9 @@ class WidgetsLocalizationMk extends GlobalWidgetsLocalizations {
 
   @override
   String get lookUpButtonLabel => 'Погледнете нагоре';
+
+  @override
+  String get newLineCharacterName => 'new line';
 
   @override
   String get noResultsFound => 'Не се најдени резултати';
@@ -3294,7 +4680,31 @@ class WidgetsLocalizationMk extends GlobalWidgetsLocalizations {
   String get selectAllButtonLabel => 'Избери ги сите';
 
   @override
+  String? get selectedCharacterCountAnnouncementOne => r'$count character selected';
+
+  @override
+  String get selectedCharacterCountAnnouncementOther => r'$count characters selected';
+
+  @override
+  String get selectedTextAnnouncementRaw => r'$text selected';
+
+  @override
+  String get selectionClearedAnnouncement => 'Selection cleared';
+
+  @override
+  String get selectionReplacedAnnouncementRaw => r'$unselected unselected, $selected selected';
+
+  @override
   String get shareButtonLabel => 'Сподели';
+
+  @override
+  String get spaceCharacterName => 'space';
+
+  @override
+  String get tabCharacterName => 'tab';
+
+  @override
+  String get unselectedTextAnnouncementRaw => r'$text unselected';
 }
 
 /// The translations for Malayalam (`ml`).
@@ -3302,7 +4712,10 @@ class WidgetsLocalizationMl extends GlobalWidgetsLocalizations {
   /// Create an instance of the translation bundle for Malayalam.
   ///
   /// For details on the meaning of the arguments, see [GlobalWidgetsLocalizations].
-  const WidgetsLocalizationMl() : super(TextDirection.ltr);
+  const WidgetsLocalizationMl() : super(TextDirection.ltr, localeName: 'ml');
+
+  @override
+  String get allTextSelectedAnnouncement => 'All text selected';
 
   @override
   String get copyButtonLabel => 'പകർത്തുക';
@@ -3312,6 +4725,9 @@ class WidgetsLocalizationMl extends GlobalWidgetsLocalizations {
 
   @override
   String get lookUpButtonLabel => 'മുകളിലേക്ക് നോക്കുക';
+
+  @override
+  String get newLineCharacterName => 'new line';
 
   @override
   String get noResultsFound => 'ഫലങ്ങളൊന്നും കണ്ടെത്തിയില്ല';
@@ -3350,7 +4766,31 @@ class WidgetsLocalizationMl extends GlobalWidgetsLocalizations {
   String get selectAllButtonLabel => 'എല്ലാം തിരഞ്ഞെടുക്കുക';
 
   @override
+  String? get selectedCharacterCountAnnouncementOne => r'$count character selected';
+
+  @override
+  String get selectedCharacterCountAnnouncementOther => r'$count characters selected';
+
+  @override
+  String get selectedTextAnnouncementRaw => r'$text selected';
+
+  @override
+  String get selectionClearedAnnouncement => 'Selection cleared';
+
+  @override
+  String get selectionReplacedAnnouncementRaw => r'$unselected unselected, $selected selected';
+
+  @override
   String get shareButtonLabel => 'പങ്കിടുക';
+
+  @override
+  String get spaceCharacterName => 'space';
+
+  @override
+  String get tabCharacterName => 'tab';
+
+  @override
+  String get unselectedTextAnnouncementRaw => r'$text unselected';
 }
 
 /// The translations for Mongolian (`mn`).
@@ -3358,7 +4798,10 @@ class WidgetsLocalizationMn extends GlobalWidgetsLocalizations {
   /// Create an instance of the translation bundle for Mongolian.
   ///
   /// For details on the meaning of the arguments, see [GlobalWidgetsLocalizations].
-  const WidgetsLocalizationMn() : super(TextDirection.ltr);
+  const WidgetsLocalizationMn() : super(TextDirection.ltr, localeName: 'mn');
+
+  @override
+  String get allTextSelectedAnnouncement => 'All text selected';
 
   @override
   String get copyButtonLabel => 'Хуулах';
@@ -3368,6 +4811,9 @@ class WidgetsLocalizationMn extends GlobalWidgetsLocalizations {
 
   @override
   String get lookUpButtonLabel => 'Дээшээ харах';
+
+  @override
+  String get newLineCharacterName => 'new line';
 
   @override
   String get noResultsFound => 'Илэрц олдсонгүй';
@@ -3406,7 +4852,31 @@ class WidgetsLocalizationMn extends GlobalWidgetsLocalizations {
   String get selectAllButtonLabel => 'Бүгдийг сонгох';
 
   @override
+  String? get selectedCharacterCountAnnouncementOne => r'$count character selected';
+
+  @override
+  String get selectedCharacterCountAnnouncementOther => r'$count characters selected';
+
+  @override
+  String get selectedTextAnnouncementRaw => r'$text selected';
+
+  @override
+  String get selectionClearedAnnouncement => 'Selection cleared';
+
+  @override
+  String get selectionReplacedAnnouncementRaw => r'$unselected unselected, $selected selected';
+
+  @override
   String get shareButtonLabel => 'Хуваалцах';
+
+  @override
+  String get spaceCharacterName => 'space';
+
+  @override
+  String get tabCharacterName => 'tab';
+
+  @override
+  String get unselectedTextAnnouncementRaw => r'$text unselected';
 }
 
 /// The translations for Marathi (`mr`).
@@ -3414,7 +4884,10 @@ class WidgetsLocalizationMr extends GlobalWidgetsLocalizations {
   /// Create an instance of the translation bundle for Marathi.
   ///
   /// For details on the meaning of the arguments, see [GlobalWidgetsLocalizations].
-  const WidgetsLocalizationMr() : super(TextDirection.ltr);
+  const WidgetsLocalizationMr() : super(TextDirection.ltr, localeName: 'mr');
+
+  @override
+  String get allTextSelectedAnnouncement => 'All text selected';
 
   @override
   String get copyButtonLabel => 'कॉपी करा';
@@ -3424,6 +4897,9 @@ class WidgetsLocalizationMr extends GlobalWidgetsLocalizations {
 
   @override
   String get lookUpButtonLabel => 'शोध घ्या';
+
+  @override
+  String get newLineCharacterName => 'new line';
 
   @override
   String get noResultsFound => 'परिणाम आढळले नाहीत';
@@ -3462,7 +4938,31 @@ class WidgetsLocalizationMr extends GlobalWidgetsLocalizations {
   String get selectAllButtonLabel => 'सर्व निवडा';
 
   @override
+  String? get selectedCharacterCountAnnouncementOne => r'$count character selected';
+
+  @override
+  String get selectedCharacterCountAnnouncementOther => r'$count characters selected';
+
+  @override
+  String get selectedTextAnnouncementRaw => r'$text selected';
+
+  @override
+  String get selectionClearedAnnouncement => 'Selection cleared';
+
+  @override
+  String get selectionReplacedAnnouncementRaw => r'$unselected unselected, $selected selected';
+
+  @override
   String get shareButtonLabel => 'शेअर करा';
+
+  @override
+  String get spaceCharacterName => 'space';
+
+  @override
+  String get tabCharacterName => 'tab';
+
+  @override
+  String get unselectedTextAnnouncementRaw => r'$text unselected';
 }
 
 /// The translations for Malay (`ms`).
@@ -3470,7 +4970,10 @@ class WidgetsLocalizationMs extends GlobalWidgetsLocalizations {
   /// Create an instance of the translation bundle for Malay.
   ///
   /// For details on the meaning of the arguments, see [GlobalWidgetsLocalizations].
-  const WidgetsLocalizationMs() : super(TextDirection.ltr);
+  const WidgetsLocalizationMs() : super(TextDirection.ltr, localeName: 'ms');
+
+  @override
+  String get allTextSelectedAnnouncement => 'All text selected';
 
   @override
   String get copyButtonLabel => 'Salin';
@@ -3480,6 +4983,9 @@ class WidgetsLocalizationMs extends GlobalWidgetsLocalizations {
 
   @override
   String get lookUpButtonLabel => 'Lihat ke Atas';
+
+  @override
+  String get newLineCharacterName => 'new line';
 
   @override
   String get noResultsFound => 'Tiada hasil carian ditemukan';
@@ -3518,7 +5024,31 @@ class WidgetsLocalizationMs extends GlobalWidgetsLocalizations {
   String get selectAllButtonLabel => 'Pilih semua';
 
   @override
+  String? get selectedCharacterCountAnnouncementOne => r'$count character selected';
+
+  @override
+  String get selectedCharacterCountAnnouncementOther => r'$count characters selected';
+
+  @override
+  String get selectedTextAnnouncementRaw => r'$text selected';
+
+  @override
+  String get selectionClearedAnnouncement => 'Selection cleared';
+
+  @override
+  String get selectionReplacedAnnouncementRaw => r'$unselected unselected, $selected selected';
+
+  @override
   String get shareButtonLabel => 'Kongsi';
+
+  @override
+  String get spaceCharacterName => 'space';
+
+  @override
+  String get tabCharacterName => 'tab';
+
+  @override
+  String get unselectedTextAnnouncementRaw => r'$text unselected';
 }
 
 /// The translations for Burmese (`my`).
@@ -3526,7 +5056,10 @@ class WidgetsLocalizationMy extends GlobalWidgetsLocalizations {
   /// Create an instance of the translation bundle for Burmese.
   ///
   /// For details on the meaning of the arguments, see [GlobalWidgetsLocalizations].
-  const WidgetsLocalizationMy() : super(TextDirection.ltr);
+  const WidgetsLocalizationMy() : super(TextDirection.ltr, localeName: 'my');
+
+  @override
+  String get allTextSelectedAnnouncement => 'All text selected';
 
   @override
   String get copyButtonLabel => 'မိတ္တူကူးရန်';
@@ -3536,6 +5069,9 @@ class WidgetsLocalizationMy extends GlobalWidgetsLocalizations {
 
   @override
   String get lookUpButtonLabel => 'အပေါ်ကြည့်ရန်';
+
+  @override
+  String get newLineCharacterName => 'new line';
 
   @override
   String get noResultsFound => 'ရလဒ်မတွေ့ပါ';
@@ -3574,7 +5110,31 @@ class WidgetsLocalizationMy extends GlobalWidgetsLocalizations {
   String get selectAllButtonLabel => 'အားလုံး ရွေးရန်';
 
   @override
+  String? get selectedCharacterCountAnnouncementOne => r'$count character selected';
+
+  @override
+  String get selectedCharacterCountAnnouncementOther => r'$count characters selected';
+
+  @override
+  String get selectedTextAnnouncementRaw => r'$text selected';
+
+  @override
+  String get selectionClearedAnnouncement => 'Selection cleared';
+
+  @override
+  String get selectionReplacedAnnouncementRaw => r'$unselected unselected, $selected selected';
+
+  @override
   String get shareButtonLabel => 'မျှဝေရန်';
+
+  @override
+  String get spaceCharacterName => 'space';
+
+  @override
+  String get tabCharacterName => 'tab';
+
+  @override
+  String get unselectedTextAnnouncementRaw => r'$text unselected';
 }
 
 /// The translations for Norwegian Bokmål (`nb`).
@@ -3582,7 +5142,10 @@ class WidgetsLocalizationNb extends GlobalWidgetsLocalizations {
   /// Create an instance of the translation bundle for Norwegian Bokmål.
   ///
   /// For details on the meaning of the arguments, see [GlobalWidgetsLocalizations].
-  const WidgetsLocalizationNb() : super(TextDirection.ltr);
+  const WidgetsLocalizationNb() : super(TextDirection.ltr, localeName: 'nb');
+
+  @override
+  String get allTextSelectedAnnouncement => 'All text selected';
 
   @override
   String get copyButtonLabel => 'Kopiér';
@@ -3592,6 +5155,9 @@ class WidgetsLocalizationNb extends GlobalWidgetsLocalizations {
 
   @override
   String get lookUpButtonLabel => 'Slå opp';
+
+  @override
+  String get newLineCharacterName => 'new line';
 
   @override
   String get noResultsFound => 'Fant ingen resultater';
@@ -3630,7 +5196,31 @@ class WidgetsLocalizationNb extends GlobalWidgetsLocalizations {
   String get selectAllButtonLabel => 'Velg alle';
 
   @override
+  String? get selectedCharacterCountAnnouncementOne => r'$count character selected';
+
+  @override
+  String get selectedCharacterCountAnnouncementOther => r'$count characters selected';
+
+  @override
+  String get selectedTextAnnouncementRaw => r'$text selected';
+
+  @override
+  String get selectionClearedAnnouncement => 'Selection cleared';
+
+  @override
+  String get selectionReplacedAnnouncementRaw => r'$unselected unselected, $selected selected';
+
+  @override
   String get shareButtonLabel => 'Del';
+
+  @override
+  String get spaceCharacterName => 'space';
+
+  @override
+  String get tabCharacterName => 'tab';
+
+  @override
+  String get unselectedTextAnnouncementRaw => r'$text unselected';
 }
 
 /// The translations for Nepali (`ne`).
@@ -3638,7 +5228,10 @@ class WidgetsLocalizationNe extends GlobalWidgetsLocalizations {
   /// Create an instance of the translation bundle for Nepali.
   ///
   /// For details on the meaning of the arguments, see [GlobalWidgetsLocalizations].
-  const WidgetsLocalizationNe() : super(TextDirection.ltr);
+  const WidgetsLocalizationNe() : super(TextDirection.ltr, localeName: 'ne');
+
+  @override
+  String get allTextSelectedAnnouncement => 'All text selected';
 
   @override
   String get copyButtonLabel => 'कपी गर्नुहोस्';
@@ -3648,6 +5241,9 @@ class WidgetsLocalizationNe extends GlobalWidgetsLocalizations {
 
   @override
   String get lookUpButtonLabel => 'माथितिर हेर्नुहोस्';
+
+  @override
+  String get newLineCharacterName => 'new line';
 
   @override
   String get noResultsFound => 'कुनै पनि परिणाम भेटिएन';
@@ -3686,7 +5282,31 @@ class WidgetsLocalizationNe extends GlobalWidgetsLocalizations {
   String get selectAllButtonLabel => 'सबै बटनहरू चयन गर्नुहोस्';
 
   @override
+  String? get selectedCharacterCountAnnouncementOne => r'$count character selected';
+
+  @override
+  String get selectedCharacterCountAnnouncementOther => r'$count characters selected';
+
+  @override
+  String get selectedTextAnnouncementRaw => r'$text selected';
+
+  @override
+  String get selectionClearedAnnouncement => 'Selection cleared';
+
+  @override
+  String get selectionReplacedAnnouncementRaw => r'$unselected unselected, $selected selected';
+
+  @override
   String get shareButtonLabel => 'सेयर गर्नुहोस्';
+
+  @override
+  String get spaceCharacterName => 'space';
+
+  @override
+  String get tabCharacterName => 'tab';
+
+  @override
+  String get unselectedTextAnnouncementRaw => r'$text unselected';
 }
 
 /// The translations for Dutch Flemish (`nl`).
@@ -3694,7 +5314,10 @@ class WidgetsLocalizationNl extends GlobalWidgetsLocalizations {
   /// Create an instance of the translation bundle for Dutch Flemish.
   ///
   /// For details on the meaning of the arguments, see [GlobalWidgetsLocalizations].
-  const WidgetsLocalizationNl() : super(TextDirection.ltr);
+  const WidgetsLocalizationNl() : super(TextDirection.ltr, localeName: 'nl');
+
+  @override
+  String get allTextSelectedAnnouncement => 'All text selected';
 
   @override
   String get copyButtonLabel => 'Kopiëren';
@@ -3704,6 +5327,9 @@ class WidgetsLocalizationNl extends GlobalWidgetsLocalizations {
 
   @override
   String get lookUpButtonLabel => 'Opzoeken';
+
+  @override
+  String get newLineCharacterName => 'new line';
 
   @override
   String get noResultsFound => 'Geen resultaten gevonden';
@@ -3742,7 +5368,31 @@ class WidgetsLocalizationNl extends GlobalWidgetsLocalizations {
   String get selectAllButtonLabel => 'Alles selecteren';
 
   @override
+  String? get selectedCharacterCountAnnouncementOne => r'$count character selected';
+
+  @override
+  String get selectedCharacterCountAnnouncementOther => r'$count characters selected';
+
+  @override
+  String get selectedTextAnnouncementRaw => r'$text selected';
+
+  @override
+  String get selectionClearedAnnouncement => 'Selection cleared';
+
+  @override
+  String get selectionReplacedAnnouncementRaw => r'$unselected unselected, $selected selected';
+
+  @override
   String get shareButtonLabel => 'Delen';
+
+  @override
+  String get spaceCharacterName => 'space';
+
+  @override
+  String get tabCharacterName => 'tab';
+
+  @override
+  String get unselectedTextAnnouncementRaw => r'$text unselected';
 }
 
 /// The translations for Norwegian (`no`).
@@ -3750,7 +5400,10 @@ class WidgetsLocalizationNo extends GlobalWidgetsLocalizations {
   /// Create an instance of the translation bundle for Norwegian.
   ///
   /// For details on the meaning of the arguments, see [GlobalWidgetsLocalizations].
-  const WidgetsLocalizationNo() : super(TextDirection.ltr);
+  const WidgetsLocalizationNo() : super(TextDirection.ltr, localeName: 'no');
+
+  @override
+  String get allTextSelectedAnnouncement => 'All text selected';
 
   @override
   String get copyButtonLabel => 'Kopiér';
@@ -3760,6 +5413,9 @@ class WidgetsLocalizationNo extends GlobalWidgetsLocalizations {
 
   @override
   String get lookUpButtonLabel => 'Slå opp';
+
+  @override
+  String get newLineCharacterName => 'new line';
 
   @override
   String get noResultsFound => 'Fant ingen resultater';
@@ -3798,7 +5454,31 @@ class WidgetsLocalizationNo extends GlobalWidgetsLocalizations {
   String get selectAllButtonLabel => 'Velg alle';
 
   @override
+  String? get selectedCharacterCountAnnouncementOne => r'$count character selected';
+
+  @override
+  String get selectedCharacterCountAnnouncementOther => r'$count characters selected';
+
+  @override
+  String get selectedTextAnnouncementRaw => r'$text selected';
+
+  @override
+  String get selectionClearedAnnouncement => 'Selection cleared';
+
+  @override
+  String get selectionReplacedAnnouncementRaw => r'$unselected unselected, $selected selected';
+
+  @override
   String get shareButtonLabel => 'Del';
+
+  @override
+  String get spaceCharacterName => 'space';
+
+  @override
+  String get tabCharacterName => 'tab';
+
+  @override
+  String get unselectedTextAnnouncementRaw => r'$text unselected';
 }
 
 /// The translations for Oriya (`or`).
@@ -3806,7 +5486,10 @@ class WidgetsLocalizationOr extends GlobalWidgetsLocalizations {
   /// Create an instance of the translation bundle for Oriya.
   ///
   /// For details on the meaning of the arguments, see [GlobalWidgetsLocalizations].
-  const WidgetsLocalizationOr() : super(TextDirection.ltr);
+  const WidgetsLocalizationOr() : super(TextDirection.ltr, localeName: 'or');
+
+  @override
+  String get allTextSelectedAnnouncement => 'All text selected';
 
   @override
   String get copyButtonLabel => 'କପି କରନ୍ତୁ';
@@ -3816,6 +5499,9 @@ class WidgetsLocalizationOr extends GlobalWidgetsLocalizations {
 
   @override
   String get lookUpButtonLabel => 'ଉପରକୁ ଦେଖନ୍ତୁ';
+
+  @override
+  String get newLineCharacterName => 'new line';
 
   @override
   String get noResultsFound => 'କୌଣସି ଫଳାଫଳ ମିଳିଲା ନାହିଁ';
@@ -3854,7 +5540,31 @@ class WidgetsLocalizationOr extends GlobalWidgetsLocalizations {
   String get selectAllButtonLabel => 'ସବୁ ଚୟନ କରନ୍ତୁ';
 
   @override
+  String? get selectedCharacterCountAnnouncementOne => r'$count character selected';
+
+  @override
+  String get selectedCharacterCountAnnouncementOther => r'$count characters selected';
+
+  @override
+  String get selectedTextAnnouncementRaw => r'$text selected';
+
+  @override
+  String get selectionClearedAnnouncement => 'Selection cleared';
+
+  @override
+  String get selectionReplacedAnnouncementRaw => r'$unselected unselected, $selected selected';
+
+  @override
   String get shareButtonLabel => 'ସେୟାର କରନ୍ତୁ';
+
+  @override
+  String get spaceCharacterName => 'space';
+
+  @override
+  String get tabCharacterName => 'tab';
+
+  @override
+  String get unselectedTextAnnouncementRaw => r'$text unselected';
 }
 
 /// The translations for Panjabi Punjabi (`pa`).
@@ -3862,7 +5572,10 @@ class WidgetsLocalizationPa extends GlobalWidgetsLocalizations {
   /// Create an instance of the translation bundle for Panjabi Punjabi.
   ///
   /// For details on the meaning of the arguments, see [GlobalWidgetsLocalizations].
-  const WidgetsLocalizationPa() : super(TextDirection.ltr);
+  const WidgetsLocalizationPa() : super(TextDirection.ltr, localeName: 'pa');
+
+  @override
+  String get allTextSelectedAnnouncement => 'All text selected';
 
   @override
   String get copyButtonLabel => 'ਕਾਪੀ ਕਰੋ';
@@ -3872,6 +5585,9 @@ class WidgetsLocalizationPa extends GlobalWidgetsLocalizations {
 
   @override
   String get lookUpButtonLabel => 'ਖੋਜੋ';
+
+  @override
+  String get newLineCharacterName => 'new line';
 
   @override
   String get noResultsFound => 'ਕੋਈ ਨਤੀਜਾ ਨਹੀਂ ਮਿਲਿਆ';
@@ -3910,7 +5626,31 @@ class WidgetsLocalizationPa extends GlobalWidgetsLocalizations {
   String get selectAllButtonLabel => 'ਸਭ ਚੁਣੋ';
 
   @override
+  String? get selectedCharacterCountAnnouncementOne => r'$count character selected';
+
+  @override
+  String get selectedCharacterCountAnnouncementOther => r'$count characters selected';
+
+  @override
+  String get selectedTextAnnouncementRaw => r'$text selected';
+
+  @override
+  String get selectionClearedAnnouncement => 'Selection cleared';
+
+  @override
+  String get selectionReplacedAnnouncementRaw => r'$unselected unselected, $selected selected';
+
+  @override
   String get shareButtonLabel => 'ਸਾਂਝਾ ਕਰੋ';
+
+  @override
+  String get spaceCharacterName => 'space';
+
+  @override
+  String get tabCharacterName => 'tab';
+
+  @override
+  String get unselectedTextAnnouncementRaw => r'$text unselected';
 }
 
 /// The translations for Polish (`pl`).
@@ -3918,7 +5658,10 @@ class WidgetsLocalizationPl extends GlobalWidgetsLocalizations {
   /// Create an instance of the translation bundle for Polish.
   ///
   /// For details on the meaning of the arguments, see [GlobalWidgetsLocalizations].
-  const WidgetsLocalizationPl() : super(TextDirection.ltr);
+  const WidgetsLocalizationPl() : super(TextDirection.ltr, localeName: 'pl');
+
+  @override
+  String get allTextSelectedAnnouncement => 'All text selected';
 
   @override
   String get copyButtonLabel => 'Kopiuj';
@@ -3928,6 +5671,9 @@ class WidgetsLocalizationPl extends GlobalWidgetsLocalizations {
 
   @override
   String get lookUpButtonLabel => 'Sprawdź';
+
+  @override
+  String get newLineCharacterName => 'new line';
 
   @override
   String get noResultsFound => 'Brak wyników';
@@ -3966,7 +5712,31 @@ class WidgetsLocalizationPl extends GlobalWidgetsLocalizations {
   String get selectAllButtonLabel => 'Zaznacz wszystko';
 
   @override
+  String? get selectedCharacterCountAnnouncementOne => r'$count character selected';
+
+  @override
+  String get selectedCharacterCountAnnouncementOther => r'$count characters selected';
+
+  @override
+  String get selectedTextAnnouncementRaw => r'$text selected';
+
+  @override
+  String get selectionClearedAnnouncement => 'Selection cleared';
+
+  @override
+  String get selectionReplacedAnnouncementRaw => r'$unselected unselected, $selected selected';
+
+  @override
   String get shareButtonLabel => 'Udostępnij';
+
+  @override
+  String get spaceCharacterName => 'space';
+
+  @override
+  String get tabCharacterName => 'tab';
+
+  @override
+  String get unselectedTextAnnouncementRaw => r'$text unselected';
 }
 
 /// The translations for Pushto Pashto (`ps`).
@@ -3974,7 +5744,10 @@ class WidgetsLocalizationPs extends GlobalWidgetsLocalizations {
   /// Create an instance of the translation bundle for Pushto Pashto.
   ///
   /// For details on the meaning of the arguments, see [GlobalWidgetsLocalizations].
-  const WidgetsLocalizationPs() : super(TextDirection.rtl);
+  const WidgetsLocalizationPs() : super(TextDirection.rtl, localeName: 'ps');
+
+  @override
+  String get allTextSelectedAnnouncement => 'All text selected';
 
   @override
   String get copyButtonLabel => 'کاپی';
@@ -3984,6 +5757,9 @@ class WidgetsLocalizationPs extends GlobalWidgetsLocalizations {
 
   @override
   String get lookUpButtonLabel => 'Look Up';
+
+  @override
+  String get newLineCharacterName => 'new line';
 
   @override
   String get noResultsFound => 'No results found';
@@ -4022,7 +5798,31 @@ class WidgetsLocalizationPs extends GlobalWidgetsLocalizations {
   String get selectAllButtonLabel => 'غوره کړئ';
 
   @override
+  String? get selectedCharacterCountAnnouncementOne => r'$count character selected';
+
+  @override
+  String get selectedCharacterCountAnnouncementOther => r'$count characters selected';
+
+  @override
+  String get selectedTextAnnouncementRaw => r'$text selected';
+
+  @override
+  String get selectionClearedAnnouncement => 'Selection cleared';
+
+  @override
+  String get selectionReplacedAnnouncementRaw => r'$unselected unselected, $selected selected';
+
+  @override
   String get shareButtonLabel => 'Share...';
+
+  @override
+  String get spaceCharacterName => 'space';
+
+  @override
+  String get tabCharacterName => 'tab';
+
+  @override
+  String get unselectedTextAnnouncementRaw => r'$text unselected';
 }
 
 /// The translations for Portuguese (`pt`).
@@ -4030,7 +5830,10 @@ class WidgetsLocalizationPt extends GlobalWidgetsLocalizations {
   /// Create an instance of the translation bundle for Portuguese.
   ///
   /// For details on the meaning of the arguments, see [GlobalWidgetsLocalizations].
-  const WidgetsLocalizationPt() : super(TextDirection.ltr);
+  const WidgetsLocalizationPt() : super(TextDirection.ltr, localeName: 'pt');
+
+  @override
+  String get allTextSelectedAnnouncement => 'All text selected';
 
   @override
   String get copyButtonLabel => 'Copiar';
@@ -4040,6 +5843,9 @@ class WidgetsLocalizationPt extends GlobalWidgetsLocalizations {
 
   @override
   String get lookUpButtonLabel => 'Pesquisar';
+
+  @override
+  String get newLineCharacterName => 'new line';
 
   @override
   String get noResultsFound => 'Nenhum resultado encontrado';
@@ -4078,7 +5884,31 @@ class WidgetsLocalizationPt extends GlobalWidgetsLocalizations {
   String get selectAllButtonLabel => 'Selecionar tudo';
 
   @override
+  String? get selectedCharacterCountAnnouncementOne => r'$count character selected';
+
+  @override
+  String get selectedCharacterCountAnnouncementOther => r'$count characters selected';
+
+  @override
+  String get selectedTextAnnouncementRaw => r'$text selected';
+
+  @override
+  String get selectionClearedAnnouncement => 'Selection cleared';
+
+  @override
+  String get selectionReplacedAnnouncementRaw => r'$unselected unselected, $selected selected';
+
+  @override
   String get shareButtonLabel => 'Compartilhar';
+
+  @override
+  String get spaceCharacterName => 'space';
+
+  @override
+  String get tabCharacterName => 'tab';
+
+  @override
+  String get unselectedTextAnnouncementRaw => r'$text unselected';
 }
 
 /// The translations for Portuguese, as used in Portugal (`pt_PT`).
@@ -4109,7 +5939,10 @@ class WidgetsLocalizationRo extends GlobalWidgetsLocalizations {
   /// Create an instance of the translation bundle for Romanian Moldavian Moldovan.
   ///
   /// For details on the meaning of the arguments, see [GlobalWidgetsLocalizations].
-  const WidgetsLocalizationRo() : super(TextDirection.ltr);
+  const WidgetsLocalizationRo() : super(TextDirection.ltr, localeName: 'ro');
+
+  @override
+  String get allTextSelectedAnnouncement => 'All text selected';
 
   @override
   String get copyButtonLabel => 'Copiați';
@@ -4119,6 +5952,9 @@ class WidgetsLocalizationRo extends GlobalWidgetsLocalizations {
 
   @override
   String get lookUpButtonLabel => 'Privire în sus';
+
+  @override
+  String get newLineCharacterName => 'new line';
 
   @override
   String get noResultsFound => 'Niciun rezultat';
@@ -4157,7 +5993,31 @@ class WidgetsLocalizationRo extends GlobalWidgetsLocalizations {
   String get selectAllButtonLabel => 'Selectați tot';
 
   @override
+  String? get selectedCharacterCountAnnouncementOne => r'$count character selected';
+
+  @override
+  String get selectedCharacterCountAnnouncementOther => r'$count characters selected';
+
+  @override
+  String get selectedTextAnnouncementRaw => r'$text selected';
+
+  @override
+  String get selectionClearedAnnouncement => 'Selection cleared';
+
+  @override
+  String get selectionReplacedAnnouncementRaw => r'$unselected unselected, $selected selected';
+
+  @override
   String get shareButtonLabel => 'Trimiteți';
+
+  @override
+  String get spaceCharacterName => 'space';
+
+  @override
+  String get tabCharacterName => 'tab';
+
+  @override
+  String get unselectedTextAnnouncementRaw => r'$text unselected';
 }
 
 /// The translations for Russian (`ru`).
@@ -4165,7 +6025,10 @@ class WidgetsLocalizationRu extends GlobalWidgetsLocalizations {
   /// Create an instance of the translation bundle for Russian.
   ///
   /// For details on the meaning of the arguments, see [GlobalWidgetsLocalizations].
-  const WidgetsLocalizationRu() : super(TextDirection.ltr);
+  const WidgetsLocalizationRu() : super(TextDirection.ltr, localeName: 'ru');
+
+  @override
+  String get allTextSelectedAnnouncement => 'All text selected';
 
   @override
   String get copyButtonLabel => 'Копировать';
@@ -4175,6 +6038,9 @@ class WidgetsLocalizationRu extends GlobalWidgetsLocalizations {
 
   @override
   String get lookUpButtonLabel => 'Найти';
+
+  @override
+  String get newLineCharacterName => 'new line';
 
   @override
   String get noResultsFound => 'Ничего не найдено';
@@ -4213,7 +6079,31 @@ class WidgetsLocalizationRu extends GlobalWidgetsLocalizations {
   String get selectAllButtonLabel => 'Выбрать все';
 
   @override
+  String? get selectedCharacterCountAnnouncementOne => r'$count character selected';
+
+  @override
+  String get selectedCharacterCountAnnouncementOther => r'$count characters selected';
+
+  @override
+  String get selectedTextAnnouncementRaw => r'$text selected';
+
+  @override
+  String get selectionClearedAnnouncement => 'Selection cleared';
+
+  @override
+  String get selectionReplacedAnnouncementRaw => r'$unselected unselected, $selected selected';
+
+  @override
   String get shareButtonLabel => 'Поделиться';
+
+  @override
+  String get spaceCharacterName => 'space';
+
+  @override
+  String get tabCharacterName => 'tab';
+
+  @override
+  String get unselectedTextAnnouncementRaw => r'$text unselected';
 }
 
 /// The translations for Sinhala Sinhalese (`si`).
@@ -4221,7 +6111,10 @@ class WidgetsLocalizationSi extends GlobalWidgetsLocalizations {
   /// Create an instance of the translation bundle for Sinhala Sinhalese.
   ///
   /// For details on the meaning of the arguments, see [GlobalWidgetsLocalizations].
-  const WidgetsLocalizationSi() : super(TextDirection.ltr);
+  const WidgetsLocalizationSi() : super(TextDirection.ltr, localeName: 'si');
+
+  @override
+  String get allTextSelectedAnnouncement => 'All text selected';
 
   @override
   String get copyButtonLabel => 'පිටපත් කරන්න';
@@ -4231,6 +6124,9 @@ class WidgetsLocalizationSi extends GlobalWidgetsLocalizations {
 
   @override
   String get lookUpButtonLabel => 'උඩ බලන්න';
+
+  @override
+  String get newLineCharacterName => 'new line';
 
   @override
   String get noResultsFound => 'ප්‍රතිඵල හමු නොවුණි';
@@ -4269,7 +6165,31 @@ class WidgetsLocalizationSi extends GlobalWidgetsLocalizations {
   String get selectAllButtonLabel => 'සියල්ල තෝරන්න';
 
   @override
+  String? get selectedCharacterCountAnnouncementOne => r'$count character selected';
+
+  @override
+  String get selectedCharacterCountAnnouncementOther => r'$count characters selected';
+
+  @override
+  String get selectedTextAnnouncementRaw => r'$text selected';
+
+  @override
+  String get selectionClearedAnnouncement => 'Selection cleared';
+
+  @override
+  String get selectionReplacedAnnouncementRaw => r'$unselected unselected, $selected selected';
+
+  @override
   String get shareButtonLabel => 'බෙදා ගන්න';
+
+  @override
+  String get spaceCharacterName => 'space';
+
+  @override
+  String get tabCharacterName => 'tab';
+
+  @override
+  String get unselectedTextAnnouncementRaw => r'$text unselected';
 }
 
 /// The translations for Slovak (`sk`).
@@ -4277,7 +6197,10 @@ class WidgetsLocalizationSk extends GlobalWidgetsLocalizations {
   /// Create an instance of the translation bundle for Slovak.
   ///
   /// For details on the meaning of the arguments, see [GlobalWidgetsLocalizations].
-  const WidgetsLocalizationSk() : super(TextDirection.ltr);
+  const WidgetsLocalizationSk() : super(TextDirection.ltr, localeName: 'sk');
+
+  @override
+  String get allTextSelectedAnnouncement => 'All text selected';
 
   @override
   String get copyButtonLabel => 'Kopírovať';
@@ -4287,6 +6210,9 @@ class WidgetsLocalizationSk extends GlobalWidgetsLocalizations {
 
   @override
   String get lookUpButtonLabel => 'Pohľad nahor';
+
+  @override
+  String get newLineCharacterName => 'new line';
 
   @override
   String get noResultsFound => 'Nenašli sa žiadne výsledky';
@@ -4325,7 +6251,31 @@ class WidgetsLocalizationSk extends GlobalWidgetsLocalizations {
   String get selectAllButtonLabel => 'Vybrať všetko';
 
   @override
+  String? get selectedCharacterCountAnnouncementOne => r'$count character selected';
+
+  @override
+  String get selectedCharacterCountAnnouncementOther => r'$count characters selected';
+
+  @override
+  String get selectedTextAnnouncementRaw => r'$text selected';
+
+  @override
+  String get selectionClearedAnnouncement => 'Selection cleared';
+
+  @override
+  String get selectionReplacedAnnouncementRaw => r'$unselected unselected, $selected selected';
+
+  @override
   String get shareButtonLabel => 'Zdieľať';
+
+  @override
+  String get spaceCharacterName => 'space';
+
+  @override
+  String get tabCharacterName => 'tab';
+
+  @override
+  String get unselectedTextAnnouncementRaw => r'$text unselected';
 }
 
 /// The translations for Slovenian (`sl`).
@@ -4333,7 +6283,10 @@ class WidgetsLocalizationSl extends GlobalWidgetsLocalizations {
   /// Create an instance of the translation bundle for Slovenian.
   ///
   /// For details on the meaning of the arguments, see [GlobalWidgetsLocalizations].
-  const WidgetsLocalizationSl() : super(TextDirection.ltr);
+  const WidgetsLocalizationSl() : super(TextDirection.ltr, localeName: 'sl');
+
+  @override
+  String get allTextSelectedAnnouncement => 'All text selected';
 
   @override
   String get copyButtonLabel => 'Kopiraj';
@@ -4343,6 +6296,9 @@ class WidgetsLocalizationSl extends GlobalWidgetsLocalizations {
 
   @override
   String get lookUpButtonLabel => 'Pogled gor';
+
+  @override
+  String get newLineCharacterName => 'new line';
 
   @override
   String get noResultsFound => 'Ni rezultatov';
@@ -4381,7 +6337,31 @@ class WidgetsLocalizationSl extends GlobalWidgetsLocalizations {
   String get selectAllButtonLabel => 'Izberi vse';
 
   @override
+  String? get selectedCharacterCountAnnouncementOne => r'$count character selected';
+
+  @override
+  String get selectedCharacterCountAnnouncementOther => r'$count characters selected';
+
+  @override
+  String get selectedTextAnnouncementRaw => r'$text selected';
+
+  @override
+  String get selectionClearedAnnouncement => 'Selection cleared';
+
+  @override
+  String get selectionReplacedAnnouncementRaw => r'$unselected unselected, $selected selected';
+
+  @override
   String get shareButtonLabel => 'Deli';
+
+  @override
+  String get spaceCharacterName => 'space';
+
+  @override
+  String get tabCharacterName => 'tab';
+
+  @override
+  String get unselectedTextAnnouncementRaw => r'$text unselected';
 }
 
 /// The translations for Albanian (`sq`).
@@ -4389,7 +6369,10 @@ class WidgetsLocalizationSq extends GlobalWidgetsLocalizations {
   /// Create an instance of the translation bundle for Albanian.
   ///
   /// For details on the meaning of the arguments, see [GlobalWidgetsLocalizations].
-  const WidgetsLocalizationSq() : super(TextDirection.ltr);
+  const WidgetsLocalizationSq() : super(TextDirection.ltr, localeName: 'sq');
+
+  @override
+  String get allTextSelectedAnnouncement => 'All text selected';
 
   @override
   String get copyButtonLabel => 'Kopjo';
@@ -4399,6 +6382,9 @@ class WidgetsLocalizationSq extends GlobalWidgetsLocalizations {
 
   @override
   String get lookUpButtonLabel => 'Kërko';
+
+  @override
+  String get newLineCharacterName => 'new line';
 
   @override
   String get noResultsFound => 'Nuk u gjet asnjë rezultat';
@@ -4437,7 +6423,31 @@ class WidgetsLocalizationSq extends GlobalWidgetsLocalizations {
   String get selectAllButtonLabel => 'Zgjidh të gjitha';
 
   @override
+  String? get selectedCharacterCountAnnouncementOne => r'$count character selected';
+
+  @override
+  String get selectedCharacterCountAnnouncementOther => r'$count characters selected';
+
+  @override
+  String get selectedTextAnnouncementRaw => r'$text selected';
+
+  @override
+  String get selectionClearedAnnouncement => 'Selection cleared';
+
+  @override
+  String get selectionReplacedAnnouncementRaw => r'$unselected unselected, $selected selected';
+
+  @override
   String get shareButtonLabel => 'Ndaj';
+
+  @override
+  String get spaceCharacterName => 'space';
+
+  @override
+  String get tabCharacterName => 'tab';
+
+  @override
+  String get unselectedTextAnnouncementRaw => r'$text unselected';
 }
 
 /// The translations for Serbian (`sr`).
@@ -4445,7 +6455,10 @@ class WidgetsLocalizationSr extends GlobalWidgetsLocalizations {
   /// Create an instance of the translation bundle for Serbian.
   ///
   /// For details on the meaning of the arguments, see [GlobalWidgetsLocalizations].
-  const WidgetsLocalizationSr() : super(TextDirection.ltr);
+  const WidgetsLocalizationSr() : super(TextDirection.ltr, localeName: 'sr');
+
+  @override
+  String get allTextSelectedAnnouncement => 'All text selected';
 
   @override
   String get copyButtonLabel => 'Копирај';
@@ -4455,6 +6468,9 @@ class WidgetsLocalizationSr extends GlobalWidgetsLocalizations {
 
   @override
   String get lookUpButtonLabel => 'Поглед нагоре';
+
+  @override
+  String get newLineCharacterName => 'new line';
 
   @override
   String get noResultsFound => 'Није пронађен ниједан резултат';
@@ -4493,7 +6509,31 @@ class WidgetsLocalizationSr extends GlobalWidgetsLocalizations {
   String get selectAllButtonLabel => 'Изабери све';
 
   @override
+  String? get selectedCharacterCountAnnouncementOne => r'$count character selected';
+
+  @override
+  String get selectedCharacterCountAnnouncementOther => r'$count characters selected';
+
+  @override
+  String get selectedTextAnnouncementRaw => r'$text selected';
+
+  @override
+  String get selectionClearedAnnouncement => 'Selection cleared';
+
+  @override
+  String get selectionReplacedAnnouncementRaw => r'$unselected unselected, $selected selected';
+
+  @override
   String get shareButtonLabel => 'Дели';
+
+  @override
+  String get spaceCharacterName => 'space';
+
+  @override
+  String get tabCharacterName => 'tab';
+
+  @override
+  String get unselectedTextAnnouncementRaw => r'$text unselected';
 }
 
 /// The translations for Serbian, using the Cyrillic script (`sr_Cyrl`).
@@ -4565,7 +6605,10 @@ class WidgetsLocalizationSv extends GlobalWidgetsLocalizations {
   /// Create an instance of the translation bundle for Swedish.
   ///
   /// For details on the meaning of the arguments, see [GlobalWidgetsLocalizations].
-  const WidgetsLocalizationSv() : super(TextDirection.ltr);
+  const WidgetsLocalizationSv() : super(TextDirection.ltr, localeName: 'sv');
+
+  @override
+  String get allTextSelectedAnnouncement => 'All text selected';
 
   @override
   String get copyButtonLabel => 'Kopiera';
@@ -4575,6 +6618,9 @@ class WidgetsLocalizationSv extends GlobalWidgetsLocalizations {
 
   @override
   String get lookUpButtonLabel => 'Titta upp';
+
+  @override
+  String get newLineCharacterName => 'new line';
 
   @override
   String get noResultsFound => 'Inga resultat hittades';
@@ -4613,7 +6659,31 @@ class WidgetsLocalizationSv extends GlobalWidgetsLocalizations {
   String get selectAllButtonLabel => 'Markera allt';
 
   @override
+  String? get selectedCharacterCountAnnouncementOne => r'$count character selected';
+
+  @override
+  String get selectedCharacterCountAnnouncementOther => r'$count characters selected';
+
+  @override
+  String get selectedTextAnnouncementRaw => r'$text selected';
+
+  @override
+  String get selectionClearedAnnouncement => 'Selection cleared';
+
+  @override
+  String get selectionReplacedAnnouncementRaw => r'$unselected unselected, $selected selected';
+
+  @override
   String get shareButtonLabel => 'Dela';
+
+  @override
+  String get spaceCharacterName => 'space';
+
+  @override
+  String get tabCharacterName => 'tab';
+
+  @override
+  String get unselectedTextAnnouncementRaw => r'$text unselected';
 }
 
 /// The translations for Swahili (`sw`).
@@ -4621,7 +6691,10 @@ class WidgetsLocalizationSw extends GlobalWidgetsLocalizations {
   /// Create an instance of the translation bundle for Swahili.
   ///
   /// For details on the meaning of the arguments, see [GlobalWidgetsLocalizations].
-  const WidgetsLocalizationSw() : super(TextDirection.ltr);
+  const WidgetsLocalizationSw() : super(TextDirection.ltr, localeName: 'sw');
+
+  @override
+  String get allTextSelectedAnnouncement => 'All text selected';
 
   @override
   String get copyButtonLabel => 'Nakili';
@@ -4631,6 +6704,9 @@ class WidgetsLocalizationSw extends GlobalWidgetsLocalizations {
 
   @override
   String get lookUpButtonLabel => 'Tafuta';
+
+  @override
+  String get newLineCharacterName => 'new line';
 
   @override
   String get noResultsFound => 'Hakuna matokeo yaliyopatikana';
@@ -4669,7 +6745,31 @@ class WidgetsLocalizationSw extends GlobalWidgetsLocalizations {
   String get selectAllButtonLabel => 'Chagua vyote';
 
   @override
+  String? get selectedCharacterCountAnnouncementOne => r'$count character selected';
+
+  @override
+  String get selectedCharacterCountAnnouncementOther => r'$count characters selected';
+
+  @override
+  String get selectedTextAnnouncementRaw => r'$text selected';
+
+  @override
+  String get selectionClearedAnnouncement => 'Selection cleared';
+
+  @override
+  String get selectionReplacedAnnouncementRaw => r'$unselected unselected, $selected selected';
+
+  @override
   String get shareButtonLabel => 'Tuma';
+
+  @override
+  String get spaceCharacterName => 'space';
+
+  @override
+  String get tabCharacterName => 'tab';
+
+  @override
+  String get unselectedTextAnnouncementRaw => r'$text unselected';
 }
 
 /// The translations for Tamil (`ta`).
@@ -4677,7 +6777,10 @@ class WidgetsLocalizationTa extends GlobalWidgetsLocalizations {
   /// Create an instance of the translation bundle for Tamil.
   ///
   /// For details on the meaning of the arguments, see [GlobalWidgetsLocalizations].
-  const WidgetsLocalizationTa() : super(TextDirection.ltr);
+  const WidgetsLocalizationTa() : super(TextDirection.ltr, localeName: 'ta');
+
+  @override
+  String get allTextSelectedAnnouncement => 'All text selected';
 
   @override
   String get copyButtonLabel => 'நகலெடு';
@@ -4687,6 +6790,9 @@ class WidgetsLocalizationTa extends GlobalWidgetsLocalizations {
 
   @override
   String get lookUpButtonLabel => 'தேடு';
+
+  @override
+  String get newLineCharacterName => 'new line';
 
   @override
   String get noResultsFound => 'முடிவுகள் இல்லை';
@@ -4725,7 +6831,31 @@ class WidgetsLocalizationTa extends GlobalWidgetsLocalizations {
   String get selectAllButtonLabel => 'அனைத்தையும் தேர்ந்தெடு';
 
   @override
+  String? get selectedCharacterCountAnnouncementOne => r'$count character selected';
+
+  @override
+  String get selectedCharacterCountAnnouncementOther => r'$count characters selected';
+
+  @override
+  String get selectedTextAnnouncementRaw => r'$text selected';
+
+  @override
+  String get selectionClearedAnnouncement => 'Selection cleared';
+
+  @override
+  String get selectionReplacedAnnouncementRaw => r'$unselected unselected, $selected selected';
+
+  @override
   String get shareButtonLabel => 'பகிர்';
+
+  @override
+  String get spaceCharacterName => 'space';
+
+  @override
+  String get tabCharacterName => 'tab';
+
+  @override
+  String get unselectedTextAnnouncementRaw => r'$text unselected';
 }
 
 /// The translations for Telugu (`te`).
@@ -4733,7 +6863,10 @@ class WidgetsLocalizationTe extends GlobalWidgetsLocalizations {
   /// Create an instance of the translation bundle for Telugu.
   ///
   /// For details on the meaning of the arguments, see [GlobalWidgetsLocalizations].
-  const WidgetsLocalizationTe() : super(TextDirection.ltr);
+  const WidgetsLocalizationTe() : super(TextDirection.ltr, localeName: 'te');
+
+  @override
+  String get allTextSelectedAnnouncement => 'All text selected';
 
   @override
   String get copyButtonLabel => 'కాపీ చేయి';
@@ -4743,6 +6876,9 @@ class WidgetsLocalizationTe extends GlobalWidgetsLocalizations {
 
   @override
   String get lookUpButtonLabel => 'వెతకండి';
+
+  @override
+  String get newLineCharacterName => 'new line';
 
   @override
   String get noResultsFound => 'ఫలితాలు ఏవీ కనుగొనబడలేదు';
@@ -4781,7 +6917,31 @@ class WidgetsLocalizationTe extends GlobalWidgetsLocalizations {
   String get selectAllButtonLabel => 'అన్నింటినీ ఎంచుకోండి';
 
   @override
+  String? get selectedCharacterCountAnnouncementOne => r'$count character selected';
+
+  @override
+  String get selectedCharacterCountAnnouncementOther => r'$count characters selected';
+
+  @override
+  String get selectedTextAnnouncementRaw => r'$text selected';
+
+  @override
+  String get selectionClearedAnnouncement => 'Selection cleared';
+
+  @override
+  String get selectionReplacedAnnouncementRaw => r'$unselected unselected, $selected selected';
+
+  @override
   String get shareButtonLabel => 'షేర్ చేయండి';
+
+  @override
+  String get spaceCharacterName => 'space';
+
+  @override
+  String get tabCharacterName => 'tab';
+
+  @override
+  String get unselectedTextAnnouncementRaw => r'$text unselected';
 }
 
 /// The translations for Thai (`th`).
@@ -4789,7 +6949,10 @@ class WidgetsLocalizationTh extends GlobalWidgetsLocalizations {
   /// Create an instance of the translation bundle for Thai.
   ///
   /// For details on the meaning of the arguments, see [GlobalWidgetsLocalizations].
-  const WidgetsLocalizationTh() : super(TextDirection.ltr);
+  const WidgetsLocalizationTh() : super(TextDirection.ltr, localeName: 'th');
+
+  @override
+  String get allTextSelectedAnnouncement => 'All text selected';
 
   @override
   String get copyButtonLabel => 'คัดลอก';
@@ -4799,6 +6962,9 @@ class WidgetsLocalizationTh extends GlobalWidgetsLocalizations {
 
   @override
   String get lookUpButtonLabel => 'ค้นหา';
+
+  @override
+  String get newLineCharacterName => 'new line';
 
   @override
   String get noResultsFound => 'ไม่พบผลลัพธ์';
@@ -4837,7 +7003,31 @@ class WidgetsLocalizationTh extends GlobalWidgetsLocalizations {
   String get selectAllButtonLabel => 'เลือกทั้งหมด';
 
   @override
+  String? get selectedCharacterCountAnnouncementOne => r'$count character selected';
+
+  @override
+  String get selectedCharacterCountAnnouncementOther => r'$count characters selected';
+
+  @override
+  String get selectedTextAnnouncementRaw => r'$text selected';
+
+  @override
+  String get selectionClearedAnnouncement => 'Selection cleared';
+
+  @override
+  String get selectionReplacedAnnouncementRaw => r'$unselected unselected, $selected selected';
+
+  @override
   String get shareButtonLabel => 'แชร์';
+
+  @override
+  String get spaceCharacterName => 'space';
+
+  @override
+  String get tabCharacterName => 'tab';
+
+  @override
+  String get unselectedTextAnnouncementRaw => r'$text unselected';
 }
 
 /// The translations for Tagalog (`tl`).
@@ -4845,7 +7035,10 @@ class WidgetsLocalizationTl extends GlobalWidgetsLocalizations {
   /// Create an instance of the translation bundle for Tagalog.
   ///
   /// For details on the meaning of the arguments, see [GlobalWidgetsLocalizations].
-  const WidgetsLocalizationTl() : super(TextDirection.ltr);
+  const WidgetsLocalizationTl() : super(TextDirection.ltr, localeName: 'tl');
+
+  @override
+  String get allTextSelectedAnnouncement => 'All text selected';
 
   @override
   String get copyButtonLabel => 'Kopyahin';
@@ -4855,6 +7048,9 @@ class WidgetsLocalizationTl extends GlobalWidgetsLocalizations {
 
   @override
   String get lookUpButtonLabel => 'Tumingin sa Itaas';
+
+  @override
+  String get newLineCharacterName => 'new line';
 
   @override
   String get noResultsFound => 'Walang nakitang resulta';
@@ -4893,7 +7089,31 @@ class WidgetsLocalizationTl extends GlobalWidgetsLocalizations {
   String get selectAllButtonLabel => 'Piliin lahat';
 
   @override
+  String? get selectedCharacterCountAnnouncementOne => r'$count character selected';
+
+  @override
+  String get selectedCharacterCountAnnouncementOther => r'$count characters selected';
+
+  @override
+  String get selectedTextAnnouncementRaw => r'$text selected';
+
+  @override
+  String get selectionClearedAnnouncement => 'Selection cleared';
+
+  @override
+  String get selectionReplacedAnnouncementRaw => r'$unselected unselected, $selected selected';
+
+  @override
   String get shareButtonLabel => 'I-share';
+
+  @override
+  String get spaceCharacterName => 'space';
+
+  @override
+  String get tabCharacterName => 'tab';
+
+  @override
+  String get unselectedTextAnnouncementRaw => r'$text unselected';
 }
 
 /// The translations for Turkish (`tr`).
@@ -4901,7 +7121,10 @@ class WidgetsLocalizationTr extends GlobalWidgetsLocalizations {
   /// Create an instance of the translation bundle for Turkish.
   ///
   /// For details on the meaning of the arguments, see [GlobalWidgetsLocalizations].
-  const WidgetsLocalizationTr() : super(TextDirection.ltr);
+  const WidgetsLocalizationTr() : super(TextDirection.ltr, localeName: 'tr');
+
+  @override
+  String get allTextSelectedAnnouncement => 'All text selected';
 
   @override
   String get copyButtonLabel => 'Kopyala';
@@ -4911,6 +7134,9 @@ class WidgetsLocalizationTr extends GlobalWidgetsLocalizations {
 
   @override
   String get lookUpButtonLabel => 'Ara';
+
+  @override
+  String get newLineCharacterName => 'new line';
 
   @override
   String get noResultsFound => 'Sonuç bulunamadı';
@@ -4949,7 +7175,31 @@ class WidgetsLocalizationTr extends GlobalWidgetsLocalizations {
   String get selectAllButtonLabel => 'Tümünü seç';
 
   @override
+  String? get selectedCharacterCountAnnouncementOne => r'$count character selected';
+
+  @override
+  String get selectedCharacterCountAnnouncementOther => r'$count characters selected';
+
+  @override
+  String get selectedTextAnnouncementRaw => r'$text selected';
+
+  @override
+  String get selectionClearedAnnouncement => 'Selection cleared';
+
+  @override
+  String get selectionReplacedAnnouncementRaw => r'$unselected unselected, $selected selected';
+
+  @override
   String get shareButtonLabel => 'Paylaş';
+
+  @override
+  String get spaceCharacterName => 'space';
+
+  @override
+  String get tabCharacterName => 'tab';
+
+  @override
+  String get unselectedTextAnnouncementRaw => r'$text unselected';
 }
 
 /// The translations for Uighur Uyghur (`ug`).
@@ -4957,7 +7207,10 @@ class WidgetsLocalizationUg extends GlobalWidgetsLocalizations {
   /// Create an instance of the translation bundle for Uighur Uyghur.
   ///
   /// For details on the meaning of the arguments, see [GlobalWidgetsLocalizations].
-  const WidgetsLocalizationUg() : super(TextDirection.ltr);
+  const WidgetsLocalizationUg() : super(TextDirection.ltr, localeName: 'ug');
+
+  @override
+  String get allTextSelectedAnnouncement => 'All text selected';
 
   @override
   String get copyButtonLabel => 'كۆچۈرۈش';
@@ -4967,6 +7220,9 @@ class WidgetsLocalizationUg extends GlobalWidgetsLocalizations {
 
   @override
   String get lookUpButtonLabel => 'ئىزدەش';
+
+  @override
+  String get newLineCharacterName => 'new line';
 
   @override
   String get noResultsFound => 'نەتىجە تېپىلمىدى';
@@ -5005,7 +7261,31 @@ class WidgetsLocalizationUg extends GlobalWidgetsLocalizations {
   String get selectAllButtonLabel => 'ھەممىنى تاللاش';
 
   @override
+  String? get selectedCharacterCountAnnouncementOne => r'$count character selected';
+
+  @override
+  String get selectedCharacterCountAnnouncementOther => r'$count characters selected';
+
+  @override
+  String get selectedTextAnnouncementRaw => r'$text selected';
+
+  @override
+  String get selectionClearedAnnouncement => 'Selection cleared';
+
+  @override
+  String get selectionReplacedAnnouncementRaw => r'$unselected unselected, $selected selected';
+
+  @override
   String get shareButtonLabel => 'ھەمبەھرلەش';
+
+  @override
+  String get spaceCharacterName => 'space';
+
+  @override
+  String get tabCharacterName => 'tab';
+
+  @override
+  String get unselectedTextAnnouncementRaw => r'$text unselected';
 }
 
 /// The translations for Ukrainian (`uk`).
@@ -5013,7 +7293,10 @@ class WidgetsLocalizationUk extends GlobalWidgetsLocalizations {
   /// Create an instance of the translation bundle for Ukrainian.
   ///
   /// For details on the meaning of the arguments, see [GlobalWidgetsLocalizations].
-  const WidgetsLocalizationUk() : super(TextDirection.ltr);
+  const WidgetsLocalizationUk() : super(TextDirection.ltr, localeName: 'uk');
+
+  @override
+  String get allTextSelectedAnnouncement => 'All text selected';
 
   @override
   String get copyButtonLabel => 'Копіювати';
@@ -5023,6 +7306,9 @@ class WidgetsLocalizationUk extends GlobalWidgetsLocalizations {
 
   @override
   String get lookUpButtonLabel => 'Шукати';
+
+  @override
+  String get newLineCharacterName => 'new line';
 
   @override
   String get noResultsFound => 'Результатів не знайдено';
@@ -5061,7 +7347,31 @@ class WidgetsLocalizationUk extends GlobalWidgetsLocalizations {
   String get selectAllButtonLabel => 'Вибрати всі';
 
   @override
+  String? get selectedCharacterCountAnnouncementOne => r'$count character selected';
+
+  @override
+  String get selectedCharacterCountAnnouncementOther => r'$count characters selected';
+
+  @override
+  String get selectedTextAnnouncementRaw => r'$text selected';
+
+  @override
+  String get selectionClearedAnnouncement => 'Selection cleared';
+
+  @override
+  String get selectionReplacedAnnouncementRaw => r'$unselected unselected, $selected selected';
+
+  @override
   String get shareButtonLabel => 'Поділитися';
+
+  @override
+  String get spaceCharacterName => 'space';
+
+  @override
+  String get tabCharacterName => 'tab';
+
+  @override
+  String get unselectedTextAnnouncementRaw => r'$text unselected';
 }
 
 /// The translations for Urdu (`ur`).
@@ -5069,7 +7379,10 @@ class WidgetsLocalizationUr extends GlobalWidgetsLocalizations {
   /// Create an instance of the translation bundle for Urdu.
   ///
   /// For details on the meaning of the arguments, see [GlobalWidgetsLocalizations].
-  const WidgetsLocalizationUr() : super(TextDirection.rtl);
+  const WidgetsLocalizationUr() : super(TextDirection.rtl, localeName: 'ur');
+
+  @override
+  String get allTextSelectedAnnouncement => 'All text selected';
 
   @override
   String get copyButtonLabel => 'کاپی کریں';
@@ -5079,6 +7392,9 @@ class WidgetsLocalizationUr extends GlobalWidgetsLocalizations {
 
   @override
   String get lookUpButtonLabel => 'تفصیل دیکھیں';
+
+  @override
+  String get newLineCharacterName => 'new line';
 
   @override
   String get noResultsFound => 'کوئی نتائج نہیں ملے';
@@ -5117,7 +7433,31 @@ class WidgetsLocalizationUr extends GlobalWidgetsLocalizations {
   String get selectAllButtonLabel => 'سبھی کو منتخب کریں';
 
   @override
+  String? get selectedCharacterCountAnnouncementOne => r'$count character selected';
+
+  @override
+  String get selectedCharacterCountAnnouncementOther => r'$count characters selected';
+
+  @override
+  String get selectedTextAnnouncementRaw => r'$text selected';
+
+  @override
+  String get selectionClearedAnnouncement => 'Selection cleared';
+
+  @override
+  String get selectionReplacedAnnouncementRaw => r'$unselected unselected, $selected selected';
+
+  @override
   String get shareButtonLabel => 'اشتراک کریں';
+
+  @override
+  String get spaceCharacterName => 'space';
+
+  @override
+  String get tabCharacterName => 'tab';
+
+  @override
+  String get unselectedTextAnnouncementRaw => r'$text unselected';
 }
 
 /// The translations for Uzbek (`uz`).
@@ -5125,7 +7465,10 @@ class WidgetsLocalizationUz extends GlobalWidgetsLocalizations {
   /// Create an instance of the translation bundle for Uzbek.
   ///
   /// For details on the meaning of the arguments, see [GlobalWidgetsLocalizations].
-  const WidgetsLocalizationUz() : super(TextDirection.ltr);
+  const WidgetsLocalizationUz() : super(TextDirection.ltr, localeName: 'uz');
+
+  @override
+  String get allTextSelectedAnnouncement => 'All text selected';
 
   @override
   String get copyButtonLabel => 'Nusxa olish';
@@ -5135,6 +7478,9 @@ class WidgetsLocalizationUz extends GlobalWidgetsLocalizations {
 
   @override
   String get lookUpButtonLabel => 'Tepaga qarang';
+
+  @override
+  String get newLineCharacterName => 'new line';
 
   @override
   String get noResultsFound => 'Hech narsa topilmadi';
@@ -5173,7 +7519,31 @@ class WidgetsLocalizationUz extends GlobalWidgetsLocalizations {
   String get selectAllButtonLabel => 'Hammasi';
 
   @override
+  String? get selectedCharacterCountAnnouncementOne => r'$count character selected';
+
+  @override
+  String get selectedCharacterCountAnnouncementOther => r'$count characters selected';
+
+  @override
+  String get selectedTextAnnouncementRaw => r'$text selected';
+
+  @override
+  String get selectionClearedAnnouncement => 'Selection cleared';
+
+  @override
+  String get selectionReplacedAnnouncementRaw => r'$unselected unselected, $selected selected';
+
+  @override
   String get shareButtonLabel => 'Ulashish';
+
+  @override
+  String get spaceCharacterName => 'space';
+
+  @override
+  String get tabCharacterName => 'tab';
+
+  @override
+  String get unselectedTextAnnouncementRaw => r'$text unselected';
 }
 
 /// The translations for Vietnamese (`vi`).
@@ -5181,7 +7551,10 @@ class WidgetsLocalizationVi extends GlobalWidgetsLocalizations {
   /// Create an instance of the translation bundle for Vietnamese.
   ///
   /// For details on the meaning of the arguments, see [GlobalWidgetsLocalizations].
-  const WidgetsLocalizationVi() : super(TextDirection.ltr);
+  const WidgetsLocalizationVi() : super(TextDirection.ltr, localeName: 'vi');
+
+  @override
+  String get allTextSelectedAnnouncement => 'All text selected';
 
   @override
   String get copyButtonLabel => 'Sao chép';
@@ -5191,6 +7564,9 @@ class WidgetsLocalizationVi extends GlobalWidgetsLocalizations {
 
   @override
   String get lookUpButtonLabel => 'Tra cứu';
+
+  @override
+  String get newLineCharacterName => 'new line';
 
   @override
   String get noResultsFound => 'Không tìm thấy kết quả';
@@ -5229,7 +7605,31 @@ class WidgetsLocalizationVi extends GlobalWidgetsLocalizations {
   String get selectAllButtonLabel => 'Chọn tất cả';
 
   @override
+  String? get selectedCharacterCountAnnouncementOne => r'$count character selected';
+
+  @override
+  String get selectedCharacterCountAnnouncementOther => r'$count characters selected';
+
+  @override
+  String get selectedTextAnnouncementRaw => r'$text selected';
+
+  @override
+  String get selectionClearedAnnouncement => 'Selection cleared';
+
+  @override
+  String get selectionReplacedAnnouncementRaw => r'$unselected unselected, $selected selected';
+
+  @override
   String get shareButtonLabel => 'Chia sẻ';
+
+  @override
+  String get spaceCharacterName => 'space';
+
+  @override
+  String get tabCharacterName => 'tab';
+
+  @override
+  String get unselectedTextAnnouncementRaw => r'$text unselected';
 }
 
 /// The translations for Chinese (`zh`).
@@ -5237,7 +7637,10 @@ class WidgetsLocalizationZh extends GlobalWidgetsLocalizations {
   /// Create an instance of the translation bundle for Chinese.
   ///
   /// For details on the meaning of the arguments, see [GlobalWidgetsLocalizations].
-  const WidgetsLocalizationZh() : super(TextDirection.ltr);
+  const WidgetsLocalizationZh() : super(TextDirection.ltr, localeName: 'zh');
+
+  @override
+  String get allTextSelectedAnnouncement => 'All text selected';
 
   @override
   String get copyButtonLabel => '复制';
@@ -5247,6 +7650,9 @@ class WidgetsLocalizationZh extends GlobalWidgetsLocalizations {
 
   @override
   String get lookUpButtonLabel => '查询';
+
+  @override
+  String get newLineCharacterName => 'new line';
 
   @override
   String get noResultsFound => '未找到任何结果';
@@ -5285,7 +7691,31 @@ class WidgetsLocalizationZh extends GlobalWidgetsLocalizations {
   String get selectAllButtonLabel => '全选';
 
   @override
+  String? get selectedCharacterCountAnnouncementOne => r'$count character selected';
+
+  @override
+  String get selectedCharacterCountAnnouncementOther => r'$count characters selected';
+
+  @override
+  String get selectedTextAnnouncementRaw => r'$text selected';
+
+  @override
+  String get selectionClearedAnnouncement => 'Selection cleared';
+
+  @override
+  String get selectionReplacedAnnouncementRaw => r'$unselected unselected, $selected selected';
+
+  @override
   String get shareButtonLabel => '分享';
+
+  @override
+  String get spaceCharacterName => 'space';
+
+  @override
+  String get tabCharacterName => 'tab';
+
+  @override
+  String get unselectedTextAnnouncementRaw => r'$text unselected';
 }
 
 /// The translations for Chinese, using the Han script (`zh_Hans`).
@@ -5388,7 +7818,10 @@ class WidgetsLocalizationZu extends GlobalWidgetsLocalizations {
   /// Create an instance of the translation bundle for Zulu.
   ///
   /// For details on the meaning of the arguments, see [GlobalWidgetsLocalizations].
-  const WidgetsLocalizationZu() : super(TextDirection.ltr);
+  const WidgetsLocalizationZu() : super(TextDirection.ltr, localeName: 'zu');
+
+  @override
+  String get allTextSelectedAnnouncement => 'All text selected';
 
   @override
   String get copyButtonLabel => 'Kopisha';
@@ -5398,6 +7831,9 @@ class WidgetsLocalizationZu extends GlobalWidgetsLocalizations {
 
   @override
   String get lookUpButtonLabel => 'Bheka Phezulu';
+
+  @override
+  String get newLineCharacterName => 'new line';
 
   @override
   String get noResultsFound => 'Ayikho imiphumela etholakele';
@@ -5436,7 +7872,31 @@ class WidgetsLocalizationZu extends GlobalWidgetsLocalizations {
   String get selectAllButtonLabel => 'Khetha konke';
 
   @override
+  String? get selectedCharacterCountAnnouncementOne => r'$count character selected';
+
+  @override
+  String get selectedCharacterCountAnnouncementOther => r'$count characters selected';
+
+  @override
+  String get selectedTextAnnouncementRaw => r'$text selected';
+
+  @override
+  String get selectionClearedAnnouncement => 'Selection cleared';
+
+  @override
+  String get selectionReplacedAnnouncementRaw => r'$unselected unselected, $selected selected';
+
+  @override
   String get shareButtonLabel => 'Yabelana';
+
+  @override
+  String get spaceCharacterName => 'space';
+
+  @override
+  String get tabCharacterName => 'tab';
+
+  @override
+  String get unselectedTextAnnouncementRaw => r'$text unselected';
 }
 
 /// The set of supported languages, as language code strings.

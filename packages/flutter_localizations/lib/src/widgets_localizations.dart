@@ -9,6 +9,7 @@ library;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
+import 'package:intl/intl.dart' as intl;
 
 import 'l10n/generated_widgets_localizations.dart';
 
@@ -36,10 +37,109 @@ import 'l10n/generated_widgets_localizations.dart';
 abstract class GlobalWidgetsLocalizations implements WidgetsLocalizations {
   /// Construct an object that defines the localized values for the widgets
   /// library for the given [textDirection].
-  const GlobalWidgetsLocalizations(this.textDirection);
+  ///
+  /// The `localeName` selects the plural rules of
+  /// [selectedCharacterCountAnnouncement] (see [intl.Intl.pluralLogic]); the
+  /// generated subclasses pass their own locale and it defaults to English.
+  const GlobalWidgetsLocalizations(this.textDirection, {this._localeName = 'en'});
 
   @override
   final TextDirection textDirection;
+
+  final String _localeName;
+
+  /// The raw version of [selectedTextAnnouncement], with `$text` verbatim in
+  /// the string.
+  @protected
+  String get selectedTextAnnouncementRaw;
+
+  @override
+  String selectedTextAnnouncement(String text) {
+    return selectedTextAnnouncementRaw.replaceFirst(r'$text', text);
+  }
+
+  /// The raw version of [unselectedTextAnnouncement], with `$text` verbatim
+  /// in the string.
+  @protected
+  String get unselectedTextAnnouncementRaw;
+
+  @override
+  String unselectedTextAnnouncement(String text) {
+    return unselectedTextAnnouncementRaw.replaceFirst(r'$text', text);
+  }
+
+  /// The raw version of [selectionReplacedAnnouncement], with `$unselected`
+  /// and `$selected` verbatim in the string.
+  @protected
+  String get selectionReplacedAnnouncementRaw;
+
+  static final RegExp _selectionReplacedPlaceholders = RegExp(r'\$(unselected|selected)');
+
+  @override
+  String selectionReplacedAnnouncement(String unselected, String selected) {
+    // One pass, so that a placeholder-like substring in the user's text is
+    // never substituted.
+    return selectionReplacedAnnouncementRaw.replaceAllMapped(
+      _selectionReplacedPlaceholders,
+      (Match match) => match[1] == 'unselected' ? unselected : selected,
+    );
+  }
+
+  /// The "zero" form of [selectedCharacterCountAnnouncement].
+  ///
+  /// This form is optional.
+  ///
+  /// See also:
+  ///
+  ///  * [intl.Intl.plural], to which this form is passed.
+  ///  * [selectedCharacterCountAnnouncementOther], the "other" form
+  @protected
+  String? get selectedCharacterCountAnnouncementZero => null;
+
+  /// The "one" form of [selectedCharacterCountAnnouncement].
+  ///
+  /// This form is optional.
+  @protected
+  String? get selectedCharacterCountAnnouncementOne => null;
+
+  /// The "two" form of [selectedCharacterCountAnnouncement].
+  ///
+  /// This form is optional.
+  @protected
+  String? get selectedCharacterCountAnnouncementTwo => null;
+
+  /// The "few" form of [selectedCharacterCountAnnouncement].
+  ///
+  /// This form is optional.
+  @protected
+  String? get selectedCharacterCountAnnouncementFew => null;
+
+  /// The "many" form of [selectedCharacterCountAnnouncement].
+  ///
+  /// This form is optional.
+  @protected
+  String? get selectedCharacterCountAnnouncementMany => null;
+
+  /// The "other" form of [selectedCharacterCountAnnouncement], with `$count`
+  /// verbatim in the string.
+  ///
+  /// This form is required.
+  @protected
+  String get selectedCharacterCountAnnouncementOther;
+
+  @override
+  String selectedCharacterCountAnnouncement(int count) {
+    return intl.Intl.pluralLogic(
+      count,
+      zero: selectedCharacterCountAnnouncementZero,
+      one: selectedCharacterCountAnnouncementOne,
+      two: selectedCharacterCountAnnouncementTwo,
+      few: selectedCharacterCountAnnouncementFew,
+      many: selectedCharacterCountAnnouncementMany,
+      other: selectedCharacterCountAnnouncementOther,
+      locale: _localeName,
+    ).replaceFirst(r'$count', count.toString());
+  }
 
   /// A [LocalizationsDelegate] for [WidgetsLocalizations].
   ///

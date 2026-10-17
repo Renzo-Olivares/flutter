@@ -14,5 +14,15 @@
   "selectAllButtonLabel": "Баарын тандоо",
   "searchResultsFound": "Изделген нерсе табылды",
   "noResultsFound": "Эч нерсе табылган жок",
-  "radioButtonUnselectedLabel": "Тандалган жок"
+  "radioButtonUnselectedLabel": "Тандалган жок",
+  "selectedTextAnnouncement": "$text selected",
+  "unselectedTextAnnouncement": "$text unselected",
+  "selectionClearedAnnouncement": "Selection cleared",
+  "selectedCharacterCountAnnouncementOne": "$count character selected",
+  "selectedCharacterCountAnnouncementOther": "$count characters selected",
+  "allTextSelectedAnnouncement": "All text selected",
+  "selectionReplacedAnnouncement": "$unselected unselected, $selected selected",
+  "spaceCharacterName": "space",
+  "newLineCharacterName": "new line",
+  "tabCharacterName": "tab"
 }

@@ -14,5 +14,15 @@
   "selectAllButtonLabel": "전체 선택",
   "searchResultsFound": "검색 결과 찾음",
   "noResultsFound": "검색 결과 없음",
-  "radioButtonUnselectedLabel": "선택되지 않음"
+  "radioButtonUnselectedLabel": "선택되지 않음",
+  "selectedTextAnnouncement": "$text selected",
+  "unselectedTextAnnouncement": "$text unselected",
+  "selectionClearedAnnouncement": "Selection cleared",
+  "selectedCharacterCountAnnouncementOne": "$count character selected",
+  "selectedCharacterCountAnnouncementOther": "$count characters selected",
+  "allTextSelectedAnnouncement": "All text selected",
+  "selectionReplacedAnnouncement": "$unselected unselected, $selected selected",
+  "spaceCharacterName": "space",
+  "newLineCharacterName": "new line",
+  "tabCharacterName": "tab"
 }

@@ -14,5 +14,15 @@
   "selectAllButtonLabel": "Zgjidh të gjitha",
   "searchResultsFound": "U gjetën rezultate kërkimi",
   "noResultsFound": "Nuk u gjet asnjë rezultat",
-  "radioButtonUnselectedLabel": "Nuk është zgjedhur"
+  "radioButtonUnselectedLabel": "Nuk është zgjedhur",
+  "selectedTextAnnouncement": "$text selected",
+  "unselectedTextAnnouncement": "$text unselected",
+  "selectionClearedAnnouncement": "Selection cleared",
+  "selectedCharacterCountAnnouncementOne": "$count character selected",
+  "selectedCharacterCountAnnouncementOther": "$count characters selected",
+  "allTextSelectedAnnouncement": "All text selected",
+  "selectionReplacedAnnouncement": "$unselected unselected, $selected selected",
+  "spaceCharacterName": "space",
+  "newLineCharacterName": "new line",
+  "tabCharacterName": "tab"
 }

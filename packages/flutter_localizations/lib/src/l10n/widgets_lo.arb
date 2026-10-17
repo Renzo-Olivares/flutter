@@ -14,5 +14,15 @@
   "selectAllButtonLabel": "ເລືອກທັງໝົດ",
   "searchResultsFound": "ພົບຜົນການຊອກຫາ",
   "noResultsFound": "ບໍ່ພົບຜົນການຊອກຫາ",
-  "radioButtonUnselectedLabel": "ບໍ່ໄດ້ເລືອກ"
+  "radioButtonUnselectedLabel": "ບໍ່ໄດ້ເລືອກ",
+  "selectedTextAnnouncement": "$text selected",
+  "unselectedTextAnnouncement": "$text unselected",
+  "selectionClearedAnnouncement": "Selection cleared",
+  "selectedCharacterCountAnnouncementOne": "$count character selected",
+  "selectedCharacterCountAnnouncementOther": "$count characters selected",
+  "allTextSelectedAnnouncement": "All text selected",
+  "selectionReplacedAnnouncement": "$unselected unselected, $selected selected",
+  "spaceCharacterName": "space",
+  "newLineCharacterName": "new line",
+  "tabCharacterName": "tab"
 }

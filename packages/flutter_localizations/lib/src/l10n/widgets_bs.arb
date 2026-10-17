@@ -14,5 +14,15 @@
   "selectAllButtonLabel": "Odaberi sve",
   "searchResultsFound": "Pronađeni su rezultati pretraživanja",
   "noResultsFound": "Nije pronađen nijedan rezultat",
-  "radioButtonUnselectedLabel": "Nije odabrano"
+  "radioButtonUnselectedLabel": "Nije odabrano",
+  "selectedTextAnnouncement": "$text selected",
+  "unselectedTextAnnouncement": "$text unselected",
+  "selectionClearedAnnouncement": "Selection cleared",
+  "selectedCharacterCountAnnouncementOne": "$count character selected",
+  "selectedCharacterCountAnnouncementOther": "$count characters selected",
+  "allTextSelectedAnnouncement": "All text selected",
+  "selectionReplacedAnnouncement": "$unselected unselected, $selected selected",
+  "spaceCharacterName": "space",
+  "newLineCharacterName": "new line",
+  "tabCharacterName": "tab"
 }

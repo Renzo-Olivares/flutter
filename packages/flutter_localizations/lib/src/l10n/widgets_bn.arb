@@ -14,5 +14,15 @@
   "selectAllButtonLabel": "সব বেছে নিন",
   "searchResultsFound": "সার্চ ফলাফল পাওয়া গেছে",
   "noResultsFound": "কোনো ফলাফল পাওয়া যায়নি",
-  "radioButtonUnselectedLabel": "বেছে নেওয়া হয়নি"
+  "radioButtonUnselectedLabel": "বেছে নেওয়া হয়নি",
+  "selectedTextAnnouncement": "$text selected",
+  "unselectedTextAnnouncement": "$text unselected",
+  "selectionClearedAnnouncement": "Selection cleared",
+  "selectedCharacterCountAnnouncementOne": "$count character selected",
+  "selectedCharacterCountAnnouncementOther": "$count characters selected",
+  "allTextSelectedAnnouncement": "All text selected",
+  "selectionReplacedAnnouncement": "$unselected unselected, $selected selected",
+  "spaceCharacterName": "space",
+  "newLineCharacterName": "new line",
+  "tabCharacterName": "tab"
 }

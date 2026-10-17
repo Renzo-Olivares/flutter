@@ -14,5 +14,15 @@
   "selectAllButtonLabel": "เลือกทั้งหมด",
   "searchResultsFound": "พบผลการค้นหา",
   "noResultsFound": "ไม่พบผลลัพธ์",
-  "radioButtonUnselectedLabel": "ไม่ได้เลือก"
+  "radioButtonUnselectedLabel": "ไม่ได้เลือก",
+  "selectedTextAnnouncement": "$text selected",
+  "unselectedTextAnnouncement": "$text unselected",
+  "selectionClearedAnnouncement": "Selection cleared",
+  "selectedCharacterCountAnnouncementOne": "$count character selected",
+  "selectedCharacterCountAnnouncementOther": "$count characters selected",
+  "allTextSelectedAnnouncement": "All text selected",
+  "selectionReplacedAnnouncement": "$unselected unselected, $selected selected",
+  "spaceCharacterName": "space",
+  "newLineCharacterName": "new line",
+  "tabCharacterName": "tab"
 }

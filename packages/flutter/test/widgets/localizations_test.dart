@@ -33,6 +33,23 @@ void main() {
     expect(localizations.shareButtonLabel, isNotNull);
   });
 
+  testWidgets('English defaults for the selection announcements', (WidgetTester tester) async {
+    const WidgetsLocalizations localizations = DefaultWidgetsLocalizations();
+    expect(localizations.selectedTextAnnouncement('Hello'), 'Hello selected');
+    expect(localizations.unselectedTextAnnouncement('Hello'), 'Hello unselected');
+    expect(localizations.selectionClearedAnnouncement, 'Selection cleared');
+    expect(localizations.selectedCharacterCountAnnouncement(1), '1 character selected');
+    expect(localizations.selectedCharacterCountAnnouncement(250), '250 characters selected');
+    expect(localizations.allTextSelectedAnnouncement, 'All text selected');
+    expect(
+      localizations.selectionReplacedAnnouncement('old', 'new'),
+      'old unselected, new selected',
+    );
+    expect(localizations.spaceCharacterName, 'space');
+    expect(localizations.newLineCharacterName, 'new line');
+    expect(localizations.tabCharacterName, 'tab');
+  });
+
   testWidgets('Locale is available when Localizations widget stops deferring frames', (
     WidgetTester tester,
   ) async {

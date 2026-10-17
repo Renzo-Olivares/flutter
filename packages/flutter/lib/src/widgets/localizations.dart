@@ -161,6 +161,10 @@ abstract class LocalizationsDelegate<T> {
 /// This class also maps locales to a specific [Directionality] using the
 /// [textDirection] property.
 ///
+/// Some members have an English default body. Classes that `implements` this
+/// interface rather than extending it do not inherit those bodies and must
+/// provide every member.
+///
 /// See also:
 ///
 ///  * [DefaultWidgetsLocalizations], which implements this interface and
@@ -200,6 +204,54 @@ abstract class WidgetsLocalizations {
   /// The semantics label used for [RawAutocomplete] when the options list goes
   /// from non-empty to empty.
   String get noResultsFound => 'No results found';
+
+  /// The announcement made when [text] becomes selected in a
+  /// [SelectableRegion], on platforms whose screen reader does not describe
+  /// the change from the selection itself.
+  ///
+  /// [text] is a slice of the user's content and is spoken verbatim.
+  String selectedTextAnnouncement(String text) => '$text selected';
+
+  /// The announcement made when [text] stops being selected in a
+  /// [SelectableRegion].
+  ///
+  /// [text] is a slice of the user's content and is spoken verbatim.
+  String unselectedTextAnnouncement(String text) => '$text unselected';
+
+  /// The announcement made when the selection in a [SelectableRegion] is
+  /// removed.
+  String get selectionClearedAnnouncement => 'Selection cleared';
+
+  /// The announcement made instead of [selectedTextAnnouncement] when the
+  /// newly selected text is too long to read aloud; [count] is its length in
+  /// characters.
+  String selectedCharacterCountAnnouncement(int count) {
+    return count == 1 ? '1 character selected' : '$count characters selected';
+  }
+
+  /// The announcement made when the whole content of a [SelectableRegion]
+  /// becomes selected.
+  String get allTextSelectedAnnouncement => 'All text selected';
+
+  /// The announcement made when [unselected] stops being selected and
+  /// [selected] becomes selected in one step, for example when a screen
+  /// reader moves the selection to another paragraph of a
+  /// [SelectableRegion].
+  String selectionReplacedAnnouncement(String unselected, String selected) {
+    return '$unselected unselected, $selected selected';
+  }
+
+  /// The name spoken by a [SelectableRegion] for a selection change that is a
+  /// single space character.
+  String get spaceCharacterName => 'space';
+
+  /// The name spoken by a [SelectableRegion] for a selection change that is a
+  /// single line break.
+  String get newLineCharacterName => 'new line';
+
+  /// The name spoken by a [SelectableRegion] for a selection change that is a
+  /// single tab character.
+  String get tabCharacterName => 'tab';
 
   /// Label for "copy" edit buttons and menu items.
   String get copyButtonLabel;
@@ -323,6 +375,38 @@ class DefaultWidgetsLocalizations implements WidgetsLocalizations {
 
   @override
   String get radioButtonUnselectedLabel => 'Not selected';
+
+  @override
+  String selectedTextAnnouncement(String text) => '$text selected';
+
+  @override
+  String unselectedTextAnnouncement(String text) => '$text unselected';
+
+  @override
+  String get selectionClearedAnnouncement => 'Selection cleared';
+
+  @override
+  String selectedCharacterCountAnnouncement(int count) {
+    return count == 1 ? '1 character selected' : '$count characters selected';
+  }
+
+  @override
+  String get allTextSelectedAnnouncement => 'All text selected';
+
+  @override
+  String selectionReplacedAnnouncement(String unselected, String selected) {
+    return '$unselected unselected, $selected selected';
+  }
+
+  @override
+  String get spaceCharacterName => 'space';
+
+  @override
+  String get newLineCharacterName => 'new line';
+
+  @override
+  String get tabCharacterName => 'tab';
+
   @override
   TextDirection get textDirection => TextDirection.ltr;
 

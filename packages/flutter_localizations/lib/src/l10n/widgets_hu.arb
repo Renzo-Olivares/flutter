@@ -14,5 +14,15 @@
   "selectAllButtonLabel": "Összes kijelölése",
   "searchResultsFound": "Rendelkezésre állnak keresési találatok",
   "noResultsFound": "Nincs találat",
-  "radioButtonUnselectedLabel": "Nincs kiválasztva"
+  "radioButtonUnselectedLabel": "Nincs kiválasztva",
+  "selectedTextAnnouncement": "$text selected",
+  "unselectedTextAnnouncement": "$text unselected",
+  "selectionClearedAnnouncement": "Selection cleared",
+  "selectedCharacterCountAnnouncementOne": "$count character selected",
+  "selectedCharacterCountAnnouncementOther": "$count characters selected",
+  "allTextSelectedAnnouncement": "All text selected",
+  "selectionReplacedAnnouncement": "$unselected unselected, $selected selected",
+  "spaceCharacterName": "space",
+  "newLineCharacterName": "new line",
+  "tabCharacterName": "tab"
 }

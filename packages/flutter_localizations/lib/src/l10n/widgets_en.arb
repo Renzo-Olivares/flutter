@@ -33,5 +33,61 @@
   "@radioButtonUnselectedLabel": {
     "description": "The accessibility hint for an unselected radio button.",
     "type": "text"
+  },
+  "selectedTextAnnouncement": "$text selected",
+  "@selectedTextAnnouncement": {
+    "description": "The accessibility announcement made when a piece of text becomes selected in a SelectionArea, on platforms whose screen reader does not describe the change itself. $text is the newly selected text, spoken verbatim.",
+    "parameters": "text"
+  },
+  "unselectedTextAnnouncement": "$text unselected",
+  "@unselectedTextAnnouncement": {
+    "description": "The accessibility announcement made when a piece of text stops being selected in a SelectionArea. $text is the text that is no longer selected, spoken verbatim.",
+    "parameters": "text"
+  },
+  "selectionClearedAnnouncement": "Selection cleared",
+  "@selectionClearedAnnouncement": {
+    "description": "The accessibility announcement made when the selection in a SelectionArea is removed."
+  },
+  "selectedCharacterCountAnnouncementOne": "$count character selected",
+  "@selectedCharacterCountAnnouncementOne": {
+    "optional": true
+  },
+  "@selectedCharacterCountAnnouncementZero": {
+    "optional": true
+  },
+  "@selectedCharacterCountAnnouncementTwo": {
+    "optional": true
+  },
+  "@selectedCharacterCountAnnouncementFew": {
+    "optional": true
+  },
+  "@selectedCharacterCountAnnouncementMany": {
+    "optional": true
+  },
+  "selectedCharacterCountAnnouncementOther": "$count characters selected",
+  "@selectedCharacterCountAnnouncement": {
+    "description": "The accessibility announcement made instead of selectedTextAnnouncement when the newly selected text in a SelectionArea is too long to read aloud. $count is the number of selected characters, greater than zero.",
+    "plural": "count"
+  },
+  "allTextSelectedAnnouncement": "All text selected",
+  "@allTextSelectedAnnouncement": {
+    "description": "The accessibility announcement made when the whole content of a SelectionArea becomes selected."
+  },
+  "selectionReplacedAnnouncement": "$unselected unselected, $selected selected",
+  "@selectionReplacedAnnouncement": {
+    "description": "The accessibility announcement made when one piece of text stops being selected and another becomes selected in one step in a SelectionArea, for example when a screen reader moves the selection to another paragraph. $unselected and $selected are the two pieces of text, spoken verbatim.",
+    "parameters": "unselected, selected"
+  },
+  "spaceCharacterName": "space",
+  "@spaceCharacterName": {
+    "description": "The name spoken for a single space character when it is selected or unselected in a SelectionArea."
+  },
+  "newLineCharacterName": "new line",
+  "@newLineCharacterName": {
+    "description": "The name spoken for a single line break when it is selected or unselected in a SelectionArea."
+  },
+  "tabCharacterName": "tab",
+  "@tabCharacterName": {
+    "description": "The name spoken for a single tab character when it is selected or unselected in a SelectionArea."
   }
 }
