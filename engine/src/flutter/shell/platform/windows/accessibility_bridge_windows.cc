@@ -41,6 +41,13 @@ void AccessibilityBridgeWindows::OnAccessibilityEvent(
                                     ax::mojom::Event::kChildrenChanged);
       break;
     case ui::AXEventGenerator::Event::DOCUMENT_SELECTION_CHANGED: {
+      // Selectable static text, such as a paragraph under a SelectableRegion,
+      // raises no selection event: on Windows the SelectableRegion announces
+      // its selection changes itself, and a screen reader would otherwise
+      // hear both.
+      if (IsStaticTextSelection()) {
+        break;
+      }
       // An event indicating a change in document selection should be fired
       // only for the focused node whose selection has changed. If a valid
       // caret and selection exist in the app tree, they must both be within

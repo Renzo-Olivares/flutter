@@ -403,6 +403,63 @@ TEST(AccessibilityBridgeWindows, OnDocumentSelectionChanged) {
       ax::mojom::Event::kDocumentSelectionChanged, 2);
 }
 
+// A paragraph under a SelectableRegion is static text with the set selection
+// action. Its selection owns the tree selection, but on Windows the
+// SelectableRegion announces the change, so no selection event is raised.
+TEST(AccessibilityBridgeWindows, NoDocumentSelectionChangedForStaticText) {
+  auto engine = GetTestEngine();
+  FlutterWindowsViewSpy view{
+      engine.get(), std::make_unique<NiceMock<MockWindowBindingHandler>>()};
+  EngineModifier modifier{engine.get()};
+  modifier.SetImplicitView(&view);
+  view.OnUpdateSemanticsEnabled(true);
+
+  auto bridge = GetAccessibilityBridgeSpy(view);
+  auto empty_flags = FlutterSemanticsFlags{};
+  FlutterSemanticsNode2 root{sizeof(FlutterSemanticsNode2), 0};
+  std::vector<int32_t> root_children{1};
+  root.child_count = root_children.size();
+  root.children_in_traversal_order = root_children.data();
+  root.children_in_hit_test_order = root_children.data();
+  root.text_selection_base = -1;
+  root.text_selection_extent = -1;
+  root.flags2 = &empty_flags;
+  FlutterSemanticsNode2 paragraph{sizeof(FlutterSemanticsNode2), 1};
+  paragraph.label = "Hello world";
+  paragraph.actions =
+      FlutterSemanticsAction::kFlutterSemanticsActionSetSelection;
+  paragraph.text_selection_base = -1;
+  paragraph.text_selection_extent = -1;
+  paragraph.flags2 = &empty_flags;
+  bridge->AddFlutterSemanticsNodeUpdate(root);
+  bridge->AddFlutterSemanticsNodeUpdate(paragraph);
+  bridge->CommitUpdates();
+
+  bridge->ResetRecords();
+  bridge->SetFocus(std::static_pointer_cast<FlutterPlatformNodeDelegateWindows>(
+      bridge->GetFlutterPlatformNodeDelegateFromID(0).lock()));
+
+  paragraph.text_selection_base = 0;
+  paragraph.text_selection_extent = 5;
+  bridge->AddFlutterSemanticsNodeUpdate(paragraph);
+  bridge->CommitUpdates();
+  ASSERT_EQ(bridge->GetAXTreeData().sel_anchor_object_id, 1);
+  for (const MsaaEvent& event : bridge->dispatched_events()) {
+    EXPECT_NE(event.event_type, ax::mojom::Event::kDocumentSelectionChanged);
+  }
+
+  // Clearing the selection raises no selection event either.
+  paragraph.text_selection_base = -1;
+  paragraph.text_selection_extent = -1;
+  bridge->AddFlutterSemanticsNodeUpdate(paragraph);
+  bridge->CommitUpdates();
+  ASSERT_EQ(bridge->GetAXTreeData().sel_anchor_object_id,
+            ui::AXNode::kInvalidAXID);
+  for (const MsaaEvent& event : bridge->dispatched_events()) {
+    EXPECT_NE(event.event_type, ax::mojom::Event::kDocumentSelectionChanged);
+  }
+}
+
 TEST(AccessibilityBridgeWindows, OnAccessibilityEnabledChanged) {
   ExpectWinEventFromAXEvent(1, ui::AXEventGenerator::Event::ENABLED_CHANGED,
                             ax::mojom::Event::kStateChanged);
