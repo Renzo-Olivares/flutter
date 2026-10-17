@@ -1385,4 +1385,227 @@ void main() {
       expect(dismissed, 1);
     }, semanticsEnabled: false);
   });
+
+  group('announcements', () {
+    const window = Duration(milliseconds: 300);
+    const shiftRight = SingleActivator(LogicalKeyboardKey.arrowRight, shift: true);
+    const shiftLeft = SingleActivator(LogicalKeyboardKey.arrowLeft, shift: true);
+    List<String> messages(WidgetTester tester) =>
+        tester.takeAnnouncements().map((CapturedAccessibilityAnnouncement a) => a.message).toList();
+
+    testWidgets('one phrase per keystroke, coalesced over the window', (WidgetTester tester) async {
+      await tester.pumpWidget(_region(child: const Text('Hello world')));
+      await tester.pump();
+      tester.semantics.setSelection(find.semantics.byLabel('Hello world'), base: 0, extent: 1);
+      await tester.pump();
+      expect(messages(tester), isEmpty);
+      await tester.pump(window);
+      expect(messages(tester), <String>['H selected']);
+
+      await sendKeyCombination(tester, shiftRight);
+      await tester.pump(window);
+      expect(messages(tester), <String>['e selected']);
+
+      // Five auto-repeat presses inside the window produce one phrase.
+      for (var i = 0; i < 5; i += 1) {
+        await sendKeyCombination(tester, shiftRight);
+        await tester.pump(const Duration(milliseconds: 20));
+      }
+      expect(messages(tester), isEmpty);
+      await tester.pump(window);
+      expect(messages(tester), <String>['llo w selected']);
+
+      // Shrinking speaks what was unselected.
+      await sendKeyCombination(tester, shiftLeft);
+      await tester.pump(window);
+      expect(messages(tester), <String>['w unselected']);
+
+      // A single whitespace character is named.
+      await sendKeyCombination(tester, shiftLeft);
+      await tester.pump(window);
+      expect(messages(tester), <String>['space unselected']);
+    }, variant: TargetPlatformVariant.only(TargetPlatform.macOS));
+
+    testWidgets('one phrase per drag end and none during the drag', (WidgetTester tester) async {
+      await tester.pumpWidget(
+        _region(child: const Text('Hello world', style: TextStyle(fontSize: 20))),
+      );
+      await tester.pump();
+      final RenderParagraph paragraph = _paragraphAt(tester, 0);
+      final Offset from = _textOffsetToPosition(paragraph, 0);
+      final Offset to = _textOffsetToPosition(paragraph, 5);
+      final TestGesture gesture = await tester.startGesture(from, kind: PointerDeviceKind.mouse);
+      addTearDown(gesture.removePointer);
+      await tester.pump();
+      for (var i = 1; i <= 10; i += 1) {
+        await gesture.moveTo(Offset.lerp(from, to, i / 10)!);
+        await tester.pump(const Duration(milliseconds: 40));
+      }
+      expect(messages(tester), isEmpty);
+      await gesture.up();
+      await tester.pump();
+      await tester.pump(window);
+      expect(messages(tester), <String>['Hello selected']);
+    }, variant: TargetPlatformVariant.only(TargetPlatform.macOS));
+
+    testWidgets('select all, clear, replacement and cross-paragraph deltas', (
+      WidgetTester tester,
+    ) async {
+      final focusNode = FocusNode();
+      addTearDown(focusNode.dispose);
+      await tester.pumpWidget(
+        _region(
+          focusNode: focusNode,
+          child: const Column(children: <Widget>[Text('First'), Text('Second')]),
+        ),
+      );
+      await tester.pump();
+      tester.semantics.setSelection(find.semantics.byLabel('First'), base: 3, extent: 5);
+      await tester.pump(window);
+      expect(messages(tester), <String>['st selected']);
+
+      // Moving the selection elsewhere is a replacement.
+      tester.semantics.setSelection(find.semantics.byLabel('Second'), base: 0, extent: 3);
+      await tester.pump(window);
+      expect(messages(tester), <String>['st unselected, Sec selected']);
+
+      // Growing across the paragraph boundary joins the paragraphs with a space.
+      await sendKeyCombination(
+        tester,
+        const SingleActivator(LogicalKeyboardKey.arrowUp, shift: true),
+      );
+      await tester.pump(window);
+      final List<String> grown = messages(tester);
+      expect(grown, hasLength(1));
+      expect(grown.single, endsWith(' selected'));
+      expect(grown.single, contains('First'));
+      expect(grown.single, isNot(contains('FirstSec')));
+
+      _regionState(tester).selectAll();
+      await tester.pump(window);
+      expect(messages(tester), <String>['All text selected']);
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+      await tester.pump(window);
+      expect(messages(tester), <String>['Selection cleared']);
+
+      // Nothing to clear: no announcement.
+      _regionState(tester).clearSelection();
+      await tester.pump(window);
+      expect(messages(tester), isEmpty);
+    }, variant: TargetPlatformVariant.only(TargetPlatform.macOS));
+
+    testWidgets('a focus-loss clear is silent', (WidgetTester tester) async {
+      final focusNode = FocusNode();
+      addTearDown(focusNode.dispose);
+      final otherFocusNode = FocusNode();
+      addTearDown(otherFocusNode.dispose);
+      await tester.pumpWidget(
+        TestWidgetsApp(
+          home: Column(
+            children: <Widget>[
+              SelectableRegion(
+                focusNode: focusNode,
+                selectionControls: emptyTextSelectionControls,
+                child: const Text('Hello world'),
+              ),
+              Focus(focusNode: otherFocusNode, child: const SizedBox(width: 10, height: 10)),
+            ],
+          ),
+        ),
+      );
+      await tester.pump();
+      // The region clears its selection on focus loss only while the app is
+      // running in the foreground.
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+      tester.semantics.setSelection(find.semantics.byLabel('Hello world'), base: 0, extent: 5);
+      await tester.pump(window);
+      expect(messages(tester), <String>['Hello selected']);
+
+      otherFocusNode.requestFocus();
+      await tester.pump();
+      await tester.pump(window);
+      expect(_paragraphAt(tester, 0).selections, isEmpty);
+      expect(messages(tester), isEmpty);
+
+      // The next selection is announced as new, not as a replacement.
+      tester.semantics.setSelection(find.semantics.byLabel('Hello world'), base: 6, extent: 11);
+      await tester.pump(window);
+      expect(messages(tester), <String>['world selected']);
+    }, variant: TargetPlatformVariant.only(TargetPlatform.macOS));
+
+    testWidgets('a long delta is announced as a count', (WidgetTester tester) async {
+      final String text = List<String>.generate(60, (int i) => 'word$i').join(' ');
+      await tester.pumpWidget(_region(child: Text(text)));
+      await tester.pump();
+      tester.semantics.setSelection(find.semantics.byLabel(text), base: 0, extent: 210);
+      await tester.pump(window);
+      expect(messages(tester), <String>['210 characters selected']);
+    }, variant: TargetPlatformVariant.only(TargetPlatform.macOS));
+
+    testWidgets('follows the per-platform policy', (WidgetTester tester) async {
+      await tester.pumpWidget(_region(child: const Text('Hello world')));
+      await tester.pump();
+      tester.semantics.setSelection(find.semantics.byLabel('Hello world'), base: 0, extent: 1);
+      await tester.pump(window);
+      final bool speaks = switch (defaultTargetPlatform) {
+        TargetPlatform.macOS || TargetPlatform.windows || TargetPlatform.iOS => true,
+        TargetPlatform.android || TargetPlatform.linux || TargetPlatform.fuchsia => false,
+      };
+      expect(messages(tester), speaks ? <String>['H selected'] : isEmpty);
+      // Keyboard changes follow the same table.
+      await sendKeyCombination(tester, shiftRight);
+      await tester.pump(window);
+      expect(messages(tester), speaks ? <String>['e selected'] : isEmpty);
+    }, variant: TargetPlatformVariant.all());
+
+    testWidgets('a WidgetsLocalizations override wins', (WidgetTester tester) async {
+      await tester.pumpWidget(
+        TestWidgetsApp(
+          localizationsDelegates: const <LocalizationsDelegate<Object?>>[
+            _CustomWidgetsLocalizationsDelegate(),
+          ],
+          home: SelectableRegion(
+            selectionControls: emptyTextSelectionControls,
+            child: const Text('Hello world'),
+          ),
+        ),
+      );
+      await tester.pump();
+      tester.semantics.setSelection(find.semantics.byLabel('Hello world'), base: 0, extent: 5);
+      await tester.pump(window);
+      expect(messages(tester), <String>['[Hello]']);
+    }, variant: TargetPlatformVariant.only(TargetPlatform.macOS));
+
+    testWidgets('a pending phrase is flushed on dispose', (WidgetTester tester) async {
+      await tester.pumpWidget(_region(child: const Text('Hello world')));
+      await tester.pump();
+      tester.semantics.setSelection(find.semantics.byLabel('Hello world'), base: 0, extent: 5);
+      await tester.pump();
+      await tester.pumpWidget(const SizedBox());
+      expect(messages(tester), <String>['Hello selected']);
+    }, variant: TargetPlatformVariant.only(TargetPlatform.macOS));
+  });
+}
+
+class _CustomWidgetsLocalizations extends DefaultWidgetsLocalizations {
+  const _CustomWidgetsLocalizations();
+
+  @override
+  String selectedTextAnnouncement(String text) => '[$text]';
+}
+
+class _CustomWidgetsLocalizationsDelegate extends LocalizationsDelegate<WidgetsLocalizations> {
+  const _CustomWidgetsLocalizationsDelegate();
+
+  @override
+  bool isSupported(Locale locale) => true;
+
+  @override
+  Future<WidgetsLocalizations> load(Locale locale) {
+    return SynchronousFuture<WidgetsLocalizations>(const _CustomWidgetsLocalizations());
+  }
+
+  @override
+  bool shouldReload(_CustomWidgetsLocalizationsDelegate old) => false;
 }

@@ -27,6 +27,7 @@ import 'focus_manager.dart';
 import 'focus_scope.dart';
 import 'framework.dart';
 import 'gesture_detector.dart';
+import 'localizations.dart';
 import 'magnifier.dart';
 import 'media_query.dart';
 import 'overlay.dart';
@@ -36,6 +37,7 @@ import 'tap_region.dart';
 import 'text_editing_intents.dart';
 import 'text_selection.dart';
 import 'text_selection_toolbar_anchors.dart';
+import 'view.dart';
 
 // Examples can assume:
 // late GlobalKey key;
@@ -454,9 +456,12 @@ class SelectableRegionState extends State<SelectableRegion>
   /// and reset to [_SelectionChangeSource.pointerOrKeyboard] after it is
   /// finalized, so listeners of [_selectionStatusNotifier] can tell screen
   /// reader driven changes from pointer and keyboard ones.
-  // Read by the selection change announcer (landing step 6).
-  // ignore: unused_field
   _SelectionChangeSource _pendingSource = _SelectionChangeSource.pointerOrKeyboard;
+
+  /// Announces committed selection changes to assistive technologies on the
+  /// platforms where the screen reader cannot describe them from the
+  /// selection itself (DESIGN 1.5).
+  late final _SelectionChangeAnnouncer _selectionChangeAnnouncer = _SelectionChangeAnnouncer(this);
 
   /// Where the assistive technology last placed a caret or started a range,
   /// used as the starting point of a keyboard selection and to pick the
@@ -641,7 +646,66 @@ class SelectableRegionState extends State<SelectableRegion>
       return;
     }
     _selectionStatusNotifier.value = SelectableRegionSelectionStatus.finalized;
+    _selectionChangeAnnouncer.didCommit(_pendingSource);
     _pendingSource = _SelectionChangeSource.pointerOrKeyboard;
+  }
+
+  /// Whether this region announces a selection change of the given [source]
+  /// itself: an accessibility client is attached, the platform honors
+  /// announcements, and the policy says the screen reader will not describe
+  /// the change from the paragraph nodes.
+  bool _mayAnnounceSelectionChange(_SelectionChangeSource source) {
+    return SemanticsBinding.instance.semanticsEnabled &&
+        MediaQuery.supportsAnnounceOf(context) &&
+        _regionAnnouncesSelectionChanges(source);
+  }
+
+  /// The current selection in announcement space: the contents of this
+  /// region's selectables joined with single spaces, so that a delta spanning
+  /// paragraphs never runs words together.
+  _SelectionSnapshot _selectionSnapshot() {
+    final List<Selectable> selectables = _selectionDelegate.selectables;
+    final buffer = StringBuffer();
+    int? start;
+    var offset = 0;
+    for (var index = 0; index < selectables.length; index += 1) {
+      if (index > 0) {
+        offset += 1; // The joining space.
+      }
+      final Selectable selectable = selectables[index];
+      final SelectedContentRange? range = selectable.getSelection();
+      final String? text = selectable.getSelectedContent()?.plainText;
+      if (range != null && text != null && text.isNotEmpty) {
+        if (start == null) {
+          start = offset + min(range.startOffset, range.endOffset);
+        } else {
+          buffer.write(' ');
+        }
+        buffer.write(text);
+      }
+      offset += selectable.contentLength;
+    }
+    if (start == null) {
+      return _SelectionSnapshot.empty;
+    }
+    final text = buffer.toString();
+    return _SelectionSnapshot(start: start, text: text, isAll: start == 0 && text.length == offset);
+  }
+
+  void _announce(FlutterView view, WidgetsLocalizations localizations, String message) {
+    SemanticsService.sendAnnouncement(view, message, localizations.textDirection).catchError((
+      Object exception,
+      StackTrace stack,
+    ) {
+      FlutterError.reportError(
+        FlutterErrorDetails(
+          exception: exception,
+          stack: stack,
+          library: 'widgets library',
+          context: ErrorDescription('while announcing a selection change'),
+        ),
+      );
+    });
   }
 
   /// Commits a discrete selection change tagged with its [source]: the status
@@ -2217,6 +2281,7 @@ class SelectableRegionState extends State<SelectableRegion>
   @protected
   @override
   void dispose() {
+    _selectionChangeAnnouncer.dispose();
     _selectable?.removeListener(_updateSelectionStatus);
     _selectable?.pushHandleLayers(null, null);
     if (kIsWeb) {
@@ -3793,6 +3858,212 @@ enum SelectableRegionSelectionStatus {
   /// selection, a double click/tap to select a word, ctrl + A / cmd + A to
   /// select all, or a triple click/tap to select a paragraph.
   finalized,
+}
+
+// Whether VoiceOver on macOS speaks a selection change from the paragraph
+// node's notification. Flipped by the macOS embedder change once probe P1 of
+// flutter/flutter#182909 shows it does; until then the region announces.
+const bool _kMacOSVoiceOverSpeaksNodeSelection = false;
+
+// Whether VoiceOver on iOS speaks a selection change it made itself through
+// the Text Selection rotor. Flipped by the iOS embedder change once probe P4
+// shows it does; until then the region announces every change.
+const bool _kIOSVoiceOverSpeaksRotorSelection = false;
+
+/// Whether a [SelectableRegion] announces a selection change of the given
+/// [source] on the current platform.
+///
+/// For any (platform, source) at most one of the screen reader's own speech
+/// (from the paragraph nodes' selection) and this announcement is audible.
+/// Android and Linux screen readers describe the change natively (and Android
+/// reports that it does not support announcements); Windows on its default
+/// accessibility path and the web have no native channel; macOS and iOS stay
+/// on announcements until their probes pass. [kIsWeb] is checked first
+/// because web on a Mac reports [TargetPlatform.macOS].
+bool _regionAnnouncesSelectionChanges(_SelectionChangeSource source) {
+  if (kIsWeb) {
+    return true;
+  }
+  return switch (defaultTargetPlatform) {
+    TargetPlatform.macOS => !_kMacOSVoiceOverSpeaksNodeSelection,
+    TargetPlatform.iOS =>
+      source == _SelectionChangeSource.pointerOrKeyboard || !_kIOSVoiceOverSpeaksRotorSelection,
+    TargetPlatform.windows => true,
+    TargetPlatform.android || TargetPlatform.linux || TargetPlatform.fuchsia => false,
+  };
+}
+
+/// What is selected in a [SelectableRegion], in announcement space: the
+/// contents of the region's selectables joined with single spaces.
+@immutable
+class _SelectionSnapshot {
+  const _SelectionSnapshot({required this.start, required this.text, required this.isAll});
+
+  static const _SelectionSnapshot empty = _SelectionSnapshot(start: 0, text: '', isAll: false);
+
+  /// The offset of the first selected character.
+  final int start;
+
+  /// The selected text.
+  final String text;
+
+  /// Whether every character of the region is selected.
+  final bool isAll;
+
+  int get end => start + text.length;
+
+  bool get isEmpty => text.isEmpty;
+
+  @override
+  bool operator ==(Object other) {
+    return other is _SelectionSnapshot &&
+        other.start == start &&
+        other.text == text &&
+        other.isAll == isAll;
+  }
+
+  @override
+  int get hashCode => Object.hash(start, text, isAll);
+}
+
+/// Announces the delta between committed selections of a [SelectableRegion].
+///
+/// Commits inside the coalescing window are merged: the phrase spoken is the
+/// net delta from the state at the last announcement to the final state, so
+/// five auto-repeated keystrokes say "Hello selected" rather than five
+/// characters, and announcements are spaced at least a window apart.
+class _SelectionChangeAnnouncer {
+  _SelectionChangeAnnouncer(this._state);
+
+  final SelectableRegionState _state;
+
+  static const Duration _kCoalescingWindow = Duration(milliseconds: 300);
+
+  /// Deltas longer than this are announced as a character count.
+  static const int _kMaxSpokenCharacters = 200;
+
+  _SelectionSnapshot _lastAnnounced = _SelectionSnapshot.empty;
+  _SelectionSnapshot? _pending;
+  FlutterView? _pendingView;
+  WidgetsLocalizations? _pendingLocalizations;
+  Timer? _timer;
+
+  /// Called once per committed selection change, with what caused it.
+  void didCommit(_SelectionChangeSource source) {
+    final _SelectionSnapshot current = _state._selectionSnapshot();
+    if (source == _SelectionChangeSource.focusLoss || !_state._mayAnnounceSelectionChange(source)) {
+      // Silent: the next announcement is relative to the new state.
+      _cancel();
+      _lastAnnounced = current;
+      return;
+    }
+    _pending = current;
+    // Captured now, while the region is mounted; flushing may happen in dispose.
+    _pendingView = View.of(_state.context);
+    _pendingLocalizations = WidgetsLocalizations.of(_state.context);
+    _timer?.cancel();
+    _timer = Timer(_kCoalescingWindow, _flush);
+  }
+
+  void _cancel() {
+    _timer?.cancel();
+    _timer = null;
+    _pending = null;
+  }
+
+  void _flush() {
+    _timer = null;
+    final _SelectionSnapshot? current = _pending;
+    final FlutterView? view = _pendingView;
+    final WidgetsLocalizations? localizations = _pendingLocalizations;
+    _pending = null;
+    if (current == null || view == null || localizations == null) {
+      return;
+    }
+    final String? message = describe(localizations, _lastAnnounced, current);
+    _lastAnnounced = current;
+    if (message != null) {
+      _state._announce(view, localizations, message);
+    }
+  }
+
+  /// Flushes a pending phrase and stops the timer.
+  void dispose() {
+    _timer?.cancel();
+    _timer = null;
+    if (_pending != null) {
+      _flush();
+    }
+  }
+
+  /// The phrase for the change from [previous] to [current], or null when
+  /// there is nothing to say.
+  static String? describe(
+    WidgetsLocalizations localizations,
+    _SelectionSnapshot previous,
+    _SelectionSnapshot current,
+  ) {
+    if (current.isEmpty) {
+      return previous.isEmpty ? null : localizations.selectionClearedAnnouncement;
+    }
+    if (previous == current) {
+      return null;
+    }
+    if (current.isAll) {
+      return localizations.allTextSelectedAnnouncement;
+    }
+    if (previous.isEmpty) {
+      return _selected(localizations, current.text);
+    }
+    if (previous.start == current.start && current.end > previous.end) {
+      return _selected(localizations, current.text.substring(previous.end - current.start));
+    }
+    if (previous.start == current.start && current.end < previous.end) {
+      return _unselected(localizations, previous.text.substring(current.end - previous.start));
+    }
+    if (previous.end == current.end && current.start < previous.start) {
+      return _selected(localizations, current.text.substring(0, previous.start - current.start));
+    }
+    if (previous.end == current.end && current.start > previous.start) {
+      return _unselected(localizations, previous.text.substring(0, current.start - previous.start));
+    }
+    if (previous.text.length > _kMaxSpokenCharacters ||
+        current.text.length > _kMaxSpokenCharacters) {
+      return _selected(localizations, current.text);
+    }
+    return localizations.selectionReplacedAnnouncement(
+      _spoken(localizations, previous.text),
+      _spoken(localizations, current.text),
+    );
+  }
+
+  static String _selected(WidgetsLocalizations localizations, String text) {
+    if (text.length > _kMaxSpokenCharacters) {
+      return localizations.selectedCharacterCountAnnouncement(text.length);
+    }
+    return localizations.selectedTextAnnouncement(_spoken(localizations, text));
+  }
+
+  static String _unselected(WidgetsLocalizations localizations, String text) {
+    if (text.length > _kMaxSpokenCharacters) {
+      // There is no count form for unselected text; a long shrink is spoken
+      // as a count of what is still selected by the caller's next commit.
+      return localizations.unselectedTextAnnouncement(
+        localizations.selectedCharacterCountAnnouncement(text.length),
+      );
+    }
+    return localizations.unselectedTextAnnouncement(_spoken(localizations, text));
+  }
+
+  /// Names a one-character whitespace delta, which would otherwise be silent.
+  static String _spoken(WidgetsLocalizations localizations, String text) {
+    return switch (text) {
+      ' ' => localizations.spaceCharacterName,
+      '\n' || '\r\n' => localizations.newLineCharacterName,
+      '\t' => localizations.tabCharacterName,
+      _ => text,
+    };
+  }
 }
 
 /// What caused a committed selection change in a [SelectableRegion].
