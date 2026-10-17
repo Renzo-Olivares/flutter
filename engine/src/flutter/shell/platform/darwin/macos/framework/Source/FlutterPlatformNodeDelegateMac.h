@@ -63,12 +63,6 @@ class FlutterPlatformNodeDelegateMac : public FlutterPlatformNodeDelegate {
   __weak FlutterViewController* view_controller_;
   mutable ui::AXNodeData cached_data_;
 
-  // The caret an assistive technology set on selectable static text with a
-  // collapsed AXSelectedTextRange, in UTF-16 offsets, or -1. The framework
-  // only records such a caret, so this node reports it until the framework
-  // publishes a selection.
-  int32_t assistive_technology_caret_ = -1;
-
   gfx::RectF ConvertBoundsFromLocalToScreen(
       const gfx::RectF& local_bounds) const;
   gfx::RectF ConvertBoundsFromScreenToGlobal(

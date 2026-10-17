@@ -41,9 +41,6 @@ void FlutterPlatformNodeDelegateMac::NodeDataChanged(const ui::AXNodeData& old_n
       old_node_data.IsTextField() && !old_node_data.IsReadOnlyOrDisabled();
   bool new_is_editable_textfield =
       new_node_data.IsTextField() && !new_node_data.IsReadOnlyOrDisabled();
-  if (new_node_data.GetIntAttribute(ax::mojom::IntAttribute::kTextSelStart) != -1) {
-    assistive_technology_caret_ = -1;
-  }
   if (old_is_editable_textfield && !new_is_editable_textfield) {
     ax_platform_node_->Destroy();
     ax_platform_node_ = ui::AXPlatformNode::Create(this);
@@ -60,14 +57,16 @@ const ui::AXNodeData& FlutterPlatformNodeDelegateMac::GetData() const {
     cached_data_.role = ax::mojom::Role::kStaticText;
     return cached_data_;
   }
-  if (assistive_technology_caret_ != -1 &&
-      data.GetIntAttribute(ax::mojom::IntAttribute::kTextSelStart) == -1) {
+  // The framework only records a caret VoiceOver sets on selectable static
+  // text, so this node reports it until the framework publishes a selection.
+  auto bridge = bridge_.lock();
+  int32_t caret = bridge ? bridge->GetAssistiveTechnologyCaret(data.id) : -1;
+  if (caret != -1 && data.GetIntAttribute(ax::mojom::IntAttribute::kTextSelStart) == -1) {
     cached_data_ = data;
     cached_data_.RemoveIntAttribute(ax::mojom::IntAttribute::kTextSelStart);
     cached_data_.RemoveIntAttribute(ax::mojom::IntAttribute::kTextSelEnd);
-    cached_data_.AddIntAttribute(ax::mojom::IntAttribute::kTextSelStart,
-                                 assistive_technology_caret_);
-    cached_data_.AddIntAttribute(ax::mojom::IntAttribute::kTextSelEnd, assistive_technology_caret_);
+    cached_data_.AddIntAttribute(ax::mojom::IntAttribute::kTextSelStart, caret);
+    cached_data_.AddIntAttribute(ax::mojom::IntAttribute::kTextSelEnd, caret);
     return cached_data_;
   }
   return data;
@@ -76,9 +75,10 @@ const ui::AXNodeData& FlutterPlatformNodeDelegateMac::GetData() const {
 bool FlutterPlatformNodeDelegateMac::AccessibilityPerformAction(const ui::AXActionData& data) {
   bool handled = FlutterPlatformNodeDelegate::AccessibilityPerformAction(data);
   // The common delegate only takes a selection on selectable static text.
-  if (handled && data.action == ax::mojom::Action::kSetSelection &&
+  auto bridge = bridge_.lock();
+  if (handled && bridge && data.action == ax::mojom::Action::kSetSelection &&
       data.anchor_offset == data.focus_offset && data.anchor_offset >= 0) {
-    assistive_technology_caret_ = data.anchor_offset;
+    bridge->SetAssistiveTechnologyCaret(GetAXNode()->id(), data.anchor_offset);
   }
   return handled;
 }
