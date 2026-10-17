@@ -1965,7 +1965,8 @@ public class AccessibilityBridgeTest {
     /** The events of {@code eventType} sent since the last {@link #clearEvents()}. */
     List<AccessibilityEvent> events(int eventType) {
       ArgumentCaptor<AccessibilityEvent> captor = ArgumentCaptor.forClass(AccessibilityEvent.class);
-      verify(parent, atLeastOnce()).requestSendAccessibilityEvent(any(View.class), captor.capture());
+      verify(parent, atLeastOnce())
+          .requestSendAccessibilityEvent(any(View.class), captor.capture());
       List<AccessibilityEvent> result = new ArrayList<>();
       for (AccessibilityEvent event : captor.getAllValues()) {
         if (event.getEventType() == eventType) {
@@ -2130,7 +2131,8 @@ public class AccessibilityBridgeTest {
     assertEquals(0, first.getFromIndex());
     assertEquals(1, first.getToIndex());
     assertEquals(11, first.getItemCount());
-    assertEquals(AccessibilityNodeInfo.MOVEMENT_GRANULARITY_CHARACTER, first.getMovementGranularity());
+    assertEquals(
+        AccessibilityNodeInfo.MOVEMENT_GRANULARITY_CHARACTER, first.getMovementGranularity());
     assertEquals(AccessibilityNodeInfo.ACTION_NEXT_AT_MOVEMENT_GRANULARITY, first.getAction());
     assertEquals(1, traversals.get(1).getFromIndex());
     assertEquals(2, traversals.get(1).getToIndex());
@@ -2332,11 +2334,13 @@ public class AccessibilityBridgeTest {
   @Test
   public void itFollowsTheExtentOfASelectionAcrossParagraphs() {
     SelectableTextBridge b = new SelectableTextBridge();
-    b.sendTree(selectableParagraph(1, "Hello world", 2, 5), selectableParagraph(2, "Second", -1, -1));
+    b.sendTree(
+        selectableParagraph(1, "Hello world", 2, 5), selectableParagraph(2, "Second", -1, -1));
     b.clearEvents();
 
     // Shift+Right moves the extent from the first paragraph into the second.
-    b.sendTree(selectableParagraph(1, "Hello world", 2, 11), selectableParagraph(2, "Second", 0, 1));
+    b.sendTree(
+        selectableParagraph(1, "Hello world", 2, 11), selectableParagraph(2, "Second", 0, 1));
     assertFalse(b.bridge.createAccessibilityNodeInfo(1).isFocused());
     assertTrue(b.bridge.createAccessibilityNodeInfo(2).isFocused());
     List<AccessibilityEvent> events = b.selectionEvents();
@@ -2347,7 +2351,8 @@ public class AccessibilityBridgeTest {
 
     // Backward: the extent is at the start of the first paragraph's clip.
     b.clearEvents();
-    b.sendTree(selectableParagraph(1, "Hello world", 11, 7), selectableParagraph(2, "Second", 3, 0));
+    b.sendTree(
+        selectableParagraph(1, "Hello world", 11, 7), selectableParagraph(2, "Second", 3, 0));
     assertTrue(b.bridge.createAccessibilityNodeInfo(1).isFocused());
     assertFalse(b.bridge.createAccessibilityNodeInfo(2).isFocused());
   }
@@ -2371,14 +2376,17 @@ public class AccessibilityBridgeTest {
   public void itSkipsWhitespaceAndPunctuationWhenMovingByWord() {
     final int word = AccessibilityNodeInfo.MOVEMENT_GRANULARITY_WORD;
     final String text = "Hello, big  world.";
-    assertArrayEquals(new int[] {0, 5}, AccessibilityBridge.getTextSegment(text, "en", word, true, 0));
-    assertArrayEquals(new int[] {7, 10}, AccessibilityBridge.getTextSegment(text, "en", word, true, 5));
+    assertArrayEquals(
+        new int[] {0, 5}, AccessibilityBridge.getTextSegment(text, "en", word, true, 0));
+    assertArrayEquals(
+        new int[] {7, 10}, AccessibilityBridge.getTextSegment(text, "en", word, true, 5));
     assertArrayEquals(
         new int[] {12, 17}, AccessibilityBridge.getTextSegment(text, "en", word, true, 10));
     assertNull(AccessibilityBridge.getTextSegment(text, "en", word, true, 17));
     assertArrayEquals(
         new int[] {12, 17}, AccessibilityBridge.getTextSegment(text, "en", word, false, 18));
-    assertArrayEquals(new int[] {7, 10}, AccessibilityBridge.getTextSegment(text, "en", word, false, 12));
+    assertArrayEquals(
+        new int[] {7, 10}, AccessibilityBridge.getTextSegment(text, "en", word, false, 12));
     assertNull(AccessibilityBridge.getTextSegment(text, "en", word, false, 0));
     // Characters are grapheme clusters: one move steps over a surrogate pair.
     assertArrayEquals(

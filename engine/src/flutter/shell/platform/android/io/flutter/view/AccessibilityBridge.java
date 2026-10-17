@@ -1205,9 +1205,9 @@ public class AccessibilityBridge extends AccessibilityNodeProvider {
    * sends only a {@link AccessibilityEvent#TYPE_VIEW_TEXT_TRAVERSED_AT_MOVEMENT_GRANULARITY} event;
    * nothing reaches the framework. With it (TalkBack's selection mode) the bridge computes the new
    * absolute range and sends it to the framework as {@link Action#SET_SELECTION}; the framework's
-   * next semantics update then fires the selection event. A collapse is sent as -1/-1, which
-   * clears the selection. A move past either end of the text returns false, so that TalkBack moves
-   * on to the next node.
+   * next semantics update then fires the selection event. A collapse is sent as -1/-1, which clears
+   * the selection. A move past either end of the text returns false, so that TalkBack moves on to
+   * the next node.
    */
   private boolean performSelectableTextMoveAction(
       @NonNull SemanticsNode semanticsNode, @Nullable Bundle arguments, boolean forward) {
@@ -1244,7 +1244,8 @@ public class AccessibilityBridge extends AccessibilityNodeProvider {
     if (!extendSelection) {
       final AccessibilityEvent event =
           obtainAccessibilityEvent(
-              semanticsNode.id, AccessibilityEvent.TYPE_VIEW_TEXT_TRAVERSED_AT_MOVEMENT_GRANULARITY);
+              semanticsNode.id,
+              AccessibilityEvent.TYPE_VIEW_TEXT_TRAVERSED_AT_MOVEMENT_GRANULARITY);
       event.getText().add(text);
       event.setFromIndex(segment[0]);
       event.setToIndex(segment[1]);
@@ -1258,7 +1259,8 @@ public class AccessibilityBridge extends AccessibilityNodeProvider {
       return true;
     }
 
-    focusSelectableText(semanticsNode, selection != null ? selection : new int[] {position, position});
+    focusSelectableText(
+        semanticsNode, selection != null ? selection : new int[] {position, position});
     final int base = selection != null ? selection[0] : position;
     if (newPosition == base) {
       dispatchSelectableTextSelection(semanticsNode, -1, -1);
@@ -1272,10 +1274,10 @@ public class AccessibilityBridge extends AccessibilityNodeProvider {
    * Handles {@link AccessibilityNodeInfo#ACTION_SET_SELECTION} for a selectable static text node.
    *
    * <p>With a range, the range is sent to the framework. A collapsed range clears an existing
-   * selection (TalkBack's selection mode reports a collapse that way) and otherwise only places
-   * the reading cursor and the framework's accessibility anchor. Without arguments (TalkBack may
-   * send this when its selection mode starts) an existing selection is cleared; with none, the
-   * node is seeded so that the first extension is spoken.
+   * selection (TalkBack's selection mode reports a collapse that way) and otherwise only places the
+   * reading cursor and the framework's accessibility anchor. Without arguments (TalkBack may send
+   * this when its selection mode starts) an existing selection is cleared; with none, the node is
+   * seeded so that the first extension is spoken.
    */
   private boolean performSelectableTextSetSelection(
       @NonNull SemanticsNode semanticsNode, @Nullable Bundle arguments) {
@@ -1334,17 +1336,16 @@ public class AccessibilityBridge extends AccessibilityNodeProvider {
   }
 
   /**
-   * Sends a selection to the framework for a selectable static text node and keeps it as the
-   * node's pending selection, which the next move extends until the framework's update arrives.
-   * Negative offsets clear the selection.
+   * Sends a selection to the framework for a selectable static text node and keeps it as the node's
+   * pending selection, which the next move extends until the framework's update arrives. Negative
+   * offsets clear the selection.
    */
   private void dispatchSelectableTextSelection(
       @NonNull SemanticsNode semanticsNode, int base, int extent) {
     final Map<String, Integer> selection = new HashMap<>();
     selection.put("base", base);
     selection.put("extent", extent);
-    accessibilityChannel.dispatchSemanticsAction(
-        semanticsNode.id, Action.SET_SELECTION, selection);
+    accessibilityChannel.dispatchSemanticsAction(semanticsNode.id, Action.SET_SELECTION, selection);
     semanticsNode.setPendingTextSelection(base, extent);
   }
 
@@ -1369,8 +1370,8 @@ public class AccessibilityBridge extends AccessibilityNodeProvider {
    * <p>Mirrors the segment iterators that a native {@link View} uses for accessibility traversal:
    * character = grapheme cluster, word = a run of letters or digits (whitespace and punctuation are
    * skipped), paragraph = a run of characters between line feeds. {@link
-   * AccessibilityNodeInfo#MOVEMENT_GRANULARITY_LINE} is treated as paragraph, because the
-   * semantics tree carries no line layout.
+   * AccessibilityNodeInfo#MOVEMENT_GRANULARITY_LINE} is treated as paragraph, because the semantics
+   * tree carries no line layout.
    */
   @VisibleForTesting
   @Nullable
@@ -1397,7 +1398,9 @@ public class AccessibilityBridge extends AccessibilityNodeProvider {
         {
           final BreakIterator iterator = BreakIterator.getWordInstance(locale);
           iterator.setText(text);
-          return forward ? followingWord(iterator, text, offset) : precedingWord(iterator, text, offset);
+          return forward
+              ? followingWord(iterator, text, offset)
+              : precedingWord(iterator, text, offset);
         }
       case AccessibilityNodeInfo.MOVEMENT_GRANULARITY_LINE:
       case AccessibilityNodeInfo.MOVEMENT_GRANULARITY_PARAGRAPH:
@@ -1484,7 +1487,9 @@ public class AccessibilityBridge extends AccessibilityNodeProvider {
   }
 
   private static boolean isLetterOrDigit(@NonNull String text, int index) {
-    return index >= 0 && index < text.length() && Character.isLetterOrDigit(text.codePointAt(index));
+    return index >= 0
+        && index < text.length()
+        && Character.isLetterOrDigit(text.codePointAt(index));
   }
 
   private static boolean isWordStart(@NonNull String text, int index) {
@@ -2141,9 +2146,9 @@ public class AccessibilityBridge extends AccessibilityNodeProvider {
   }
 
   /**
-   * Updates the bridge's selectable static text state for a semantics update, before its events
-   * are sent: drops pending selections and reading cursors the update supersedes, and moves
-   * {@link #selectionFocusedSemanticsNode} to the node that holds the extent of a new selection.
+   * Updates the bridge's selectable static text state for a semantics update, before its events are
+   * sent: drops pending selections and reading cursors the update supersedes, and moves {@link
+   * #selectionFocusedSemanticsNode} to the node that holds the extent of a new selection.
    */
   private void updateSelectableTextState(@NonNull List<SemanticsNode> updated) {
     if (releaseSelectionFocusOnNextUpdate) {
@@ -2865,8 +2870,8 @@ public class AccessibilityBridge extends AccessibilityNodeProvider {
     }
 
     /**
-     * Returns the selection the framework published for this selectable static text node as
-     * {base, extent} label offsets, or null if it has none or the offsets do not fit the label.
+     * Returns the selection the framework published for this selectable static text node as {base,
+     * extent} label offsets, or null if it has none or the offsets do not fit the label.
      */
     @Nullable
     int[] getPublishedTextSelection() {
