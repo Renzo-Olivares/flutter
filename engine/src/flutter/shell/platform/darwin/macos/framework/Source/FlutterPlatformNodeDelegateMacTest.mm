@@ -335,6 +335,67 @@ TEST(FlutterPlatformNodeDelegateMac, SetSelectedTextRangeOnStaticTextDispatchesS
   [engine shutDownEngine];
 }
 
+// A collapsed selection only records a caret in the framework, so the node
+// reports the caret VoiceOver set until the framework publishes a selection.
+TEST(FlutterPlatformNodeDelegateMac, StaticTextReportsTheCaretVoiceOverSet) {
+  FlutterViewController* viewController = CreateTestViewController();
+  FlutterEngine* engine = viewController.engine;
+  NSWindow* window = [[NSWindow alloc] initWithContentRect:NSMakeRect(0, 0, 800, 600)
+                                                 styleMask:NSBorderlessWindowMask
+                                                   backing:NSBackingStoreBuffered
+                                                     defer:NO];
+  window.contentView = viewController.view;
+  engine.semanticsEnabled = YES;
+  engine.embedderAPI.DispatchSemanticsAction = MOCK_ENGINE_PROC(
+      DispatchSemanticsAction, ([](auto engine, uint64_t id, FlutterSemanticsAction action,
+                                   const uint8_t* data, size_t data_length) { return kSuccess; }));
+  auto bridge = viewController.accessibilityBridge.lock();
+
+  FlutterSemanticsNode2 paragraph;
+  FlutterSemanticsFlags flags = FlutterSemanticsFlags{};
+  paragraph.flags2 = &flags;
+  paragraph.id = 0;
+  paragraph.actions = FlutterSemanticsAction::kFlutterSemanticsActionSetSelection;
+  paragraph.text_selection_base = -1;
+  paragraph.text_selection_extent = -1;
+  paragraph.label = "Hello world";
+  paragraph.hint = "";
+  paragraph.value = "";
+  paragraph.increased_value = "";
+  paragraph.decreased_value = "";
+  paragraph.tooltip = "";
+  paragraph.child_count = 0;
+  paragraph.custom_accessibility_actions_count = 0;
+  paragraph.identifier = "";
+  bridge->AddFlutterSemanticsNodeUpdate(paragraph);
+  bridge->CommitUpdates();
+
+  NSAccessibilityElement* native_paragraph =
+      bridge->GetFlutterPlatformNodeDelegateFromID(0).lock()->GetNativeViewAccessible();
+  EXPECT_EQ(native_paragraph.accessibilitySelectedTextRange.location,
+            static_cast<NSUInteger>(NSNotFound));
+
+  [native_paragraph setAccessibilitySelectedTextRange:NSMakeRange(5, 0)];
+  EXPECT_TRUE(NSEqualRanges(native_paragraph.accessibilitySelectedTextRange, NSMakeRange(5, 0)));
+
+  // A selection from the framework replaces the caret.
+  paragraph.text_selection_base = 0;
+  paragraph.text_selection_extent = 3;
+  bridge->AddFlutterSemanticsNodeUpdate(paragraph);
+  bridge->CommitUpdates();
+  EXPECT_TRUE(NSEqualRanges(native_paragraph.accessibilitySelectedTextRange, NSMakeRange(0, 3)));
+
+  paragraph.text_selection_base = -1;
+  paragraph.text_selection_extent = -1;
+  bridge->AddFlutterSemanticsNodeUpdate(paragraph);
+  bridge->CommitUpdates();
+  EXPECT_EQ(native_paragraph.accessibilitySelectedTextRange.location,
+            static_cast<NSUInteger>(NSNotFound));
+
+  [engine setViewController:nil];
+  [engine shutDownEngine];
+}
+
 // NOLINTEND(clang-analyzer-core.StackAddressEscape)
 
 TEST(FlutterPlatformNodeDelegateMac, TextFieldUsesFlutterTextField) {

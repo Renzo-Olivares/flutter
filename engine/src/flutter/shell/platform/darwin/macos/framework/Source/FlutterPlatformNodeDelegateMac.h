@@ -33,6 +33,9 @@ class FlutterPlatformNodeDelegateMac : public FlutterPlatformNodeDelegate {
   // |ui::AXPlatformNodeDelegateBase|
   const ui::AXNodeData& GetData() const override;
 
+  // |ui::AXPlatformNodeDelegateBase|
+  bool AccessibilityPerformAction(const ui::AXActionData& data) override;
+
   //---------------------------------------------------------------------------
   /// @brief      Gets the live region text of this node in UTF-8 format. This
   ///             is useful to determine the changes in between semantics
@@ -59,6 +62,12 @@ class FlutterPlatformNodeDelegateMac : public FlutterPlatformNodeDelegate {
   std::weak_ptr<AccessibilityBridge> bridge_;
   __weak FlutterViewController* view_controller_;
   mutable ui::AXNodeData cached_data_;
+
+  // The caret an assistive technology set on selectable static text with a
+  // collapsed AXSelectedTextRange, in UTF-16 offsets, or -1. The framework
+  // only records such a caret, so this node reports it until the framework
+  // publishes a selection.
+  int32_t assistive_technology_caret_ = -1;
 
   gfx::RectF ConvertBoundsFromLocalToScreen(
       const gfx::RectF& local_bounds) const;
