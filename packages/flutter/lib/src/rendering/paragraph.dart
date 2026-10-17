@@ -360,8 +360,10 @@ abstract class SelectionSemanticsDelegate {
   /// Called when `paragraph` stops using this delegate or is disposed.
   void didDetachParagraph(RenderParagraph paragraph);
 
-  /// Called when `paragraph` disposed its selectables (its text changed or
-  /// it left a registrar), so references to them are stale.
+  /// Called just before `paragraph` disposes its selectables (its text
+  /// changed or it left a registrar); `paragraph` still owns them, so
+  /// [RenderParagraph.selectableBelongsToParagraph] can be asked, and any
+  /// reference to them must be dropped.
   void didDisposeSelectables(RenderParagraph paragraph);
 }
 
@@ -772,6 +774,9 @@ class RenderParagraph extends RenderBox
     if (_lastSelectableFragments == null) {
       return;
     }
+    // Notified while the fragments are still owned, so the delegate can ask
+    // whether a selectable it holds is one of them.
+    assert(_lastSelectableFragments!.every(selectableBelongsToParagraph));
     _selectionSemanticsDelegate?.didDisposeSelectables(this);
     for (final _SelectableFragment fragment in _lastSelectableFragments!) {
       fragment.dispose();

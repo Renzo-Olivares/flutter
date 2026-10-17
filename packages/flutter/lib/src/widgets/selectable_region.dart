@@ -468,6 +468,13 @@ class SelectableRegionState extends State<SelectableRegion>
   /// paragraph that represents this region's focus.
   ({Selectable target, int offset})? _accessibilityAnchor;
 
+  /// Whether an accessibility caret or range is recorded as the starting
+  /// point of a keyboard selection.
+  ///
+  /// Read without validation; only for tests of when the record is dropped.
+  @visibleForTesting
+  bool get debugHasAccessibilityAnchor => _accessibilityAnchor != null;
+
   /// The paragraphs under this region that publish selection semantics.
   final Set<RenderParagraph> _selectableParagraphs = <RenderParagraph>{};
 
@@ -761,8 +768,11 @@ class SelectableRegionState extends State<SelectableRegion>
   bool get _representsFocusOnParagraph =>
       _focusNode.hasPrimaryFocus && SemanticsBinding.instance.semanticsEnabled;
 
-  /// The accessibility anchor, or null once its selectable is gone (a
-  /// paragraph that replaced or disposed its fragments, or detached).
+  /// The accessibility anchor, or null when its selectable no longer belongs
+  /// to an attached paragraph.
+  ///
+  /// The anchor is dropped eagerly in [_didDisposeSelectables] and
+  /// [_didDetachParagraph]; this read only guards against a stale record.
   ({Selectable target, int offset})? get _liveAccessibilityAnchor {
     final ({Selectable target, int offset})? anchor = _accessibilityAnchor;
     if (anchor == null) {
@@ -773,13 +783,16 @@ class SelectableRegionState extends State<SelectableRegion>
         return anchor;
       }
     }
-    _accessibilityAnchor = null;
     return null;
   }
 
   void _didDisposeSelectables(RenderParagraph paragraph) {
-    // Drops the anchor if its fragment was among the disposed ones.
-    _liveAccessibilityAnchor;
+    // Called before the paragraph forgets its fragments, so ownership can
+    // still be asked.
+    if (_accessibilityAnchor case (:final Selectable target, offset: _)
+        when paragraph.selectableBelongsToParagraph(target)) {
+      _accessibilityAnchor = null;
+    }
   }
 
   bool _isFocusAnchor(RenderParagraph paragraph) {

@@ -1710,6 +1710,7 @@ void main() {
       await tester.pump();
       tester.semantics.setSelection(find.semantics.byLabel('Hello world'), base: 3, extent: 3);
       await tester.pump();
+      expect(_regionState(tester).debugHasAccessibilityAnchor, isTrue);
       // The paragraph's fragments are replaced.
       await tester.pumpWidget(
         _region(
@@ -1718,6 +1719,9 @@ void main() {
         ),
       );
       await tester.pump();
+      // The anchor is dropped as soon as its fragment is disposed, without
+      // waiting for the next read.
+      expect(_regionState(tester).debugHasAccessibilityAnchor, isFalse);
       focusNode.requestFocus();
       await tester.pump();
       await tester.pump();
