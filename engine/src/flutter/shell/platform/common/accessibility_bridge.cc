@@ -114,6 +114,7 @@ void AccessibilityBridge::CommitUpdates() {
     FML_LOG(ERROR) << "Failed to update ui::AXTree, error: " << error;
     return;
   }
+  UpdateStaticSelectionTreeData();
   // Handles accessibility events as the result of the semantics update.
   for (const auto& targeted_event : event_generator_) {
     auto event_target =
@@ -189,6 +190,7 @@ void AccessibilityBridge::OnNodeDeleted(ui::AXTree* tree,
   if (id_wrapper_map_.find(node_id) != id_wrapper_map_.end()) {
     id_wrapper_map_.erase(node_id);
   }
+  selected_static_nodes_.erase(node_id);
 }
 
 void AccessibilityBridge::OnAtomicUpdateFinished(
@@ -307,6 +309,7 @@ void AccessibilityBridge::ConvertFlutterUpdate(const SemanticsNode& node,
     node_data.child_ids.push_back(child);
   }
   SetTreeData(node, tree_update);
+  UpdateSelectedStaticNodes(node);
   tree_update.nodes.push_back(node_data);
 }
 
@@ -586,6 +589,105 @@ void AccessibilityBridge::SetTreeData(const SemanticsNode& node,
     tree_update.tree_data.focus_id = ui::AXNode::kInvalidAXID;
     tree_update.has_tree_data = true;
   }
+}
+
+void AccessibilityBridge::UpdateSelectedStaticNodes(const SemanticsNode& node) {
+  // Selectable static text, such as a paragraph under a SelectableRegion, is a
+  // node that is not a text field and has the set selection action. Its
+  // selection is in label offsets.
+  bool is_selectable_static_text =
+      !node.flags->is_text_field &&
+      (node.actions &
+       FlutterSemanticsAction::kFlutterSemanticsActionSetSelection);
+  if (is_selectable_static_text && node.text_selection_base != -1 &&
+      node.text_selection_extent != -1) {
+    selected_static_nodes_.insert(node.id);
+  } else {
+    selected_static_nodes_.erase(node.id);
+  }
+}
+
+void AccessibilityBridge::UpdateStaticSelectionTreeData() {
+  // A focused text field with a selection owns the tree selection, which
+  // SetTreeData has already written.
+  ui::AXNode* focused = tree_->GetFromId(tree_->data().focus_id);
+  if (focused && focused->data().role == ax::mojom::Role::kTextField &&
+      focused->data().GetIntAttribute(ax::mojom::IntAttribute::kTextSelStart) !=
+          -1) {
+    static_nodes_own_selection_ = false;
+    return;
+  }
+
+  ui::AXTreeData data = tree_->data();
+  if (selected_static_nodes_.empty()) {
+    if (!static_nodes_own_selection_) {
+      return;
+    }
+    static_nodes_own_selection_ = false;
+    data.sel_is_backward = false;
+    data.sel_anchor_object_id = ui::AXNode::kInvalidAXID;
+    data.sel_anchor_offset = -1;
+    data.sel_focus_object_id = ui::AXNode::kInvalidAXID;
+    data.sel_focus_offset = -1;
+    tree_->UpdateData(data);
+    return;
+  }
+
+  // The selection spans the selected nodes from the first to the last in tree
+  // order.
+  ui::AXNode* first = nullptr;
+  ui::AXNode* last = nullptr;
+  if (selected_static_nodes_.size() == 1) {
+    first = last = tree_->GetFromId(*selected_static_nodes_.begin());
+  } else {
+    std::vector<ui::AXNode*> stack;
+    if (tree_->root()) {
+      stack.push_back(tree_->root());
+    }
+    while (!stack.empty()) {
+      ui::AXNode* node = stack.back();
+      stack.pop_back();
+      if (selected_static_nodes_.count(node->id())) {
+        if (!first) {
+          first = node;
+        }
+        last = node;
+      }
+      const std::vector<ui::AXNode*>& children = node->children();
+      stack.insert(stack.end(), children.rbegin(), children.rend());
+    }
+  }
+  if (!first) {
+    return;
+  }
+
+  int32_t first_base =
+      first->data().GetIntAttribute(ax::mojom::IntAttribute::kTextSelStart);
+  int32_t first_extent =
+      first->data().GetIntAttribute(ax::mojom::IntAttribute::kTextSelEnd);
+  int32_t last_base =
+      last->data().GetIntAttribute(ax::mojom::IntAttribute::kTextSelStart);
+  int32_t last_extent =
+      last->data().GetIntAttribute(ax::mojom::IntAttribute::kTextSelEnd);
+  // Each node's selection is the region selection clipped to that node with
+  // its direction kept, so a backward selection has backward clips.
+  bool is_backward = first == last
+                         ? first_base > first_extent
+                         : first_base > first_extent && last_base > last_extent;
+  static_nodes_own_selection_ = true;
+  data.sel_is_backward = is_backward;
+  if (is_backward) {
+    data.sel_anchor_object_id = last->id();
+    data.sel_anchor_offset = last_base;
+    data.sel_focus_object_id = first->id();
+    data.sel_focus_offset = first_extent;
+  } else {
+    data.sel_anchor_object_id = first->id();
+    data.sel_anchor_offset = first_base;
+    data.sel_focus_object_id = last->id();
+    data.sel_focus_offset = last_extent;
+  }
+  tree_->UpdateData(data);
 }
 
 AccessibilityBridge::SemanticsNode

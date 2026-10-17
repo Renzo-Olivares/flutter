@@ -266,6 +266,231 @@ TEST(AccessibilityBridgeTest, DoesNotAssignEditableRootToSelectableText) {
       ax::mojom::BoolAttribute::kEditableRoot));
 }
 
+// A selectable static text node: not a text field, with the set selection
+// action, as a paragraph under a SelectableRegion publishes it.
+FlutterSemanticsNode2 CreateSelectableTextNode(int32_t id,
+                                               const char* label,
+                                               int32_t base = -1,
+                                               int32_t extent = -1) {
+  FlutterSemanticsNode2 node = CreateSemanticsNode(id, label);
+  node.actions = FlutterSemanticsAction::kFlutterSemanticsActionSetSelection;
+  node.text_selection_base = base;
+  node.text_selection_extent = extent;
+  return node;
+}
+
+TEST(AccessibilityBridgeTest, StaticTextSelectionOwnsTreeSelection) {
+  std::shared_ptr<TestAccessibilityBridge> bridge =
+      std::make_shared<TestAccessibilityBridge>();
+  std::vector<int32_t> children{1, 2};
+  FlutterSemanticsNode2 root = CreateSemanticsNode(0, "root", &children);
+  FlutterSemanticsNode2 paragraph = CreateSelectableTextNode(1, "Hello world");
+  // A non-text-field node without the set selection action is not selectable
+  // static text, even if it carries a selection.
+  FlutterSemanticsNode2 label = CreateSemanticsNode(2, "Other");
+  label.text_selection_base = 0;
+  label.text_selection_extent = 2;
+  bridge->AddFlutterSemanticsNodeUpdate(root);
+  bridge->AddFlutterSemanticsNodeUpdate(paragraph);
+  bridge->AddFlutterSemanticsNodeUpdate(label);
+  bridge->CommitUpdates();
+
+  const ui::AXTreeData& tree = bridge->GetAXTreeData();
+  EXPECT_EQ(tree.sel_anchor_object_id, ui::AXNode::kInvalidAXID);
+  EXPECT_EQ(tree.sel_focus_object_id, ui::AXNode::kInvalidAXID);
+  bridge->accessibility_events.clear();
+
+  paragraph.text_selection_base = 0;
+  paragraph.text_selection_extent = 4;
+  bridge->AddFlutterSemanticsNodeUpdate(paragraph);
+  bridge->CommitUpdates();
+
+  EXPECT_EQ(tree.sel_anchor_object_id, 1);
+  EXPECT_EQ(tree.sel_anchor_offset, 0);
+  EXPECT_EQ(tree.sel_focus_object_id, 1);
+  EXPECT_EQ(tree.sel_focus_offset, 4);
+  EXPECT_FALSE(tree.sel_is_backward);
+  EXPECT_THAT(
+      bridge->accessibility_events,
+      Contains(ui::AXEventGenerator::Event::DOCUMENT_SELECTION_CHANGED));
+
+  // The selection survives an update that does not touch the paragraph.
+  bridge->accessibility_events.clear();
+  bridge->AddFlutterSemanticsNodeUpdate(root);
+  bridge->CommitUpdates();
+  EXPECT_EQ(tree.sel_anchor_object_id, 1);
+  EXPECT_EQ(tree.sel_focus_offset, 4);
+  EXPECT_THAT(bridge->accessibility_events,
+              ::testing::Not(Contains(
+                  ui::AXEventGenerator::Event::DOCUMENT_SELECTION_CHANGED)));
+}
+
+TEST(AccessibilityBridgeTest, TwoNodeAnchorFocusAndBackward) {
+  std::shared_ptr<TestAccessibilityBridge> bridge =
+      std::make_shared<TestAccessibilityBridge>();
+  // Tree order is 5, 3, 4; ids are deliberately not in tree order.
+  std::vector<int32_t> children{5, 3, 4};
+  FlutterSemanticsNode2 root = CreateSemanticsNode(0, "root", &children);
+  FlutterSemanticsNode2 first =
+      CreateSelectableTextNode(5, "Hello world", 6, 11);
+  FlutterSemanticsNode2 second =
+      CreateSelectableTextNode(3, "Second line", 0, 6);
+  FlutterSemanticsNode2 third = CreateSelectableTextNode(4, "Third line");
+  bridge->AddFlutterSemanticsNodeUpdate(root);
+  bridge->AddFlutterSemanticsNodeUpdate(first);
+  bridge->AddFlutterSemanticsNodeUpdate(second);
+  bridge->AddFlutterSemanticsNodeUpdate(third);
+  bridge->CommitUpdates();
+
+  const ui::AXTreeData& tree = bridge->GetAXTreeData();
+  // Forward: anchor = first node in tree order at its base, focus = last node
+  // at its extent.
+  EXPECT_EQ(tree.sel_anchor_object_id, 5);
+  EXPECT_EQ(tree.sel_anchor_offset, 6);
+  EXPECT_EQ(tree.sel_focus_object_id, 3);
+  EXPECT_EQ(tree.sel_focus_offset, 6);
+  EXPECT_FALSE(tree.sel_is_backward);
+
+  // Backward across two nodes: both clips are backward, so the anchor is the
+  // last node at its base and the focus is the first node at its extent.
+  first.text_selection_base = 11;
+  first.text_selection_extent = 6;
+  second.text_selection_base = 6;
+  second.text_selection_extent = 0;
+  bridge->AddFlutterSemanticsNodeUpdate(first);
+  bridge->AddFlutterSemanticsNodeUpdate(second);
+  bridge->CommitUpdates();
+  EXPECT_EQ(tree.sel_anchor_object_id, 3);
+  EXPECT_EQ(tree.sel_anchor_offset, 6);
+  EXPECT_EQ(tree.sel_focus_object_id, 5);
+  EXPECT_EQ(tree.sel_focus_offset, 6);
+  EXPECT_TRUE(tree.sel_is_backward);
+
+  // Backward within one node.
+  first.text_selection_base = -1;
+  first.text_selection_extent = -1;
+  second.text_selection_base = -1;
+  second.text_selection_extent = -1;
+  third.text_selection_base = 4;
+  third.text_selection_extent = 1;
+  bridge->AddFlutterSemanticsNodeUpdate(first);
+  bridge->AddFlutterSemanticsNodeUpdate(second);
+  bridge->AddFlutterSemanticsNodeUpdate(third);
+  bridge->CommitUpdates();
+  EXPECT_EQ(tree.sel_anchor_object_id, 4);
+  EXPECT_EQ(tree.sel_anchor_offset, 4);
+  EXPECT_EQ(tree.sel_focus_object_id, 4);
+  EXPECT_EQ(tree.sel_focus_offset, 1);
+  EXPECT_TRUE(tree.sel_is_backward);
+}
+
+TEST(AccessibilityBridgeTest, StaticOwnerClears) {
+  std::shared_ptr<TestAccessibilityBridge> bridge =
+      std::make_shared<TestAccessibilityBridge>();
+  std::vector<int32_t> children{1, 2};
+  FlutterSemanticsNode2 root = CreateSemanticsNode(0, "root", &children);
+  FlutterSemanticsNode2 first =
+      CreateSelectableTextNode(1, "Hello world", 0, 5);
+  FlutterSemanticsNode2 second = CreateSelectableTextNode(2, "Second line");
+  bridge->AddFlutterSemanticsNodeUpdate(root);
+  bridge->AddFlutterSemanticsNodeUpdate(first);
+  bridge->AddFlutterSemanticsNodeUpdate(second);
+  bridge->CommitUpdates();
+
+  const ui::AXTreeData& tree = bridge->GetAXTreeData();
+  ASSERT_EQ(tree.sel_anchor_object_id, 1);
+  bridge->accessibility_events.clear();
+
+  // The framework clears the selection.
+  first.text_selection_base = -1;
+  first.text_selection_extent = -1;
+  bridge->AddFlutterSemanticsNodeUpdate(first);
+  bridge->CommitUpdates();
+  EXPECT_EQ(tree.sel_anchor_object_id, ui::AXNode::kInvalidAXID);
+  EXPECT_EQ(tree.sel_anchor_offset, -1);
+  EXPECT_EQ(tree.sel_focus_object_id, ui::AXNode::kInvalidAXID);
+  EXPECT_EQ(tree.sel_focus_offset, -1);
+  EXPECT_FALSE(tree.sel_is_backward);
+  EXPECT_THAT(
+      bridge->accessibility_events,
+      Contains(ui::AXEventGenerator::Event::DOCUMENT_SELECTION_CHANGED));
+
+  // A selected node that is removed from the tree stops owning the selection.
+  second.text_selection_base = 0;
+  second.text_selection_extent = 6;
+  bridge->AddFlutterSemanticsNodeUpdate(second);
+  bridge->CommitUpdates();
+  ASSERT_EQ(tree.sel_anchor_object_id, 2);
+
+  root.child_count = 1;
+  bridge->AddFlutterSemanticsNodeUpdate(root);
+  bridge->CommitUpdates();
+  EXPECT_EQ(bridge->GetFlutterPlatformNodeDelegateFromID(2).lock(), nullptr);
+  EXPECT_EQ(tree.sel_anchor_object_id, ui::AXNode::kInvalidAXID);
+  EXPECT_EQ(tree.sel_focus_object_id, ui::AXNode::kInvalidAXID);
+
+  // A node re-created with the same id does not inherit a stale selection.
+  root.child_count = 2;
+  second.text_selection_base = -1;
+  second.text_selection_extent = -1;
+  bridge->AddFlutterSemanticsNodeUpdate(root);
+  bridge->AddFlutterSemanticsNodeUpdate(second);
+  bridge->CommitUpdates();
+  EXPECT_EQ(tree.sel_anchor_object_id, ui::AXNode::kInvalidAXID);
+}
+
+TEST(AccessibilityBridgeTest, FocusedTextFieldWins) {
+  std::shared_ptr<TestAccessibilityBridge> bridge =
+      std::make_shared<TestAccessibilityBridge>();
+  std::vector<int32_t> children{1, 2};
+  FlutterSemanticsNode2 root = CreateSemanticsNode(0, "root", &children);
+  FlutterSemanticsNode2 paragraph =
+      CreateSelectableTextNode(1, "Hello world", 0, 5);
+  FlutterSemanticsNode2 field = CreateSemanticsNode(2, "Email");
+  field.value = "me@example.com";
+  field.actions = FlutterSemanticsAction::kFlutterSemanticsActionSetSelection;
+  auto focused_field_flags = FlutterSemanticsFlags{
+      .is_focused = FlutterTristate::kFlutterTristateTrue,
+      .is_text_field = true,
+  };
+  auto blurred_field_flags = FlutterSemanticsFlags{
+      .is_focused = FlutterTristate::kFlutterTristateFalse,
+      .is_text_field = true,
+  };
+  field.flags2 = &focused_field_flags;
+  field.text_selection_base = 2;
+  field.text_selection_extent = 2;
+  bridge->AddFlutterSemanticsNodeUpdate(root);
+  bridge->AddFlutterSemanticsNodeUpdate(paragraph);
+  bridge->AddFlutterSemanticsNodeUpdate(field);
+  bridge->CommitUpdates();
+
+  const ui::AXTreeData& tree = bridge->GetAXTreeData();
+  EXPECT_EQ(tree.focus_id, 2);
+  EXPECT_EQ(tree.sel_anchor_object_id, 2);
+  EXPECT_EQ(tree.sel_anchor_offset, 2);
+  EXPECT_EQ(tree.sel_focus_object_id, 2);
+  EXPECT_EQ(tree.sel_focus_offset, 2);
+
+  // A static selection change while the field is focused leaves the field as
+  // the owner.
+  paragraph.text_selection_extent = 7;
+  bridge->AddFlutterSemanticsNodeUpdate(paragraph);
+  bridge->CommitUpdates();
+  EXPECT_EQ(tree.sel_anchor_object_id, 2);
+  EXPECT_EQ(tree.sel_focus_offset, 2);
+
+  // A blurred field that still holds a selection is not an owner: the static
+  // selection takes over.
+  field.flags2 = &blurred_field_flags;
+  bridge->AddFlutterSemanticsNodeUpdate(field);
+  bridge->CommitUpdates();
+  EXPECT_EQ(tree.sel_anchor_object_id, 1);
+  EXPECT_EQ(tree.sel_anchor_offset, 0);
+  EXPECT_EQ(tree.sel_focus_object_id, 1);
+  EXPECT_EQ(tree.sel_focus_offset, 7);
+}
+
 TEST(AccessibilityBridgeTest, SwitchHasSwitchRole) {
   std::shared_ptr<TestAccessibilityBridge> bridge =
       std::make_shared<TestAccessibilityBridge>();

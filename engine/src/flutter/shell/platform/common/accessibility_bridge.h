@@ -5,6 +5,7 @@
 #ifndef FLUTTER_SHELL_PLATFORM_COMMON_ACCESSIBILITY_BRIDGE_H_
 #define FLUTTER_SHELL_PLATFORM_COMMON_ACCESSIBILITY_BRIDGE_H_
 
+#include <set>
 #include <unordered_map>
 
 #include "flutter/fml/mapping.h"
@@ -203,6 +204,15 @@ class AccessibilityBridge
       pending_semantics_custom_action_updates_;
   AccessibilityNodeId last_focused_id_ = ui::AXNode::kInvalidAXID;
 
+  // The selectable static text nodes (not text fields, with the set selection
+  // action) that currently hold a selection. Persists across updates, because
+  // an update only carries the nodes that changed.
+  std::set<AccessibilityNodeId> selected_static_nodes_;
+
+  // Whether the tree selection was last written from
+  // |selected_static_nodes_|, so that it is cleared when that set empties.
+  bool static_nodes_own_selection_ = false;
+
   void InitAXTree(const ui::AXTreeUpdate& initial_state);
 
   // Create an update that removes any nodes that will be reparented by
@@ -236,6 +246,12 @@ class AccessibilityBridge
   void SetTooltipFromFlutterUpdate(ui::AXNodeData& node_data,
                                    const SemanticsNode& node);
   void SetTreeData(const SemanticsNode& node, ui::AXTreeUpdate& tree_update);
+  void UpdateSelectedStaticNodes(const SemanticsNode& node);
+
+  // Points the tree selection at |selected_static_nodes_| unless a focused
+  // text field with a selection owns it. Runs after the tree has been updated,
+  // because ownership depends on the whole tree rather than on the update.
+  void UpdateStaticSelectionTreeData();
   SemanticsNode FromFlutterSemanticsNode(
       const FlutterSemanticsNode2& flutter_node);
   SemanticsCustomAction FromFlutterSemanticsCustomAction(
