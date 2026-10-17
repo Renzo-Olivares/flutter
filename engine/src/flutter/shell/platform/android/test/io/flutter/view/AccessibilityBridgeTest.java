@@ -2087,7 +2087,8 @@ public class AccessibilityBridgeTest {
     assertTrue(hasAction(nodeInfo, AccessibilityNodeInfo.ACTION_SET_SELECTION));
     // Copy is advertised only while the node holds part of the selection.
     assertFalse(hasAction(nodeInfo, AccessibilityNodeInfo.ACTION_COPY));
-    assertEquals(View.ACCESSIBILITY_LIVE_REGION_NONE, nodeInfo.getLiveRegion());
+    // A live region stays one: selection changes send no content-changed event for the node.
+    assertEquals(View.ACCESSIBILITY_LIVE_REGION_POLITE, nodeInfo.getLiveRegion());
   }
 
   @Config(sdk = API_LEVELS.API_33)
@@ -2447,6 +2448,79 @@ public class AccessibilityBridgeTest {
     dispatched = harness.dispatchedSelections(1);
     assertEquals(5, dispatched.get(0)[0]);
     assertEquals(6, dispatched.get(0)[1]);
+  }
+
+  @Test
+  public void itPicksTheExtentNodeByTraversalOrderWhenEveryClipEndsAtAnEdge() {
+    SelectableTextBridge harness = new SelectableTextBridge();
+    harness.sendTree(
+        selectableParagraph(1, "Hello world", -1, -1), selectableParagraph(2, "Second", -1, -1));
+
+    // Select all, forward: both clips end at the end of their node; the extent is in the last one.
+    harness.sendTree(
+        selectableParagraph(1, "Hello world", 0, 11), selectableParagraph(2, "Second", 0, 6));
+    assertFalse(harness.bridge.createAccessibilityNodeInfo(1).isFocused());
+    assertTrue(harness.bridge.createAccessibilityNodeInfo(2).isFocused());
+
+    // Backward: both clips end at the start of their node; the extent is in the first one.
+    harness.sendTree(
+        selectableParagraph(1, "Hello world", 11, 0), selectableParagraph(2, "Second", 6, 0));
+    assertTrue(harness.bridge.createAccessibilityNodeInfo(1).isFocused());
+    assertFalse(harness.bridge.createAccessibilityNodeInfo(2).isFocused());
+  }
+
+  @Test
+  public void itStartsANewSelectionAtTheReadingCursorAfterReadingOn() {
+    SelectableTextBridge harness = new SelectableTextBridge();
+    harness.sendTree(selectableParagraph(1, "Hello world foo", -1, -1));
+    harness.sendTree(selectableParagraph(1, "Hello world foo", 0, 5));
+    assertTrue(harness.readNext(1, AccessibilityNodeInfo.MOVEMENT_GRANULARITY_WORD));
+    harness.clearEvents();
+
+    assertTrue(harness.extendNext(1, AccessibilityNodeInfo.MOVEMENT_GRANULARITY_CHARACTER));
+    List<int[]> dispatched = harness.dispatchedSelections(1);
+    assertEquals(11, dispatched.get(0)[0]);
+    assertEquals(12, dispatched.get(0)[1]);
+  }
+
+  @Test
+  public void itKeepsThePendingSelectionAcrossUpdatesThatDoNotChangeIt() {
+    SelectableTextBridge harness = new SelectableTextBridge();
+    harness.sendTree(selectableParagraph(1, "Hello world", -1, -1));
+    assertTrue(harness.extendNext(1, AccessibilityNodeInfo.MOVEMENT_GRANULARITY_CHARACTER));
+    // A frame built before the framework handled SET_SELECTION(0, 1).
+    TestSemanticsNode inFlight = selectableParagraph(1, "Hello world", -1, -1);
+    inFlight.right = 10.0f;
+    harness.sendTree(inFlight);
+    harness.clearEvents();
+
+    assertTrue(harness.extendNext(1, AccessibilityNodeInfo.MOVEMENT_GRANULARITY_CHARACTER));
+    List<int[]> dispatched = harness.dispatchedSelections(1);
+    assertEquals(0, dispatched.get(0)[0]);
+    assertEquals(2, dispatched.get(0)[1]);
+  }
+
+  @Test
+  public void itDoesNotTreatNodesWithAValueAsSelectableStaticText() {
+    SelectableTextBridge harness = new SelectableTextBridge();
+    TestSemanticsNode custom = selectableParagraph(1, "Amount", -1, -1);
+    custom.value = "42";
+    harness.sendTree(custom);
+
+    AccessibilityNodeInfo nodeInfo = harness.bridge.createAccessibilityNodeInfo(1);
+    assertEquals("android.view.View", nodeInfo.getClassName().toString());
+    assertEquals("42, Amount", nodeInfo.getContentDescription().toString());
+  }
+
+  @Test
+  public void itReportsTheSelectionFocusedNodeAsTheInputFocus() {
+    SelectableTextBridge harness = new SelectableTextBridge();
+    harness.sendTree(
+        selectableParagraph(1, "Hello world", -1, -1), selectableParagraph(2, "Second", -1, -1));
+    assertTrue(harness.extendNext(2, AccessibilityNodeInfo.MOVEMENT_GRANULARITY_CHARACTER));
+
+    AccessibilityNodeInfo focused = harness.bridge.findFocus(AccessibilityNodeInfo.FOCUS_INPUT);
+    assertEquals("Second", focused.getText().toString());
   }
 
   @Test

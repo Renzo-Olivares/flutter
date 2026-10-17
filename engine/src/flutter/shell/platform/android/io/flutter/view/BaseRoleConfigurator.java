@@ -130,8 +130,7 @@ public class BaseRoleConfigurator implements AccessibilityNodeConfigurator {
 
   private void configureLiveRegion(
       AccessibilityNodeInfo result, AccessibilityBridge.SemanticsNode node) {
-    // A live region would make TalkBack read the whole text again on every selection change.
-    if (node.hasFlag(AccessibilityBridge.Flag.IS_LIVE_REGION) && !node.isSelectableStaticText()) {
+    if (node.hasFlag(AccessibilityBridge.Flag.IS_LIVE_REGION)) {
       result.setLiveRegion(View.ACCESSIBILITY_LIVE_REGION_POLITE);
     }
   }
@@ -390,21 +389,17 @@ public class BaseRoleConfigurator implements AccessibilityNodeConfigurator {
       if (Build.VERSION.SDK_INT >= API_LEVELS.API_28) {
         result.setHintText(node.getTextFieldHint());
       }
-    } else if (node.isSelectableStaticText()) {
-      // TalkBack reads, iterates and selects the text of a selectable node, so the text is the
-      // label alone (the selection indexes the label). The description keeps the label as well, so
-      // UI tests that find Flutter text by its content description keep working.
-      final CharSequence label = node.getSelectableText();
-      result.setText(label);
-      CharSequence description = label;
-      if (Build.VERSION.SDK_INT < API_LEVELS.API_28 && node.tooltip != null) {
-        description = (description != null ? description : "") + "\n" + node.tooltip;
-      }
-      if (description != null) {
-        result.setContentDescription(description);
-      }
     } else if (!node.hasFlag(AccessibilityBridge.Flag.SCOPES_ROUTE)) {
-      CharSequence content = node.getValueLabelHint();
+      CharSequence content;
+      if (node.isSelectableStaticText()) {
+        // TalkBack reads, iterates and selects the text of a selectable node, and the selection
+        // indexes the label, so the text is the label alone (no hint). The description keeps the
+        // label too, so UI tests that find Flutter text by its content description keep working.
+        content = node.getSelectableText();
+        result.setText(content);
+      } else {
+        content = node.getValueLabelHint();
+      }
       if (Build.VERSION.SDK_INT < API_LEVELS.API_28) {
         if (node.tooltip != null) {
           content = content != null ? content : "";

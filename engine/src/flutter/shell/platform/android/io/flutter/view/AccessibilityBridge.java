@@ -32,6 +32,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.RequiresApi;
 import androidx.annotation.VisibleForTesting;
+import androidx.core.math.MathUtils;
 import io.flutter.Build.API_LEVELS;
 import io.flutter.BuildConfig;
 import io.flutter.Log;
@@ -1219,19 +1220,23 @@ public class AccessibilityBridge extends AccessibilityNodeProvider {
         arguments.getInt(AccessibilityNodeInfo.ACTION_ARGUMENT_MOVEMENT_GRANULARITY_INT);
     final boolean extendSelection =
         arguments.getBoolean(AccessibilityNodeInfo.ACTION_ARGUMENT_EXTEND_SELECTION_BOOLEAN);
-    final int[] selection = semanticsNode.getSelectableTextSelection();
+    final int cursor = selectableTextReadingCursors.get(semanticsNode.id, -1);
+    final boolean hasCursor = cursor >= 0 && cursor <= text.length();
+    int[] selection = semanticsNode.getSelectableTextSelection();
+    if (selection != null && hasCursor && cursor != selection[1]) {
+      // The user read on (or placed a caret) after selecting. A native TextView collapses its
+      // selection then, so an extension starts a new selection at the reading cursor.
+      selection = null;
+    }
     final int position;
     if (extendSelection && selection != null) {
       position = selection[1];
+    } else if (hasCursor) {
+      position = cursor;
+    } else if (selection != null) {
+      position = selection[1];
     } else {
-      final int cursor = selectableTextReadingCursors.get(semanticsNode.id, -1);
-      if (cursor >= 0 && cursor <= text.length()) {
-        position = cursor;
-      } else if (selection != null) {
-        position = selection[1];
-      } else {
-        position = forward ? 0 : text.length();
-      }
+      position = forward ? 0 : text.length();
     }
     final int[] segment =
         getTextSegment(text, semanticsNode.getEffectiveLocale(), granularity, forward, position);
@@ -1260,7 +1265,7 @@ public class AccessibilityBridge extends AccessibilityNodeProvider {
     }
 
     final int base = selection != null ? selection[0] : position;
-    focusSelectableText(semanticsNode, base, selection != null ? selection[1] : position);
+    focusSelectableText(semanticsNode, base, position);
     if (newPosition == base) {
       dispatchSelectableTextSelection(semanticsNode, -1, -1);
     } else {
@@ -1309,14 +1314,18 @@ public class AccessibilityBridge extends AccessibilityNodeProvider {
       accessibilityChannel.dispatchSemanticsAction(semanticsNode.id, Action.SET_SELECTION, caret);
       return true;
     }
-    selectionFocusedSemanticsNode = semanticsNode;
-    releaseSelectionFocusOnNextUpdate = false;
+    holdSelectionFocus(semanticsNode);
     dispatchSelectableTextSelection(semanticsNode, start, end);
     return true;
   }
 
   private static int clamp(int offset, int length) {
-    return Math.max(0, Math.min(offset, length));
+    return MathUtils.clamp(offset, 0, length);
+  }
+
+  private void holdSelectionFocus(@NonNull SemanticsNode semanticsNode) {
+    selectionFocusedSemanticsNode = semanticsNode;
+    releaseSelectionFocusOnNextUpdate = false;
   }
 
   /**
@@ -1326,8 +1335,7 @@ public class AccessibilityBridge extends AccessibilityNodeProvider {
    */
   private void focusSelectableText(
       @NonNull SemanticsNode semanticsNode, int fromIndex, int toIndex) {
-    selectionFocusedSemanticsNode = semanticsNode;
-    releaseSelectionFocusOnNextUpdate = false;
+    holdSelectionFocus(semanticsNode);
     if (lastSelectionEventSourceId != semanticsNode.id) {
       sendSelectableTextSelectionEvent(semanticsNode, fromIndex, toIndex);
     }
@@ -1703,8 +1711,10 @@ public class AccessibilityBridge extends AccessibilityNodeProvider {
     switch (focus) {
       case AccessibilityNodeInfo.FOCUS_INPUT:
         {
-          if (inputFocusedSemanticsNode != null) {
-            return createAccessibilityNodeInfo(inputFocusedSemanticsNode.id);
+          // The same node that the node infos report as focused.
+          final SemanticsNode focusedNode = getReportedFocusedSemanticsNode();
+          if (focusedNode != null) {
+            return createAccessibilityNodeInfo(focusedNode.id);
           }
           if (embeddedInputFocusedNodeId != null) {
             return createAccessibilityNodeInfo(embeddedInputFocusedNodeId);
@@ -2160,31 +2170,77 @@ public class AccessibilityBridge extends AccessibilityNodeProvider {
         selectionFocusedSemanticsNode = null;
       }
     }
-    SemanticsNode extentNode = null;
+    final List<SemanticsNode> selected = new ArrayList<>();
     for (SemanticsNode object : updated) {
-      object.clearPendingTextSelection();
       if (object.didChangeLabel()) {
         selectableTextReadingCursors.delete(object.id);
+        object.clearPendingTextSelection();
       }
-      if (!object.isSelectableStaticText()
-          || !object.didChangeTextSelection()
-          || !object.hasNonEmptyTextSelection()) {
+      if (!object.didChangeTextSelection()) {
+        // An update built before the framework handled the bridge's SET_SELECTION keeps the
+        // pending selection.
         continue;
       }
-      selectableTextReadingCursors.put(object.id, object.textSelectionExtent);
-      // In a selection across several nodes, the extent lies inside the extent node, while the
-      // other nodes' clips end at the edge the selection passes through.
-      if (extentNode == null || extentNode.isTextSelectionExtentAtPassThroughEdge()) {
-        extentNode = object;
+      object.clearPendingTextSelection();
+      if (object.isSelectableStaticText() && object.hasNonEmptyTextSelection()) {
+        selectableTextReadingCursors.put(object.id, object.textSelectionExtent);
+        selected.add(object);
       }
     }
+    final SemanticsNode extentNode = findSelectionExtentNode(selected);
     if (extentNode != null) {
-      selectionFocusedSemanticsNode = extentNode;
+      holdSelectionFocus(extentNode);
     } else if (selectionFocusedSemanticsNode != null
         && updated.contains(selectionFocusedSemanticsNode)
         && selectionFocusedSemanticsNode.didChangeTextSelection()
         && !selectionFocusedSemanticsNode.hasNonEmptyTextSelection()) {
       releaseSelectionFocusOnNextUpdate = true;
+    }
+  }
+
+  /**
+   * Returns the node of {@code selected} (selectable static text nodes whose new, non-empty
+   * selection arrived in this update) that holds the selection extent, or null if there is none.
+   *
+   * <p>In a selection across several nodes the other nodes' clips end at the edge the selection
+   * passes through (the end for a forward selection, the start for a backward one); the extent node
+   * is the last such node in traversal order for a forward selection and the first for a backward
+   * one.
+   */
+  @Nullable
+  private SemanticsNode findSelectionExtentNode(@NonNull List<SemanticsNode> selected) {
+    if (selected.size() <= 1) {
+      return selected.isEmpty() ? null : selected.get(0);
+    }
+    final List<SemanticsNode> ordered = new ArrayList<>();
+    collectInTraversalOrder(getRootSemanticsNode(), new HashSet<>(selected), ordered);
+    if (ordered.isEmpty()) {
+      return selected.get(selected.size() - 1);
+    }
+    final List<SemanticsNode> interior = new ArrayList<>();
+    for (SemanticsNode node : ordered) {
+      if (!node.isTextSelectionExtentAtPassThroughEdge()) {
+        interior.add(node);
+      }
+    }
+    final List<SemanticsNode> candidates = interior.isEmpty() ? ordered : interior;
+    final SemanticsNode first = candidates.get(0);
+    final boolean forward = first.textSelectionBase <= first.textSelectionExtent;
+    return forward ? candidates.get(candidates.size() - 1) : first;
+  }
+
+  private static void collectInTraversalOrder(
+      @Nullable SemanticsNode node,
+      @NonNull Set<SemanticsNode> wanted,
+      @NonNull List<SemanticsNode> result) {
+    if (node == null) {
+      return;
+    }
+    if (wanted.contains(node)) {
+      result.add(node);
+    }
+    for (SemanticsNode child : node.childrenInTraversalOrder) {
+      collectInTraversalOrder(child, wanted, result);
     }
   }
 
@@ -2858,14 +2914,16 @@ public class AccessibilityBridge extends AccessibilityNodeProvider {
     }
 
     /**
-     * Returns true if this node is selectable static text: a node that is not a text field and
-     * accepts {@link Action#SET_SELECTION}.
+     * Returns true if this node is selectable static text: a node that is not a text field, has no
+     * value and accepts {@link Action#SET_SELECTION}.
      *
      * <p>The framework publishes such nodes for the paragraphs of a {@code SelectableRegion}; its
      * {@code textSelectionBase} and {@code textSelectionExtent} index the label, not the value.
      */
     boolean isSelectableStaticText() {
-      return !hasFlag(Flag.IS_TEXT_FIELD) && hasAction(Action.SET_SELECTION);
+      return !hasFlag(Flag.IS_TEXT_FIELD)
+          && hasAction(Action.SET_SELECTION)
+          && (value == null || value.isEmpty());
     }
 
     /** The text of a selectable static text node, which its selection indexes. */
