@@ -3670,6 +3670,8 @@ class SemanticsNode with DiagnosticableTreeMixin {
   // [SemanticsConfiguration.selectableTextLength].
   int? _selectableTextLength;
   int _selectableTextActionBits = 0;
+  bool _selectableTextRepresentsFocus = false;
+  Tristate _isFocusedWithoutSelectableText = Tristate.none;
 
   /// If this node represents a text field, this indicates whether or not it's
   /// a multiline text field.
@@ -3893,6 +3895,8 @@ class SemanticsNode with DiagnosticableTreeMixin {
     _textSelection = config._textSelection;
     _selectableTextLength = config._selectableTextLength;
     _selectableTextActionBits = config._selectableTextActionBits;
+    _selectableTextRepresentsFocus = config._selectableTextRepresentsFocus;
+    _isFocusedWithoutSelectableText = config._isFocusedWithoutSelectableText;
     _isMultiline = config.isMultiline;
     _scrollPosition = config._scrollPosition;
     _scrollExtentMax = config._scrollExtentMax;
@@ -4007,9 +4011,20 @@ class SemanticsNode with DiagnosticableTreeMixin {
         selectableTextSelection = textSelection;
         textSelection = null;
       }
+      bool selectableTextRepresentsFocus = _selectableTextRepresentsFocus;
+      Tristate isFocusedWithoutSelectableText = _selectableTextRepresentsFocus
+          ? _isFocusedWithoutSelectableText
+          : _flags.isFocused;
       _visitDescendants((SemanticsNode node) {
         assert(node.isMergedIntoParent);
         flags = flags.merge(node._flags);
+        isFocusedWithoutSelectableText = isFocusedWithoutSelectableText.merge(
+          node._selectableTextRepresentsFocus
+              ? node._isFocusedWithoutSelectableText
+              : node._flags.isFocused,
+        );
+        selectableTextRepresentsFocus =
+            selectableTextRepresentsFocus || node._selectableTextRepresentsFocus;
         actions |= node._effectiveActionsAsBits;
         textDirection ??= node._textDirection;
         final int nodeSelectionActionBits = node._effectiveActionsAsBits & _kSelectableTextActions;
@@ -4143,6 +4158,9 @@ class SemanticsNode with DiagnosticableTreeMixin {
         textSelection ??= selectableTextSelection;
       } else {
         actions &= ~droppableActionBits;
+        if (selectableTextRepresentsFocus) {
+          flags = flags.copyWith(isFocused: isFocusedWithoutSelectableText);
+        }
       }
     }
 
@@ -6810,8 +6828,9 @@ class SemanticsConfiguration {
   /// selection semantics only while the node formed from it is pure text:
   /// the label is exactly this long (nothing was concatenated into it), the
   /// only actions are [SemanticsAction.setSelection] and
-  /// [SemanticsAction.copy], it is not a button, has no explicit role, and
-  /// has an empty [value] and [hint]. Otherwise the selection, and the
+  /// [SemanticsAction.copy], it is not a button, has no explicit role or
+  /// state flags (focus, a heading trait and clipping are allowed), and has
+  /// an empty [value] and [hint]. Otherwise the selection, and the
   /// handlers the selectable text contributed, are dropped when the node is
   /// formed, so buttons, tiles, merged labels and text fields keep today's
   /// semantics. Text fields always keep their own selection and handlers.
@@ -6830,6 +6849,36 @@ class SemanticsConfiguration {
   // The subset of [_kSelectableTextActions] whose handlers were contributed by
   // selectable text, as opposed to a text field or an app-level handler.
   int _selectableTextActionBits = 0;
+
+  /// Marks this configuration as the node that represents the keyboard focus
+  /// of the selectable text's owner (for example a `SelectableRegion` whose
+  /// focus node has primary focus).
+  ///
+  /// Framework-internal. Sets [isFocused] to true. The focus travels with the
+  /// selection semantics: when the node formed from this configuration is not
+  /// pure text, the focus state is restored to what the other contributors
+  /// declared, so a button or tile that absorbed the paragraph never reports
+  /// focus it does not have.
+  @internal
+  void markSelectableTextFocused() {
+    if (!_selectableTextRepresentsFocus) {
+      _isFocusedWithoutSelectableText = _flags.isFocused;
+      _selectableTextRepresentsFocus = true;
+    }
+    _flags = _flags.copyWith(isFocused: Tristate.isTrue);
+    _hasBeenAnnotated = true;
+  }
+
+  // Whether selectable text contributed the focus state of this
+  // configuration, and the focus state without that contribution.
+  bool _selectableTextRepresentsFocus = false;
+  Tristate _isFocusedWithoutSelectableText = Tristate.none;
+
+  // The flags of this configuration without the focus contributed by
+  // selectable text, used when deciding whether two configurations conflict.
+  SemanticsFlags get _flagsWithoutSelectableTextFocus => _selectableTextRepresentsFocus
+      ? _flags.copyWith(isFocused: _isFocusedWithoutSelectableText)
+      : _flags;
 
   /// Whether a node formed from this configuration may keep the selection
   /// semantics that selectable text contributed.
@@ -6861,8 +6910,16 @@ class SemanticsConfiguration {
         actions & ~_kSelectableTextActions == 0 &&
         !flags.isButton &&
         !_hasExplicitRoleFor(flags, role) &&
+        _hasOnlyPlainTextFlags(flags) &&
         value.isEmpty &&
         hint.isEmpty;
+  }
+
+  // Whether `flags` describe plain text: nothing but focus (which selectable
+  // text may represent), a heading trait, or clipping.
+  static bool _hasOnlyPlainTextFlags(SemanticsFlags flags) {
+    return flags.copyWith(isFocused: Tristate.none, isHeader: false, isHidden: false) ==
+        SemanticsFlags.none;
   }
 
   /// Removes the selection semantics that selectable text contributed.
@@ -6880,6 +6937,10 @@ class SemanticsConfiguration {
       _textSelection = null;
     }
     _selectableTextLength = null;
+    if (_selectableTextRepresentsFocus) {
+      _flags = _flags.copyWith(isFocused: _isFocusedWithoutSelectableText);
+      _selectableTextRepresentsFocus = false;
+    }
   }
 
   /// Indicates the current scrolling position in logical pixels if the node is
@@ -7069,7 +7130,9 @@ class SemanticsConfiguration {
     if (actions & otherActions != 0) {
       return false;
     }
-    if (_flags.hasConflictingFlags(other._flags)) {
+    if (_flagsWithoutSelectableTextFocus.hasConflictingFlags(
+      other._flagsWithoutSelectableTextFocus,
+    )) {
       return false;
     }
 
@@ -7149,6 +7212,12 @@ class SemanticsConfiguration {
     }
     _actionsAsBits |= child._effectiveActionsAsBits;
     _customSemanticsActions.addAll(child._customSemanticsActions);
+    if (_selectableTextRepresentsFocus || child._selectableTextRepresentsFocus) {
+      _isFocusedWithoutSelectableText = _flagsWithoutSelectableTextFocus.isFocused.merge(
+        child._flagsWithoutSelectableTextFocus.isFocused,
+      );
+      _selectableTextRepresentsFocus = true;
+    }
     _flags = _flags.merge(child._flags);
     _linkUrl ??= child._linkUrl;
     if (child.isTextField) {
@@ -7278,6 +7347,8 @@ class SemanticsConfiguration {
       .._textSelection = _textSelection
       .._selectableTextLength = _selectableTextLength
       .._selectableTextActionBits = _selectableTextActionBits
+      .._selectableTextRepresentsFocus = _selectableTextRepresentsFocus
+      .._isFocusedWithoutSelectableText = _isFocusedWithoutSelectableText
       .._scrollPosition = _scrollPosition
       .._scrollExtentMax = _scrollExtentMax
       .._scrollExtentMin = _scrollExtentMin

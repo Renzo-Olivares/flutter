@@ -313,6 +313,29 @@ void main() {
       expect(_dataOf(_paragraph('a')..hint = 'h').hasAction(SemanticsAction.setSelection), isFalse);
     });
 
+    test('state flags drop the selection semantics', () {
+      // A list tile: selected and enabled state around a title.
+      final tile = SemanticsConfiguration()
+        ..isSelected = false
+        ..isEnabled = true
+        ..absorb(
+          _paragraph('Inbox', selection: const TextSelection(baseOffset: 0, extentOffset: 5)),
+        );
+      final SemanticsData data = _dataOf(tile);
+      expect(data.hasAction(SemanticsAction.setSelection), isFalse);
+      expect(data.textSelection, isNull);
+      expect(data.flagsCollection.isSelected, Tristate.isFalse);
+      // A heading trait and clipping are plain text.
+      expect(
+        _dataOf(
+          _paragraph('Title')
+            ..isHeader = true
+            ..isHidden = true,
+        ).hasAction(SemanticsAction.setSelection),
+        isTrue,
+      );
+    });
+
     test('a focusable and focused paragraph keeps its selection semantics', () {
       final SemanticsData data = _dataOf(
         _paragraph('a')

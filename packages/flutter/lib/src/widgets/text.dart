@@ -12,6 +12,7 @@
 /// @docImport 'widget_span.dart';
 library;
 
+import 'dart:async';
 import 'dart:math';
 import 'dart:ui' as ui show Hyphens, TextHeightBehavior;
 
@@ -903,16 +904,64 @@ class _SelectableTextContainerState extends State<_SelectableTextContainer> {
   late final _SelectableTextContainerDelegate _selectionDelegate;
   final GlobalKey _textKey = GlobalKey();
 
+  // The owning SelectableRegion's selection status and semantics bridge, when
+  // there is one. Selection semantics are published on each commit (the
+  // status going to finalized) and, for changes outside a commit, from a
+  // microtask after the selection geometry changed.
+  ValueListenable<SelectableRegionSelectionStatus>? _selectionStatus;
+  SelectionSemanticsDelegate? _selectionSemanticsDelegate;
+
   @override
   void initState() {
     super.initState();
     _selectionDelegate = _SelectableTextContainerDelegate(_textKey);
+    _selectionDelegate.addListener(_handleSelectionGeometryChange);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final SelectableRegionSelectionStatusScope? scope = context
+        .dependOnInheritedWidgetOfExactType<SelectableRegionSelectionStatusScope>();
+    final ValueListenable<SelectableRegionSelectionStatus>? status = scope?.selectionStatusNotifier;
+    if (!identical(status, _selectionStatus)) {
+      _selectionStatus?.removeListener(_handleSelectionStatusChange);
+      _selectionStatus = status;
+      _selectionStatus?.addListener(_handleSelectionStatusChange);
+    }
+    _selectionSemanticsDelegate = scope?.selectionSemanticsDelegate;
   }
 
   @override
   void dispose() {
+    _selectionStatus?.removeListener(_handleSelectionStatusChange);
+    _selectionDelegate.removeListener(_handleSelectionGeometryChange);
     _selectionDelegate.dispose();
     super.dispose();
+  }
+
+  RenderParagraph? get _paragraph {
+    final RenderObject? renderObject = _textKey.currentContext?.findRenderObject();
+    return renderObject is RenderParagraph ? renderObject : null;
+  }
+
+  void _handleSelectionStatusChange() {
+    if (_selectionStatus!.value == SelectableRegionSelectionStatus.finalized) {
+      _paragraph?.publishSelectionSemantics();
+    }
+  }
+
+  void _handleSelectionGeometryChange() {
+    if (_selectionSemanticsDelegate == null) {
+      return;
+    }
+    // Changes made outside a commit (an app calling clearSelection, a layout
+    // that disposed fragments) have no status transition to publish on.
+    scheduleMicrotask(() {
+      if (mounted && _selectionStatus?.value != SelectableRegionSelectionStatus.changing) {
+        _paragraph?.publishSelectionSemantics();
+      }
+    });
   }
 
   @override
@@ -923,6 +972,7 @@ class _SelectableTextContainerState extends State<_SelectableTextContainer> {
       // its [Selectable]s to the [SelectionContainer] created by this widget.
       child: _RichText(
         textKey: _textKey,
+        selectionSemanticsDelegate: _selectionSemanticsDelegate,
         textAlign: widget.textAlign,
         textDirection: widget.textDirection,
         locale: widget.locale,
@@ -944,6 +994,7 @@ class _SelectableTextContainerState extends State<_SelectableTextContainer> {
 class _RichText extends StatelessWidget {
   const _RichText({
     this.textKey,
+    this.selectionSemanticsDelegate,
     required this.text,
     required this.textAlign,
     this.textDirection,
@@ -960,6 +1011,7 @@ class _RichText extends StatelessWidget {
   });
 
   final GlobalKey? textKey;
+  final SelectionSemanticsDelegate? selectionSemanticsDelegate;
   final InlineSpan text;
   final TextAlign textAlign;
   final TextDirection? textDirection;
@@ -992,6 +1044,7 @@ class _RichText extends StatelessWidget {
       hyphens: hyphens,
       selectionRegistrar: registrar,
       selectionColor: selectionColor,
+      selectionSemanticsDelegate: selectionSemanticsDelegate,
       text: text,
     );
   }

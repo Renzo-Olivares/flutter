@@ -325,6 +325,42 @@ class _UnspecifiedTextScaler extends TextScaler {
   Never scale(double fontSize) => throw UnimplementedError();
 }
 
+/// A bridge between the semantics nodes of a selectable paragraph and the
+/// object that owns the selection, typically a `SelectableRegion`.
+///
+/// This is a framework-internal contract: a [RenderParagraph] under a
+/// [SelectionRegistrar] reports screen-reader requests through it and asks it
+/// whether the paragraph represents the owner's keyboard focus. The owner
+/// applies requests to its selection and commits them like any other change.
+/// It is not part of the stable API.
+@internal
+abstract class SelectionSemanticsDelegate {
+  /// Selects `[start, end)` of [target]'s content, in the target's own
+  /// offsets (plain-text code units of the paragraph for a paragraph
+  /// fragment).
+  ///
+  /// A collapsed range (where `start == end`) only records where the
+  /// assistive technology is reading and has no other side effect.
+  void select(Selectable target, int start, int end);
+
+  /// Clears the selection when [target] holds part of it, as requested by an
+  /// assistive technology that sent negative offsets.
+  void clearSelection(Selectable target);
+
+  /// Copies the current selection to the clipboard, keeping the selection.
+  void copy();
+
+  /// Whether [paragraph] is the one node that represents the owner's keyboard
+  /// focus right now.
+  bool isFocusAnchor(RenderParagraph paragraph);
+
+  /// Called when [paragraph] starts using this delegate.
+  void didAttachParagraph(RenderParagraph paragraph);
+
+  /// Called when [paragraph] stops using this delegate or is disposed.
+  void didDetachParagraph(RenderParagraph paragraph);
+}
+
 /// A render object that displays a paragraph of text.
 class RenderParagraph extends RenderBox
     with
@@ -427,11 +463,13 @@ class RenderParagraph extends RenderBox
       case RenderComparison.metadata:
         _textPainter.text = value;
         _cachedCombinedSemanticsInfos = null;
+        _publishedSelections = null;
         markNeedsSemanticsUpdate();
       case RenderComparison.paint:
         _textPainter.text = value;
         _cachedAttributedLabels = null;
         _cachedCombinedSemanticsInfos = null;
+        _publishedSelections = null;
         markNeedsPaint();
         markNeedsSemanticsUpdate();
       case RenderComparison.layout:
@@ -443,7 +481,181 @@ class RenderParagraph extends RenderBox
         _removeSelectionRegistrarSubscription();
         _disposeSelectableFragments();
         _updateSelectionRegistrarSubscription();
+        markNeedsSemanticsUpdate();
     }
+  }
+
+  /// The object that applies screen-reader selection requests made on this
+  /// paragraph's semantics nodes, or null when the paragraph publishes no
+  /// selection semantics.
+  ///
+  /// Framework-internal; set by the selectable text container of `Text`
+  /// under a `SelectableRegion`. See [SelectionSemanticsDelegate].
+  @internal
+  SelectionSemanticsDelegate? get selectionSemanticsDelegate => _selectionSemanticsDelegate;
+  SelectionSemanticsDelegate? _selectionSemanticsDelegate;
+  @internal
+  set selectionSemanticsDelegate(SelectionSemanticsDelegate? value) {
+    if (identical(value, _selectionSemanticsDelegate)) {
+      return;
+    }
+    _selectionSemanticsDelegate?.didDetachParagraph(this);
+    _selectionSemanticsDelegate = value;
+    value?.didAttachParagraph(this);
+    markNeedsSemanticsUpdate();
+  }
+
+  // The committed selection snapshot that the semantics nodes publish, in
+  // plain-text code units, one entry per selected fragment. Null when nothing
+  // is published. Refreshed by [publishSelectionSemantics], cleared by any
+  // text change and by fragment disposal.
+  List<TextSelection>? _publishedSelections;
+
+  /// Copies the fragments' current selection into the snapshot that the
+  /// semantics nodes publish, and schedules a semantics update when it
+  /// differs from what was published before.
+  ///
+  /// Framework-internal. Called once per committed selection change by the
+  /// selectable text container of `Text`, so that semantics updates follow
+  /// the commit cadence (one per keystroke, one per drag) rather than every
+  /// frame.
+  @internal
+  void publishSelectionSemantics() {
+    if (_selectionSemanticsDelegate == null) {
+      return;
+    }
+    final List<TextSelection> current = selections;
+    final List<TextSelection>? next = current.isEmpty ? null : current;
+    if (listEquals(next, _publishedSelections)) {
+      return;
+    }
+    _publishedSelections = next;
+    markNeedsSemanticsUpdate();
+  }
+
+  /// Whether this paragraph publishes selection semantics on at least one of
+  /// its nodes: it has a [selectionSemanticsDelegate], selectable fragments,
+  /// and a plain-text run whose label equals its text.
+  ///
+  /// Framework-internal; used by the selection owner to pick the paragraph
+  /// that represents its keyboard focus.
+  @internal
+  bool get hasSelectableTextSemantics {
+    if (_selectionSemanticsDelegate == null || (_lastSelectableFragments?.isEmpty ?? true)) {
+      return false;
+    }
+    final List<InlineSpanSemanticsInformation> infos = text.getSemanticsInformation();
+    var hasPlaceholder = false;
+    for (final info in infos) {
+      if (info.recognizer != null || info.semanticsIdentifier != null) {
+        return combineSemanticsInfo(infos).any(_isPureTextInfo);
+      }
+      hasPlaceholder = hasPlaceholder || info.isPlaceholder;
+    }
+    return !hasPlaceholder && infos.every(_isPureTextInfo);
+  }
+
+  // Whether a semantics node formed from [info] can index its label with
+  // plain-text offsets: no own node and a label equal to its text.
+  static bool _isPureTextInfo(InlineSpanSemanticsInformation info) {
+    return !info.requiresOwnNode &&
+        (info.semanticsLabel == null || info.semanticsLabel == info.text);
+  }
+
+  // The fragment whose range contains `[start, end)` of the plain text.
+  _SelectableFragment? _fragmentContaining(int start, int end) {
+    for (final _SelectableFragment fragment
+        in _lastSelectableFragments ?? const <_SelectableFragment>[]) {
+      if (fragment.range.start <= start && end <= fragment.range.end) {
+        return fragment;
+      }
+    }
+    return null;
+  }
+
+  // Publishes the selection semantics of the plain-text run `[start, end)`
+  // on `config`, whose label is that run.
+  void _describeSelectableTextSemantics(
+    SemanticsConfiguration config, {
+    required int start,
+    required int end,
+    required bool representsFocus,
+  }) {
+    final SelectionSemanticsDelegate? delegate = _selectionSemanticsDelegate;
+    final _SelectableFragment? fragment = _fragmentContaining(start, end);
+    if (delegate == null || fragment == null || start == end) {
+      return;
+    }
+    config.selectableTextLength = end - start;
+    config.onSetSelection = (TextSelection selection) {
+      _handleSetSelection(selection, fragment, start: start, end: end);
+    };
+    final TextSelection? published = _clipPublishedSelection(start, end);
+    if (published != null) {
+      config.textSelection = published;
+      if (!published.isCollapsed) {
+        config.onCopy = delegate.copy;
+      }
+    }
+    if (representsFocus) {
+      config.markSelectableTextFocused();
+    }
+  }
+
+  // The published selection clipped to the plain-text run `[start, end)`, in
+  // offsets of that run, keeping its direction. A caret is kept only by the
+  // run that contains it.
+  TextSelection? _clipPublishedSelection(int start, int end) {
+    final List<TextSelection>? snapshot = _publishedSelections;
+    final List<_SelectableFragment>? fragments = _lastSelectableFragments;
+    if (snapshot == null || fragments == null || fragments.isEmpty) {
+      return null;
+    }
+    final int textLength = fragments.first.fullText.length;
+    for (final TextSelection selection in snapshot) {
+      if (selection.start < 0 || selection.end > textLength) {
+        continue; // Stale against the current text.
+      }
+      final int low = math.max(selection.start, start);
+      final int high = math.min(selection.end, end);
+      final bool caretInside =
+          selection.isCollapsed &&
+          start <= selection.start &&
+          (selection.start < end || (selection.start == end && end == textLength));
+      if (low < high || caretInside) {
+        final bool forward = selection.baseOffset <= selection.extentOffset;
+        return TextSelection(
+          baseOffset: (forward ? low : high) - start,
+          extentOffset: (forward ? high : low) - start,
+        );
+      }
+    }
+    return null;
+  }
+
+  // Applies a [SemanticsAction.setSelection] made on the node of the run
+  // `[start, end)` whose fragment is `fragment`. Offsets arrive in label
+  // offsets of that run and are clamped; negative offsets ask for a clear.
+  void _handleSetSelection(
+    TextSelection selection,
+    _SelectableFragment fragment, {
+    required int start,
+    required int end,
+  }) {
+    final SelectionSemanticsDelegate? delegate = _selectionSemanticsDelegate;
+    if (delegate == null || !selectableBelongsToParagraph(fragment)) {
+      return;
+    }
+    if (selection.baseOffset < 0 || selection.extentOffset < 0) {
+      delegate.clearSelection(fragment);
+      return;
+    }
+    final int length = end - start;
+    delegate.select(
+      fragment,
+      start + math.min(length, math.max(0, selection.baseOffset)),
+      start + math.min(length, math.max(0, selection.extentOffset)),
+    );
   }
 
   /// The ongoing selections in this paragraph.
@@ -486,6 +698,9 @@ class RenderParagraph extends RenderBox
     _disposeSelectableFragments();
     _registrar = value;
     _updateSelectionRegistrarSubscription();
+    if (_selectionSemanticsDelegate != null) {
+      markNeedsSemanticsUpdate();
+    }
   }
 
   void _updateSelectionRegistrarSubscription() {
@@ -543,6 +758,7 @@ class RenderParagraph extends RenderBox
   }
 
   void _disposeSelectableFragments() {
+    _publishedSelections = null;
     if (_lastSelectableFragments == null) {
       return;
     }
@@ -565,6 +781,8 @@ class RenderParagraph extends RenderBox
 
   @override
   void dispose() {
+    _selectionSemanticsDelegate?.didDetachParagraph(this);
+    _selectionSemanticsDelegate = null;
     _removeSelectionRegistrarSubscription();
     _disposeSelectableFragments();
     _textPainter.dispose();
@@ -1276,6 +1494,14 @@ class RenderParagraph extends RenderBox
       }
       config.attributedLabel = _cachedAttributedLabels![0];
       config.textDirection = textDirection;
+      if (_selectionSemanticsDelegate != null && _semanticsInfo!.every(_isPureTextInfo)) {
+        _describeSelectableTextSemantics(
+          config,
+          start: 0,
+          end: _cachedAttributedLabels![0].string.length,
+          representsFocus: _selectionSemanticsDelegate!.isFocusAnchor(this),
+        );
+      }
     }
   }
 
@@ -1374,6 +1600,8 @@ class RenderParagraph extends RenderBox
     var childIndex = 0;
     RenderBox? child = firstChild;
     final newChildCache = <Key, SemanticsNode>{};
+    bool representsFocus =
+        _selectionSemanticsDelegate != null && _selectionSemanticsDelegate!.isFocusAnchor(this);
     _cachedCombinedSemanticsInfos ??= combineSemanticsInfo(_semanticsInfo!);
     for (final InlineSpanSemanticsInformation info in _cachedCombinedSemanticsInfos!) {
       final selection = TextSelection(baseOffset: start, extentOffset: start + info.text.length);
@@ -1451,6 +1679,15 @@ class RenderParagraph extends RenderBox
         if (node.parentPaintClipRect != null) {
           final Rect paintRect = node.parentPaintClipRect!.intersect(currentRect);
           configuration.isHidden = paintRect.isEmpty && !currentRect.isEmpty;
+        }
+        if (_selectionSemanticsDelegate != null && _isPureTextInfo(info)) {
+          _describeSelectableTextSemantics(
+            configuration,
+            start: selection.baseOffset,
+            end: selection.extentOffset,
+            representsFocus: representsFocus,
+          );
+          representsFocus = false;
         }
         final SemanticsNode newChild;
         if (_cachedChildNodes?.isNotEmpty ?? false) {

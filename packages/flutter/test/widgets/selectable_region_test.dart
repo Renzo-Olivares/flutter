@@ -477,8 +477,18 @@ void main() {
                 children: <TestSemantics>[
                   TestSemantics(
                     children: <TestSemantics>[
-                      TestSemantics(label: 'Line one', textDirection: TextDirection.ltr),
-                      TestSemantics(label: 'Line two', textDirection: TextDirection.ltr),
+                      // Pure-text paragraphs under a SelectableRegion are
+                      // selectable by assistive technologies.
+                      TestSemantics(
+                        actions: <SemanticsAction>[SemanticsAction.setSelection],
+                        label: 'Line one',
+                        textDirection: TextDirection.ltr,
+                      ),
+                      TestSemantics(
+                        actions: <SemanticsAction>[SemanticsAction.setSelection],
+                        label: 'Line two',
+                        textDirection: TextDirection.ltr,
+                      ),
                       TestSemantics(
                         flags: <SemanticsFlag>[
                           SemanticsFlag.isButton,

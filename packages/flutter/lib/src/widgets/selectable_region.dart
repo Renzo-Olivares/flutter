@@ -459,10 +459,23 @@ class SelectableRegionState extends State<SelectableRegion>
   _SelectionChangeSource _pendingSource = _SelectionChangeSource.pointerOrKeyboard;
 
   /// Where the assistive technology last placed a caret or started a range,
-  /// used as the starting point of a keyboard selection.
-  // Read by the keyboard start rule (landing step 4).
-  // ignore: unused_field
+  /// used as the starting point of a keyboard selection and to pick the
+  /// paragraph that represents this region's focus.
   ({Selectable target, int offset})? _accessibilityAnchor;
+
+  /// The paragraphs under this region that publish selection semantics.
+  final Set<RenderParagraph> _selectableParagraphs = <RenderParagraph>{};
+
+  /// The paragraph whose pure-text node represents this region's keyboard
+  /// focus, resolved lazily by [_resolveAnchorParagraph].
+  RenderParagraph? _anchorParagraph;
+
+  /// The paragraph that was last asked to publish this region's focus, so
+  /// that unchanged focus never marks semantics dirty.
+  RenderParagraph? _focusRepresentedBy;
+
+  /// The global position of the most recent pointer down on this region.
+  Offset? _lastPointerDownPosition;
 
   /// The bridge through which selectable paragraphs report screen reader
   /// requests.
@@ -479,6 +492,10 @@ class SelectableRegionState extends State<SelectableRegion>
   void initState() {
     super.initState();
     _focusNode.addListener(_handleFocusChanged);
+    // The focus node is not notified when primary focus moves between it and
+    // one of its descendants, but the focus representation (1.6) depends on
+    // primary focus.
+    FocusManager.instance.addListener(_updateFocusRepresentation);
     _initMouseGestureRecognizer();
     _initTouchGestureRecognizer();
     // Right clicks.
@@ -550,6 +567,7 @@ class SelectableRegionState extends State<SelectableRegion>
   }
 
   void _handleFocusChanged() {
+    _updateFocusRepresentation();
     if (!_focusNode.hasFocus) {
       if (kIsWeb) {
         // Detach regardless of the current (dynamic) _webContextMenuEnabled
@@ -647,6 +665,7 @@ class SelectableRegionState extends State<SelectableRegion>
   void _selectRangeByAccessibility(Selectable target, int start, int end) {
     if (start == end) {
       _accessibilityAnchor = (target: target, offset: start);
+      _invalidateAnchorParagraph();
       return;
     }
     _focusNode.requestFocus();
@@ -655,8 +674,156 @@ class SelectableRegionState extends State<SelectableRegion>
       SelectContentRangeSelectionEvent(target: target, startOffset: start, endOffset: end),
     );
     _accessibilityAnchor = (target: target, offset: start);
+    _invalidateAnchorParagraph();
     _updateSelectedContentIfNeeded();
     _commitSelectionChange(_SelectionChangeSource.assistiveTechnology);
+  }
+
+  /// Clears the selection when [target] holds part of it, as requested by an
+  /// assistive technology through negative offsets.
+  void _clearSelectionByAccessibility(Selectable target) {
+    if (target.getSelection() == null) {
+      return;
+    }
+    clearSelection();
+    _updateSelectedContentIfNeeded();
+    _commitSelectionChange(_SelectionChangeSource.assistiveTechnology);
+  }
+
+  // Focus representation (DESIGN 1.6): while this region's focus node has
+  // primary focus and semantics is enabled, exactly one paragraph, the
+  // anchor, publishes isFocused on its pure-text node, so a screen-reader
+  // user hears that they reached the region.
+
+  bool get _representsFocusOnParagraph =>
+      _focusNode.hasPrimaryFocus && SemanticsBinding.instance.semanticsEnabled;
+
+  bool _isFocusAnchor(RenderParagraph paragraph) {
+    final bool isAnchor =
+        _representsFocusOnParagraph && identical(paragraph, _resolveAnchorParagraph());
+    if (isAnchor) {
+      _focusRepresentedBy = paragraph;
+    }
+    return isAnchor;
+  }
+
+  void _didAttachParagraph(RenderParagraph paragraph) {
+    _selectableParagraphs.add(paragraph);
+    if (_focusRepresentedBy == null && _representsFocusOnParagraph) {
+      _scheduleFocusRepresentationUpdate();
+    }
+  }
+
+  void _didDetachParagraph(RenderParagraph paragraph) {
+    _selectableParagraphs.remove(paragraph);
+    if (identical(paragraph, _focusRepresentedBy)) {
+      _focusRepresentedBy = null;
+    }
+    if (identical(paragraph, _anchorParagraph)) {
+      _anchorParagraph = null;
+      if (_representsFocusOnParagraph) {
+        _scheduleFocusRepresentationUpdate();
+      }
+    }
+  }
+
+  void _scheduleFocusRepresentationUpdate() {
+    SchedulerBinding.instance.addPostFrameCallback((Duration _) {
+      if (mounted) {
+        _updateFocusRepresentation();
+      }
+    }, debugLabel: 'SelectableRegion.updateFocusRepresentation');
+  }
+
+  /// Forgets the resolved anchor paragraph and moves the focus representation
+  /// to the newly resolved one.
+  void _invalidateAnchorParagraph() {
+    _anchorParagraph = null;
+    _updateFocusRepresentation();
+  }
+
+  /// Marks the paragraphs whose focus representation changed.
+  void _updateFocusRepresentation() {
+    if (!mounted) {
+      return;
+    }
+    final RenderParagraph? next = _representsFocusOnParagraph ? _resolveAnchorParagraph() : null;
+    final RenderParagraph? previous = _focusRepresentedBy;
+    if (identical(previous, next)) {
+      return;
+    }
+    _focusRepresentedBy = next;
+    previous?.markNeedsSemanticsUpdate();
+    next?.markNeedsSemanticsUpdate();
+  }
+
+  static Rect? _globalRectOf(RenderBox box) {
+    if (!box.attached || !box.hasSize) {
+      return null;
+    }
+    return MatrixUtils.transformRect(box.getTransformTo(null), Offset.zero & box.size);
+  }
+
+  /// The paragraph that represents this region's focus: the one holding the
+  /// last accessibility caret or range, else the one under the last pointer
+  /// down, else the first visible paragraph with selectable text in screen
+  /// order. The result is kept until that paragraph goes away or a new anchor
+  /// is set, so it does not move with the selection or the scroll position.
+  RenderParagraph? _resolveAnchorParagraph() {
+    final RenderParagraph? cached = _anchorParagraph;
+    if (cached != null && cached.attached) {
+      return cached;
+    }
+    _anchorParagraph = null;
+    final Selectable? target = _accessibilityAnchor?.target;
+    if (target != null) {
+      for (final RenderParagraph paragraph in _selectableParagraphs) {
+        if (paragraph.attached && paragraph.selectableBelongsToParagraph(target)) {
+          return _anchorParagraph = paragraph;
+        }
+      }
+    }
+    final Offset? pointerDown = _lastPointerDownPosition;
+    if (pointerDown != null) {
+      for (final RenderParagraph paragraph in _selectableParagraphs) {
+        if (paragraph.hasSelectableTextSemantics &&
+            (_globalRectOf(paragraph)?.contains(pointerDown) ?? false)) {
+          return _anchorParagraph = paragraph;
+        }
+      }
+    }
+    final RenderObject? regionRenderObject = context.findRenderObject();
+    if (regionRenderObject is! RenderBox) {
+      return null;
+    }
+    final Rect? visibleRect = _globalRectOf(regionRenderObject);
+    if (visibleRect == null) {
+      return null;
+    }
+    RenderParagraph? first;
+    Rect? firstRect;
+    for (final RenderParagraph paragraph in _selectableParagraphs) {
+      if (!paragraph.hasSelectableTextSemantics) {
+        continue;
+      }
+      final Rect? rect = _globalRectOf(paragraph);
+      if (rect == null || !rect.overlaps(visibleRect)) {
+        continue;
+      }
+      if (first == null ||
+          MultiSelectableSelectionContainerDelegate._compareScreenRects(rect, firstRect!) < 0) {
+        first = paragraph;
+        firstRect = rect;
+      }
+    }
+    return _anchorParagraph = first;
+  }
+
+  /// Records a pointer down, which moves the anchor paragraph under it.
+  void _didPointerDownAt(Offset globalPosition) {
+    _lastPointerDownPosition = globalPosition;
+    _accessibilityAnchor = null;
+    _invalidateAnchorParagraph();
   }
 
   // Converts the details.consecutiveTapCount from a TapAndDrag*Details object,
@@ -798,6 +965,7 @@ class SelectableRegionState extends State<SelectableRegion>
   Offset? _doubleTapOffset;
   void _startNewMouseSelectionGesture(TapDragDownDetails details) {
     _lastPointerDeviceKind = details.kind;
+    _didPointerDownAt(details.globalPosition);
     switch (_getEffectiveConsecutiveTapCount(details.consecutiveTapCount)) {
       case 1:
         _focusNode.requestFocus();
@@ -1066,6 +1234,7 @@ class SelectableRegionState extends State<SelectableRegion>
 
   void _handleTouchLongPressStart(LongPressStartDetails details) {
     HapticFeedback.selectionClick();
+    _didPointerDownAt(details.globalPosition);
     _focusNode.requestFocus();
     _selectWordAt(offset: details.globalPosition);
     _selectionStatusNotifier.value = SelectableRegionSelectionStatus.changing;
@@ -1109,6 +1278,7 @@ class SelectableRegionState extends State<SelectableRegion>
     final Offset? previousSecondaryTapDownPosition = _lastSecondaryTapDownPosition;
     final bool toolbarIsVisible = _selectionOverlay?.toolbarIsVisible ?? false;
     _lastSecondaryTapDownPosition = details.globalPosition;
+    _didPointerDownAt(details.globalPosition);
     _focusNode.requestFocus();
     switch (defaultTargetPlatform) {
       case TargetPlatform.android:
@@ -2007,6 +2177,7 @@ class SelectableRegionState extends State<SelectableRegion>
     _selectionOverlay?.hideMagnifier();
     _selectionOverlay?.dispose();
     _selectionOverlay = null;
+    FocusManager.instance.removeListener(_updateFocusRepresentation);
     widget.focusNode?.removeListener(_handleFocusChanged);
     _localFocusNode?.removeListener(_handleFocusChanged);
     _localFocusNode?.dispose();
@@ -2653,6 +2824,11 @@ abstract class MultiSelectableSelectionContainerDelegate extends SelectionContai
   static int _compareScreenOrder(Selectable a, Selectable b) {
     final Rect rectA = MatrixUtils.transformRect(a.getTransformTo(null), _getBoundingBox(a));
     final Rect rectB = MatrixUtils.transformRect(b.getTransformTo(null), _getBoundingBox(b));
+    return _compareScreenRects(rectA, rectB);
+  }
+
+  /// Compares two global rectangles in screen order (top, then left).
+  static int _compareScreenRects(Rect rectA, Rect rectB) {
     final int result = _compareVertically(rectA, rectB);
     if (result != 0) {
       return result;
@@ -3591,8 +3767,26 @@ class _SelectionSemanticsDelegate implements SelectionSemanticsDelegate {
   }
 
   @override
+  void clearSelection(Selectable target) {
+    _state._clearSelectionByAccessibility(target);
+  }
+
+  @override
   void copy() {
     _state._copy();
+  }
+
+  @override
+  bool isFocusAnchor(RenderParagraph paragraph) => _state._isFocusAnchor(paragraph);
+
+  @override
+  void didAttachParagraph(RenderParagraph paragraph) {
+    _state._didAttachParagraph(paragraph);
+  }
+
+  @override
+  void didDetachParagraph(RenderParagraph paragraph) {
+    _state._didDetachParagraph(paragraph);
   }
 }
 

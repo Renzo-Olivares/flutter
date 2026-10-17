@@ -6541,6 +6541,7 @@ class RichText extends MultiChildRenderObjectWidget {
     this.hyphens = ui.Hyphens.manual,
     this.selectionRegistrar,
     this.selectionColor,
+    this.selectionSemanticsDelegate,
   }) : assert(maxLines == null || maxLines > 0),
        assert(selectionRegistrar == null || selectionColor != null),
        assert(
@@ -6653,6 +6654,14 @@ class RichText extends MultiChildRenderObjectWidget {
   /// widgets.
   final Color? selectionColor;
 
+  /// The bridge through which this paragraph's semantics nodes report
+  /// screen-reader selection requests to the owning [SelectableRegion].
+  ///
+  /// Framework-internal; set by [Text] under a [SelectableRegion]. Null for
+  /// every other [RichText], which then publishes no selection semantics.
+  @internal
+  final SelectionSemanticsDelegate? selectionSemanticsDelegate;
+
   double _getDevicePixelRatio(BuildContext context) =>
       MediaQuery.maybeDevicePixelRatioOf(context) ?? View.maybeOf(context)?.devicePixelRatio ?? 1.0;
 
@@ -6675,7 +6684,7 @@ class RichText extends MultiChildRenderObjectWidget {
       registrar: selectionRegistrar,
       selectionColor: selectionColor,
       devicePixelRatio: _getDevicePixelRatio(context),
-    );
+    )..selectionSemanticsDelegate = selectionSemanticsDelegate;
   }
 
   @override
@@ -6696,6 +6705,7 @@ class RichText extends MultiChildRenderObjectWidget {
       ..locale = locale ?? Localizations.maybeLocaleOf(context)
       ..registrar = selectionRegistrar
       ..selectionColor = selectionColor
+      ..selectionSemanticsDelegate = selectionSemanticsDelegate
       ..devicePixelRatio = _getDevicePixelRatio(context);
   }
 

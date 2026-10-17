@@ -6,7 +6,10 @@
 // (flutter/flutter#182909). No material import: the Material forms of these
 // cases live in test/material/selection_area_semantics_test.dart.
 
+import 'dart:ui' show Tristate;
+
 import 'package:flutter/foundation.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
@@ -36,7 +39,7 @@ Selectable _fragmentAt(WidgetTester tester, int index) {
   final BuildContext context = tester.element(find.byType(RichText).at(index));
   final delegate =
       SelectionContainer.maybeOf(context)! as MultiSelectableSelectionContainerDelegate;
-  return delegate.selectables.single;
+  return delegate.selectables.first;
 }
 
 RenderParagraph _paragraphAt(WidgetTester tester, int index) {
@@ -52,6 +55,53 @@ SelectionSemanticsDelegate _delegateOf(WidgetTester tester) {
 
 SelectableRegionState _regionState(WidgetTester tester) {
   return tester.state<SelectableRegionState>(find.byType(SelectableRegion));
+}
+
+Offset _textOffsetToPosition(RenderParagraph paragraph, int offset) {
+  const caret = Rect.fromLTWH(0.0, 0.0, 2.0, 20.0);
+  final Offset localOffset =
+      paragraph.getOffsetForCaret(TextPosition(offset: offset), caret) +
+      Offset(0.0, paragraph.preferredLineHeight / 2);
+  return paragraph.localToGlobal(localOffset);
+}
+
+List<SemanticsNode> _childrenOf(SemanticsNode node) {
+  final children = <SemanticsNode>[];
+  node.visitChildren((SemanticsNode child) {
+    children.add(child);
+    return true;
+  });
+  return children;
+}
+
+List<SemanticsNode> _allNodes(WidgetTester tester) {
+  final nodes = <SemanticsNode>[];
+  void visit(SemanticsNode node) {
+    nodes.add(node);
+    node.visitChildren((SemanticsNode child) {
+      visit(child);
+      return true;
+    });
+  }
+
+  visit(tester.binding.pipelineOwner.semanticsOwner!.rootSemanticsNode!);
+  return nodes;
+}
+
+SemanticsNode _nodeWithLabel(WidgetTester tester, String label) {
+  return _allNodes(tester).singleWhere((SemanticsNode node) => node.label == label);
+}
+
+Future<void> _mouseDrag(WidgetTester tester, Offset from, Offset to, {int frames = 10}) async {
+  final TestGesture gesture = await tester.startGesture(from, kind: PointerDeviceKind.mouse);
+  addTearDown(gesture.removePointer);
+  await tester.pump();
+  for (var i = 1; i <= frames; i += 1) {
+    await gesture.moveTo(Offset.lerp(from, to, i / frames)!);
+    await tester.pump();
+  }
+  await gesture.up();
+  await tester.pump();
 }
 
 void main() {
@@ -277,6 +327,769 @@ void main() {
         TextSelection(baseOffset: 0, extentOffset: 5),
       ]);
       expect(controller.offset, 600.0);
+    });
+  });
+
+  group('node layer', () {
+    testWidgets('a selectable paragraph publishes its selection in label offsets', (
+      WidgetTester tester,
+    ) async {
+      await tester.pumpWidget(_region(child: const Text('Hello world')));
+      await tester.pump();
+
+      final SemanticsNode paragraph = tester.getSemantics(find.byType(RichText));
+      expect(paragraph.getSemanticsData().hasAction(SemanticsAction.setSelection), isTrue);
+      expect(paragraph.getSemanticsData().hasAction(SemanticsAction.copy), isFalse);
+      expect(paragraph.getSemanticsData().textSelection, isNull);
+
+      tester.semantics.setSelection(find.semantics.byLabel('Hello world'), base: 0, extent: 5);
+      await tester.pump();
+      expect(
+        paragraph.getSemanticsData().textSelection,
+        const TextSelection(baseOffset: 0, extentOffset: 5),
+      );
+      expect(paragraph.getSemanticsData().hasAction(SemanticsAction.copy), isTrue);
+      expect(_regionState(tester).selectionOverlay, isNull);
+
+      // A following keystroke grows it.
+      await sendKeyCombination(
+        tester,
+        const SingleActivator(LogicalKeyboardKey.arrowRight, shift: true),
+      );
+      await tester.pump();
+      expect(
+        paragraph.getSemanticsData().textSelection,
+        const TextSelection(baseOffset: 0, extentOffset: 6),
+      );
+
+      // The copy action copies the selection and keeps it.
+      tester.semantics.copy(find.semantics.byLabel('Hello world'));
+      await tester.pump();
+      expect((mockClipboard.clipboardData as Map<String, dynamic>)['text'], 'Hello ');
+      expect(
+        paragraph.getSemanticsData().textSelection,
+        const TextSelection(baseOffset: 0, extentOffset: 6),
+      );
+    });
+
+    testWidgets('publishes one update per keystroke and keeps direction', (
+      WidgetTester tester,
+    ) async {
+      await tester.pumpWidget(_region(child: const Text('Hello world')));
+      await tester.pump();
+      final SemanticsNode paragraph = tester.getSemantics(find.byType(RichText));
+      tester.semantics.setSelection(find.semantics.byLabel('Hello world'), base: 0, extent: 1);
+      await tester.pump();
+
+      var updates = 0;
+      final SemanticsOwner owner = tester.binding.pipelineOwner.semanticsOwner!;
+      void count() => updates += 1;
+      owner.addListener(count);
+      addTearDown(() => owner.removeListener(count));
+      for (var i = 2; i <= 4; i += 1) {
+        await sendKeyCombination(
+          tester,
+          const SingleActivator(LogicalKeyboardKey.arrowRight, shift: true),
+        );
+        await tester.pump();
+        expect(
+          paragraph.getSemanticsData().textSelection,
+          TextSelection(baseOffset: 0, extentOffset: i),
+        );
+        expect(updates, i - 1);
+      }
+
+      // Backward selections keep base > extent.
+      tester.semantics.setSelection(find.semantics.byLabel('Hello world'), base: 8, extent: 3);
+      await tester.pump();
+      expect(
+        paragraph.getSemanticsData().textSelection,
+        const TextSelection(baseOffset: 8, extentOffset: 3),
+      );
+    });
+
+    testWidgets('a mouse drag publishes nothing until pointer up, then once', (
+      WidgetTester tester,
+    ) async {
+      final focusNode = FocusNode();
+      addTearDown(focusNode.dispose);
+      await tester.pumpWidget(
+        _region(
+          focusNode: focusNode,
+          child: const Text('Hello world', style: TextStyle(fontSize: 20)),
+        ),
+      );
+      await tester.pump();
+      final SemanticsNode node = tester.getSemantics(find.byType(RichText));
+      final RenderParagraph paragraph = _paragraphAt(tester, 0);
+      var updates = 0;
+      final SemanticsOwner owner = tester.binding.pipelineOwner.semanticsOwner!;
+      void count() => updates += 1;
+      owner.addListener(count);
+      addTearDown(() => owner.removeListener(count));
+
+      final Offset from = _textOffsetToPosition(paragraph, 1);
+      final Offset to = _textOffsetToPosition(paragraph, 8);
+      // Give the region focus first: the focus representation is its own update.
+      focusNode.requestFocus();
+      await tester.pump();
+      await tester.pump();
+      expect(node.flagsCollection.isFocused, Tristate.isTrue);
+      updates = 0;
+      final TestGesture gesture = await tester.startGesture(from, kind: PointerDeviceKind.mouse);
+      addTearDown(gesture.removePointer);
+      await tester.pump();
+      for (var i = 1; i <= 10; i += 1) {
+        await gesture.moveTo(Offset.lerp(from, to, i / 10)!);
+        await tester.pump();
+        expect(node.getSemanticsData().textSelection, isNull);
+      }
+      expect(paragraph.selections, isNotEmpty);
+      expect(updates, 0);
+      await gesture.up();
+      await tester.pump();
+      expect(
+        node.getSemanticsData().textSelection,
+        const TextSelection(baseOffset: 1, extentOffset: 8),
+      );
+      expect(updates, 1);
+    });
+
+    testWidgets('a paragraph with recognizer spans publishes per pure child', (
+      WidgetTester tester,
+    ) async {
+      final recognizer = TapGestureRecognizer()..onTap = () {};
+      addTearDown(recognizer.dispose);
+      await tester.pumpWidget(
+        _region(
+          child: Text.rich(
+            TextSpan(
+              text: 'Tap ',
+              style: const TextStyle(fontSize: 20),
+              children: <InlineSpan>[
+                TextSpan(text: 'here', recognizer: recognizer),
+                const TextSpan(text: ' to continue.'),
+              ],
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+      final RenderParagraph paragraph = _paragraphAt(tester, 0);
+      final SemanticsNode boundary = tester.getSemantics(find.byType(RichText));
+      List<SemanticsNode> children() => _childrenOf(boundary);
+      expect(children().map((SemanticsNode n) => n.label), <String>[
+        'Tap ',
+        'here',
+        ' to continue.',
+      ]);
+      expect(children()[0].getSemanticsData().hasAction(SemanticsAction.setSelection), isTrue);
+      expect(children()[1].getSemanticsData().hasAction(SemanticsAction.setSelection), isFalse);
+      expect(children()[1].getSemanticsData().hasAction(SemanticsAction.tap), isTrue);
+      expect(children()[2].getSemanticsData().hasAction(SemanticsAction.setSelection), isTrue);
+
+      await _mouseDrag(
+        tester,
+        _textOffsetToPosition(paragraph, 2),
+        _textOffsetToPosition(paragraph, 10),
+      );
+      expect(paragraph.selections, const <TextSelection>[
+        TextSelection(baseOffset: 2, extentOffset: 10),
+      ]);
+      expect(
+        children()[0].getSemanticsData().textSelection,
+        const TextSelection(baseOffset: 2, extentOffset: 4),
+      );
+      expect(children()[1].getSemanticsData().textSelection, isNull);
+      expect(
+        children()[2].getSemanticsData().textSelection,
+        const TextSelection(baseOffset: 0, extentOffset: 2),
+      );
+
+      // A reversed drag keeps the direction in every child.
+      await _mouseDrag(
+        tester,
+        _textOffsetToPosition(paragraph, 10),
+        _textOffsetToPosition(paragraph, 2),
+      );
+      expect(paragraph.selections, const <TextSelection>[
+        TextSelection(baseOffset: 10, extentOffset: 2),
+      ]);
+      expect(
+        children()[0].getSemanticsData().textSelection,
+        const TextSelection(baseOffset: 4, extentOffset: 2),
+      );
+      expect(
+        children()[2].getSemanticsData().textSelection,
+        const TextSelection(baseOffset: 2, extentOffset: 0),
+      );
+
+      // Setting a selection on a child maps to paragraph offsets.
+      tester.semantics.setSelection(find.semantics.byLabel(' to continue.'), base: 0, extent: 1);
+      await tester.pump();
+      expect(paragraph.selections, const <TextSelection>[
+        TextSelection(baseOffset: 8, extentOffset: 9),
+      ]);
+      expect(
+        children()[2].getSemanticsData().textSelection,
+        const TextSelection(baseOffset: 0, extentOffset: 1),
+      );
+      expect(children()[0].getSemanticsData().textSelection, isNull);
+    });
+
+    testWidgets('placeholder and semanticsLabel paragraphs publish nothing', (
+      WidgetTester tester,
+    ) async {
+      await tester.pumpWidget(
+        _region(
+          child: const Column(
+            children: <Widget>[
+              Text.rich(
+                TextSpan(
+                  text: 'Price: ',
+                  children: <InlineSpan>[
+                    WidgetSpan(child: SizedBox(width: 10, height: 10)),
+                    TextSpan(text: '42'),
+                  ],
+                ),
+              ),
+              Text.rich(TextSpan(text: 'smile', semanticsLabel: 'smiling face')),
+            ],
+          ),
+        ),
+      );
+      await tester.pump();
+      _delegateOf(tester).select(_fragmentAt(tester, 0), 0, 6);
+      await tester.pump();
+      expect(_paragraphAt(tester, 0).selections, isNotEmpty);
+      final SemanticsNode priceNode = tester.getSemantics(find.byType(RichText).first);
+      expect(priceNode.getSemanticsData().hasAction(SemanticsAction.setSelection), isFalse);
+      expect(priceNode.getSemanticsData().textSelection, isNull);
+
+      _delegateOf(tester).select(_fragmentAt(tester, 1), 0, 2);
+      await tester.pump();
+      final SemanticsNode smileNode = tester.getSemantics(find.byType(RichText).last);
+      expect(smileNode.label, 'smiling face');
+      expect(smileNode.getSemanticsData().hasAction(SemanticsAction.setSelection), isFalse);
+      expect(smileNode.getSemanticsData().textSelection, isNull);
+    });
+
+    testWidgets('a paragraph outside a region publishes nothing', (WidgetTester tester) async {
+      await tester.pumpWidget(const TestWidgetsApp(home: Text('Hello world')));
+      final SemanticsNode node = tester.getSemantics(find.byType(RichText));
+      expect(node.getSemanticsData().hasAction(SemanticsAction.setSelection), isFalse);
+    });
+
+    testWidgets('a text change drops the published selection', (WidgetTester tester) async {
+      await tester.pumpWidget(_region(child: const Text('Hello world')));
+      await tester.pump();
+      tester.semantics.setSelection(find.semantics.byLabel('Hello world'), base: 0, extent: 5);
+      await tester.pump();
+      expect(
+        tester.getSemantics(find.byType(RichText)).getSemanticsData().textSelection,
+        isNotNull,
+      );
+
+      await tester.pumpWidget(_region(child: const Text('Hi')));
+      await tester.pump();
+      // The stale [0, 5) is gone; whatever selection the new text inherits
+      // from the region's selection geometry is published instead.
+      final List<TextSelection> inherited = _paragraphAt(tester, 0).selections;
+      expect(
+        tester.getSemantics(find.byType(RichText)).getSemanticsData().textSelection,
+        inherited.isEmpty ? isNull : inherited.single,
+      );
+      expect(tester.getSemantics(find.byType(RichText)).label, 'Hi');
+
+      await tester.pumpWidget(_region(child: const Text('Hello world')));
+      await tester.pump();
+      tester.semantics.setSelection(find.semantics.byLabel('Hello world'), base: 0, extent: 5);
+      await tester.pump();
+      expect(
+        tester.getSemantics(find.byType(RichText)).getSemanticsData().textSelection,
+        isNotNull,
+      );
+      // An equal-length replacement drops the stale range the same way.
+      _regionState(tester).clearSelection();
+      await tester.pumpWidget(_region(child: const Text('Hello there')));
+      await tester.pump();
+      expect(_paragraphAt(tester, 0).selections, isEmpty);
+      expect(tester.getSemantics(find.byType(RichText)).getSemanticsData().textSelection, isNull);
+    });
+
+    testWidgets('a clear outside a status bracket publishes from a microtask', (
+      WidgetTester tester,
+    ) async {
+      await tester.pumpWidget(_region(child: const Text('Hello world')));
+      await tester.pump();
+      tester.semantics.setSelection(find.semantics.byLabel('Hello world'), base: 0, extent: 5);
+      await tester.pump();
+      final SemanticsNode node = tester.getSemantics(find.byType(RichText));
+      expect(node.getSemanticsData().textSelection, isNotNull);
+
+      _regionState(tester).clearSelection();
+      await tester.pump();
+      expect(node.getSemanticsData().textSelection, isNull);
+      expect(node.getSemanticsData().hasAction(SemanticsAction.copy), isFalse);
+      expect(node.getSemanticsData().hasAction(SemanticsAction.setSelection), isTrue);
+    });
+  });
+
+  group('merge rules under a region', () {
+    testWidgets(
+      'buttons, labeled ancestors, merged paragraphs and gesture detectors keep their shape',
+      (WidgetTester tester) async {
+        await tester.pumpWidget(
+          _region(
+            child: Column(
+              children: <Widget>[
+                Semantics(button: true, onTap: () {}, child: const Text('OK')),
+                Semantics(button: true, enabled: false, child: const Text('Disabled')),
+                Semantics(label: 'Price', child: const Text(r'$5')),
+                const MergeSemantics(child: Column(children: <Widget>[Text('a'), Text('b')])),
+                GestureDetector(onTap: () {}, child: const Text('tap me')),
+                Semantics(
+                  label: 'cell one',
+                  child: Column(
+                    children: <Widget>[
+                      const Text('x'),
+                      GestureDetector(onTap: () {}, child: const SizedBox(width: 10, height: 10)),
+                    ],
+                  ),
+                ),
+                Semantics(
+                  label: 'cell two',
+                  child: Column(
+                    children: <Widget>[
+                      GestureDetector(onTap: () {}, child: const SizedBox(width: 10, height: 10)),
+                      const Text('y'),
+                    ],
+                  ),
+                ),
+                const Text('plain'),
+              ],
+            ),
+          ),
+        );
+        await tester.pump();
+        // Select everything so that every paragraph has a selection to publish.
+        _regionState(tester).selectAll();
+        await tester.pump();
+
+        final SemanticsNode ok = _nodeWithLabel(tester, 'OK');
+        expect(ok.flagsCollection.isButton, isTrue);
+        expect(ok.getSemanticsData().hasAction(SemanticsAction.tap), isTrue);
+        final SemanticsNode disabled = _nodeWithLabel(tester, 'Disabled');
+        expect(disabled.flagsCollection.isButton, isTrue);
+        final SemanticsNode price = _nodeWithLabel(tester, 'Price\n\$5');
+        final SemanticsNode merged = _nodeWithLabel(tester, 'a\nb');
+        final SemanticsNode tapMe = _nodeWithLabel(tester, 'tap me');
+        expect(tapMe.getSemanticsData().hasAction(SemanticsAction.tap), isTrue);
+        final SemanticsNode cellOne = _nodeWithLabel(tester, 'cell one\nx');
+        expect(cellOne.getSemanticsData().hasAction(SemanticsAction.tap), isTrue);
+        final SemanticsNode cellTwo = _nodeWithLabel(tester, 'cell two\ny');
+        expect(cellTwo.getSemanticsData().hasAction(SemanticsAction.tap), isTrue);
+        for (final node in <SemanticsNode>[ok, disabled, price, merged, tapMe, cellOne, cellTwo]) {
+          expect(node.getSemanticsData().hasAction(SemanticsAction.setSelection), isFalse);
+          expect(node.getSemanticsData().hasAction(SemanticsAction.copy), isFalse);
+          expect(node.getSemanticsData().textSelection, isNull);
+          expect(node.flagsCollection.isFocused, Tristate.none);
+        }
+        final SemanticsNode plain = _nodeWithLabel(tester, 'plain');
+        expect(plain.getSemanticsData().hasAction(SemanticsAction.setSelection), isTrue);
+        expect(
+          plain.getSemanticsData().textSelection,
+          const TextSelection(baseOffset: 0, extentOffset: 5),
+        );
+        // The paragraph of every absorbed case is still merged: no stray label nodes.
+        for (final label in <String>['x', 'y', 'a', 'b', r'$5']) {
+          expect(_allNodes(tester).where((SemanticsNode node) => node.label == label), isEmpty);
+        }
+      },
+    );
+
+    testWidgets('a merged text field keeps its label, value and handlers', (
+      WidgetTester tester,
+    ) async {
+      final controller = TextEditingController(text: 'abc');
+      addTearDown(controller.dispose);
+      final focusNode = FocusNode();
+      addTearDown(focusNode.dispose);
+      await tester.pumpWidget(
+        _region(
+          child: Column(
+            children: <Widget>[
+              const Text('Hello world'),
+              MergeSemantics(
+                child: Column(
+                  children: <Widget>[
+                    const Text('Email'),
+                    EditableText(
+                      controller: controller,
+                      focusNode: focusNode,
+                      style: const TextStyle(),
+                      cursorColor: const Color(0xFF000000),
+                      backgroundCursorColor: const Color(0xFF000000),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+      await tester.pump();
+      focusNode.requestFocus();
+      await tester.pump();
+      _regionState(tester).selectAll();
+      await tester.pump();
+
+      final SemanticsNode field = tester.getSemantics(find.byType(MergeSemantics));
+      final SemanticsData data = field.getSemanticsData();
+      expect(data.flagsCollection.isTextField, isTrue);
+      expect(data.label, 'Email');
+      expect(data.value, 'abc');
+      expect(data.textSelection, controller.selection);
+      expect(data.hasAction(SemanticsAction.setSelection), isTrue);
+      expect(_allNodes(tester).where((SemanticsNode node) => node.label == 'Email'), hasLength(1));
+
+      tester.semantics.setSelection(find.semantics.byLabel('Email'), base: 1, extent: 2);
+      await tester.pump();
+      expect(controller.selection, const TextSelection(baseOffset: 1, extentOffset: 2));
+      expect(_paragraphAt(tester, 0).selections, isNotEmpty);
+    });
+  });
+
+  group('accessibility input', () {
+    testWidgets('exact ranges for RTL, wrapped, ellipsized and mixed-direction text', (
+      WidgetTester tester,
+    ) async {
+      final changes = <String?>[];
+      await tester.pumpWidget(
+        _region(
+          onSelectionChanged: (SelectedContent? content) => changes.add(content?.plainText),
+          child: const Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Text('שלום עולם'),
+              SizedBox(width: 100, child: Text('aaaaaaaaaa bb')),
+              SizedBox(
+                width: 60,
+                child: Text('Hello world', maxLines: 1, overflow: TextOverflow.ellipsis),
+              ),
+              Text('abc שלום def'),
+            ],
+          ),
+        ),
+      );
+      await tester.pump();
+      final cases = <(String, int, int, String)>[
+        ('שלום עולם', 0, 3, 'שלו'),
+        ('aaaaaaaaaa bb', 0, 11, 'aaaaaaaaaa '),
+        ('Hello world', 9, 11, 'ld'),
+        ('abc שלום def', 2, 5, 'c ש'),
+      ];
+      for (final (String label, int base, int extent, String text) in cases) {
+        tester.semantics.setSelection(find.semantics.byLabel(label), base: base, extent: extent);
+        await tester.pump();
+        expect(
+          _nodeWithLabel(tester, label).getSemanticsData().textSelection,
+          TextSelection(baseOffset: base, extentOffset: extent),
+          reason: label,
+        );
+        expect(changes.last, text, reason: label);
+        expect(_regionState(tester).widget, isA<SelectableRegion>());
+      }
+      // Every other paragraph was cleared by the last request.
+      expect(
+        _allNodes(tester)
+            .where((SemanticsNode node) => node.getSemanticsData().textSelection != null)
+            .map((SemanticsNode node) => node.label),
+        <String>['abc שלום def'],
+      );
+    });
+
+    testWidgets('a range takes focus from a text field outside the region', (
+      WidgetTester tester,
+    ) async {
+      final focusNode = FocusNode();
+      addTearDown(focusNode.dispose);
+      final fieldFocusNode = FocusNode();
+      addTearDown(fieldFocusNode.dispose);
+      final controller = TextEditingController(text: 'field');
+      addTearDown(controller.dispose);
+      await tester.pumpWidget(
+        TestWidgetsApp(
+          home: Column(
+            children: <Widget>[
+              EditableText(
+                controller: controller,
+                focusNode: fieldFocusNode,
+                style: const TextStyle(),
+                cursorColor: const Color(0xFF000000),
+                backgroundCursorColor: const Color(0xFF000000),
+              ),
+              SelectableRegion(
+                focusNode: focusNode,
+                selectionControls: emptyTextSelectionControls,
+                child: const Text('Hello world'),
+              ),
+            ],
+          ),
+        ),
+      );
+      await tester.pump();
+      fieldFocusNode.requestFocus();
+      await tester.pump();
+
+      // A caret leaves the field focused and the region untouched.
+      tester.semantics.setSelection(find.semantics.byLabel('Hello world'), base: 11, extent: 11);
+      await tester.pump();
+      expect(fieldFocusNode.hasPrimaryFocus, isTrue);
+      expect(_nodeWithLabel(tester, 'Hello world').getSemanticsData().textSelection, isNull);
+      expect(_paragraphAt(tester, 0).selections, isEmpty);
+
+      // A range moves primary focus to the region.
+      tester.semantics.setSelection(find.semantics.byLabel('Hello world'), base: 0, extent: 2);
+      await tester.pump();
+      expect(focusNode.hasPrimaryFocus, isTrue);
+      expect(fieldFocusNode.hasFocus, isFalse);
+      expect(
+        _nodeWithLabel(tester, 'Hello world').getSemanticsData().textSelection,
+        const TextSelection(baseOffset: 0, extentOffset: 2),
+      );
+    });
+
+    testWidgets('negative offsets clear the selection without an anchor', (
+      WidgetTester tester,
+    ) async {
+      await tester.pumpWidget(_region(child: const Text('Hello world')));
+      await tester.pump();
+      // No selection: nothing happens.
+      tester.semantics.setSelection(find.semantics.byLabel('Hello world'), base: -1, extent: -1);
+      await tester.pump();
+      expect(_regionState(tester).widget.focusNode, isNull);
+      expect(_paragraphAt(tester, 0).selections, isEmpty);
+
+      tester.semantics.setSelection(find.semantics.byLabel('Hello world'), base: 0, extent: 4);
+      await tester.pump();
+      expect(_paragraphAt(tester, 0).selections, isNotEmpty);
+      tester.semantics.setSelection(find.semantics.byLabel('Hello world'), base: -1, extent: -1);
+      await tester.pump();
+      expect(_paragraphAt(tester, 0).selections, isEmpty);
+      expect(_nodeWithLabel(tester, 'Hello world').getSemanticsData().textSelection, isNull);
+    });
+  });
+
+  group('focus representation', () {
+    testWidgets('the anchor paragraph is focused while the region has primary focus', (
+      WidgetTester tester,
+    ) async {
+      final focusNode = FocusNode();
+      addTearDown(focusNode.dispose);
+      final fieldFocusNode = FocusNode();
+      addTearDown(fieldFocusNode.dispose);
+      final controller = TextEditingController(text: 'abc');
+      addTearDown(controller.dispose);
+      await tester.pumpWidget(
+        _region(
+          focusNode: focusNode,
+          child: Column(
+            children: <Widget>[
+              const Text('First'),
+              const Text('Second'),
+              EditableText(
+                controller: controller,
+                focusNode: fieldFocusNode,
+                style: const TextStyle(),
+                cursorColor: const Color(0xFF000000),
+                backgroundCursorColor: const Color(0xFF000000),
+              ),
+            ],
+          ),
+        ),
+      );
+      await tester.pump();
+      bool focused(String label) =>
+          _nodeWithLabel(tester, label).flagsCollection.isFocused == Tristate.isTrue;
+      bool focusable(String label) =>
+          _nodeWithLabel(tester, label).flagsCollection.isFocused != Tristate.none;
+      expect(focused('First'), isFalse);
+      expect(focusable('First'), isFalse);
+
+      focusNode.requestFocus();
+      await tester.pump();
+      await tester.pump();
+      expect(focusNode.hasPrimaryFocus, isTrue);
+      expect(focused('First'), isTrue);
+      expect(focusable('First'), isTrue);
+      expect(focused('Second'), isFalse);
+      expect(focusable('Second'), isFalse);
+      expect(
+        _nodeWithLabel(tester, 'First').getSemanticsData().hasAction(SemanticsAction.setSelection),
+        isTrue,
+      );
+
+      // A nested text field takes primary focus: no paragraph is focused.
+      fieldFocusNode.requestFocus();
+      await tester.pump();
+      await tester.pump();
+      expect(focusNode.hasFocus, isTrue);
+      expect(focusNode.hasPrimaryFocus, isFalse);
+      expect(focused('First'), isFalse);
+      expect(focusable('First'), isFalse);
+
+      // Back to the region: the anchor is still the first paragraph.
+      focusNode.requestFocus();
+      await tester.pump();
+      await tester.pump();
+      expect(focused('First'), isTrue);
+
+      // An accessibility range moves the anchor.
+      tester.semantics.setSelection(find.semantics.byLabel('Second'), base: 0, extent: 2);
+      await tester.pump();
+      expect(focused('First'), isFalse);
+      expect(focused('Second'), isTrue);
+
+      // Losing focus removes the representation.
+      focusNode.unfocus();
+      await tester.pump();
+      await tester.pump();
+      expect(focused('Second'), isFalse);
+      expect(focusable('Second'), isFalse);
+    });
+
+    testWidgets('the anchor follows the last pointer down', (WidgetTester tester) async {
+      await tester.pumpWidget(
+        _region(child: const Column(children: <Widget>[Text('First'), Text('Second')])),
+      );
+      await tester.pump();
+      await tester.tapAt(_textOffsetToPosition(_paragraphAt(tester, 1), 2));
+      await tester.pump();
+      await tester.pump();
+      expect(_regionState(tester).widget, isA<SelectableRegion>());
+      expect(_nodeWithLabel(tester, 'Second').flagsCollection.isFocused, Tristate.isTrue);
+      expect(_nodeWithLabel(tester, 'First').flagsCollection.isFocused, Tristate.none);
+    });
+
+    testWidgets('an anchor absorbed into a button never reports focus', (
+      WidgetTester tester,
+    ) async {
+      final focusNode = FocusNode();
+      addTearDown(focusNode.dispose);
+      await tester.pumpWidget(
+        _region(
+          focusNode: focusNode,
+          child: Column(
+            children: <Widget>[
+              Semantics(button: true, onTap: () {}, child: const Text('OK')),
+              const Text('Hello'),
+            ],
+          ),
+        ),
+      );
+      await tester.pump();
+      focusNode.requestFocus();
+      await tester.pump();
+      await tester.pump();
+      final SemanticsNode ok = _nodeWithLabel(tester, 'OK');
+      expect(ok.flagsCollection.isButton, isTrue);
+      expect(ok.flagsCollection.isFocused, Tristate.none);
+      expect(ok.getSemanticsData().hasAction(SemanticsAction.setSelection), isFalse);
+    });
+  });
+
+  group('two regions and a nested text field', () {
+    testWidgets('each region publishes only its own paragraphs', (WidgetTester tester) async {
+      final recognizer = TapGestureRecognizer()..onTap = () {};
+      addTearDown(recognizer.dispose);
+      final fieldFocusNode = FocusNode();
+      addTearDown(fieldFocusNode.dispose);
+      final controller = TextEditingController(text: 'abc');
+      addTearDown(controller.dispose);
+      final r1FocusNode = FocusNode();
+      addTearDown(r1FocusNode.dispose);
+      await tester.pumpWidget(
+        TestWidgetsApp(
+          home: Column(
+            children: <Widget>[
+              SelectableRegion(
+                focusNode: r1FocusNode,
+                selectionControls: emptyTextSelectionControls,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    const Text('Order number', style: TextStyle(fontSize: 20)),
+                    Text.rich(
+                      TextSpan(
+                        text: 'Track ',
+                        style: const TextStyle(fontSize: 20),
+                        children: <InlineSpan>[
+                          TextSpan(text: 'here', recognizer: recognizer),
+                          const TextSpan(text: ' anytime.'),
+                        ],
+                      ),
+                    ),
+                    EditableText(
+                      controller: controller,
+                      focusNode: fieldFocusNode,
+                      style: const TextStyle(),
+                      cursorColor: const Color(0xFF000000),
+                      backgroundCursorColor: const Color(0xFF000000),
+                    ),
+                  ],
+                ),
+              ),
+              SelectableRegion(
+                selectionControls: emptyTextSelectionControls,
+                child: const Text('Footer note'),
+              ),
+            ],
+          ),
+        ),
+      );
+      await tester.pump();
+      final RenderParagraph p1 = _paragraphAt(tester, 0);
+      final RenderParagraph p2 = _paragraphAt(tester, 1);
+      TextSelection? selectionOf(String label) =>
+          _nodeWithLabel(tester, label).getSemanticsData().textSelection;
+
+      // 1. Drag in R1 from "Order" into "here".
+      await _mouseDrag(tester, _textOffsetToPosition(p1, 0), _textOffsetToPosition(p2, 8));
+      expect(selectionOf('Order number'), const TextSelection(baseOffset: 0, extentOffset: 12));
+      expect(selectionOf('Track '), const TextSelection(baseOffset: 0, extentOffset: 6));
+      expect(selectionOf('here'), isNull);
+      expect(selectionOf(' anytime.'), isNull);
+      expect(selectionOf('Footer note'), isNull);
+      expect(_nodeWithLabel(tester, 'Order number').flagsCollection.isFocused, Tristate.isTrue);
+
+      // 2. A screen reader selects the first character of " anytime.".
+      tester.semantics.setSelection(find.semantics.byLabel(' anytime.'), base: 0, extent: 1);
+      await tester.pump();
+      expect(p2.selections, const <TextSelection>[TextSelection(baseOffset: 10, extentOffset: 11)]);
+      expect(selectionOf(' anytime.'), const TextSelection(baseOffset: 0, extentOffset: 1));
+      expect(selectionOf('Order number'), isNull);
+      expect(selectionOf('Track '), isNull);
+
+      // 3. Focusing the nested field keeps R1's selection and drops the paragraph focus.
+      fieldFocusNode.requestFocus();
+      await tester.pump();
+      await tester.pump();
+      expect(r1FocusNode.hasFocus, isTrue);
+      expect(r1FocusNode.hasPrimaryFocus, isFalse);
+      expect(selectionOf(' anytime.'), const TextSelection(baseOffset: 0, extentOffset: 1));
+      expect(
+        _allNodes(tester)
+            .where((SemanticsNode node) => node.flagsCollection.isFocused == Tristate.isTrue)
+            .map((SemanticsNode node) => node.flagsCollection.isTextField),
+        <bool>[true],
+      );
+
+      // 4. Selecting in R2 leaves R1 untouched.
+      tester.semantics.setSelection(find.semantics.byLabel('Footer note'), base: 0, extent: 6);
+      await tester.pump();
+      expect(selectionOf('Footer note'), const TextSelection(baseOffset: 0, extentOffset: 6));
+      expect(selectionOf(' anytime.'), const TextSelection(baseOffset: 0, extentOffset: 1));
     });
   });
 }

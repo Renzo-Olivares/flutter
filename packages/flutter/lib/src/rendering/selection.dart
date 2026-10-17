@@ -752,26 +752,6 @@ class DirectionallyExtendSelectionEvent extends SelectionEvent {
   }
 }
 
-/// A bridge from a selectable paragraph's semantics node to the object that
-/// owns the selection, typically a `SelectableRegion`.
-///
-/// This is a framework-internal contract: a paragraph render object under a
-/// selection registrar reports screen-reader requests through it, and the
-/// region applies them to its selection and commits them like any other
-/// change. It is not part of the stable API.
-@internal
-abstract class SelectionSemanticsDelegate {
-  /// Selects `[start, end)` of [target]'s content, in the target's own
-  /// offsets.
-  ///
-  /// A collapsed range (where `start == end`) only records where the
-  /// assistive technology is reading and has no other side effect.
-  void select(Selectable target, int start, int end);
-
-  /// Copies the current selection to the clipboard, keeping the selection.
-  void copy();
-}
-
 /// A registrar that keeps track of [Selectable]s in the subtree.
 ///
 /// A [Selectable] is only included in the [SelectableRegion] if they are
