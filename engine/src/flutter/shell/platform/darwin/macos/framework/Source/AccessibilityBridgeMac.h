@@ -44,6 +44,15 @@ class AccessibilityBridgeMac : public AccessibilityBridge {
   // |AccessibilityBridge|
   void OnAccessibilityEvent(ui::AXEventGenerator::TargetedEvent targeted_event) override;
 
+  //---------------------------------------------------------------------------
+  /// @brief      Whether selection changes of selectable static text, such as
+  ///             a paragraph under a SelectableRegion, post
+  ///             NSAccessibilitySelectedTextChangedNotification.
+  ///
+  ///             While this is false, SelectableRegion announces those changes
+  ///             itself, so nothing is posted for them.
+  virtual bool ShouldPostStaticSelectionNotifications() const;
+
   // |AccessibilityBridge|
   std::shared_ptr<FlutterPlatformNodeDelegate> CreateFlutterPlatformNodeDelegate() override;
 
@@ -87,8 +96,17 @@ class AccessibilityBridgeMac : public AccessibilityBridge {
   std::vector<NSAccessibilityEvent> MacOSEventsFromAXEvent(ui::AXEventGenerator::Event event_type,
                                                            const ui::AXNode& ax_node) const;
 
+  //---------------------------------------------------------------------------
+  /// @brief      The node whose selection moved last if the tree selection is
+  ///             owned by selectable static text, or kInvalidAXID otherwise.
+  AccessibilityNodeId StaticSelectionFocusId() const;
+
   __weak FlutterEngine* flutter_engine_;
   __weak FlutterViewController* view_controller_;
+
+  // The StaticSelectionFocusId() at the last DOCUMENT_SELECTION_CHANGED, so
+  // that the clearing of a static selection is told apart from a text field's.
+  AccessibilityNodeId last_static_selection_focus_id_ = ui::AXNode::kInvalidAXID;
 
   FML_DISALLOW_COPY_AND_ASSIGN(AccessibilityBridgeMac);
 };

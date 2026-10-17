@@ -20,19 +20,35 @@ static NSString* const kAccessibilityLiveRegionChangedNotification = @"AXLiveReg
 static NSString* const kAccessibilityExpandedChanged = @"AXExpandedChanged";
 static NSString* const kAccessibilityMenuItemSelectedNotification = @"AXMenuItemSelected";
 
+// Whether selection changes of selectable static text (a paragraph under a
+// SelectableRegion) post NSAccessibilitySelectedTextChangedNotification.
+//
+// The framework's SelectableRegion announces those changes itself on macOS
+// while its `_kMacOSVoiceOverSpeaksNodeSelection` is false. Both flip together,
+// once probe P1 of flutter/flutter#182909 shows that VoiceOver speaks the
+// delta from these notifications, so that VoiceOver never hears both.
+constexpr bool kPostStaticSelectionNotifications = false;
+
 AccessibilityBridgeMac::AccessibilityBridgeMac(__weak FlutterEngine* flutter_engine,
                                                __weak FlutterViewController* view_controller)
     : flutter_engine_(flutter_engine), view_controller_(view_controller) {}
 
 void AccessibilityBridgeMac::OnAccessibilityEvent(
     ui::AXEventGenerator::TargetedEvent targeted_event) {
+  ui::AXEventGenerator::Event event_type = targeted_event.event_params.event;
   if (!view_controller_.viewLoaded || !view_controller_.view.window) {
     // Don't need to send accessibility events if the there is no view or window.
+    if (event_type == ui::AXEventGenerator::Event::DOCUMENT_SELECTION_CHANGED) {
+      last_static_selection_focus_id_ = StaticSelectionFocusId();
+    }
     return;
   }
   ui::AXNode* ax_node = targeted_event.node;
   std::vector<AccessibilityBridgeMac::NSAccessibilityEvent> events =
-      MacOSEventsFromAXEvent(targeted_event.event_params.event, *ax_node);
+      MacOSEventsFromAXEvent(event_type, *ax_node);
+  if (event_type == ui::AXEventGenerator::Event::DOCUMENT_SELECTION_CHANGED) {
+    last_static_selection_focus_id_ = StaticSelectionFocusId();
+  }
   for (const AccessibilityBridgeMac::NSAccessibilityEvent& event : events) {
     if (event.user_info != nil) {
       DispatchMacOSNotificationWithUserInfo(event.target, event.name, event.user_info);
@@ -118,6 +134,32 @@ AccessibilityBridgeMac::MacOSEventsFromAXEvent(ui::AXEventGenerator::Event event
       }
       break;
     case ui::AXEventGenerator::Event::DOCUMENT_SELECTION_CHANGED: {
+      // The selection of selectable static text (a paragraph under a
+      // SelectableRegion) changed or was cleared. This is decided by the
+      // owner of the tree selection rather than by GetFocus(), the last node
+      // an assistive technology focused, which may be a stale text field.
+      AccessibilityNodeId static_focus = StaticSelectionFocusId();
+      bool static_selection_cleared = static_focus == ui::AXNode::kInvalidAXID &&
+                                      last_static_selection_focus_id_ != ui::AXNode::kInvalidAXID &&
+                                      !GetNodeFromTree(GetAXTreeData().sel_focus_object_id);
+      if (static_focus != ui::AXNode::kInvalidAXID || static_selection_cleared) {
+        if (!ShouldPostStaticSelectionNotifications()) {
+          break;
+        }
+        // Notify the node whose selection edge moved, or, when the selection
+        // was cleared, the node it ended on.
+        AccessibilityNodeId target_id =
+            static_selection_cleared ? last_static_selection_focus_id_ : static_focus;
+        auto target = GetFlutterPlatformNodeDelegateFromID(target_id).lock();
+        if (target) {
+          events.push_back({
+              .name = NSAccessibilitySelectedTextChangedNotification,
+              .target = target->GetNativeViewAccessible(),
+              .user_info = nil,
+          });
+        }
+        break;
+      }
       id focused = mac_platform_node_delegate->GetFocus();
       if ([focused isKindOfClass:[FlutterTextField class]]) {
         // If it is a text field, the selection notifications are handled by
@@ -339,6 +381,21 @@ void AccessibilityBridgeMac::DispatchAccessibilityAction(ui::AXNode::AXID target
             @"The accessibility bridge should not receive accessibility actions if the flutter view"
             @"is not loaded or attached to a NSWindow.");
   [flutter_engine_ dispatchSemanticsAction:action toTarget:target withData:std::move(data)];
+}
+
+bool AccessibilityBridgeMac::ShouldPostStaticSelectionNotifications() const {
+  return kPostStaticSelectionNotifications;
+}
+
+AccessibilityNodeId AccessibilityBridgeMac::StaticSelectionFocusId() const {
+  const ui::AXTreeData& tree_data = GetAXTreeData();
+  ui::AXNode* owner = GetNodeFromTree(tree_data.sel_focus_object_id);
+  // The tree selection belongs to a text field or to selectable static text;
+  // read the role from the tree, where read-only text fields are text fields.
+  if (!owner || owner->data().IsTextField()) {
+    return ui::AXNode::kInvalidAXID;
+  }
+  return owner->id();
 }
 
 std::shared_ptr<FlutterPlatformNodeDelegate>
