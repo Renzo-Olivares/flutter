@@ -6,8 +6,12 @@
 #include "flutter/shell/platform/linux/testing/linux_test.h"
 #include "gtest/gtest.h"
 
+#include "flutter/shell/platform/embedder/test_utils/proc_table_replacement.h"
 #include "flutter/shell/platform/linux/fl_accessible_node.h"
+#include "flutter/shell/platform/linux/fl_engine_private.h"
+#include "flutter/shell/platform/linux/public/flutter_linux/fl_standard_message_codec.h"
 #include "flutter/shell/platform/linux/testing/mock_gtk.h"
+#include "flutter/shell/platform/linux/testing/mock_signal_handler.h"
 
 class FlAccessibleNodeTest : public flutter::testing::LinuxTest {
  protected:
@@ -440,4 +444,228 @@ TEST_F(FlAccessibleNodeTest, SurvivesParentDestruction) {
   gint x = 0, y = 0, width = 0, height = 0;
   atk_component_get_extents(ATK_COMPONENT(child), &x, &y, &width, &height,
                             ATK_XY_SCREEN);
+}
+
+// A paragraph under a SelectableRegion: a node that is not a text field and has
+// the set selection action.
+static FlAccessibleNode* create_selectable_text(FlEngine* engine,
+                                                int32_t id,
+                                                const gchar* name) {
+  FlAccessibleNode* node = fl_accessible_node_new(engine, 123, id);
+  FlutterSemanticsFlags flags = {};
+  fl_accessible_node_set_flags(node, &flags);
+  fl_accessible_node_set_actions(node, kFlutterSemanticsActionSetSelection);
+  fl_accessible_node_set_name(node, name);
+  return node;
+}
+
+// Applies a selection update to [node] as one semantics update.
+static void update_selection(FlAccessibleNode* node, gint base, gint extent) {
+  fl_accessible_node_set_text_selection(node, base, extent);
+  g_autoptr(GPtrArray) nodes = g_ptr_array_new();
+  g_ptr_array_add(nodes, node);
+  fl_accessible_node_emit_text_selection_changes(nodes);
+}
+
+// Checks selectable static text exposes its selection through AtkText and
+// emits the AtkText signals.
+TEST_F(FlAccessibleNodeTest, SelectableTextSelection) {
+  g_autoptr(FlAccessibleNode) node =
+      create_selectable_text(engine, 1, "Hello world");
+  EXPECT_EQ(atk_object_get_role(ATK_OBJECT(node)), ATK_ROLE_PARAGRAPH);
+  EXPECT_EQ(atk_text_get_n_selections(ATK_TEXT(node)), 0);
+  EXPECT_EQ(atk_text_get_caret_offset(ATK_TEXT(node)), -1);
+
+  {
+    flutter::testing::MockSignalHandler text_selection_changed(
+        node, "text-selection-changed");
+    flutter::testing::MockSignalHandler1<int> text_caret_moved(
+        node, "text-caret-moved");
+    EXPECT_SIGNAL(text_selection_changed);
+    EXPECT_SIGNAL1(text_caret_moved, ::testing::Eq(5));
+    update_selection(node, 0, 5);
+  }
+
+  EXPECT_EQ(atk_text_get_n_selections(ATK_TEXT(node)), 1);
+  gint start_offset = -1;
+  gint end_offset = -1;
+  g_autofree gchar* selection =
+      atk_text_get_selection(ATK_TEXT(node), 0, &start_offset, &end_offset);
+  EXPECT_STREQ(selection, "Hello");
+  EXPECT_EQ(start_offset, 0);
+  EXPECT_EQ(end_offset, 5);
+  EXPECT_EQ(atk_text_get_caret_offset(ATK_TEXT(node)), 5);
+
+  // Clearing emits only text-selection-changed.
+  {
+    flutter::testing::MockSignalHandler text_selection_changed(
+        node, "text-selection-changed");
+    flutter::testing::MockSignalHandler text_caret_moved(node,
+                                                         "text-caret-moved");
+    EXPECT_SIGNAL(text_selection_changed);
+    EXPECT_SIGNAL(text_caret_moved).Times(0);
+    update_selection(node, -1, -1);
+  }
+  EXPECT_EQ(atk_text_get_n_selections(ATK_TEXT(node)), 0);
+  EXPECT_EQ(atk_text_get_caret_offset(ATK_TEXT(node)), -1);
+}
+
+// Checks Flutter's UTF-16 selection offsets are reported as character offsets.
+TEST_F(FlAccessibleNodeTest, SelectableTextSelectionOffsetsAreCharacters) {
+  // One emoji (two UTF-16 code units), then "ab".
+  g_autoptr(FlAccessibleNode) node = create_selectable_text(engine, 1,
+                                                            "\xF0\x9F\x98\x80"
+                                                            "ab");
+
+  {
+    flutter::testing::MockSignalHandler1<int> text_caret_moved(
+        node, "text-caret-moved");
+    EXPECT_SIGNAL1(text_caret_moved, ::testing::Eq(3));
+    update_selection(node, 2, 4);
+  }
+
+  gint start_offset = -1;
+  gint end_offset = -1;
+  g_autofree gchar* selection =
+      atk_text_get_selection(ATK_TEXT(node), 0, &start_offset, &end_offset);
+  EXPECT_STREQ(selection, "ab");
+  EXPECT_EQ(start_offset, 1);
+  EXPECT_EQ(end_offset, 3);
+}
+
+// MOCK_ENGINE_PROC is leaky by design
+// NOLINTBEGIN(clang-analyzer-core.StackAddressEscape)
+
+// Checks the AtkText selection setters send the framework UTF-16 offsets.
+TEST_F(FlAccessibleNodeTest, SelectableTextSetSelection) {
+  int base = -2;
+  int extent = -2;
+  StartEngine();
+  fl_engine_get_embedder_api(engine)->SendSemanticsAction = MOCK_ENGINE_PROC(
+      SendSemanticsAction,
+      ([&base, &extent](auto engine,
+                        const FlutterSendSemanticsActionInfo* info) {
+        EXPECT_EQ(info->action, kFlutterSemanticsActionSetSelection);
+        g_autoptr(GBytes) bytes = g_bytes_new(info->data, info->data_length);
+        g_autoptr(FlStandardMessageCodec) codec =
+            fl_standard_message_codec_new();
+        g_autoptr(FlValue) value = fl_message_codec_decode_message(
+            FL_MESSAGE_CODEC(codec), bytes, nullptr);
+        EXPECT_EQ(fl_value_get_type(value), FL_VALUE_TYPE_MAP);
+        base = fl_value_get_int(fl_value_lookup_string(value, "base"));
+        extent = fl_value_get_int(fl_value_lookup_string(value, "extent"));
+        return kSuccess;
+      }));
+
+  g_autoptr(FlAccessibleNode) node = create_selectable_text(engine, 1,
+                                                            "\xF0\x9F\x98\x80"
+                                                            "ab");
+
+  // Characters [1, 3) are UTF-16 [2, 4).
+  EXPECT_TRUE(atk_text_add_selection(ATK_TEXT(node), 1, 3));
+  EXPECT_EQ(base, 2);
+  EXPECT_EQ(extent, 4);
+
+  // There is at most one selection.
+  update_selection(node, 2, 4);
+  base = extent = -2;
+  EXPECT_FALSE(atk_text_add_selection(ATK_TEXT(node), 0, 1));
+  EXPECT_EQ(base, -2);
+
+  EXPECT_TRUE(atk_text_set_selection(ATK_TEXT(node), 0, 0, 1));
+  EXPECT_EQ(base, 0);
+  EXPECT_EQ(extent, 2);
+  EXPECT_FALSE(atk_text_set_selection(ATK_TEXT(node), 1, 0, 1));
+
+  // Negative offsets clear the selection in the framework.
+  EXPECT_TRUE(atk_text_remove_selection(ATK_TEXT(node), 0));
+  EXPECT_EQ(base, -1);
+  EXPECT_EQ(extent, -1);
+
+  // A caret is only recorded by the framework, so the node reports it until
+  // a selection is published.
+  update_selection(node, -1, -1);
+  EXPECT_FALSE(atk_text_remove_selection(ATK_TEXT(node), 0));
+  EXPECT_TRUE(atk_text_set_caret_offset(ATK_TEXT(node), 1));
+  EXPECT_EQ(base, 2);
+  EXPECT_EQ(extent, 2);
+  EXPECT_EQ(atk_text_get_caret_offset(ATK_TEXT(node)), 1);
+  update_selection(node, 3, 4);
+  EXPECT_EQ(atk_text_get_caret_offset(ATK_TEXT(node)), 3);
+}
+
+// NOLINTEND(clang-analyzer-core.StackAddressEscape)
+
+// Checks nodes without the set selection action, and text that is not plain,
+// are not selectable.
+TEST_F(FlAccessibleNodeTest, NotSelectableText) {
+  g_autoptr(FlAccessibleNode) label = fl_accessible_node_new(engine, 123, 1);
+  fl_accessible_node_set_name(label, "Hello world");
+  EXPECT_EQ(atk_object_get_role(ATK_OBJECT(label)), ATK_ROLE_PANEL);
+  {
+    flutter::testing::MockSignalHandler text_selection_changed(
+        label, "text-selection-changed");
+    EXPECT_SIGNAL(text_selection_changed).Times(0);
+    update_selection(label, 0, 5);
+  }
+  EXPECT_EQ(atk_text_get_n_selections(ATK_TEXT(label)), 0);
+  EXPECT_EQ(atk_text_get_caret_offset(ATK_TEXT(label)), -1);
+  EXPECT_FALSE(atk_text_add_selection(ATK_TEXT(label), 0, 5));
+  EXPECT_FALSE(atk_text_set_caret_offset(ATK_TEXT(label), 1));
+
+  // A selectable heading keeps its role.
+  g_autoptr(FlAccessibleNode) heading =
+      create_selectable_text(engine, 2, "Title");
+  FlutterSemanticsFlags flags = {};
+  flags.is_header = true;
+  fl_accessible_node_set_flags(heading, &flags);
+  EXPECT_EQ(atk_object_get_role(ATK_OBJECT(heading)), ATK_ROLE_HEADING);
+}
+
+// Checks that when the selection of several nodes changes in one update, only
+// the node holding the selection extent emits the AtkText signals.
+TEST_F(FlAccessibleNodeTest, OnlyTheExtentNodeEmitsSelectionSignals) {
+  g_autoptr(FlAccessibleNode) root = fl_accessible_node_new(engine, 123, 0);
+  g_autoptr(FlAccessibleNode) first =
+      create_selectable_text(engine, 1, "Hello world");
+  g_autoptr(FlAccessibleNode) second =
+      create_selectable_text(engine, 2, "Second line");
+  fl_accessible_node_set_parent(first, ATK_OBJECT(root), 0);
+  fl_accessible_node_set_parent(second, ATK_OBJECT(root), 1);
+  g_autoptr(GPtrArray) children = g_ptr_array_new();
+  g_ptr_array_add(children, first);
+  g_ptr_array_add(children, second);
+  fl_accessible_node_set_children(root, children);
+
+  // The update lists the nodes in any order.
+  g_autoptr(GPtrArray) nodes = g_ptr_array_new();
+  g_ptr_array_add(nodes, second);
+  g_ptr_array_add(nodes, first);
+
+  // Forward: the extent is in the last node.
+  {
+    flutter::testing::MockSignalHandler first_changed(first,
+                                                      "text-selection-changed");
+    flutter::testing::MockSignalHandler second_changed(
+        second, "text-selection-changed");
+    EXPECT_SIGNAL(first_changed).Times(0);
+    EXPECT_SIGNAL(second_changed);
+    fl_accessible_node_set_text_selection(first, 6, 11);
+    fl_accessible_node_set_text_selection(second, 0, 6);
+    fl_accessible_node_emit_text_selection_changes(nodes);
+  }
+  EXPECT_EQ(atk_text_get_n_selections(ATK_TEXT(first)), 1);
+
+  // Backward: the extent is in the first node.
+  {
+    flutter::testing::MockSignalHandler first_changed(first,
+                                                      "text-selection-changed");
+    flutter::testing::MockSignalHandler second_changed(
+        second, "text-selection-changed");
+    EXPECT_SIGNAL(first_changed);
+    EXPECT_SIGNAL(second_changed).Times(0);
+    fl_accessible_node_set_text_selection(first, 11, 6);
+    fl_accessible_node_set_text_selection(second, 6, 0);
+    fl_accessible_node_emit_text_selection_changes(nodes);
+  }
 }

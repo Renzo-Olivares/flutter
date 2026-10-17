@@ -160,3 +160,65 @@ TEST_F(FlViewAccessibleTest, AddRemoveChildren) {
 
   EXPECT_EQ(atk_object_get_n_accessible_children(root_object), 0);
 }
+
+// Checks that a selection change across several paragraphs (static text with
+// the set selection action) in one update is signalled by the node holding
+// the selection extent only.
+TEST_F(FlViewAccessibleTest, SelectionChangeAcrossNodesIsSignalledOnce) {
+  g_autoptr(FlViewAccessible) accessible = fl_view_accessible_new(engine, 456);
+
+  int32_t children[] = {111, 222};
+  FlutterSemanticsFlags flags = {};
+  FlutterSemanticsNode2 root_node = {.id = 0,
+                                     .text_selection_base = -1,
+                                     .text_selection_extent = -1,
+                                     .label = "root",
+                                     .child_count = 2,
+                                     .children_in_traversal_order = children,
+                                     .flags2 = &flags};
+  FlutterSemanticsNode2 first_node = {
+      .id = 111,
+      .actions = kFlutterSemanticsActionSetSelection,
+      .text_selection_base = -1,
+      .text_selection_extent = -1,
+      .label = "Hello world",
+      .flags2 = &flags};
+  FlutterSemanticsNode2 second_node = {
+      .id = 222,
+      .actions = kFlutterSemanticsActionSetSelection,
+      .text_selection_base = -1,
+      .text_selection_extent = -1,
+      .label = "Second line",
+      .flags2 = &flags};
+  FlutterSemanticsNode2* nodes[3] = {&root_node, &first_node, &second_node};
+  FlutterSemanticsUpdate2 update = {.node_count = 3, .nodes = nodes};
+  fl_view_accessible_handle_update_semantics(accessible, &update);
+
+  g_autoptr(AtkObject) root_object =
+      atk_object_ref_accessible_child(ATK_OBJECT(accessible), 0);
+  g_autoptr(AtkObject) first_object =
+      atk_object_ref_accessible_child(root_object, 0);
+  g_autoptr(AtkObject) second_object =
+      atk_object_ref_accessible_child(root_object, 1);
+  EXPECT_EQ(atk_object_get_role(first_object), ATK_ROLE_PARAGRAPH);
+
+  flutter::testing::MockSignalHandler first_changed(first_object,
+                                                    "text-selection-changed");
+  flutter::testing::MockSignalHandler second_changed(second_object,
+                                                     "text-selection-changed");
+  EXPECT_SIGNAL(first_changed).Times(0);
+  EXPECT_SIGNAL(second_changed);
+
+  // A forward selection from "world" to "Second", listed in any order.
+  first_node.text_selection_base = 6;
+  first_node.text_selection_extent = 11;
+  second_node.text_selection_base = 0;
+  second_node.text_selection_extent = 6;
+  FlutterSemanticsNode2* selection_nodes[2] = {&second_node, &first_node};
+  FlutterSemanticsUpdate2 selection_update = {.node_count = 2,
+                                              .nodes = selection_nodes};
+  fl_view_accessible_handle_update_semantics(accessible, &selection_update);
+
+  EXPECT_EQ(atk_text_get_n_selections(ATK_TEXT(first_object)), 1);
+  EXPECT_EQ(atk_text_get_n_selections(ATK_TEXT(second_object)), 1);
+}

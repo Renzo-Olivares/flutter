@@ -162,9 +162,11 @@ void fl_view_accessible_handle_update_semantics(
   g_autoptr(GHashTable) pending_children =
       g_hash_table_new_full(g_direct_hash, g_direct_equal, nullptr,
                             reinterpret_cast<GDestroyNotify>(fl_value_unref));
+  g_autoptr(GPtrArray) updated_nodes = g_ptr_array_new();
   for (size_t i = 0; i < update->node_count; i++) {
     FlutterSemanticsNode2* node = update->nodes[i];
     FlAccessibleNode* atk_node = get_node(self, node);
+    g_ptr_array_add(updated_nodes, atk_node);
 
     fl_accessible_node_set_flags(atk_node, node->flags2);
     fl_accessible_node_set_actions(atk_node, node->actions);
@@ -209,6 +211,10 @@ void fl_view_accessible_handle_update_semantics(
         return TRUE;
       },
       self);
+
+  // Selection signals of static text are emitted once the tree is complete,
+  // so that a change across several nodes is spoken once.
+  fl_accessible_node_emit_text_selection_changes(updated_nodes);
 }
 
 void fl_view_accessible_send_announcement(FlViewAccessible* self,

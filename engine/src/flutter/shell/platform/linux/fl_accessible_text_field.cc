@@ -220,21 +220,6 @@ static void perform_set_text_action(FlAccessibleTextField* self,
                                     kFlutterSemanticsActionSetText, message);
 }
 
-static void perform_set_selection_action(FlAccessibleTextField* self,
-                                         gint base,
-                                         gint extent) {
-  g_autoptr(FlValue) value = fl_value_new_map();
-  fl_value_set_string_take(value, "base", fl_value_new_int(base));
-  fl_value_set_string_take(value, "extent", fl_value_new_int(extent));
-
-  g_autoptr(FlStandardMessageCodec) codec = fl_standard_message_codec_new();
-  g_autoptr(GBytes) message =
-      fl_message_codec_encode_message(FL_MESSAGE_CODEC(codec), value, nullptr);
-
-  fl_accessible_node_perform_action(
-      FL_ACCESSIBLE_NODE(self), kFlutterSemanticsActionSetSelection, message);
-}
-
 // Implements GObject::dispose.
 static void fl_accessible_text_field_dispose(GObject* object) {
   FlAccessibleTextField* self = FL_ACCESSIBLE_TEXT_FIELD(object);
@@ -410,7 +395,8 @@ static gboolean fl_accessible_text_field_set_caret_offset(AtkText* text,
   g_return_val_if_fail(FL_IS_ACCESSIBLE_TEXT_FIELD(text), false);
   FlAccessibleTextField* self = FL_ACCESSIBLE_TEXT_FIELD(text);
 
-  perform_set_selection_action(self, offset, offset);
+  fl_accessible_node_perform_set_selection_action(FL_ACCESSIBLE_NODE(self),
+                                                  offset, offset);
   return TRUE;
 }
 
@@ -462,7 +448,8 @@ static gboolean fl_accessible_text_field_add_selection(AtkText* text,
     return FALSE;
   }
 
-  perform_set_selection_action(self, start_offset, end_offset);
+  fl_accessible_node_perform_set_selection_action(FL_ACCESSIBLE_NODE(self),
+                                                  start_offset, end_offset);
   return TRUE;
 }
 
@@ -476,8 +463,8 @@ static gboolean fl_accessible_text_field_remove_selection(AtkText* text,
     return FALSE;
   }
 
-  perform_set_selection_action(self, self->selection_extent,
-                               self->selection_extent);
+  fl_accessible_node_perform_set_selection_action(
+      FL_ACCESSIBLE_NODE(self), self->selection_extent, self->selection_extent);
   return TRUE;
 }
 
@@ -493,7 +480,8 @@ static gboolean fl_accessible_text_field_set_selection(AtkText* text,
     return FALSE;
   }
 
-  perform_set_selection_action(self, start_offset, end_offset);
+  fl_accessible_node_perform_set_selection_action(FL_ACCESSIBLE_NODE(self),
+                                                  start_offset, end_offset);
   return TRUE;
 }
 
@@ -519,7 +507,8 @@ static void fl_accessible_text_field_insert_text(AtkEditableText* editable_text,
       gtk_entry_buffer_insert_text(self->buffer, *position, string, length);
 
   perform_set_text_action(self, gtk_entry_buffer_get_text(self->buffer));
-  perform_set_selection_action(self, *position, *position);
+  fl_accessible_node_perform_set_selection_action(FL_ACCESSIBLE_NODE(self),
+                                                  *position, *position);
 }
 
 // Implements AtkEditableText::delete_text.
@@ -532,7 +521,8 @@ static void fl_accessible_node_delete_text(AtkEditableText* editable_text,
   gtk_entry_buffer_delete_text(self->buffer, start_pos, end_pos - start_pos);
 
   perform_set_text_action(self, gtk_entry_buffer_get_text(self->buffer));
-  perform_set_selection_action(self, start_pos, start_pos);
+  fl_accessible_node_perform_set_selection_action(FL_ACCESSIBLE_NODE(self),
+                                                  start_pos, start_pos);
 }
 
 // Implement AtkEditableText::copy_text.
@@ -542,7 +532,8 @@ static void fl_accessible_text_field_copy_text(AtkEditableText* editable_text,
   g_return_if_fail(FL_IS_ACCESSIBLE_TEXT_FIELD(editable_text));
   FlAccessibleTextField* self = FL_ACCESSIBLE_TEXT_FIELD(editable_text);
 
-  perform_set_selection_action(self, start_pos, end_pos);
+  fl_accessible_node_perform_set_selection_action(FL_ACCESSIBLE_NODE(self),
+                                                  start_pos, end_pos);
 
   fl_accessible_node_perform_action(FL_ACCESSIBLE_NODE(editable_text),
                                     kFlutterSemanticsActionCopy, nullptr);
@@ -555,7 +546,8 @@ static void fl_accessible_text_field_cut_text(AtkEditableText* editable_text,
   g_return_if_fail(FL_IS_ACCESSIBLE_TEXT_FIELD(editable_text));
   FlAccessibleTextField* self = FL_ACCESSIBLE_TEXT_FIELD(editable_text);
 
-  perform_set_selection_action(self, start_pos, end_pos);
+  fl_accessible_node_perform_set_selection_action(FL_ACCESSIBLE_NODE(self),
+                                                  start_pos, end_pos);
 
   fl_accessible_node_perform_action(FL_ACCESSIBLE_NODE(editable_text),
                                     kFlutterSemanticsActionCut, nullptr);
@@ -567,7 +559,8 @@ static void fl_accessible_text_field_paste_text(AtkEditableText* editable_text,
   g_return_if_fail(FL_IS_ACCESSIBLE_TEXT_FIELD(editable_text));
   FlAccessibleTextField* self = FL_ACCESSIBLE_TEXT_FIELD(editable_text);
 
-  perform_set_selection_action(self, position, position);
+  fl_accessible_node_perform_set_selection_action(FL_ACCESSIBLE_NODE(self),
+                                                  position, position);
 
   fl_accessible_node_perform_action(FL_ACCESSIBLE_NODE(editable_text),
                                     kFlutterSemanticsActionPaste, nullptr);

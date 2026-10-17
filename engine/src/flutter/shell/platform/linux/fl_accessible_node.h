@@ -177,6 +177,30 @@ void fl_accessible_node_perform_action(FlAccessibleNode* node,
                                        FlutterSemanticsAction action,
                                        GBytes* data);
 
+/**
+ * fl_accessible_node_perform_set_selection_action:
+ * @node: an #FlAccessibleNode.
+ * @base: the selection base, in UTF-16 code units of the node's text.
+ * @extent: the selection extent, in UTF-16 code units of the node's text.
+ *
+ * Performs kFlutterSemanticsActionSetSelection on this node with the
+ * {"base": @base, "extent": @extent} map the framework expects.
+ */
+void fl_accessible_node_perform_set_selection_action(FlAccessibleNode* node,
+                                                     gint base,
+                                                     gint extent);
+
+/**
+ * fl_accessible_node_emit_text_selection_changes:
+ * @nodes: (element-type FlAccessibleNode): the nodes of one semantics update.
+ *
+ * Emits the AtkText selection signals for the selectable static text in
+ * @nodes whose selection changed, after the whole update has been applied.
+ * When the selection of several nodes changed, only the node holding the
+ * selection extent emits them, so that a screen reader speaks the change once.
+ */
+void fl_accessible_node_emit_text_selection_changes(GPtrArray* nodes);
+
 G_END_DECLS
 
 #endif  // FLUTTER_SHELL_PLATFORM_LINUX_FL_ACCESSIBLE_NODE_H_

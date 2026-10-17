@@ -4,6 +4,8 @@
 
 #include "flutter/shell/platform/linux/fl_accessible_node.h"
 #include "flutter/shell/platform/linux/fl_engine_private.h"
+#include "flutter/shell/platform/linux/public/flutter_linux/fl_standard_message_codec.h"
+#include "flutter/shell/platform/linux/public/flutter_linux/fl_value.h"
 
 // Maps Flutter semantics actions to ATK actions.
 typedef struct {
@@ -61,6 +63,23 @@ struct FlAccessibleNodePrivate {
   gsize actions_length;
   GPtrArray* children;
   FlutterSemanticsFlags flags;
+
+  // The Flutter actions of this node, including those that have no ATK action
+  // such as kFlutterSemanticsActionSetSelection.
+  FlutterSemanticsAction flutter_actions;
+
+  // The selection of selectable static text, in UTF-16 code units of the
+  // name, or -1.
+  gint selection_base;
+  gint selection_extent;
+
+  // The caret an assistive technology set with AtkText::set_caret_offset, in
+  // UTF-16 code units, reported until the framework publishes a selection.
+  gint caret_offset;
+
+  // Whether the last selection update has signals that are not emitted yet.
+  gboolean selection_changed;
+  gboolean caret_moved;
 };
 
 enum { PROP_0, PROP_ENGINE, PROP_VIEW_ID, PROP_ID, PROP_LAST };
@@ -127,6 +146,53 @@ static gboolean is_enabled(FlutterSemanticsFlags flags) {
 static gboolean has_action(FlutterSemanticsAction actions,
                            FlutterSemanticsAction action) {
   return (actions & action) != 0;
+}
+
+// Returns TRUE if this node is selectable static text, such as a paragraph
+// under a SelectableRegion: a node that is not a text field and has the set
+// selection action. Its selection is in UTF-16 offsets of its name.
+static gboolean is_selectable_static_text(FlAccessibleNodePrivate* priv) {
+  return !priv->flags.is_text_field &&
+         has_action(priv->flutter_actions, kFlutterSemanticsActionSetSelection);
+}
+
+// Returns the number of UTF-16 code units [c] takes.
+static gint utf16_length(gunichar c) {
+  return c > 0xFFFF ? 2 : 1;
+}
+
+// Converts a UTF-16 offset in [text], as Flutter uses, to a character offset,
+// as ATK uses. An offset inside a surrogate pair maps to its character.
+static gint utf16_to_character_offset(const gchar* text, gint offset) {
+  if (offset < 0 || text == nullptr) {
+    return offset < 0 ? offset : 0;
+  }
+  gint characters = 0;
+  gint code_units = 0;
+  for (const gchar* p = text; *p != '\0'; p = g_utf8_next_char(p)) {
+    code_units += utf16_length(g_utf8_get_char(p));
+    if (code_units > offset) {
+      break;
+    }
+    characters++;
+  }
+  return characters;
+}
+
+// Converts a character offset in [text], as ATK uses, to a UTF-16 offset, as
+// Flutter uses. Offsets past the end of [text] are clamped to it.
+static gint character_to_utf16_offset(const gchar* text, gint offset) {
+  if (text == nullptr) {
+    return 0;
+  }
+  gint code_units = 0;
+  gint characters = 0;
+  for (const gchar* p = text; *p != '\0' && characters < offset;
+       p = g_utf8_next_char(p)) {
+    code_units += utf16_length(g_utf8_get_char(p));
+    characters++;
+  }
+  return code_units;
 }
 
 // Gets the nth action.
@@ -250,6 +316,11 @@ static AtkRole fl_accessible_node_get_role(AtkObject* accessible) {
   }
   if (priv->flags.is_image) {
     return ATK_ROLE_IMAGE;
+  }
+  // Selectable text is a paragraph, as Orca expects of text whose selection it
+  // follows.
+  if (is_selectable_static_text(priv)) {
+    return ATK_ROLE_PARAGRAPH;
   }
 
   return ATK_ROLE_PANEL;
@@ -450,6 +521,8 @@ static void fl_accessible_node_set_actions_impl(
     FlutterSemanticsAction actions) {
   FlAccessibleNodePrivate* priv = FL_ACCESSIBLE_NODE_GET_PRIVATE(self);
 
+  priv->flutter_actions = actions;
+
   // NOTE(robert-ancell): It appears that AtkAction doesn't have a method of
   // notifying that actions have changed, and even if it did an ATK client
   // might access the old IDs before checking for new ones. Keep an eye
@@ -468,9 +541,32 @@ static void fl_accessible_node_set_value_impl(FlAccessibleNode* self,
                                               const gchar* value) {}
 
 // Implements FlAccessibleNode::set_text_selection.
+//
+// The signals are emitted by fl_accessible_node_emit_text_selection_changes()
+// once the whole semantics update is known.
 static void fl_accessible_node_set_text_selection_impl(FlAccessibleNode* self,
                                                        gint base,
-                                                       gint extent) {}
+                                                       gint extent) {
+  FlAccessibleNodePrivate* priv = FL_ACCESSIBLE_NODE_GET_PRIVATE(self);
+  if (!is_selectable_static_text(priv) || base < 0 || extent < 0) {
+    base = -1;
+    extent = -1;
+  }
+
+  gboolean caret_moved = extent != priv->selection_extent;
+  gboolean has_selection = base != extent;
+  gboolean had_selection = priv->selection_base != priv->selection_extent;
+  priv->selection_changed = (has_selection || had_selection) &&
+                            (caret_moved || base != priv->selection_base);
+  // Clearing the selection moves no caret.
+  priv->caret_moved = caret_moved && extent != -1;
+
+  priv->selection_base = base;
+  priv->selection_extent = extent;
+  if (extent != -1) {
+    priv->caret_offset = -1;
+  }
+}
 
 // Implements FlAccessibleNode::set_text_direction.
 static void fl_accessible_node_set_text_direction_impl(
@@ -595,18 +691,47 @@ static gunichar fl_accessible_node_get_character_at_offset(AtkText* text,
   return g_utf8_get_char(g_utf8_offset_to_pointer(priv->name, offset));
 }
 
+// Returns TRUE if this node is selectable static text holding a non-empty
+// selection.
+static gboolean has_selection(FlAccessibleNodePrivate* priv) {
+  return is_selectable_static_text(priv) && priv->selection_base != -1 &&
+         priv->selection_base != priv->selection_extent;
+}
+
 // Implements AtkText::get_caret_offset.
-// Static text such as a heading has no caret.
+// Static text such as a heading has no caret. Selectable text reports the
+// selection extent, or the caret an assistive technology set.
 static gint fl_accessible_node_get_caret_offset(AtkText* text) {
-  (void)text;
-  return -1;
+  FlAccessibleNodePrivate* priv = FL_ACCESSIBLE_NODE_GET_PRIVATE(text);
+  if (!is_selectable_static_text(priv)) {
+    return -1;
+  }
+  gint caret = priv->selection_extent != -1 ? priv->selection_extent
+                                            : priv->caret_offset;
+  return utf16_to_character_offset(priv->name, caret);
+}
+
+// Implements AtkText::set_caret_offset.
+static gboolean fl_accessible_node_set_caret_offset(AtkText* text,
+                                                    gint offset) {
+  FlAccessibleNodePrivate* priv = FL_ACCESSIBLE_NODE_GET_PRIVATE(text);
+  if (!is_selectable_static_text(priv)) {
+    return FALSE;
+  }
+  gint caret = character_to_utf16_offset(priv->name, MAX(offset, 0));
+  // The framework only records a collapsed selection, so this node reports
+  // the caret until the framework publishes a selection.
+  priv->caret_offset = caret;
+  fl_accessible_node_perform_set_selection_action(FL_ACCESSIBLE_NODE(text),
+                                                  caret, caret);
+  return TRUE;
 }
 
 // Implements AtkText::get_n_selections.
 // Static text such as a heading cannot be selected, so report no selections.
 static gint fl_accessible_node_get_n_selections(AtkText* text) {
-  (void)text;
-  return 0;
+  FlAccessibleNodePrivate* priv = FL_ACCESSIBLE_NODE_GET_PRIVATE(text);
+  return has_selection(priv) ? 1 : 0;
 }
 
 // Implements AtkText::get_selection.
@@ -614,15 +739,74 @@ static gchar* fl_accessible_node_get_selection(AtkText* text,
                                                gint selection_num,
                                                gint* start_offset,
                                                gint* end_offset) {
-  (void)text;
-  (void)selection_num;
+  FlAccessibleNodePrivate* priv = FL_ACCESSIBLE_NODE_GET_PRIVATE(text);
+  if (selection_num != 0 || !has_selection(priv)) {
+    if (start_offset != nullptr) {
+      *start_offset = 0;
+    }
+    if (end_offset != nullptr) {
+      *end_offset = 0;
+    }
+    return nullptr;
+  }
+
+  gint start = utf16_to_character_offset(
+      priv->name, MIN(priv->selection_base, priv->selection_extent));
+  gint end = utf16_to_character_offset(
+      priv->name, MAX(priv->selection_base, priv->selection_extent));
   if (start_offset != nullptr) {
-    *start_offset = 0;
+    *start_offset = start;
   }
   if (end_offset != nullptr) {
-    *end_offset = 0;
+    *end_offset = end;
   }
-  return nullptr;
+  return g_utf8_substring(priv->name, start, end);
+}
+
+// Implements AtkText::add_selection.
+static gboolean fl_accessible_node_add_selection(AtkText* text,
+                                                 gint start_offset,
+                                                 gint end_offset) {
+  FlAccessibleNodePrivate* priv = FL_ACCESSIBLE_NODE_GET_PRIVATE(text);
+  // Flutter text has at most one selection.
+  if (!is_selectable_static_text(priv) || has_selection(priv)) {
+    return FALSE;
+  }
+  fl_accessible_node_perform_set_selection_action(
+      FL_ACCESSIBLE_NODE(text),
+      character_to_utf16_offset(priv->name, MAX(start_offset, 0)),
+      character_to_utf16_offset(priv->name, MAX(end_offset, 0)));
+  return TRUE;
+}
+
+// Implements AtkText::remove_selection.
+static gboolean fl_accessible_node_remove_selection(AtkText* text,
+                                                    gint selection_num) {
+  FlAccessibleNodePrivate* priv = FL_ACCESSIBLE_NODE_GET_PRIVATE(text);
+  if (selection_num != 0 || !has_selection(priv)) {
+    return FALSE;
+  }
+  // A collapsed selection only records a caret in the framework; negative
+  // offsets clear the selection.
+  fl_accessible_node_perform_set_selection_action(FL_ACCESSIBLE_NODE(text), -1,
+                                                  -1);
+  return TRUE;
+}
+
+// Implements AtkText::set_selection.
+static gboolean fl_accessible_node_set_selection(AtkText* text,
+                                                 gint selection_num,
+                                                 gint start_offset,
+                                                 gint end_offset) {
+  FlAccessibleNodePrivate* priv = FL_ACCESSIBLE_NODE_GET_PRIVATE(text);
+  if (selection_num != 0 || !is_selectable_static_text(priv)) {
+    return FALSE;
+  }
+  fl_accessible_node_perform_set_selection_action(
+      FL_ACCESSIBLE_NODE(text),
+      character_to_utf16_offset(priv->name, MAX(start_offset, 0)),
+      character_to_utf16_offset(priv->name, MAX(end_offset, 0)));
+  return TRUE;
 }
 
 // Implements AtkText::get_string_at_offset.
@@ -705,8 +889,12 @@ static void fl_accessible_node_text_interface_init(AtkTextIface* iface) {
   iface->get_text = fl_accessible_node_get_text;
   iface->get_character_at_offset = fl_accessible_node_get_character_at_offset;
   iface->get_caret_offset = fl_accessible_node_get_caret_offset;
+  iface->set_caret_offset = fl_accessible_node_set_caret_offset;
   iface->get_n_selections = fl_accessible_node_get_n_selections;
   iface->get_selection = fl_accessible_node_get_selection;
+  iface->add_selection = fl_accessible_node_add_selection;
+  iface->remove_selection = fl_accessible_node_remove_selection;
+  iface->set_selection = fl_accessible_node_set_selection;
   iface->get_text_at_offset = fl_accessible_node_get_text_at_offset;
   iface->get_string_at_offset = fl_accessible_node_get_string_at_offset;
 }
@@ -717,6 +905,9 @@ static void fl_accessible_node_init(FlAccessibleNode* self) {
   g_weak_ref_init(&priv->parent, nullptr);
   priv->actions = g_ptr_array_new();
   priv->children = g_ptr_array_new_with_free_func(g_object_unref);
+  priv->selection_base = -1;
+  priv->selection_extent = -1;
+  priv->caret_offset = -1;
 }
 
 FlAccessibleNode* fl_accessible_node_new(FlEngine* engine,
@@ -824,4 +1015,112 @@ void fl_accessible_node_perform_action(FlAccessibleNode* self,
   g_return_if_fail(FL_IS_ACCESSIBLE_NODE(self));
 
   return FL_ACCESSIBLE_NODE_GET_CLASS(self)->perform_action(self, action, data);
+}
+
+void fl_accessible_node_perform_set_selection_action(FlAccessibleNode* self,
+                                                     gint base,
+                                                     gint extent) {
+  g_return_if_fail(FL_IS_ACCESSIBLE_NODE(self));
+
+  g_autoptr(FlValue) value = fl_value_new_map();
+  fl_value_set_string_take(value, "base", fl_value_new_int(base));
+  fl_value_set_string_take(value, "extent", fl_value_new_int(extent));
+
+  g_autoptr(FlStandardMessageCodec) codec = fl_standard_message_codec_new();
+  g_autoptr(GBytes) message =
+      fl_message_codec_encode_message(FL_MESSAGE_CODEC(codec), value, nullptr);
+
+  fl_accessible_node_perform_action(self, kFlutterSemanticsActionSetSelection,
+                                    message);
+}
+
+// Returns the indexes of [node] and its ancestors in their parents, from the
+// root, which orders nodes in tree order.
+static GArray* get_tree_path(FlAccessibleNode* node) {
+  GArray* path = g_array_new(FALSE, FALSE, sizeof(gint));
+  g_autoptr(AtkObject) object = ATK_OBJECT(g_object_ref(node));
+  while (object != nullptr && FL_IS_ACCESSIBLE_NODE(object)) {
+    FlAccessibleNodePrivate* priv = FL_ACCESSIBLE_NODE_GET_PRIVATE(object);
+    g_array_prepend_val(path, priv->index);
+    AtkObject* parent = ATK_OBJECT(g_weak_ref_get(&priv->parent));
+    g_object_unref(object);
+    object = parent;
+  }
+  return path;
+}
+
+// Returns TRUE if [a] comes before [b] in tree order.
+static gboolean is_before_in_tree(FlAccessibleNode* a, FlAccessibleNode* b) {
+  g_autoptr(GArray) a_path = get_tree_path(a);
+  g_autoptr(GArray) b_path = get_tree_path(b);
+  for (guint i = 0; i < a_path->len && i < b_path->len; i++) {
+    gint a_index = g_array_index(a_path, gint, i);
+    gint b_index = g_array_index(b_path, gint, i);
+    if (a_index != b_index) {
+      return a_index < b_index;
+    }
+  }
+  return a_path->len < b_path->len;
+}
+
+void fl_accessible_node_emit_text_selection_changes(GPtrArray* nodes) {
+  // The nodes whose selection changed, and among them those that now hold a
+  // selection or caret.
+  g_autoptr(GPtrArray) changed = g_ptr_array_new();
+  g_autoptr(GPtrArray) selected = g_ptr_array_new();
+  gboolean is_backward = FALSE;
+  for (guint i = 0; i < nodes->len; i++) {
+    gpointer object = g_ptr_array_index(nodes, i);
+    if (!FL_IS_ACCESSIBLE_NODE(object)) {
+      continue;
+    }
+    FlAccessibleNode* node = FL_ACCESSIBLE_NODE(object);
+    FlAccessibleNodePrivate* priv = FL_ACCESSIBLE_NODE_GET_PRIVATE(node);
+    if (!priv->selection_changed && !priv->caret_moved) {
+      continue;
+    }
+    g_ptr_array_add(changed, node);
+    if (priv->selection_extent != -1) {
+      g_ptr_array_add(selected, node);
+      is_backward |= priv->selection_base > priv->selection_extent;
+    }
+  }
+  if (changed->len == 0) {
+    return;
+  }
+
+  // Only the node holding the selection extent speaks for the change: the last
+  // changed node in tree order for a forward selection, the first for a
+  // backward one.
+  GPtrArray* candidates = selected->len > 0 ? selected : changed;
+  FlAccessibleNode* extent_node =
+      FL_ACCESSIBLE_NODE(g_ptr_array_index(candidates, 0));
+  for (guint i = 1; i < candidates->len; i++) {
+    FlAccessibleNode* node =
+        FL_ACCESSIBLE_NODE(g_ptr_array_index(candidates, i));
+    if (is_before_in_tree(node, extent_node) == is_backward) {
+      extent_node = node;
+    }
+  }
+
+  for (guint i = 0; i < changed->len; i++) {
+    FlAccessibleNode* node = FL_ACCESSIBLE_NODE(g_ptr_array_index(changed, i));
+    FlAccessibleNodePrivate* priv = FL_ACCESSIBLE_NODE_GET_PRIVATE(node);
+    gboolean selection_changed = priv->selection_changed;
+    gboolean caret_moved = priv->caret_moved;
+    priv->selection_changed = FALSE;
+    priv->caret_moved = FALSE;
+    if (node != extent_node) {
+      continue;
+    }
+    if (selection_changed) {
+      g_signal_emit_by_name(node, "text-selection-changed", nullptr);
+    }
+    if (caret_moved) {
+      g_signal_emit_by_name(
+          node, "text-caret-moved",
+          utf16_to_character_offset(priv->name, priv->selection_extent),
+          nullptr);
+    }
+  }
 }
