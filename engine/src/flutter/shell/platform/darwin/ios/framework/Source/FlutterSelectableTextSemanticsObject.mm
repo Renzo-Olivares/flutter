@@ -43,6 +43,11 @@ NSUInteger IndexOfPosition(UITextPosition* position) {
 
 }  // namespace
 
+// The node's `frame` in its `coordinateSpace`, implemented in
+// SemanticsObject+UIFocusSystem.mm.
+@interface SemanticsObject (UIFocusSystem) <UIFocusItem, UIFocusItemContainer>
+@end
+
 @interface FlutterSelectableTextSemanticsObject () <UITextViewDelegate>
 @end
 
@@ -495,13 +500,12 @@ NSUInteger IndexOfPosition(UITextPosition* position) {
 
 // The node's frame in the coordinate space of `textInputView`.
 - (CGRect)textRect {
-  CGRect frame = self.accessibilityFrame;
   UIView* view = self.bridgeView;
-  UIScreen* screen = view.window.screen;
-  if (!screen) {
-    return frame;
+  id<UICoordinateSpace> coordinateSpace = self.coordinateSpace;
+  if (!view || !coordinateSpace) {
+    return CGRectZero;
   }
-  return [view convertRect:frame fromCoordinateSpace:screen.coordinateSpace];
+  return [coordinateSpace convertRect:self.frame toCoordinateSpace:view];
 }
 
 - (BOOL)isRightToLeft {
