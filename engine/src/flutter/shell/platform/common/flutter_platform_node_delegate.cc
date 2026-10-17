@@ -54,9 +54,11 @@ bool FlutterPlatformNodeDelegate::AccessibilityPerformAction(
     case ax::mojom::Action::kSetSelection: {
       // Only selectable static text, such as a paragraph under a
       // SelectableRegion, takes a selection here, in label offsets. Text
-      // fields keep their own selection handling.
-      const ui::AXNodeData& node_data = GetData();
-      if (node_data.role == ax::mojom::Role::kTextField ||
+      // fields keep their own selection handling. This reads the node's own
+      // data because platform delegates may report read-only text fields as
+      // static text.
+      const ui::AXNodeData& node_data = ax_node_->data();
+      if (node_data.IsTextField() ||
           !node_data.HasAction(ax::mojom::Action::kSetSelection)) {
         return false;
       }

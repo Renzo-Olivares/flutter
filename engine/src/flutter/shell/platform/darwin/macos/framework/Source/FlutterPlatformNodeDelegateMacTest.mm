@@ -230,6 +230,111 @@ TEST(FlutterPlatformNodeDelegateMac, CanPerformAction) {
   [engine shutDownEngine];
 }
 
+// A paragraph under a SelectableRegion is static text with the set selection
+// action. VoiceOver writes its selection through AXSelectedTextRange.
+TEST(FlutterPlatformNodeDelegateMac, SetSelectedTextRangeOnStaticTextDispatchesSetSelection) {
+  FlutterViewController* viewController = CreateTestViewController();
+  FlutterEngine* engine = viewController.engine;
+
+  // Attach the view to a NSWindow.
+  NSWindow* window = [[NSWindow alloc] initWithContentRect:NSMakeRect(0, 0, 800, 600)
+                                                 styleMask:NSBorderlessWindowMask
+                                                   backing:NSBackingStoreBuffered
+                                                     defer:NO];
+  window.contentView = viewController.view;
+
+  engine.semanticsEnabled = YES;
+  auto bridge = viewController.accessibilityBridge.lock();
+  FlutterSemanticsNode2 root;
+  FlutterSemanticsFlags flags = FlutterSemanticsFlags{};
+  root.flags2 = &flags;
+  root.id = 0;
+  root.label = "root";
+  root.hint = "";
+  root.value = "";
+  root.increased_value = "";
+  root.decreased_value = "";
+  root.tooltip = "";
+  root.child_count = 2;
+  int32_t children[] = {1, 2};
+  root.children_in_traversal_order = children;
+  root.custom_accessibility_actions_count = 0;
+  root.identifier = "";
+  bridge->AddFlutterSemanticsNodeUpdate(root);
+
+  FlutterSemanticsNode2 paragraph;
+  FlutterSemanticsFlags paragraph_flags = FlutterSemanticsFlags{};
+  paragraph.flags2 = &paragraph_flags;
+  paragraph.id = 1;
+  paragraph.actions = FlutterSemanticsAction::kFlutterSemanticsActionSetSelection;
+  paragraph.text_selection_base = -1;
+  paragraph.text_selection_extent = -1;
+  paragraph.label = "Hello world";
+  paragraph.hint = "";
+  paragraph.value = "";
+  paragraph.increased_value = "";
+  paragraph.decreased_value = "";
+  paragraph.tooltip = "";
+  paragraph.child_count = 0;
+  paragraph.custom_accessibility_actions_count = 0;
+  paragraph.identifier = "";
+  bridge->AddFlutterSemanticsNodeUpdate(paragraph);
+
+  // A read-only text field (SelectableText) is reported as static text on
+  // macOS, but it is still a text field.
+  FlutterSemanticsNode2 field = paragraph;
+  FlutterSemanticsFlags field_flags = FlutterSemanticsFlags{
+      .is_focused = FlutterTristate::kFlutterTristateTrue,
+      .is_text_field = true,
+      .is_read_only = true,
+  };
+  field.flags2 = &field_flags;
+  field.id = 2;
+  field.label = "";
+  field.value = "selectable text";
+  field.text_selection_base = 1;
+  field.text_selection_extent = 1;
+  bridge->AddFlutterSemanticsNodeUpdate(field);
+
+  bridge->CommitUpdates();
+
+  // Set up embedder API mock.
+  std::vector<FlutterSemanticsAction> called_actions;
+  std::vector<uint64_t> called_ids;
+  std::vector<std::vector<uint8_t>> called_data;
+  engine.embedderAPI.DispatchSemanticsAction = MOCK_ENGINE_PROC(
+      DispatchSemanticsAction, ([&called_ids, &called_actions, &called_data](
+                                    auto engine, uint64_t id, FlutterSemanticsAction action,
+                                    const uint8_t* data, size_t data_length) {
+        called_ids.push_back(id);
+        called_actions.push_back(action);
+        called_data.emplace_back(data, data + data_length);
+        return kSuccess;
+      }));
+
+  NSAccessibilityElement* native_paragraph =
+      bridge->GetFlutterPlatformNodeDelegateFromID(1).lock()->GetNativeViewAccessible();
+  [native_paragraph setAccessibilitySelectedTextRange:NSMakeRange(1, 3)];
+
+  ASSERT_EQ(called_actions.size(), 1u);
+  EXPECT_EQ(called_actions[0], FlutterSemanticsAction::kFlutterSemanticsActionSetSelection);
+  EXPECT_EQ(called_ids[0], 1u);
+  // {"base": 1, "extent": 4} in the StandardMessageCodec encoding.
+  std::vector<uint8_t> expected = {
+      13, 2, 7,   4,   'b', 'a', 's', 'e', 3, 1, 0, 0, 0,
+      7,  6, 'e', 'x', 't', 'e', 'n', 't', 3, 4, 0, 0, 0,
+  };
+  EXPECT_EQ(called_data[0], expected);
+
+  NSAccessibilityElement* native_field =
+      bridge->GetFlutterPlatformNodeDelegateFromID(2).lock()->GetNativeViewAccessible();
+  [native_field setAccessibilitySelectedTextRange:NSMakeRange(0, 4)];
+  EXPECT_EQ(called_actions.size(), 1u);
+
+  [engine setViewController:nil];
+  [engine shutDownEngine];
+}
+
 // NOLINTEND(clang-analyzer-core.StackAddressEscape)
 
 TEST(FlutterPlatformNodeDelegateMac, TextFieldUsesFlutterTextField) {
