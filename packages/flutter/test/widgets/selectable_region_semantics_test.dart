@@ -973,6 +973,41 @@ void main() {
       expect(_nodeWithLabel(tester, 'First').flagsCollection.isFocused, Tristate.none);
     });
 
+    testWidgets('a heading paragraph is selectable and can represent the focus', (
+      WidgetTester tester,
+    ) async {
+      // On web a heading is a semantics role; it is still plain text.
+      final focusNode = FocusNode();
+      addTearDown(focusNode.dispose);
+      await tester.pumpWidget(
+        _region(
+          focusNode: focusNode,
+          child: Column(
+            children: <Widget>[
+              Semantics(header: true, child: const Text('Title')),
+              const Text('Body'),
+            ],
+          ),
+        ),
+      );
+      await tester.pump();
+      focusNode.requestFocus();
+      await tester.pump();
+      await tester.pump();
+      final SemanticsNode title = _nodeWithLabel(tester, 'Title');
+      expect(title.flagsCollection.isHeader, isTrue);
+      expect(title.getSemanticsData().hasAction(SemanticsAction.setSelection), isTrue);
+      expect(title.flagsCollection.isFocused, Tristate.isTrue);
+      expect(_nodeWithLabel(tester, 'Body').flagsCollection.isFocused, Tristate.none);
+
+      tester.semantics.setSelection(find.semantics.byLabel('Title'), base: 0, extent: 2);
+      await tester.pump();
+      expect(
+        title.getSemanticsData().textSelection,
+        const TextSelection(baseOffset: 0, extentOffset: 2),
+      );
+    });
+
     testWidgets('an anchor absorbed into a button never reports focus', (
       WidgetTester tester,
     ) async {
@@ -1548,10 +1583,13 @@ void main() {
       await tester.pump();
       tester.semantics.setSelection(find.semantics.byLabel('Hello world'), base: 0, extent: 1);
       await tester.pump(window);
-      final bool speaks = switch (defaultTargetPlatform) {
-        TargetPlatform.macOS || TargetPlatform.windows || TargetPlatform.iOS => true,
-        TargetPlatform.android || TargetPlatform.linux || TargetPlatform.fuchsia => false,
-      };
+      // Web is checked first: it announces for every platform.
+      final bool speaks =
+          kIsWeb ||
+          switch (defaultTargetPlatform) {
+            TargetPlatform.macOS || TargetPlatform.windows || TargetPlatform.iOS => true,
+            TargetPlatform.android || TargetPlatform.linux || TargetPlatform.fuchsia => false,
+          };
       expect(messages(tester), speaks ? <String>['H selected'] : isEmpty);
       // Keyboard changes follow the same table.
       await sendKeyCombination(tester, shiftRight);

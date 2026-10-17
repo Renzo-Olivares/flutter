@@ -6915,7 +6915,7 @@ class SemanticsConfiguration {
         selectableTextLength == labelLength &&
         actions & ~_kSelectableTextActions == 0 &&
         !flags.isButton &&
-        !_hasExplicitRoleFor(flags, role) &&
+        !_hasExplicitRoleFor(flags, role, includeHeader: false) &&
         _hasOnlyPlainTextFlags(flags) &&
         value.isEmpty &&
         hint.isEmpty;
@@ -7091,13 +7091,21 @@ class SemanticsConfiguration {
 
   bool get _hasExplicitRole => _hasExplicitRoleFor(_flags, _role);
 
-  static bool _hasExplicitRoleFor(SemanticsFlags flags, SemanticsRole role) {
+  // Whether `flags` and `role` describe an explicit role. A heading is a role
+  // on web and a trait elsewhere; `includeHeader: false` treats it as a trait
+  // everywhere, which is what the selectable-text filter needs (a heading is
+  // still plain text) while merge compatibility keeps the web rule.
+  static bool _hasExplicitRoleFor(
+    SemanticsFlags flags,
+    SemanticsRole role, {
+    bool includeHeader = true,
+  }) {
     if (role != SemanticsRole.none) {
       return true;
     }
     if (flags.isTextField ||
         // In non web platforms, the header is a trait.
-        (flags.isHeader && kIsWeb) ||
+        (flags.isHeader && kIsWeb && includeHeader) ||
         flags.isSlider ||
         flags.isLink ||
         flags.scopesRoute ||
