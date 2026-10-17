@@ -955,6 +955,9 @@ class _SelectableTextContainerState extends State<_SelectableTextContainer> {
     if (_selectionSemanticsDelegate == null) {
       return;
     }
+    if (_selectionStatus?.value == SelectableRegionSelectionStatus.changing) {
+      return; // The commit publishes.
+    }
     // Changes made outside a commit (an app calling clearSelection, a layout
     // that disposed fragments) have no status transition to publish on.
     scheduleMicrotask(() {

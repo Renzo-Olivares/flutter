@@ -242,6 +242,10 @@ class _RenderSelectableAdapter extends RenderProxyBox
           }
           _start = newOffset;
         }
+      case SelectionEventType.selectContentRange:
+        // Offsets index text; this selectable has none, so it is never the
+        // target of such an event.
+        result = SelectionResult.none;
       case SelectionEventType.directionallyExtendSelection:
         result = SelectionResult.end;
         final DirectionallyExtendSelectionEvent extendSelectionEvent =

@@ -462,26 +462,29 @@ class RenderParagraph extends RenderBox
         return;
       case RenderComparison.metadata:
         _textPainter.text = value;
+        _semanticsInfo = null;
         _cachedCombinedSemanticsInfos = null;
-        _publishedSelections = null;
         markNeedsSemanticsUpdate();
       case RenderComparison.paint:
         _textPainter.text = value;
+        _semanticsInfo = null;
         _cachedAttributedLabels = null;
         _cachedCombinedSemanticsInfos = null;
-        _publishedSelections = null;
         markNeedsPaint();
         markNeedsSemanticsUpdate();
       case RenderComparison.layout:
+        // Only this branch changes the plain text, so only here does the
+        // published selection snapshot stop indexing it; disposing the
+        // fragments clears it and layout schedules the semantics update.
         _textPainter.text = value;
         _overflowShader = null;
+        _semanticsInfo = null;
         _cachedAttributedLabels = null;
         _cachedCombinedSemanticsInfos = null;
         markNeedsLayout();
         _removeSelectionRegistrarSubscription();
         _disposeSelectableFragments();
         _updateSelectionRegistrarSubscription();
-        markNeedsSemanticsUpdate();
     }
   }
 
@@ -544,11 +547,12 @@ class RenderParagraph extends RenderBox
     if (_selectionSemanticsDelegate == null || (_lastSelectableFragments?.isEmpty ?? true)) {
       return false;
     }
-    final List<InlineSpanSemanticsInformation> infos = text.getSemanticsInformation();
+    final List<InlineSpanSemanticsInformation> infos = _semanticsInfo ??= text
+        .getSemanticsInformation();
     var hasPlaceholder = false;
     for (final info in infos) {
       if (info.recognizer != null || info.semanticsIdentifier != null) {
-        return combineSemanticsInfo(infos).any(_isPureTextInfo);
+        return (_cachedCombinedSemanticsInfos ??= combineSemanticsInfo(infos)).any(_isPureTextInfo);
       }
       hasPlaceholder = hasPlaceholder || info.isPlaceholder;
     }

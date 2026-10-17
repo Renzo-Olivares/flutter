@@ -779,6 +779,10 @@ class SelectableRegionState extends State<SelectableRegion>
 
   void _didDetachParagraph(RenderParagraph paragraph) {
     _selectableParagraphs.remove(paragraph);
+    if (_accessibilityAnchor case (:final Selectable target, offset: _)
+        when paragraph.selectableBelongsToParagraph(target)) {
+      _accessibilityAnchor = null;
+    }
     if (identical(paragraph, _focusRepresentedBy)) {
       _focusRepresentedBy = null;
     }
@@ -859,7 +863,9 @@ class SelectableRegionState extends State<SelectableRegion>
     final Selectable? target = _accessibilityAnchor?.target;
     if (target != null) {
       for (final RenderParagraph paragraph in _selectableParagraphs) {
-        if (paragraph.attached && paragraph.selectableBelongsToParagraph(target)) {
+        if (paragraph.attached &&
+            paragraph.hasSelectableTextSemantics &&
+            paragraph.selectableBelongsToParagraph(target)) {
           return _anchorParagraph = paragraph;
         }
       }
@@ -3973,7 +3979,9 @@ class _SelectionChangeAnnouncer {
   /// Deltas longer than this are announced as a character count.
   static const int _kMaxSpokenCharacters = 200;
 
-  _SelectionSnapshot _lastAnnounced = _SelectionSnapshot.empty;
+  // The state at the last announcement, or null when a silent commit made
+  // it unknown (the next announcement then describes the whole selection).
+  _SelectionSnapshot? _lastAnnounced = _SelectionSnapshot.empty;
   _SelectionSnapshot? _pending;
   FlutterView? _pendingView;
   WidgetsLocalizations? _pendingLocalizations;
@@ -3990,17 +3998,24 @@ class _SelectionChangeAnnouncer {
   void didCommit(_SelectionChangeSource source) {
     final bool isAll = _nextCommitIsSelectAll;
     _nextCommitIsSelectAll = false;
-    final _SelectionSnapshot current = _state._selectionSnapshot().copyWith(isAll: isAll);
-    if (source == _SelectionChangeSource.focusLoss || !_state._mayAnnounceSelectionChange(source)) {
-      // Silent: the next announcement is relative to the new state.
+    if (source == _SelectionChangeSource.focusLoss) {
+      // Silent, and the selection is gone.
       _cancel();
-      _lastAnnounced = current;
+      _lastAnnounced = _SelectionSnapshot.empty;
       return;
     }
-    _pending = current;
+    if (!_state._mayAnnounceSelectionChange(source)) {
+      // Silent; the selection is not even gathered.
+      _cancel();
+      _lastAnnounced = null;
+      return;
+    }
+    _pending = _state._selectionSnapshot().copyWith(isAll: isAll);
     // Captured now, while the region is mounted; flushing may happen in dispose.
     _pendingView = View.of(_state.context);
-    _pendingLocalizations = WidgetsLocalizations.of(_state.context);
+    _pendingLocalizations =
+        Localizations.of<WidgetsLocalizations>(_state.context, WidgetsLocalizations) ??
+        const DefaultWidgetsLocalizations();
     _timer?.cancel();
     _timer = Timer(_kCoalescingWindow, _flush);
   }
@@ -4020,7 +4035,11 @@ class _SelectionChangeAnnouncer {
     if (current == null || view == null || localizations == null) {
       return;
     }
-    final String? message = describe(localizations, _lastAnnounced, current);
+    final String? message = describe(
+      localizations,
+      _lastAnnounced ?? _SelectionSnapshot.empty,
+      current,
+    );
     _lastAnnounced = current;
     if (message != null) {
       _state._announce(view, localizations, message);
@@ -4059,13 +4078,21 @@ class _SelectionChangeAnnouncer {
       return _selected(localizations, current.text.substring(previous.end - current.start));
     }
     if (previous.start == current.start && current.end < previous.end) {
-      return _unselected(localizations, previous.text.substring(current.end - previous.start));
+      return _unselected(
+        localizations,
+        previous.text.substring(current.end - previous.start),
+        remaining: current,
+      );
     }
     if (previous.end == current.end && current.start < previous.start) {
       return _selected(localizations, current.text.substring(0, previous.start - current.start));
     }
     if (previous.end == current.end && current.start > previous.start) {
-      return _unselected(localizations, previous.text.substring(0, current.start - previous.start));
+      return _unselected(
+        localizations,
+        previous.text.substring(0, current.start - previous.start),
+        remaining: current,
+      );
     }
     if (previous.text.length > _kMaxSpokenCharacters ||
         current.text.length > _kMaxSpokenCharacters) {
@@ -4084,13 +4111,15 @@ class _SelectionChangeAnnouncer {
     return localizations.selectedTextAnnouncement(_spoken(localizations, text));
   }
 
-  static String _unselected(WidgetsLocalizations localizations, String text) {
+  static String _unselected(
+    WidgetsLocalizations localizations,
+    String text, {
+    required _SelectionSnapshot remaining,
+  }) {
     if (text.length > _kMaxSpokenCharacters) {
-      // There is no count form for unselected text; a long shrink is spoken
-      // as a count of what is still selected by the caller's next commit.
-      return localizations.unselectedTextAnnouncement(
-        localizations.selectedCharacterCountAnnouncement(text.length),
-      );
+      // There is no count form for unselected text: speak what is still
+      // selected instead (as a count when that is long too).
+      return _selected(localizations, remaining.text);
     }
     return localizations.unselectedTextAnnouncement(_spoken(localizations, text));
   }

@@ -4011,6 +4011,7 @@ class SemanticsNode with DiagnosticableTreeMixin {
         selectableTextSelection = textSelection;
         textSelection = null;
       }
+      bool hasTextField = _flags.isTextField;
       bool selectableTextRepresentsFocus = _selectableTextRepresentsFocus;
       Tristate isFocusedWithoutSelectableText = _selectableTextRepresentsFocus
           ? _isFocusedWithoutSelectableText
@@ -4034,7 +4035,12 @@ class SemanticsNode with DiagnosticableTreeMixin {
           selectableTextLength = selectableTextLength == null ? node._selectableTextLength : -1;
         }
         if (node._flags.isTextField) {
-          textSelection = node._textSelection;
+          if (hasTextField) {
+            textSelection ??= node._textSelection;
+          } else {
+            textSelection = node._textSelection;
+          }
+          hasTextField = true;
         } else if (node._selectableTextLength != null) {
           selectableTextSelection ??= node._textSelection;
         } else {
@@ -7218,11 +7224,18 @@ class SemanticsConfiguration {
       );
       _selectableTextRepresentsFocus = true;
     }
+    final bool wasTextField = _flags.isTextField;
     _flags = _flags.merge(child._flags);
     _linkUrl ??= child._linkUrl;
     if (child.isTextField) {
-      // A text field's selection always wins over a label's.
-      _textSelection = child._textSelection;
+      if (wasTextField) {
+        // Between text fields the first one's selection wins, as before.
+        _textSelection ??= child._textSelection;
+      } else {
+        // A text field's selection always replaces a label's, even when the
+        // field has none.
+        _textSelection = child._textSelection;
+      }
     } else if (child._selectableTextLength != null) {
       // Selectable text never publishes a selection on a text field.
       if (!_flags.isTextField) {
