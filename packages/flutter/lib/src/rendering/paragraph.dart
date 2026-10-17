@@ -335,7 +335,7 @@ class _UnspecifiedTextScaler extends TextScaler {
 /// It is not part of the stable API.
 @internal
 abstract class SelectionSemanticsDelegate {
-  /// Selects `[start, end)` of [target]'s content, in the target's own
+  /// Selects `[start, end)` of the content of `target`, in the target's own
   /// offsets (plain-text code units of the paragraph for a paragraph
   /// fragment).
   ///
@@ -343,21 +343,21 @@ abstract class SelectionSemanticsDelegate {
   /// assistive technology is reading and has no other side effect.
   void select(Selectable target, int start, int end);
 
-  /// Clears the selection when [target] holds part of it, as requested by an
+  /// Clears the selection when `target` holds part of it, as requested by an
   /// assistive technology that sent negative offsets.
   void clearSelection(Selectable target);
 
   /// Copies the current selection to the clipboard, keeping the selection.
   void copy();
 
-  /// Whether [paragraph] is the one node that represents the owner's keyboard
+  /// Whether `paragraph` is the one node that represents the owner's keyboard
   /// focus right now.
   bool isFocusAnchor(RenderParagraph paragraph);
 
-  /// Called when [paragraph] starts using this delegate.
+  /// Called when `paragraph` starts using this delegate.
   void didAttachParagraph(RenderParagraph paragraph);
 
-  /// Called when [paragraph] stops using this delegate or is disposed.
+  /// Called when `paragraph` stops using this delegate or is disposed.
   void didDetachParagraph(RenderParagraph paragraph);
 }
 
@@ -559,6 +559,7 @@ class RenderParagraph extends RenderBox
   // plain-text offsets: no own node and a label equal to its text.
   static bool _isPureTextInfo(InlineSpanSemanticsInformation info) {
     return !info.requiresOwnNode &&
+        info.text.isNotEmpty &&
         (info.semanticsLabel == null || info.semanticsLabel == info.text);
   }
 

@@ -205,17 +205,17 @@ abstract class WidgetsLocalizations {
   /// from non-empty to empty.
   String get noResultsFound => 'No results found';
 
-  /// The announcement made when [text] becomes selected in a
+  /// The announcement made when `text` becomes selected in a
   /// [SelectableRegion], on platforms whose screen reader does not describe
   /// the change from the selection itself.
   ///
-  /// [text] is a slice of the user's content and is spoken verbatim.
+  /// The `text` is a slice of the user's content and is spoken verbatim.
   String selectedTextAnnouncement(String text) => '$text selected';
 
-  /// The announcement made when [text] stops being selected in a
+  /// The announcement made when `text` stops being selected in a
   /// [SelectableRegion].
   ///
-  /// [text] is a slice of the user's content and is spoken verbatim.
+  /// The `text` is a slice of the user's content and is spoken verbatim.
   String unselectedTextAnnouncement(String text) => '$text unselected';
 
   /// The announcement made when the selection in a [SelectableRegion] is
@@ -223,7 +223,7 @@ abstract class WidgetsLocalizations {
   String get selectionClearedAnnouncement => 'Selection cleared';
 
   /// The announcement made instead of [selectedTextAnnouncement] when the
-  /// newly selected text is too long to read aloud; [count] is its length in
+  /// newly selected text is too long to read aloud; `count` is its length in
   /// characters.
   String selectedCharacterCountAnnouncement(int count) {
     return count == 1 ? '1 character selected' : '$count characters selected';
@@ -233,8 +233,8 @@ abstract class WidgetsLocalizations {
   /// becomes selected.
   String get allTextSelectedAnnouncement => 'All text selected';
 
-  /// The announcement made when [unselected] stops being selected and
-  /// [selected] becomes selected in one step, for example when a screen
+  /// The announcement made when `unselected` stops being selected and
+  /// `selected` becomes selected in one step, for example when a screen
   /// reader moves the selection to another paragraph of a
   /// [SelectableRegion].
   String selectionReplacedAnnouncement(String unselected, String selected) {

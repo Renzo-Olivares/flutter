@@ -505,7 +505,7 @@ class SelectWordSelectionEvent extends SelectionEvent {
 /// This event carries a selection that was requested through accessibility
 /// (for example a screen reader writing a range onto a paragraph's semantics
 /// node) back to the [Selectable] that owns the content, without converting
-/// offsets into screen positions. Only the [target] changes its selection and
+/// offsets into screen positions. Only the target changes its selection and
 /// returns [SelectionResult.end]; every other [Selectable] returns
 /// [SelectionResult.none] and leaves its selection alone. Containers forward
 /// the event to their children and record which child answered.
@@ -524,9 +524,9 @@ class SelectWordSelectionEvent extends SelectionEvent {
 /// Custom [Selectable] and [SelectionContainerDelegate] implementations that
 /// switch exhaustively over [SelectionEventType] should handle
 /// [SelectionEventType.selectContentRange] by returning [SelectionResult.none]
-/// unless they are the [target].
+/// unless they are the target.
 class SelectContentRangeSelectionEvent extends SelectionEvent {
-  /// Creates an event that selects `[startOffset, endOffset)` of [target].
+  /// Creates an event that selects `[startOffset, endOffset)` of `target`.
   const SelectContentRangeSelectionEvent({
     required Selectable this.target,
     required this.startOffset,
@@ -549,12 +549,12 @@ class SelectContentRangeSelectionEvent extends SelectionEvent {
   /// event.
   final Selectable? target;
 
-  /// The offset of the selection base in the [target]'s content.
+  /// The offset of the selection base in the content of [target].
   ///
   /// Ignored by an edge event.
   final int startOffset;
 
-  /// The offset of the selection extent in the [target]'s content.
+  /// The offset of the selection extent in the content of [target].
   ///
   /// Ignored by an edge event.
   final int endOffset;

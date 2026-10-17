@@ -460,7 +460,7 @@ class SelectableRegionState extends State<SelectableRegion>
 
   /// Announces committed selection changes to assistive technologies on the
   /// platforms where the screen reader cannot describe them from the
-  /// selection itself (DESIGN 1.5).
+  /// selection itself. See flutter/flutter#182909.
   late final _SelectionChangeAnnouncer _selectionChangeAnnouncer = _SelectionChangeAnnouncer(this);
 
   /// Where the assistive technology last placed a caret or started a range,
@@ -650,7 +650,7 @@ class SelectableRegionState extends State<SelectableRegion>
     _pendingSource = _SelectionChangeSource.pointerOrKeyboard;
   }
 
-  /// Whether this region announces a selection change of the given [source]
+  /// Whether this region announces a selection change of the given `source`
   /// itself: an accessibility client is attached, the platform honors
   /// announcements, and the policy says the screen reader will not describe
   /// the change from the paragraph nodes.
@@ -688,8 +688,7 @@ class SelectableRegionState extends State<SelectableRegion>
     if (start == null) {
       return _SelectionSnapshot.empty;
     }
-    final text = buffer.toString();
-    return _SelectionSnapshot(start: start, text: text, isAll: start == 0 && text.length == offset);
+    return _SelectionSnapshot(start: start, text: buffer.toString());
   }
 
   void _announce(FlutterView view, WidgetsLocalizations localizations, String message) {
@@ -708,7 +707,7 @@ class SelectableRegionState extends State<SelectableRegion>
     });
   }
 
-  /// Commits a discrete selection change tagged with its [source]: the status
+  /// Commits a discrete selection change tagged with its `source`: the status
   /// goes to [SelectableRegionSelectionStatus.changing] and is finalized in
   /// the same call.
   void _commitSelectionChange(_SelectionChangeSource source) {
@@ -717,7 +716,7 @@ class SelectableRegionState extends State<SelectableRegion>
     _finalizeSelectableRegionStatus();
   }
 
-  /// Applies a selection requested through accessibility to the [target]
+  /// Applies a selection requested through accessibility to the `target`
   /// selectable, in the target's own offsets.
   ///
   /// A collapsed range only records [_accessibilityAnchor]: screen readers
@@ -743,7 +742,7 @@ class SelectableRegionState extends State<SelectableRegion>
     _commitSelectionChange(_SelectionChangeSource.assistiveTechnology);
   }
 
-  /// Clears the selection when [target] holds part of it, as requested by an
+  /// Clears the selection when `target` holds part of it, as requested by an
   /// assistive technology through negative offsets.
   void _clearSelectionByAccessibility(Selectable target) {
     if (target.getSelection() == null) {
@@ -754,7 +753,7 @@ class SelectableRegionState extends State<SelectableRegion>
     _commitSelectionChange(_SelectionChangeSource.assistiveTechnology);
   }
 
-  // Focus representation (DESIGN 1.6): while this region's focus node has
+  // Focus representation (flutter/flutter#182909): while this region's focus node has
   // primary focus and semantics is enabled, exactly one paragraph, the
   // anchor, publishes isFocused on its pure-text node, so a screen-reader
   // user hears that they reached the region.
@@ -828,6 +827,24 @@ class SelectableRegionState extends State<SelectableRegion>
     return MatrixUtils.transformRect(box.getTransformTo(null), Offset.zero & box.size);
   }
 
+  /// The part of this region that is on screen, in global coordinates: the
+  /// region's rectangle clipped to the view, so that a region inside a
+  /// scrollable that is taller than the screen does not count paragraphs
+  /// scrolled off screen as visible.
+  Rect? _visibleRegionRect() {
+    final RenderObject? regionRenderObject = context.findRenderObject();
+    if (regionRenderObject is! RenderBox) {
+      return null;
+    }
+    final Rect? regionRect = _globalRectOf(regionRenderObject);
+    final RenderObject? root = regionRenderObject.owner?.rootNode;
+    if (regionRect == null || root is! RenderBox || !root.hasSize) {
+      return regionRect;
+    }
+    final Rect visible = regionRect.intersect(Offset.zero & root.size);
+    return visible.isEmpty ? regionRect : visible;
+  }
+
   /// The paragraph that represents this region's focus: the one holding the
   /// last accessibility caret or range, else the one under the last pointer
   /// down, else the first visible paragraph with selectable text in screen
@@ -856,11 +873,7 @@ class SelectableRegionState extends State<SelectableRegion>
         }
       }
     }
-    final RenderObject? regionRenderObject = context.findRenderObject();
-    if (regionRenderObject is! RenderBox) {
-      return null;
-    }
-    final Rect? visibleRect = _globalRectOf(regionRenderObject);
+    final Rect? visibleRect = _visibleRegionRect();
     if (visibleRect == null) {
       return null;
     }
@@ -1932,15 +1945,15 @@ class SelectableRegionState extends State<SelectableRegion>
   }
 
   /// Starts a keyboard selection where none exists, so that an extend intent
-  /// has something to extend (DESIGN 3).
+  /// has something to extend (flutter/flutter#182909).
   ///
   /// Only when semantics is enabled (an accessibility client is attached) and
   /// this region's focus node has primary focus; otherwise, as today, extend
   /// intents without a selection do nothing. The selection starts collapsed at
   /// the last accessibility caret or range if its selectable is still there,
-  /// else at the start of the first visible selectable when moving forward or
-  /// the end of the last visible one when moving backward. Returns whether a
-  /// selection now exists.
+  /// else at the start of the paragraph that represents this region's focus
+  /// when moving forward, else at the start of the first or the end of the
+  /// last visible selectable. Returns whether a selection now exists.
   bool _startKeyboardSelection({required bool forward}) {
     if (_selectionDelegate.value.hasSelection) {
       return true;
@@ -1959,16 +1972,24 @@ class SelectableRegionState extends State<SelectableRegion>
     }
     if (result != SelectionResult.end) {
       final SelectionEdge edge = forward ? SelectionEdge.start : SelectionEdge.end;
-      final RenderObject? regionRenderObject = context.findRenderObject();
-      final Rect? visibleRect = regionRenderObject is RenderBox
-          ? _globalRectOf(regionRenderObject)
-          : null;
-      result = root.dispatchSelectionEvent(
-        SelectContentRangeSelectionEvent.atEdge(edge: edge, globalVisibleRect: visibleRect),
-      );
-      if (result != SelectionResult.end && visibleRect != null) {
-        // Nothing is visible; start at the edge of the content instead.
-        result = root.dispatchSelectionEvent(SelectContentRangeSelectionEvent.atEdge(edge: edge));
+      // Moving forward starts at the paragraph that represents the focus;
+      // moving backward starts at the end of the last visible paragraph.
+      final RenderParagraph? anchorParagraph = forward ? _resolveAnchorParagraph() : null;
+      final Rect? anchorRect = anchorParagraph == null ? null : _globalRectOf(anchorParagraph);
+      if (anchorRect != null) {
+        result = root.dispatchSelectionEvent(
+          SelectContentRangeSelectionEvent.atEdge(edge: edge, globalVisibleRect: anchorRect),
+        );
+      }
+      if (result != SelectionResult.end) {
+        final Rect? visibleRect = _visibleRegionRect();
+        result = root.dispatchSelectionEvent(
+          SelectContentRangeSelectionEvent.atEdge(edge: edge, globalVisibleRect: visibleRect),
+        );
+        if (result != SelectionResult.end && visibleRect != null) {
+          // Nothing is visible; start at the edge of the content instead.
+          result = root.dispatchSelectionEvent(SelectContentRangeSelectionEvent.atEdge(edge: edge));
+        }
       }
     }
     _adjustingSelectionEnd = null;
@@ -2182,7 +2203,7 @@ class SelectableRegionState extends State<SelectableRegion>
       return null;
     }
     // With an accessibility client attached, a second Escape clears the
-    // selection (DESIGN 1.6, D2.17); sighted users without one see today's
+    // selection (flutter/flutter#182909); sighted users without one see today's
     // behavior. Escape with nothing to clear still reaches ancestors.
     if (SemanticsBinding.instance.semanticsEnabled && _selectionDelegate.value.hasSelection) {
       clearSelection();
@@ -2195,6 +2216,7 @@ class SelectableRegionState extends State<SelectableRegion>
   @override
   void selectAll([SelectionChangedCause? cause]) {
     clearSelection();
+    _selectionChangeAnnouncer.didSelectAll();
     _selectable?.dispatchSelectionEvent(const SelectAllSelectionEvent());
     if (cause == SelectionChangedCause.toolbar) {
       _showHandles();
@@ -3861,17 +3883,19 @@ enum SelectableRegionSelectionStatus {
 }
 
 // Whether VoiceOver on macOS speaks a selection change from the paragraph
-// node's notification. Flipped by the macOS embedder change once probe P1 of
-// flutter/flutter#182909 shows it does; until then the region announces.
+// node's notification; until then the region announces.
+// TODO(Renzo-Olivares): Flip from the macOS embedder change once VoiceOver is
+// verified to speak the node notification, https://github.com/flutter/flutter/issues/182909.
 const bool _kMacOSVoiceOverSpeaksNodeSelection = false;
 
 // Whether VoiceOver on iOS speaks a selection change it made itself through
-// the Text Selection rotor. Flipped by the iOS embedder change once probe P4
-// shows it does; until then the region announces every change.
+// the Text Selection rotor; until then the region announces every change.
+// TODO(Renzo-Olivares): Flip from the iOS embedder change once VoiceOver is
+// verified to speak rotor selections, https://github.com/flutter/flutter/issues/182909.
 const bool _kIOSVoiceOverSpeaksRotorSelection = false;
 
 /// Whether a [SelectableRegion] announces a selection change of the given
-/// [source] on the current platform.
+/// `source` on the current platform.
 ///
 /// For any (platform, source) at most one of the screen reader's own speech
 /// (from the paragraph nodes' selection) and this announcement is audible.
@@ -3897,9 +3921,13 @@ bool _regionAnnouncesSelectionChanges(_SelectionChangeSource source) {
 /// contents of the region's selectables joined with single spaces.
 @immutable
 class _SelectionSnapshot {
-  const _SelectionSnapshot({required this.start, required this.text, required this.isAll});
+  const _SelectionSnapshot({required this.start, required this.text, this.isAll = false});
 
-  static const _SelectionSnapshot empty = _SelectionSnapshot(start: 0, text: '', isAll: false);
+  static const _SelectionSnapshot empty = _SelectionSnapshot(start: 0, text: '');
+
+  _SelectionSnapshot copyWith({required bool isAll}) {
+    return _SelectionSnapshot(start: start, text: text, isAll: isAll);
+  }
 
   /// The offset of the first selected character.
   final int start;
@@ -3907,7 +3935,7 @@ class _SelectionSnapshot {
   /// The selected text.
   final String text;
 
-  /// Whether every character of the region is selected.
+  /// Whether this selection was made by a select-all action.
   final bool isAll;
 
   int get end => start + text.length;
@@ -3916,6 +3944,9 @@ class _SelectionSnapshot {
 
   @override
   bool operator ==(Object other) {
+    if (other.runtimeType != runtimeType) {
+      return false;
+    }
     return other is _SelectionSnapshot &&
         other.start == start &&
         other.text == text &&
@@ -3947,10 +3978,19 @@ class _SelectionChangeAnnouncer {
   FlutterView? _pendingView;
   WidgetsLocalizations? _pendingLocalizations;
   Timer? _timer;
+  bool _nextCommitIsSelectAll = false;
+
+  /// Called by a select-all action before it commits, so the whole selection
+  /// is announced as such rather than as a delta.
+  void didSelectAll() {
+    _nextCommitIsSelectAll = true;
+  }
 
   /// Called once per committed selection change, with what caused it.
   void didCommit(_SelectionChangeSource source) {
-    final _SelectionSnapshot current = _state._selectionSnapshot();
+    final bool isAll = _nextCommitIsSelectAll;
+    _nextCommitIsSelectAll = false;
+    final _SelectionSnapshot current = _state._selectionSnapshot().copyWith(isAll: isAll);
     if (source == _SelectionChangeSource.focusLoss || !_state._mayAnnounceSelectionChange(source)) {
       // Silent: the next announcement is relative to the new state.
       _cancel();
@@ -3996,7 +4036,7 @@ class _SelectionChangeAnnouncer {
     }
   }
 
-  /// The phrase for the change from [previous] to [current], or null when
+  /// The phrase for the change from `previous` to `current`, or null when
   /// there is nothing to say.
   static String? describe(
     WidgetsLocalizations localizations,

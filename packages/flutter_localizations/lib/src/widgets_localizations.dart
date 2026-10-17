@@ -92,7 +92,7 @@ abstract class GlobalWidgetsLocalizations implements WidgetsLocalizations {
   /// See also:
   ///
   ///  * [intl.Intl.plural], to which this form is passed.
-  ///  * [selectedCharacterCountAnnouncementOther], the "other" form
+  ///  * [selectedCharacterCountAnnouncementOther], the "other" form.
   @protected
   String? get selectedCharacterCountAnnouncementZero => null;
 
