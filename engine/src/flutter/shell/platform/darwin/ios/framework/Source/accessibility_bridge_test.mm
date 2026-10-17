@@ -7,6 +7,8 @@
 
 #include <utility>
 
+#include "flutter/common/constants.h"
+
 #import "flutter/fml/message_loop.h"
 #import "flutter/fml/thread.h"
 #import "flutter/shell/platform/darwin/common/framework/Headers/FlutterBinaryMessenger.h"
@@ -15,7 +17,9 @@
 #import "flutter/shell/platform/darwin/ios/framework/Source/FlutterFMLTaskRunner+FML.h"
 #import "flutter/shell/platform/darwin/ios/framework/Source/FlutterFMLTaskRunner.h"
 #import "flutter/shell/platform/darwin/ios/framework/Source/FlutterPlatformViews_Internal.h"
+#import "flutter/shell/platform/darwin/ios/framework/Source/FlutterSelectableTextSemanticsObject.h"
 #import "flutter/shell/platform/darwin/ios/framework/Source/FlutterSemanticsScrollView.h"
+#import "flutter/shell/platform/darwin/ios/framework/Source/FlutterTextInputPlugin.h"
 #import "flutter/shell/platform/darwin/ios/framework/Source/FlutterViewController_Internal.h"
 #import "flutter/shell/platform/darwin/ios/framework/Source/TextInputSemanticsObject.h"
 #import "flutter/shell/platform/darwin/ios/framework/Source/accessibility_bridge.h"
@@ -137,6 +141,27 @@ class MockIosDelegate : public AccessibilityBridge::IosDelegate {
   }
   std::function<void(UIAccessibilityNotifications, id)> on_PostAccessibilityNotification_;
   bool result_IsFlutterViewControllerPresentingModalViewController_ = false;
+};
+
+class SemanticsActionRecordingDelegate : public MockDelegate {
+ public:
+  struct DispatchedAction {
+    int64_t view_id;
+    int32_t node_id;
+    SemanticsAction action;
+    std::vector<uint8_t> args;
+  };
+
+  void OnPlatformViewDispatchSemanticsAction(int64_t view_id,
+                                             int32_t node_id,
+                                             SemanticsAction action,
+                                             fml::MallocMapping args) override {
+    actions_.push_back(
+        {view_id, node_id, action,
+         std::vector<uint8_t>(args.GetMapping(), args.GetMapping() + args.GetSize())});
+  }
+
+  std::vector<DispatchedAction> actions_;
 };
 }  // namespace
 }  // namespace flutter
@@ -2648,4 +2673,210 @@ void UpdateRootSemantics(flutter::AccessibilityBridge* bridge, std::string label
   }
 }
 
+- (void)testSelectableStaticTextIsBackedByASelectableTextSemanticsObject {
+  flutter::MockDelegate mock_delegate;
+  auto thread_task_runner = CreateNewThread("AccessibilityBridgeTest");
+  flutter::TaskRunners runners(/*label=*/self.name.UTF8String,
+                               /*platform=*/thread_task_runner,
+                               /*raster=*/thread_task_runner,
+                               /*ui=*/thread_task_runner,
+                               /*io=*/thread_task_runner);
+  auto platform_view = std::make_unique<flutter::PlatformViewIOS>(
+      /*delegate=*/mock_delegate,
+      /*platform_views_controller=*/nil,
+      /*task_runners=*/runners,
+      /*is_gpu_disabled_sync_switch=*/std::make_shared<fml::SyncSwitch>());
+  id engine = OCMClassMock([FlutterEngine class]);
+  id mockFlutterViewController = OCMClassMock([FlutterViewController class]);
+  FlutterView* flutterView = [[FlutterView alloc] initWithDelegate:engine
+                                                            opaque:YES
+                                                   enableWideGamut:NO];
+  StubLoadedView(mockFlutterViewController, flutterView);
+  auto bridge = std::make_unique<flutter::AccessibilityBridge>(
+      /*view_controller=*/mockFlutterViewController,
+      /*platform_view=*/platform_view.get(),
+      /*platform_views_controller=*/nil);
+
+  const int32_t kSetSelection = static_cast<int32_t>(flutter::SemanticsAction::kSetSelection);
+  flutter::SemanticsNodeUpdates nodes;
+  flutter::SemanticsNode paragraph;
+  paragraph.id = 1;
+  paragraph.label = "Hello world";
+  paragraph.actions = kSetSelection;
+  nodes[paragraph.id] = paragraph;
+  flutter::SemanticsNode text_field;
+  text_field.id = 2;
+  text_field.label = "Email";
+  text_field.value = "a@b.c";
+  text_field.flags.isTextField = true;
+  text_field.actions = kSetSelection;
+  nodes[text_field.id] = text_field;
+  flutter::SemanticsNode read_only_text_field = text_field;
+  read_only_text_field.id = 3;
+  read_only_text_field.flags.isReadOnly = true;
+  nodes[read_only_text_field.id] = read_only_text_field;
+  flutter::SemanticsNode label;
+  label.id = 4;
+  label.label = "Plain text";
+  nodes[label.id] = label;
+  flutter::SemanticsNode toggle;
+  toggle.id = 5;
+  toggle.label = "Wi-Fi";
+  toggle.flags.isToggled = flutter::SemanticsTristate::kTrue;
+  toggle.actions = kSetSelection;
+  nodes[toggle.id] = toggle;
+  flutter::SemanticsNode root;
+  root.id = kRootNodeId;
+  root.childrenInTraversalOrder = {1, 2, 3, 4, 5};
+  root.childrenInHitTestOrder = {1, 2, 3, 4, 5};
+  nodes[root.id] = root;
+  bridge->UpdateSemantics(/*nodes=*/nodes, /*actions=*/{});
+
+  SemanticsObjectContainer* rootContainer = flutterView.accessibilityElements[0];
+  id paragraphObject = [rootContainer accessibilityElementAtIndex:1];
+  id textFieldObject = [rootContainer accessibilityElementAtIndex:2];
+  id readOnlyTextFieldObject = [rootContainer accessibilityElementAtIndex:3];
+  id labelObject = [rootContainer accessibilityElementAtIndex:4];
+  id toggleObject = [rootContainer accessibilityElementAtIndex:5];
+
+  XCTAssertTrue([paragraphObject isKindOfClass:[FlutterSelectableTextSemanticsObject class]]);
+  XCTAssertTrue([paragraphObject conformsToProtocol:@protocol(UITextInput)]);
+  XCTAssertEqual([paragraphObject accessibilityTraits], UIAccessibilityTraitStaticText);
+  XCTAssertTrue([textFieldObject isMemberOfClass:[TextInputSemanticsObject class]]);
+  XCTAssertTrue([readOnlyTextFieldObject isMemberOfClass:[FlutterSemanticsObject class]]);
+  XCTAssertTrue([labelObject isMemberOfClass:[FlutterSemanticsObject class]]);
+  XCTAssertEqual([labelObject accessibilityTraits], UIAccessibilityTraitStaticText);
+  XCTAssertTrue([toggleObject isMemberOfClass:[FlutterSwitchSemanticsObject class]]);
+}
+
+- (void)testSemanticsObjectIsReplacedWhenSetSelectionIsAddedOrRemoved {
+  flutter::MockDelegate mock_delegate;
+  auto thread_task_runner = CreateNewThread("AccessibilityBridgeTest");
+  flutter::TaskRunners runners(/*label=*/self.name.UTF8String,
+                               /*platform=*/thread_task_runner,
+                               /*raster=*/thread_task_runner,
+                               /*ui=*/thread_task_runner,
+                               /*io=*/thread_task_runner);
+  auto platform_view = std::make_unique<flutter::PlatformViewIOS>(
+      /*delegate=*/mock_delegate,
+      /*platform_views_controller=*/nil,
+      /*task_runners=*/runners,
+      /*is_gpu_disabled_sync_switch=*/std::make_shared<fml::SyncSwitch>());
+  id engine = OCMClassMock([FlutterEngine class]);
+  id mockFlutterViewController = OCMClassMock([FlutterViewController class]);
+  FlutterView* flutterView = [[FlutterView alloc] initWithDelegate:engine
+                                                            opaque:YES
+                                                   enableWideGamut:NO];
+  StubLoadedView(mockFlutterViewController, flutterView);
+  auto bridge = std::make_unique<flutter::AccessibilityBridge>(
+      /*view_controller=*/mockFlutterViewController,
+      /*platform_view=*/platform_view.get(),
+      /*platform_views_controller=*/nil);
+
+  flutter::SemanticsNode paragraph;
+  paragraph.id = 1;
+  paragraph.label = "Hello world";
+  flutter::SemanticsNode root;
+  root.id = kRootNodeId;
+  root.childrenInTraversalOrder = {1};
+  root.childrenInHitTestOrder = {1};
+  flutter::SemanticsNodeUpdates nodes;
+  nodes[root.id] = root;
+  nodes[paragraph.id] = paragraph;
+  bridge->UpdateSemantics(/*nodes=*/nodes, /*actions=*/{});
+
+  SemanticsObjectContainer* rootContainer = flutterView.accessibilityElements[0];
+  id plain = [rootContainer accessibilityElementAtIndex:1];
+  XCTAssertTrue([plain isMemberOfClass:[FlutterSemanticsObject class]]);
+
+  // The paragraph becomes selectable.
+  paragraph.actions = static_cast<int32_t>(flutter::SemanticsAction::kSetSelection);
+  flutter::SemanticsNodeUpdates selectable_update;
+  selectable_update[paragraph.id] = paragraph;
+  bridge->UpdateSemantics(/*nodes=*/selectable_update, /*actions=*/{});
+
+  id selectable = [rootContainer accessibilityElementAtIndex:1];
+  XCTAssertNotEqual(selectable, plain);
+  XCTAssertTrue([selectable isKindOfClass:[FlutterSelectableTextSemanticsObject class]]);
+  XCTAssertEqual(((SemanticsObject*)selectable).parent, rootContainer.semanticsObject);
+  XCTAssertEqualObjects([selectable accessibilityLabel], @"Hello world");
+
+  // Only the selection changes: the object is kept.
+  paragraph.textSelectionBase = 0;
+  paragraph.textSelectionExtent = 5;
+  flutter::SemanticsNodeUpdates selection_update;
+  selection_update[paragraph.id] = paragraph;
+  bridge->UpdateSemantics(/*nodes=*/selection_update, /*actions=*/{});
+  XCTAssertEqual([rootContainer accessibilityElementAtIndex:1], selectable);
+  XCTAssertTrue(
+      NSEqualRanges(((FlutterTextRange*)[selectable selectedTextRange]).range, NSMakeRange(0, 5)));
+
+  // The paragraph stops being selectable.
+  paragraph.actions = 0;
+  paragraph.textSelectionBase = -1;
+  paragraph.textSelectionExtent = -1;
+  flutter::SemanticsNodeUpdates plain_update;
+  plain_update[paragraph.id] = paragraph;
+  bridge->UpdateSemantics(/*nodes=*/plain_update, /*actions=*/{});
+  id plainAgain = [rootContainer accessibilityElementAtIndex:1];
+  XCTAssertTrue([plainAgain isMemberOfClass:[FlutterSemanticsObject class]]);
+  XCTAssertFalse([plainAgain conformsToProtocol:@protocol(UITextInput)]);
+}
+
+- (void)testSelectableStaticTextDispatchesSetSelectionToTheFramework {
+  flutter::SemanticsActionRecordingDelegate mock_delegate;
+  auto thread_task_runner = CreateNewThread("AccessibilityBridgeTest");
+  flutter::TaskRunners runners(/*label=*/self.name.UTF8String,
+                               /*platform=*/thread_task_runner,
+                               /*raster=*/thread_task_runner,
+                               /*ui=*/thread_task_runner,
+                               /*io=*/thread_task_runner);
+  auto platform_view = std::make_unique<flutter::PlatformViewIOS>(
+      /*delegate=*/mock_delegate,
+      /*platform_views_controller=*/nil,
+      /*task_runners=*/runners,
+      /*is_gpu_disabled_sync_switch=*/std::make_shared<fml::SyncSwitch>());
+  id engine = OCMClassMock([FlutterEngine class]);
+  id mockFlutterViewController = OCMClassMock([FlutterViewController class]);
+  FlutterView* flutterView = [[FlutterView alloc] initWithDelegate:engine
+                                                            opaque:YES
+                                                   enableWideGamut:NO];
+  StubLoadedView(mockFlutterViewController, flutterView);
+  auto bridge = std::make_unique<flutter::AccessibilityBridge>(
+      /*view_controller=*/mockFlutterViewController,
+      /*platform_view=*/platform_view.get(),
+      /*platform_views_controller=*/nil);
+
+  flutter::SemanticsNode paragraph;
+  paragraph.id = 1;
+  paragraph.label = "Hello world";
+  paragraph.actions = static_cast<int32_t>(flutter::SemanticsAction::kSetSelection) |
+                      static_cast<int32_t>(flutter::SemanticsAction::kCopy);
+  paragraph.textSelectionBase = 0;
+  paragraph.textSelectionExtent = 5;
+  flutter::SemanticsNode root;
+  root.id = kRootNodeId;
+  root.childrenInTraversalOrder = {1};
+  root.childrenInHitTestOrder = {1};
+  flutter::SemanticsNodeUpdates nodes;
+  nodes[root.id] = root;
+  nodes[paragraph.id] = paragraph;
+  bridge->UpdateSemantics(/*nodes=*/nodes, /*actions=*/{});
+
+  SemanticsObjectContainer* rootContainer = flutterView.accessibilityElements[0];
+  id<UITextInput> selectable = [rootContainer accessibilityElementAtIndex:1];
+  selectable.selectedTextRange = [FlutterTextRange rangeWithNSRange:NSMakeRange(6, 5)];
+  [(id)selectable copy:nil];
+
+  XCTAssertEqual(mock_delegate.actions_.size(), 2u);
+  XCTAssertEqual(mock_delegate.actions_[0].view_id, flutter::kFlutterImplicitViewId);
+  XCTAssertEqual(mock_delegate.actions_[0].node_id, 1);
+  XCTAssertEqual(mock_delegate.actions_[0].action, flutter::SemanticsAction::kSetSelection);
+  const std::vector<uint8_t>& args = mock_delegate.actions_[0].args;
+  NSDictionary* decoded = [[FlutterStandardMessageCodec sharedInstance]
+      decode:[NSData dataWithBytes:args.data() length:args.size()]];
+  XCTAssertEqualObjects(decoded, (@{@"base" : @6, @"extent" : @11}));
+  XCTAssertEqual(mock_delegate.actions_[1].node_id, 1);
+  XCTAssertEqual(mock_delegate.actions_[1].action, flutter::SemanticsAction::kCopy);
+}
 @end
