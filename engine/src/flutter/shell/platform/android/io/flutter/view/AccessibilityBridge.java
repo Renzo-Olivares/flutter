@@ -266,8 +266,8 @@ public class AccessibilityBridge extends AccessibilityNodeProvider {
   // that TalkBack accepts the collapse event (and says "Selection cleared").
   private boolean releaseSelectionFocusOnNextUpdate = false;
 
-  // The id of the node that the bridge last sent a TYPE_VIEW_TEXT_SELECTION_CHANGED event for from
-  // a selectable static text node, or -1.
+  // The id of the node (Flutter or embedded) that the last TYPE_VIEW_TEXT_SELECTION_CHANGED event
+  // came from, or -1.
   //
   // TalkBack treats the first selection event from a node it did not see last as a silent seed of
   // its cursor history, so the bridge sends a seed event of its own before the first extension on
@@ -1259,9 +1259,8 @@ public class AccessibilityBridge extends AccessibilityNodeProvider {
       return true;
     }
 
-    focusSelectableText(
-        semanticsNode, selection != null ? selection : new int[] {position, position});
     final int base = selection != null ? selection[0] : position;
+    focusSelectableText(semanticsNode, base, selection != null ? selection[1] : position);
     if (newPosition == base) {
       dispatchSelectableTextSelection(semanticsNode, -1, -1);
     } else {
@@ -1273,65 +1272,64 @@ public class AccessibilityBridge extends AccessibilityNodeProvider {
   /**
    * Handles {@link AccessibilityNodeInfo#ACTION_SET_SELECTION} for a selectable static text node.
    *
-   * <p>With a range, the range is sent to the framework. A collapsed range clears an existing
-   * selection (TalkBack's selection mode reports a collapse that way) and otherwise only places the
-   * reading cursor and the framework's accessibility anchor. Without arguments (TalkBack may send
-   * this when its selection mode starts) an existing selection is cleared; with none, the node is
-   * seeded so that the first extension is spoken.
+   * <p>A range is sent to the framework. A collapsed range only places the reading cursor and the
+   * framework's accessibility anchor; it never clears the selection. Without arguments (TalkBack
+   * resets the selection this way whenever it locks a node for granular navigation, and a native
+   * {@code TextView} then removes its selection) an existing selection is cleared; with none, the
+   * node is seeded so that the first extension is spoken.
    */
   private boolean performSelectableTextSetSelection(
       @NonNull SemanticsNode semanticsNode, @Nullable Bundle arguments) {
-    final int length = semanticsNode.label == null ? 0 : semanticsNode.label.length();
-    final int[] selection = semanticsNode.getSelectableTextSelection();
-    final boolean hasSelection = selection != null && selection[0] != selection[1];
+    final int length = semanticsNode.getSelectableTextLength();
     final boolean hasArguments =
         arguments != null
             && arguments.containsKey(AccessibilityNodeInfo.ACTION_ARGUMENT_SELECTION_START_INT)
             && arguments.containsKey(AccessibilityNodeInfo.ACTION_ARGUMENT_SELECTION_END_INT);
     if (!hasArguments) {
-      if (hasSelection) {
+      final int[] selection = semanticsNode.getSelectableTextSelection();
+      if (selection != null && selection[0] != selection[1]) {
         dispatchSelectableTextSelection(semanticsNode, -1, -1);
       } else {
-        final int cursor = selectableTextReadingCursors.get(semanticsNode.id, 0);
-        final int position = Math.max(0, Math.min(cursor, length));
-        focusSelectableText(semanticsNode, new int[] {position, position});
+        final int position = clamp(selectableTextReadingCursors.get(semanticsNode.id, 0), length);
+        focusSelectableText(semanticsNode, position, position);
       }
       return true;
     }
     final int start =
-        Math.max(
-            0,
-            Math.min(
-                arguments.getInt(AccessibilityNodeInfo.ACTION_ARGUMENT_SELECTION_START_INT),
-                length));
+        clamp(arguments.getInt(AccessibilityNodeInfo.ACTION_ARGUMENT_SELECTION_START_INT), length);
     final int end =
-        Math.max(
-            0,
-            Math.min(
-                arguments.getInt(AccessibilityNodeInfo.ACTION_ARGUMENT_SELECTION_END_INT), length));
+        clamp(arguments.getInt(AccessibilityNodeInfo.ACTION_ARGUMENT_SELECTION_END_INT), length);
     selectableTextReadingCursors.put(semanticsNode.id, end);
-    if (start == end && hasSelection) {
-      dispatchSelectableTextSelection(semanticsNode, -1, -1);
+    if (start == end) {
+      // The framework records the caret as its accessibility anchor and publishes nothing, so it
+      // is not kept as a pending selection: the next extension starts from the reading cursor.
+      final Map<String, Integer> caret = new HashMap<>();
+      caret.put("base", start);
+      caret.put("extent", end);
+      accessibilityChannel.dispatchSemanticsAction(semanticsNode.id, Action.SET_SELECTION, caret);
       return true;
     }
-    if (start != end) {
-      selectionFocusedSemanticsNode = semanticsNode;
-      releaseSelectionFocusOnNextUpdate = false;
-    }
+    selectionFocusedSemanticsNode = semanticsNode;
+    releaseSelectionFocusOnNextUpdate = false;
     dispatchSelectableTextSelection(semanticsNode, start, end);
     return true;
   }
 
+  private static int clamp(int offset, int length) {
+    return Math.max(0, Math.min(offset, length));
+  }
+
   /**
    * Makes {@code semanticsNode} the {@link #selectionFocusedSemanticsNode} and, if TalkBack did not
-   * see a selection event from it last, sends the seed event {@code seed} = {from, to}, before
-   * anything reaches the framework.
+   * see a selection event from it last, sends the seed event {@code fromIndex}..{@code toIndex},
+   * before anything reaches the framework.
    */
-  private void focusSelectableText(@NonNull SemanticsNode semanticsNode, @NonNull int[] seed) {
+  private void focusSelectableText(
+      @NonNull SemanticsNode semanticsNode, int fromIndex, int toIndex) {
     selectionFocusedSemanticsNode = semanticsNode;
     releaseSelectionFocusOnNextUpdate = false;
     if (lastSelectionEventSourceId != semanticsNode.id) {
-      sendSelectableTextSelectionEvent(semanticsNode, seed[0], seed[1]);
+      sendSelectableTextSelectionEvent(semanticsNode, fromIndex, toIndex);
     }
   }
 
@@ -1360,7 +1358,6 @@ public class AccessibilityBridge extends AccessibilityNodeProvider {
     event.setToIndex(toIndex);
     event.setItemCount(text.length());
     sendAccessibilityEvent(event);
-    lastSelectionEventSourceId = semanticsNode.id;
   }
 
   /**
@@ -2128,18 +2125,23 @@ public class AccessibilityBridge extends AccessibilityNodeProvider {
       }
 
       // Selectable static text: the node TalkBack is selecting in (or that holds the extent of a
-      // keyboard or pointer selection) reports its selection change, with the label as its text.
-      // A sibling of the text-field block above, which also fires text-changed events from the
-      // value.
+      // keyboard or pointer selection) reports its selection change with the label as its text.
+      // This is a separate block, not a condition added to the text-field one above, because that
+      // one also sends a text-changed event computed from the value.
       if (object == selectionFocusedSemanticsNode
           && object.isSelectableStaticText()
           && object.didChangeTextSelection()
           && getReportedFocusedSemanticsNode() == object) {
         final int[] selection = object.getPublishedTextSelection();
-        if (selection != null) {
-          sendSelectableTextSelectionEvent(object, selection[0], selection[1]);
-        } else {
+        if (selection == null) {
           sendSelectableTextSelectionEvent(object, -1, -1);
+        } else {
+          // A keyboard selection that reaches a node TalkBack did not see last is seeded with its
+          // base first, so that the change itself is spoken.
+          if (lastSelectionEventSourceId != object.id) {
+            sendSelectableTextSelectionEvent(object, selection[0], selection[0]);
+          }
+          sendSelectableTextSelectionEvent(object, selection[0], selection[1]);
         }
       }
     }
@@ -2313,6 +2315,9 @@ public class AccessibilityBridge extends AccessibilityNodeProvider {
    * invoked to create an {@link AccessibilityEvent} for the {@link #rootAccessibilityView}.
    */
   private AccessibilityEvent obtainAccessibilityEvent(int virtualViewId, int eventType) {
+    if (eventType == AccessibilityEvent.TYPE_VIEW_TEXT_SELECTION_CHANGED) {
+      lastSelectionEventSourceId = virtualViewId;
+    }
     AccessibilityEvent event = obtainAccessibilityEvent(eventType);
     event.setPackageName(rootAccessibilityView.getContext().getPackageName());
     event.setSource(rootAccessibilityView, virtualViewId);
@@ -2916,15 +2921,20 @@ public class AccessibilityBridge extends AccessibilityNodeProvider {
     // selection spanning several nodes continues: the end for a forward selection, the start
     // for a backward one.
     private boolean isTextSelectionExtentAtPassThroughEdge() {
-      final int length = label == null ? 0 : label.length();
+      final int length = getSelectableTextLength();
       return textSelectionBase <= textSelectionExtent
           ? textSelectionExtent == length
           : textSelectionExtent == 0;
     }
 
+    /** The length of the text of a selectable static text node. */
+    private int getSelectableTextLength() {
+      return label == null ? 0 : label.length();
+    }
+
     @Nullable
     private int[] validTextSelection(int base, int extent) {
-      final int length = label == null ? 0 : label.length();
+      final int length = getSelectableTextLength();
       if (base < 0 || extent < 0 || base > length || extent > length) {
         return null;
       }
@@ -3507,6 +3517,10 @@ public class AccessibilityBridge extends AccessibilityNodeProvider {
         embeddedInputFocusedNodeId = virtualNodeId;
         inputFocusedSemanticsNode = null;
         selectionFocusedSemanticsNode = null;
+        releaseSelectionFocusOnNextUpdate = false;
+        break;
+      case AccessibilityEvent.TYPE_VIEW_TEXT_SELECTION_CHANGED:
+        lastSelectionEventSourceId = virtualNodeId;
         break;
     }
     return true;

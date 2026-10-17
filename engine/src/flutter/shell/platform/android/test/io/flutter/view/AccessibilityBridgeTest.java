@@ -63,6 +63,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -1993,24 +1994,42 @@ public class AccessibilityBridgeTest {
       List<int[]> result = new ArrayList<>();
       for (Object value : captor.getAllValues()) {
         @SuppressWarnings("unchecked")
-        java.util.Map<String, Integer> selection = (java.util.Map<String, Integer>) value;
+        Map<String, Integer> selection = (Map<String, Integer>) value;
         result.add(new int[] {selection.get("base"), selection.get("extent")});
       }
       return result;
     }
 
-    boolean move(int nodeId, boolean forward, int granularity, boolean extendSelection) {
+    boolean readNext(int nodeId, int granularity) {
+      return move(
+          nodeId, AccessibilityNodeInfo.ACTION_NEXT_AT_MOVEMENT_GRANULARITY, granularity, false);
+    }
+
+    boolean readPrevious(int nodeId, int granularity) {
+      return move(
+          nodeId,
+          AccessibilityNodeInfo.ACTION_PREVIOUS_AT_MOVEMENT_GRANULARITY,
+          granularity,
+          false);
+    }
+
+    boolean extendNext(int nodeId, int granularity) {
+      return move(
+          nodeId, AccessibilityNodeInfo.ACTION_NEXT_AT_MOVEMENT_GRANULARITY, granularity, true);
+    }
+
+    boolean extendPrevious(int nodeId, int granularity) {
+      return move(
+          nodeId, AccessibilityNodeInfo.ACTION_PREVIOUS_AT_MOVEMENT_GRANULARITY, granularity, true);
+    }
+
+    private boolean move(int nodeId, int action, int granularity, boolean extendSelection) {
       Bundle bundle = new Bundle();
       bundle.putInt(AccessibilityNodeInfo.ACTION_ARGUMENT_MOVEMENT_GRANULARITY_INT, granularity);
       if (extendSelection) {
         bundle.putBoolean(AccessibilityNodeInfo.ACTION_ARGUMENT_EXTEND_SELECTION_BOOLEAN, true);
       }
-      return bridge.performAction(
-          nodeId,
-          forward
-              ? AccessibilityNodeInfo.ACTION_NEXT_AT_MOVEMENT_GRANULARITY
-              : AccessibilityNodeInfo.ACTION_PREVIOUS_AT_MOVEMENT_GRANULARITY,
-          bundle);
+      return bridge.performAction(nodeId, action, bundle);
     }
   }
 
@@ -2032,8 +2051,8 @@ public class AccessibilityBridgeTest {
   }
 
   private static boolean hasAction(AccessibilityNodeInfo nodeInfo, int action) {
-    for (AccessibilityNodeInfo.AccessibilityAction a : nodeInfo.getActionList()) {
-      if (a.getId() == action) {
+    for (AccessibilityNodeInfo.AccessibilityAction nodeAction : nodeInfo.getActionList()) {
+      if (nodeAction.getId() == action) {
         return true;
       }
     }
@@ -2044,13 +2063,13 @@ public class AccessibilityBridgeTest {
   @TargetApi(API_LEVELS.API_33)
   @Test
   public void itDescribesSelectableStaticTextAsASelectableTextView() {
-    SelectableTextBridge b = new SelectableTextBridge();
+    SelectableTextBridge harness = new SelectableTextBridge();
     TestSemanticsNode paragraph = selectableParagraph(1, "Hello world", -1, -1);
     paragraph.hint = "a hint";
     paragraph.addFlag(Flag.IS_LIVE_REGION);
-    b.sendTree(paragraph);
+    harness.sendTree(paragraph);
 
-    AccessibilityNodeInfo nodeInfo = b.bridge.createAccessibilityNodeInfo(1);
+    AccessibilityNodeInfo nodeInfo = harness.bridge.createAccessibilityNodeInfo(1);
     assertEquals("android.widget.TextView", nodeInfo.getClassName().toString());
     assertTrue(nodeInfo.isTextSelectable());
     assertFalse(nodeInfo.isEditable());
@@ -2075,10 +2094,10 @@ public class AccessibilityBridgeTest {
   @TargetApi(API_LEVELS.API_33)
   @Test
   public void itReportsTheSelectionAndCopyOfSelectableStaticText() {
-    SelectableTextBridge b = new SelectableTextBridge();
-    b.sendTree(selectableParagraph(1, "Hello world", 0, 5));
+    SelectableTextBridge harness = new SelectableTextBridge();
+    harness.sendTree(selectableParagraph(1, "Hello world", 0, 5));
 
-    AccessibilityNodeInfo nodeInfo = b.bridge.createAccessibilityNodeInfo(1);
+    AccessibilityNodeInfo nodeInfo = harness.bridge.createAccessibilityNodeInfo(1);
     assertEquals(0, nodeInfo.getTextSelectionStart());
     assertEquals(5, nodeInfo.getTextSelectionEnd());
     assertTrue(hasAction(nodeInfo, AccessibilityNodeInfo.ACTION_COPY));
@@ -2087,10 +2106,10 @@ public class AccessibilityBridgeTest {
   @Config(sdk = API_LEVELS.API_32)
   @Test
   public void itDescribesSelectableStaticTextBelowApi33WithoutTextSelectable() {
-    SelectableTextBridge b = new SelectableTextBridge();
-    b.sendTree(selectableParagraph(1, "Hello world", -1, -1));
+    SelectableTextBridge harness = new SelectableTextBridge();
+    harness.sendTree(selectableParagraph(1, "Hello world", -1, -1));
 
-    AccessibilityNodeInfo nodeInfo = b.bridge.createAccessibilityNodeInfo(1);
+    AccessibilityNodeInfo nodeInfo = harness.bridge.createAccessibilityNodeInfo(1);
     assertEquals("android.widget.TextView", nodeInfo.getClassName().toString());
     assertFalse(nodeInfo.isEditable());
     assertEquals("Hello world", nodeInfo.getText().toString());
@@ -2100,14 +2119,14 @@ public class AccessibilityBridgeTest {
 
   @Test
   public void itDoesNotDescribeLabelsWithoutSetSelectionAsSelectableText() {
-    SelectableTextBridge b = new SelectableTextBridge();
+    SelectableTextBridge harness = new SelectableTextBridge();
     TestSemanticsNode label = new TestSemanticsNode();
     label.id = 1;
     label.label = "Hello world";
     label.hint = "a hint";
-    b.sendTree(label);
+    harness.sendTree(label);
 
-    AccessibilityNodeInfo nodeInfo = b.bridge.createAccessibilityNodeInfo(1);
+    AccessibilityNodeInfo nodeInfo = harness.bridge.createAccessibilityNodeInfo(1);
     assertEquals("android.view.View", nodeInfo.getClassName().toString());
     assertNull(nodeInfo.getText());
     assertEquals("Hello world, a hint", nodeInfo.getContentDescription().toString());
@@ -2116,15 +2135,15 @@ public class AccessibilityBridgeTest {
 
   @Test
   public void itReadsSelectableStaticTextWithTraversalEventsOnly() {
-    SelectableTextBridge b = new SelectableTextBridge();
-    b.sendTree(selectableParagraph(1, "Hello world", -1, -1));
-    b.clearEvents();
+    SelectableTextBridge harness = new SelectableTextBridge();
+    harness.sendTree(selectableParagraph(1, "Hello world", -1, -1));
+    harness.clearEvents();
 
-    assertTrue(b.move(1, true, AccessibilityNodeInfo.MOVEMENT_GRANULARITY_CHARACTER, false));
-    assertTrue(b.move(1, true, AccessibilityNodeInfo.MOVEMENT_GRANULARITY_CHARACTER, false));
+    assertTrue(harness.readNext(1, AccessibilityNodeInfo.MOVEMENT_GRANULARITY_CHARACTER));
+    assertTrue(harness.readNext(1, AccessibilityNodeInfo.MOVEMENT_GRANULARITY_CHARACTER));
 
     List<AccessibilityEvent> traversals =
-        b.events(AccessibilityEvent.TYPE_VIEW_TEXT_TRAVERSED_AT_MOVEMENT_GRANULARITY);
+        harness.events(AccessibilityEvent.TYPE_VIEW_TEXT_TRAVERSED_AT_MOVEMENT_GRANULARITY);
     assertEquals(2, traversals.size());
     AccessibilityEvent first = traversals.get(0);
     assertEquals("[Hello world]", first.getText().toString());
@@ -2137,85 +2156,85 @@ public class AccessibilityBridgeTest {
     assertEquals(1, traversals.get(1).getFromIndex());
     assertEquals(2, traversals.get(1).getToIndex());
     // Plain reading sends no selection event and nothing to the framework.
-    assertTrue(b.selectionEvents().isEmpty());
-    verify(b.channel, never()).dispatchSemanticsAction(anyInt(), any(Action.class), any());
-    verify(b.channel, never()).dispatchSemanticsAction(anyInt(), any(Action.class));
+    assertTrue(harness.selectionEvents().isEmpty());
+    verify(harness.channel, never()).dispatchSemanticsAction(anyInt(), any(Action.class), any());
+    verify(harness.channel, never()).dispatchSemanticsAction(anyInt(), any(Action.class));
 
     // Backward from the cursor reads the same character again, as a native TextView does.
-    b.clearEvents();
-    assertTrue(b.move(1, false, AccessibilityNodeInfo.MOVEMENT_GRANULARITY_CHARACTER, false));
+    harness.clearEvents();
+    assertTrue(harness.readPrevious(1, AccessibilityNodeInfo.MOVEMENT_GRANULARITY_CHARACTER));
     AccessibilityEvent back =
-        b.events(AccessibilityEvent.TYPE_VIEW_TEXT_TRAVERSED_AT_MOVEMENT_GRANULARITY).get(0);
+        harness.events(AccessibilityEvent.TYPE_VIEW_TEXT_TRAVERSED_AT_MOVEMENT_GRANULARITY).get(0);
     assertEquals(1, back.getFromIndex());
     assertEquals(2, back.getToIndex());
   }
 
   @Test
   public void itReturnsFalseAtTheEdgesOfSelectableStaticText() {
-    SelectableTextBridge b = new SelectableTextBridge();
-    b.sendTree(selectableParagraph(1, "Hi", -1, -1));
+    SelectableTextBridge harness = new SelectableTextBridge();
+    harness.sendTree(selectableParagraph(1, "Hi", -1, -1));
 
     // Page granularity is not advertised.
-    assertFalse(b.move(1, true, AccessibilityNodeInfo.MOVEMENT_GRANULARITY_PAGE, false));
-    assertTrue(b.move(1, true, AccessibilityNodeInfo.MOVEMENT_GRANULARITY_CHARACTER, false));
-    assertTrue(b.move(1, true, AccessibilityNodeInfo.MOVEMENT_GRANULARITY_CHARACTER, false));
-    b.clearEvents();
-    assertFalse(b.move(1, true, AccessibilityNodeInfo.MOVEMENT_GRANULARITY_CHARACTER, false));
-    assertFalse(b.move(1, true, AccessibilityNodeInfo.MOVEMENT_GRANULARITY_CHARACTER, true));
-    verify(b.parent, never()).requestSendAccessibilityEvent(any(View.class), any());
-    verify(b.channel, never()).dispatchSemanticsAction(anyInt(), any(Action.class), any());
+    assertFalse(harness.readNext(1, AccessibilityNodeInfo.MOVEMENT_GRANULARITY_PAGE));
+    assertTrue(harness.readNext(1, AccessibilityNodeInfo.MOVEMENT_GRANULARITY_CHARACTER));
+    assertTrue(harness.readNext(1, AccessibilityNodeInfo.MOVEMENT_GRANULARITY_CHARACTER));
+    harness.clearEvents();
+    assertFalse(harness.readNext(1, AccessibilityNodeInfo.MOVEMENT_GRANULARITY_CHARACTER));
+    assertFalse(harness.extendNext(1, AccessibilityNodeInfo.MOVEMENT_GRANULARITY_CHARACTER));
+    verify(harness.parent, never()).requestSendAccessibilityEvent(any(View.class), any());
+    verify(harness.channel, never()).dispatchSemanticsAction(anyInt(), any(Action.class), any());
   }
 
   @Test
   public void itDoesNotCrashOnGranularityMovesWithoutAValue() {
-    SelectableTextBridge b = new SelectableTextBridge();
+    SelectableTextBridge harness = new SelectableTextBridge();
     TestSemanticsNode paragraph = selectableParagraph(1, "Para\nNext", 0, 2);
     paragraph.value = null;
-    b.sendTree(paragraph);
+    harness.sendTree(paragraph);
 
     // predictCursorMovement would dereference the null value of this node.
-    assertTrue(b.move(1, true, AccessibilityNodeInfo.MOVEMENT_GRANULARITY_PARAGRAPH, false));
-    assertTrue(b.move(1, true, AccessibilityNodeInfo.MOVEMENT_GRANULARITY_LINE, false));
-    assertTrue(b.move(1, true, AccessibilityNodeInfo.MOVEMENT_GRANULARITY_WORD, true));
+    assertTrue(harness.readNext(1, AccessibilityNodeInfo.MOVEMENT_GRANULARITY_PARAGRAPH));
+    assertTrue(harness.readNext(1, AccessibilityNodeInfo.MOVEMENT_GRANULARITY_LINE));
+    assertTrue(harness.extendNext(1, AccessibilityNodeInfo.MOVEMENT_GRANULARITY_WORD));
   }
 
   @Test
   public void itSeedsTalkBackBeforeTheFirstExtension() {
-    SelectableTextBridge b = new SelectableTextBridge();
-    b.sendTree(selectableParagraph(1, "Hello world", -1, -1));
-    b.clearEvents();
-    assertFalse(b.bridge.createAccessibilityNodeInfo(1).isFocused());
+    SelectableTextBridge harness = new SelectableTextBridge();
+    harness.sendTree(selectableParagraph(1, "Hello world", -1, -1));
+    harness.clearEvents();
+    assertFalse(harness.bridge.createAccessibilityNodeInfo(1).isFocused());
 
-    assertTrue(b.move(1, true, AccessibilityNodeInfo.MOVEMENT_GRANULARITY_CHARACTER, true));
+    assertTrue(harness.extendNext(1, AccessibilityNodeInfo.MOVEMENT_GRANULARITY_CHARACTER));
 
     // A collapsed seed at the cursor, sent by the bridge itself, from a node reported focused.
-    List<AccessibilityEvent> seed = b.selectionEvents();
+    List<AccessibilityEvent> seed = harness.selectionEvents();
     assertEquals(1, seed.size());
     assertEquals("[Hello world]", seed.get(0).getText().toString());
     assertEquals(0, seed.get(0).getFromIndex());
     assertEquals(0, seed.get(0).getToIndex());
     assertEquals(11, seed.get(0).getItemCount());
-    AccessibilityNodeInfo nodeInfo = b.bridge.createAccessibilityNodeInfo(1);
+    AccessibilityNodeInfo nodeInfo = harness.bridge.createAccessibilityNodeInfo(1);
     assertTrue(nodeInfo.isFocusable());
     assertTrue(nodeInfo.isFocused());
     // The absolute range goes to the framework.
-    List<int[]> dispatched = b.dispatchedSelections(1);
+    List<int[]> dispatched = harness.dispatchedSelections(1);
     assertEquals(1, dispatched.size());
     assertEquals(0, dispatched.get(0)[0]);
     assertEquals(1, dispatched.get(0)[1]);
 
     // A second swipe before the framework answers extends the pending range; no second seed.
-    b.clearEvents();
-    assertTrue(b.move(1, true, AccessibilityNodeInfo.MOVEMENT_GRANULARITY_CHARACTER, true));
-    dispatched = b.dispatchedSelections(1);
+    harness.clearEvents();
+    assertTrue(harness.extendNext(1, AccessibilityNodeInfo.MOVEMENT_GRANULARITY_CHARACTER));
+    dispatched = harness.dispatchedSelections(1);
     assertEquals(0, dispatched.get(0)[0]);
     assertEquals(2, dispatched.get(0)[1]);
-    verify(b.parent, never()).requestSendAccessibilityEvent(any(View.class), any());
+    verify(harness.parent, never()).requestSendAccessibilityEvent(any(View.class), any());
 
     // The framework's update fires the selection event.
-    b.clearEvents();
-    b.sendTree(selectableParagraph(1, "Hello world", 0, 2));
-    List<AccessibilityEvent> events = b.selectionEvents();
+    harness.clearEvents();
+    harness.sendTree(selectableParagraph(1, "Hello world", 0, 2));
+    List<AccessibilityEvent> events = harness.selectionEvents();
     assertEquals(1, events.size());
     assertEquals("[Hello world]", events.get(0).getText().toString());
     assertEquals(0, events.get(0).getFromIndex());
@@ -2223,82 +2242,82 @@ public class AccessibilityBridgeTest {
     assertEquals(11, events.get(0).getItemCount());
 
     // Extending again starts from the published selection: to the end of "Hello".
-    b.clearEvents();
-    assertTrue(b.move(1, true, AccessibilityNodeInfo.MOVEMENT_GRANULARITY_WORD, true));
-    dispatched = b.dispatchedSelections(1);
+    harness.clearEvents();
+    assertTrue(harness.extendNext(1, AccessibilityNodeInfo.MOVEMENT_GRANULARITY_WORD));
+    dispatched = harness.dispatchedSelections(1);
     assertEquals(0, dispatched.get(0)[0]);
     assertEquals(5, dispatched.get(0)[1]);
   }
 
   @Test
   public void itSendsMinusOneAndKeepsFocusWhenTheSelectionCollapses() {
-    SelectableTextBridge b = new SelectableTextBridge();
-    b.sendTree(selectableParagraph(1, "Hello world", -1, -1));
-    assertTrue(b.move(1, true, AccessibilityNodeInfo.MOVEMENT_GRANULARITY_CHARACTER, true));
-    b.sendTree(selectableParagraph(1, "Hello world", 0, 1));
-    b.clearEvents();
+    SelectableTextBridge harness = new SelectableTextBridge();
+    harness.sendTree(selectableParagraph(1, "Hello world", -1, -1));
+    assertTrue(harness.extendNext(1, AccessibilityNodeInfo.MOVEMENT_GRANULARITY_CHARACTER));
+    harness.sendTree(selectableParagraph(1, "Hello world", 0, 1));
+    harness.clearEvents();
 
-    assertTrue(b.move(1, false, AccessibilityNodeInfo.MOVEMENT_GRANULARITY_CHARACTER, true));
-    List<int[]> dispatched = b.dispatchedSelections(1);
+    assertTrue(harness.extendPrevious(1, AccessibilityNodeInfo.MOVEMENT_GRANULARITY_CHARACTER));
+    List<int[]> dispatched = harness.dispatchedSelections(1);
     assertEquals(-1, dispatched.get(0)[0]);
     assertEquals(-1, dispatched.get(0)[1]);
 
-    b.clearEvents();
-    b.sendTree(selectableParagraph(1, "Hello world", -1, -1));
-    List<AccessibilityEvent> events = b.selectionEvents();
+    harness.clearEvents();
+    harness.sendTree(selectableParagraph(1, "Hello world", -1, -1));
+    List<AccessibilityEvent> events = harness.selectionEvents();
     assertEquals(1, events.size());
     assertEquals(-1, events.get(0).getFromIndex());
     assertEquals(-1, events.get(0).getToIndex());
     // Still focused for this update, so TalkBack accepts the event.
-    assertTrue(b.bridge.createAccessibilityNodeInfo(1).isFocused());
+    assertTrue(harness.bridge.createAccessibilityNodeInfo(1).isFocused());
 
     // Released by the next update.
     TestSemanticsNode relabeled = selectableParagraph(1, "Hello world", -1, -1);
     relabeled.hint = "changed";
-    b.sendTree(relabeled);
-    assertFalse(b.bridge.createAccessibilityNodeInfo(1).isFocused());
+    harness.sendTree(relabeled);
+    assertFalse(harness.bridge.createAccessibilityNodeInfo(1).isFocused());
   }
 
   @Test
   public void itClearsOrSeedsOnSetSelectionWithoutArguments() {
-    SelectableTextBridge b = new SelectableTextBridge();
-    b.sendTree(selectableParagraph(1, "Hello world", -1, -1));
-    b.clearEvents();
+    SelectableTextBridge harness = new SelectableTextBridge();
+    harness.sendTree(selectableParagraph(1, "Hello world", -1, -1));
+    harness.clearEvents();
 
     // Nothing selected: a seed, nothing for the framework.
-    assertTrue(b.bridge.performAction(1, AccessibilityNodeInfo.ACTION_SET_SELECTION, null));
-    assertEquals(1, b.selectionEvents().size());
-    assertEquals(0, b.selectionEvents().get(0).getFromIndex());
-    verify(b.channel, never()).dispatchSemanticsAction(anyInt(), any(Action.class), any());
-    assertTrue(b.bridge.createAccessibilityNodeInfo(1).isFocused());
+    assertTrue(harness.bridge.performAction(1, AccessibilityNodeInfo.ACTION_SET_SELECTION, null));
+    assertEquals(1, harness.selectionEvents().size());
+    assertEquals(0, harness.selectionEvents().get(0).getFromIndex());
+    verify(harness.channel, never()).dispatchSemanticsAction(anyInt(), any(Action.class), any());
+    assertTrue(harness.bridge.createAccessibilityNodeInfo(1).isFocused());
 
     // A selection: cleared with -1/-1.
-    b.sendTree(selectableParagraph(1, "Hello world", 0, 5));
-    b.clearEvents();
-    assertTrue(b.bridge.performAction(1, AccessibilityNodeInfo.ACTION_SET_SELECTION, null));
-    List<int[]> dispatched = b.dispatchedSelections(1);
+    harness.sendTree(selectableParagraph(1, "Hello world", 0, 5));
+    harness.clearEvents();
+    assertTrue(harness.bridge.performAction(1, AccessibilityNodeInfo.ACTION_SET_SELECTION, null));
+    List<int[]> dispatched = harness.dispatchedSelections(1);
     assertEquals(-1, dispatched.get(0)[0]);
     assertEquals(-1, dispatched.get(0)[1]);
   }
 
   @Test
   public void itSendsSetSelectionRangesToTheFrameworkWithoutPredicting() {
-    SelectableTextBridge b = new SelectableTextBridge();
-    b.sendTree(selectableParagraph(1, "Hello world", -1, -1));
-    b.clearEvents();
+    SelectableTextBridge harness = new SelectableTextBridge();
+    harness.sendTree(selectableParagraph(1, "Hello world", -1, -1));
+    harness.clearEvents();
 
     Bundle bundle = new Bundle();
     bundle.putInt(AccessibilityNodeInfo.ACTION_ARGUMENT_SELECTION_START_INT, 0);
     bundle.putInt(AccessibilityNodeInfo.ACTION_ARGUMENT_SELECTION_END_INT, 11);
-    assertTrue(b.bridge.performAction(1, AccessibilityNodeInfo.ACTION_SET_SELECTION, bundle));
-    List<int[]> dispatched = b.dispatchedSelections(1);
+    assertTrue(harness.bridge.performAction(1, AccessibilityNodeInfo.ACTION_SET_SELECTION, bundle));
+    List<int[]> dispatched = harness.dispatchedSelections(1);
     assertEquals(0, dispatched.get(0)[0]);
     assertEquals(11, dispatched.get(0)[1]);
     // The node keeps the published selection until the framework answers.
-    assertEquals(-1, b.bridge.createAccessibilityNodeInfo(1).getTextSelectionStart());
+    assertEquals(-1, harness.bridge.createAccessibilityNodeInfo(1).getTextSelectionStart());
 
-    b.sendTree(selectableParagraph(1, "Hello world", 0, 11));
-    List<AccessibilityEvent> events = b.selectionEvents();
+    harness.sendTree(selectableParagraph(1, "Hello world", 0, 11));
+    List<AccessibilityEvent> events = harness.selectionEvents();
     assertEquals(1, events.size());
     assertEquals(0, events.get(0).getFromIndex());
     assertEquals(11, events.get(0).getToIndex());
@@ -2306,7 +2325,7 @@ public class AccessibilityBridgeTest {
 
   @Test
   public void itReportsExactlyOneFocusedNodeAndAFocusedTextFieldWins() {
-    SelectableTextBridge b = new SelectableTextBridge();
+    SelectableTextBridge harness = new SelectableTextBridge();
     TestSemanticsNode field = new TestSemanticsNode();
     field.id = 2;
     field.value = "typed";
@@ -2314,60 +2333,133 @@ public class AccessibilityBridgeTest {
     field.textSelectionExtent = 5;
     field.addFlag(Flag.IS_TEXT_FIELD);
     field.addFlag(Flag.IS_FOCUSABLE);
-    b.sendTree(selectableParagraph(1, "Hello world", -1, -1), field);
-    assertTrue(b.move(1, true, AccessibilityNodeInfo.MOVEMENT_GRANULARITY_CHARACTER, true));
-    assertTrue(b.bridge.createAccessibilityNodeInfo(1).isFocused());
-    assertFalse(b.bridge.createAccessibilityNodeInfo(2).isFocused());
+    harness.sendTree(selectableParagraph(1, "Hello world", -1, -1), field);
+    assertTrue(harness.extendNext(1, AccessibilityNodeInfo.MOVEMENT_GRANULARITY_CHARACTER));
+    assertTrue(harness.bridge.createAccessibilityNodeInfo(1).isFocused());
+    assertFalse(harness.bridge.createAccessibilityNodeInfo(2).isFocused());
 
     // The text field takes input focus: it is the only focused node, and the paragraph's
     // selection change sends no event (TalkBack would drop it).
     field.addFlag(Flag.IS_FOCUSED);
-    b.clearEvents();
-    b.sendTree(selectableParagraph(1, "Hello world", 0, 1), field);
-    assertFalse(b.bridge.createAccessibilityNodeInfo(1).isFocused());
-    assertTrue(b.bridge.createAccessibilityNodeInfo(2).isFocused());
-    for (AccessibilityEvent event : b.selectionEvents()) {
+    harness.clearEvents();
+    harness.sendTree(selectableParagraph(1, "Hello world", 0, 1), field);
+    assertFalse(harness.bridge.createAccessibilityNodeInfo(1).isFocused());
+    assertTrue(harness.bridge.createAccessibilityNodeInfo(2).isFocused());
+    for (AccessibilityEvent event : harness.selectionEvents()) {
       assertEquals("[typed]", event.getText().toString());
     }
   }
 
   @Test
   public void itFollowsTheExtentOfASelectionAcrossParagraphs() {
-    SelectableTextBridge b = new SelectableTextBridge();
-    b.sendTree(
+    SelectableTextBridge harness = new SelectableTextBridge();
+    harness.sendTree(
         selectableParagraph(1, "Hello world", 2, 5), selectableParagraph(2, "Second", -1, -1));
-    b.clearEvents();
+    harness.clearEvents();
 
     // Shift+Right moves the extent from the first paragraph into the second.
-    b.sendTree(
+    harness.sendTree(
         selectableParagraph(1, "Hello world", 2, 11), selectableParagraph(2, "Second", 0, 1));
-    assertFalse(b.bridge.createAccessibilityNodeInfo(1).isFocused());
-    assertTrue(b.bridge.createAccessibilityNodeInfo(2).isFocused());
-    List<AccessibilityEvent> events = b.selectionEvents();
-    assertEquals(1, events.size());
+    assertFalse(harness.bridge.createAccessibilityNodeInfo(1).isFocused());
+    assertTrue(harness.bridge.createAccessibilityNodeInfo(2).isFocused());
+    // TalkBack last saw a selection event from the first paragraph, so the second one is seeded
+    // with its base before the change.
+    List<AccessibilityEvent> events = harness.selectionEvents();
+    assertEquals(2, events.size());
     assertEquals("[Second]", events.get(0).getText().toString());
     assertEquals(0, events.get(0).getFromIndex());
-    assertEquals(1, events.get(0).getToIndex());
+    assertEquals(0, events.get(0).getToIndex());
+    assertEquals("[Second]", events.get(1).getText().toString());
+    assertEquals(0, events.get(1).getFromIndex());
+    assertEquals(1, events.get(1).getToIndex());
+
+    // The next keystroke in the same paragraph needs no seed.
+    harness.clearEvents();
+    harness.sendTree(
+        selectableParagraph(1, "Hello world", 2, 11), selectableParagraph(2, "Second", 0, 2));
+    events = harness.selectionEvents();
+    assertEquals(1, events.size());
+    assertEquals(2, events.get(0).getToIndex());
 
     // Backward: the extent is at the start of the first paragraph's clip.
-    b.clearEvents();
-    b.sendTree(
+    harness.clearEvents();
+    harness.sendTree(
         selectableParagraph(1, "Hello world", 11, 7), selectableParagraph(2, "Second", 3, 0));
-    assertTrue(b.bridge.createAccessibilityNodeInfo(1).isFocused());
-    assertFalse(b.bridge.createAccessibilityNodeInfo(2).isFocused());
+    assertTrue(harness.bridge.createAccessibilityNodeInfo(1).isFocused());
+    assertFalse(harness.bridge.createAccessibilityNodeInfo(2).isFocused());
+  }
+
+  @Test
+  public void itSeedsAgainAfterAnotherNodeSentASelectionEvent() {
+    SelectableTextBridge harness = new SelectableTextBridge();
+    TestSemanticsNode field = new TestSemanticsNode();
+    field.id = 2;
+    field.value = "typed";
+    field.textSelectionBase = 5;
+    field.textSelectionExtent = 5;
+    field.addFlag(Flag.IS_TEXT_FIELD);
+    field.addAction(Action.MOVE_CURSOR_BACKWARD_BY_CHARACTER);
+    harness.sendTree(selectableParagraph(1, "Hello world", -1, -1), field);
+    assertTrue(harness.extendNext(1, AccessibilityNodeInfo.MOVEMENT_GRANULARITY_CHARACTER));
+    harness.sendTree(selectableParagraph(1, "Hello world", -1, -1), field);
+
+    // The text field sends a selection event, so TalkBack's last selection source changes.
+    Bundle bundle = new Bundle();
+    bundle.putInt(
+        AccessibilityNodeInfo.ACTION_ARGUMENT_MOVEMENT_GRANULARITY_INT,
+        AccessibilityNodeInfo.MOVEMENT_GRANULARITY_CHARACTER);
+    harness.bridge.performAction(
+        2, AccessibilityNodeInfo.ACTION_PREVIOUS_AT_MOVEMENT_GRANULARITY, bundle);
+    harness.clearEvents();
+
+    assertTrue(harness.extendNext(1, AccessibilityNodeInfo.MOVEMENT_GRANULARITY_CHARACTER));
+    List<AccessibilityEvent> seed = harness.selectionEvents();
+    assertEquals(1, seed.size());
+    // At the reading cursor, which the first extension left at 1.
+    assertEquals("[Hello world]", seed.get(0).getText().toString());
+    assertEquals(1, seed.get(0).getFromIndex());
+    assertEquals(1, seed.get(0).getToIndex());
+  }
+
+  @Test
+  public void itKeepsTheSelectionForACollapsedSetSelection() {
+    SelectableTextBridge harness = new SelectableTextBridge();
+    harness.sendTree(selectableParagraph(1, "Hello world", 0, 5));
+    harness.clearEvents();
+
+    Bundle bundle = new Bundle();
+    bundle.putInt(AccessibilityNodeInfo.ACTION_ARGUMENT_SELECTION_START_INT, 3);
+    bundle.putInt(AccessibilityNodeInfo.ACTION_ARGUMENT_SELECTION_END_INT, 3);
+    assertTrue(harness.bridge.performAction(1, AccessibilityNodeInfo.ACTION_SET_SELECTION, bundle));
+    // The caret goes to the framework as an anchor; nothing clears the selection.
+    List<int[]> dispatched = harness.dispatchedSelections(1);
+    assertEquals(1, dispatched.size());
+    assertEquals(3, dispatched.get(0)[0]);
+    assertEquals(3, dispatched.get(0)[1]);
+
+    // With no selection, a caret is not kept as a pending selection: after reading on, an
+    // extension starts at the reading cursor.
+    harness.sendTree(selectableParagraph(1, "Hello world", -1, -1));
+    assertTrue(harness.bridge.performAction(1, AccessibilityNodeInfo.ACTION_SET_SELECTION, bundle));
+    assertTrue(harness.readNext(1, AccessibilityNodeInfo.MOVEMENT_GRANULARITY_WORD));
+    harness.clearEvents();
+    assertTrue(harness.extendNext(1, AccessibilityNodeInfo.MOVEMENT_GRANULARITY_CHARACTER));
+    dispatched = harness.dispatchedSelections(1);
+    assertEquals(5, dispatched.get(0)[0]);
+    assertEquals(6, dispatched.get(0)[1]);
   }
 
   @Test
   public void itResetsTheReadingCursorWhenTheLabelChanges() {
-    SelectableTextBridge b = new SelectableTextBridge();
-    b.sendTree(selectableParagraph(1, "Hello world", -1, -1));
-    assertTrue(b.move(1, true, AccessibilityNodeInfo.MOVEMENT_GRANULARITY_WORD, false));
-    b.sendTree(selectableParagraph(1, "Goodbye world", -1, -1));
-    b.clearEvents();
+    SelectableTextBridge harness = new SelectableTextBridge();
+    harness.sendTree(selectableParagraph(1, "Hello world", -1, -1));
+    assertTrue(harness.readNext(1, AccessibilityNodeInfo.MOVEMENT_GRANULARITY_WORD));
+    harness.sendTree(selectableParagraph(1, "Goodbye world", -1, -1));
+    harness.clearEvents();
 
-    assertTrue(b.move(1, true, AccessibilityNodeInfo.MOVEMENT_GRANULARITY_WORD, false));
+    assertTrue(harness.readNext(1, AccessibilityNodeInfo.MOVEMENT_GRANULARITY_WORD));
     AccessibilityEvent event =
-        b.events(AccessibilityEvent.TYPE_VIEW_TEXT_TRAVERSED_AT_MOVEMENT_GRANULARITY).get(0);
+        harness.events(AccessibilityEvent.TYPE_VIEW_TEXT_TRAVERSED_AT_MOVEMENT_GRANULARITY).get(0);
     assertEquals(0, event.getFromIndex());
     assertEquals(7, event.getToIndex());
   }
