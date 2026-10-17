@@ -237,6 +237,19 @@ NSUInteger IndexOfPosition(UITextPosition* position) {
 
 #pragma mark - UIAccessibility overrides
 
+- (BOOL)accessibilityRespondsToUserInteraction {
+  if (self.node.flags.isAccessibilityFocusBlocked) {
+    return NO;
+  }
+  // Selecting and copying are reached through UITextInput and the edit
+  // actions, not by interacting with the element, so they alone do not make
+  // the text interactive, as for a label.
+  int32_t interactiveActions = self.node.actions & ~flutter::kSystemActions &
+                               ~static_cast<int32_t>(flutter::SemanticsAction::kSetSelection) &
+                               ~static_cast<int32_t>(flutter::SemanticsAction::kCopy);
+  return interactiveActions != 0 || !self.node.customAccessibilityActions.empty();
+}
+
 - (id<UITextInput>)accessibilityTextInputResponder {
   if (_backingTextView) {
     return _backingTextView;
