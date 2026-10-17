@@ -45,11 +45,6 @@ NSRange RangeBetween(NSUInteger a, NSUInteger b) {
   return NSMakeRange(MIN(a, b), MAX(a, b) - MIN(a, b));
 }
 
-// Whether `direction` points towards the beginning of the text.
-bool IsBackward(UITextLayoutDirection direction) {
-  return direction == UITextLayoutDirectionLeft || direction == UITextLayoutDirectionUp;
-}
-
 }  // namespace
 
 @interface FlutterSelectableTextSemanticsObject () <UITextViewDelegate>
@@ -114,7 +109,7 @@ bool IsBackward(UITextLayoutDirection direction) {
 
 - (void)setSemanticsNode:(const flutter::SemanticsNode*)node {
   [super setSemanticsNode:node];
-  NSString* text = @(node->label.data());
+  NSString* text = @(node->label.data()) ?: @"";
   BOOL textChanged = ![text isEqualToString:_text];
   BOOL selectionChanged =
       node->textSelectionBase != _publishedBase || node->textSelectionExtent != _publishedExtent;
@@ -124,7 +119,10 @@ bool IsBackward(UITextLayoutDirection direction) {
   if (textChanged) {
     _caret = 0;
   }
-  if (textChanged || selectionChanged) {
+  // The framework answers a range request with a new selection. An update
+  // that keeps the selection means the request did not take effect, except
+  // for a caret, which the framework never publishes.
+  if (textChanged || selectionChanged || _requestedBase != _requestedExtent) {
     _hasRequestedSelection = NO;
   }
   [self updateBackingTextView];
@@ -232,6 +230,8 @@ bool IsBackward(UITextLayoutDirection direction) {
   if (@available(iOS 18.1, *)) {
     UIView* view = self.bridgeView;
     if (!view) {
+      [_backingTextView removeFromSuperview];
+      _backingTextView = nil;
       return;
     }
     if (!_backingTextView) {
@@ -406,10 +406,26 @@ bool IsBackward(UITextLayoutDirection direction) {
   return [FlutterTextPosition positionWithIndex:static_cast<NSUInteger>(index)];
 }
 
+// Whether `direction` points towards the beginning of the text: up, or left
+// in left-to-right text and right in right-to-left text.
+- (BOOL)isTowardsStart:(UITextLayoutDirection)direction {
+  switch (direction) {
+    case UITextLayoutDirectionUp:
+      return YES;
+    case UITextLayoutDirectionDown:
+      return NO;
+    case UITextLayoutDirectionLeft:
+      return !self.isRightToLeft;
+    case UITextLayoutDirectionRight:
+      return self.isRightToLeft;
+  }
+}
+
 - (UITextPosition*)positionFromPosition:(UITextPosition*)position
                             inDirection:(UITextLayoutDirection)direction
                                  offset:(NSInteger)offset {
-  return [self positionFromPosition:position offset:IsBackward(direction) ? -offset : offset];
+  return [self positionFromPosition:position
+                             offset:[self isTowardsStart:direction] ? -offset : offset];
 }
 
 - (NSComparisonResult)comparePosition:(UITextPosition*)position toPosition:(UITextPosition*)other {
@@ -452,15 +468,15 @@ bool IsBackward(UITextLayoutDirection direction) {
 
 - (UITextPosition*)positionWithinRange:(UITextRange*)range
                    farthestInDirection:(UITextLayoutDirection)direction {
-  return IsBackward(direction) ? range.start : range.end;
+  return [self isTowardsStart:direction] ? range.start : range.end;
 }
 
 - (UITextRange*)characterRangeByExtendingPosition:(UITextPosition*)position
                                       inDirection:(UITextLayoutDirection)direction {
   NSUInteger index = [self clampIndex:IndexOfPosition(position)];
-  return
-      [FlutterTextRange rangeWithNSRange:IsBackward(direction) ? RangeBetween(0, index)
-                                                               : RangeBetween(index, _text.length)];
+  return [FlutterTextRange rangeWithNSRange:[self isTowardsStart:direction]
+                                                ? RangeBetween(0, index)
+                                                : RangeBetween(index, _text.length)];
 }
 
 - (NSWritingDirection)baseWritingDirectionForPosition:(UITextPosition*)position

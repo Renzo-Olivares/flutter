@@ -294,14 +294,30 @@ static void ReplaceSemanticsObject(SemanticsObject* oldObject,
   objects[nodeId] = newObject;
 }
 
+static bool IsEditableTextField(const flutter::SemanticsNode& node) {
+  return node.flags.isTextField && !node.flags.isReadOnly;
+}
+
+static bool IsSwitch(const flutter::SemanticsNode& node) {
+  return !node.flags.isInMutuallyExclusiveGroup &&
+         (node.flags.isToggled != flutter::SemanticsTristate::kNone ||
+          node.flags.isChecked != flutter::SemanticsCheckState::kNone);
+}
+
+// Whether CreateObject backs `node` with a FlutterSelectableTextSemanticsObject.
+// Every other kind of object takes precedence.
+static bool UsesSelectableTextObject(const flutter::SemanticsNode& node) {
+  return [FlutterSelectableTextSemanticsObject isSelectableStaticText:node] &&
+         !IsEditableTextField(node) && !IsSwitch(node) && !node.flags.hasImplicitScrolling &&
+         !node.IsPlatformViewNode();
+}
+
 static SemanticsObject* CreateObject(const flutter::SemanticsNode& node,
                                      const fml::WeakPtr<AccessibilityBridge>& weak_ptr) {
-  if (node.flags.isTextField && !node.flags.isReadOnly) {
+  if (IsEditableTextField(node)) {
     // Text fields are backed by objects that implement UITextInput.
     return [[TextInputSemanticsObject alloc] initWithBridge:weak_ptr uid:node.id];
-  } else if (!node.flags.isInMutuallyExclusiveGroup &&
-             (node.flags.isToggled != flutter::SemanticsTristate::kNone ||
-              node.flags.isChecked != flutter::SemanticsCheckState::kNone)) {
+  } else if (IsSwitch(node)) {
     return [[FlutterSwitchSemanticsObject alloc] initWithBridge:weak_ptr uid:node.id];
   } else if (node.flags.hasImplicitScrolling) {
     return [[FlutterScrollableSemanticsObject alloc] initWithBridge:weak_ptr uid:node.id];
@@ -313,7 +329,7 @@ static SemanticsObject* CreateObject(const flutter::SemanticsNode& node,
     return [[FlutterPlatformViewSemanticsContainer alloc] initWithBridge:weak_ptr
                                                                      uid:node.id
                                                             platformView:touchInterceptingView];
-  } else if ([FlutterSelectableTextSemanticsObject isSelectableStaticText:node]) {
+  } else if (UsesSelectableTextObject(node)) {
     // Selectable static text, such as a paragraph in a SelectionArea, also
     // implements UITextInput so that VoiceOver can select within it.
     return [[FlutterSelectableTextSemanticsObject alloc] initWithBridge:weak_ptr uid:node.id];
@@ -341,8 +357,7 @@ SemanticsObject* AccessibilityBridge::GetOrCreateObject(int32_t uid,
           ((object.node.flags.isToggled == flutter::SemanticsTristate::kNone) !=
            (node.flags.isToggled == flutter::SemanticsTristate::kNone)) ||
           object.node.flags.hasImplicitScrolling != node.flags.hasImplicitScrolling ||
-          [FlutterSelectableTextSemanticsObject isSelectableStaticText:object.node] !=
-              [FlutterSelectableTextSemanticsObject isSelectableStaticText:node]) {
+          UsesSelectableTextObject(object.node) != UsesSelectableTextObject(node)) {
         // The node changed its type. In this case, we cannot reuse the existing
         // SemanticsObject implementation. Instead, we replace it with a new
         // instance.
