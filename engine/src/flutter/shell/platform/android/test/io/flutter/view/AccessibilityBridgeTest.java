@@ -2196,7 +2196,8 @@ public class AccessibilityBridgeTest {
     // predictCursorMovement would dereference the null value of this node.
     assertTrue(harness.readNext(1, AccessibilityNodeInfo.MOVEMENT_GRANULARITY_PARAGRAPH));
     assertTrue(harness.readNext(1, AccessibilityNodeInfo.MOVEMENT_GRANULARITY_LINE));
-    assertTrue(harness.extendNext(1, AccessibilityNodeInfo.MOVEMENT_GRANULARITY_WORD));
+    // Backward from the reading cursor, which the moves above left at the end of the text.
+    assertTrue(harness.extendPrevious(1, AccessibilityNodeInfo.MOVEMENT_GRANULARITY_WORD));
   }
 
   @Test
@@ -2318,10 +2319,13 @@ public class AccessibilityBridgeTest {
     assertEquals(-1, harness.bridge.createAccessibilityNodeInfo(1).getTextSelectionStart());
 
     harness.sendTree(selectableParagraph(1, "Hello world", 0, 11));
+    // TalkBack saw no selection event from the node yet, so a seed at the base comes first.
     List<AccessibilityEvent> events = harness.selectionEvents();
-    assertEquals(1, events.size());
+    assertEquals(2, events.size());
     assertEquals(0, events.get(0).getFromIndex());
-    assertEquals(11, events.get(0).getToIndex());
+    assertEquals(0, events.get(0).getToIndex());
+    assertEquals(0, events.get(1).getFromIndex());
+    assertEquals(11, events.get(1).getToIndex());
   }
 
   @Test
@@ -2416,9 +2420,9 @@ public class AccessibilityBridgeTest {
     assertTrue(harness.extendNext(1, AccessibilityNodeInfo.MOVEMENT_GRANULARITY_CHARACTER));
     List<AccessibilityEvent> seed = harness.selectionEvents();
     assertEquals(1, seed.size());
-    // At the reading cursor, which the first extension left at 1.
+    // The seed carries the selection being extended: the first extension's 0..1, still pending.
     assertEquals("[Hello world]", seed.get(0).getText().toString());
-    assertEquals(1, seed.get(0).getFromIndex());
+    assertEquals(0, seed.get(0).getFromIndex());
     assertEquals(1, seed.get(0).getToIndex());
   }
 
