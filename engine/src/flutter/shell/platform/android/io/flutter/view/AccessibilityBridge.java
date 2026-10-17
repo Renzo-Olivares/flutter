@@ -19,6 +19,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.provider.Settings;
 import android.text.TextUtils;
+import android.util.SparseIntArray;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.WindowManager;
@@ -44,6 +45,7 @@ import io.flutter.view.AccessibilityStringBuilder.StringAttributeType;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.charset.StandardCharsets;
+import java.text.BreakIterator;
 import java.util.*;
 import java.util.function.Predicate;
 import java.util.regex.Matcher;
@@ -258,6 +260,26 @@ public class AccessibilityBridge extends AccessibilityNodeProvider {
   // cannot take input focus, so the bridge reports this node as focused instead, unless a focused
   // text field holds the input focus (see {@link #getReportedFocusedSemanticsNode()}).
   @Nullable SemanticsNode selectionFocusedSemanticsNode;
+
+  // Whether the next semantics update releases {@link #selectionFocusedSemanticsNode} if it still
+  // holds no selection. The node stays focused for the update in which it loses its selection, so
+  // that TalkBack accepts the collapse event (and says "Selection cleared").
+  private boolean releaseSelectionFocusOnNextUpdate = false;
+
+  // The id of the node that the bridge last sent a TYPE_VIEW_TEXT_SELECTION_CHANGED event for from
+  // a selectable static text node, or -1.
+  //
+  // TalkBack treats the first selection event from a node it did not see last as a silent seed of
+  // its cursor history, so the bridge sends a seed event of its own before the first extension on
+  // a new node.
+  private int lastSelectionEventSourceId = -1;
+
+  // The reading cursor of each selectable static text node, by node id, in label offsets.
+  //
+  // Once a node is text-selectable TalkBack hands granular reading to the app, which keeps this
+  // cursor without asking the framework. A missing entry means the cursor is undefined: the next
+  // move starts at the start of the text (forward) or its end (backward), as for a native View.
+  private final SparseIntArray selectableTextReadingCursors = new SparseIntArray();
 
   // Keeps track of the last semantics node that had the input focus.
   //
@@ -1026,10 +1048,18 @@ public class AccessibilityBridge extends AccessibilityNodeProvider {
         }
       case AccessibilityNodeInfo.ACTION_PREVIOUS_AT_MOVEMENT_GRANULARITY:
         {
+          // Selectable static text is handled before performCursorMoveAction, whose prediction
+          // reads the value of a text field.
+          if (semanticsNode.isSelectableStaticText()) {
+            return performSelectableTextMoveAction(semanticsNode, arguments, false);
+          }
           return performCursorMoveAction(semanticsNode, virtualViewId, arguments, false);
         }
       case AccessibilityNodeInfo.ACTION_NEXT_AT_MOVEMENT_GRANULARITY:
         {
+          if (semanticsNode.isSelectableStaticText()) {
+            return performSelectableTextMoveAction(semanticsNode, arguments, true);
+          }
           return performCursorMoveAction(semanticsNode, virtualViewId, arguments, true);
         }
       case AccessibilityNodeInfo.ACTION_CLEAR_ACCESSIBILITY_FOCUS:
@@ -1088,6 +1118,9 @@ public class AccessibilityBridge extends AccessibilityNodeProvider {
         }
       case AccessibilityNodeInfo.ACTION_SET_SELECTION:
         {
+          if (semanticsNode.isSelectableStaticText()) {
+            return performSelectableTextSetSelection(semanticsNode, arguments);
+          }
           final Map<String, Integer> selection = new HashMap<>();
           final boolean hasSelection =
               arguments != null
@@ -1161,6 +1194,337 @@ public class AccessibilityBridge extends AccessibilityNodeProvider {
         }
     }
     return false;
+  }
+
+  /**
+   * Handles {@link AccessibilityNodeInfo#ACTION_NEXT_AT_MOVEMENT_GRANULARITY} and {@link
+   * AccessibilityNodeInfo#ACTION_PREVIOUS_AT_MOVEMENT_GRANULARITY} for a selectable static text
+   * node.
+   *
+   * <p>Without the extend argument (plain reading) the bridge moves its own reading cursor and
+   * sends only a {@link AccessibilityEvent#TYPE_VIEW_TEXT_TRAVERSED_AT_MOVEMENT_GRANULARITY} event;
+   * nothing reaches the framework. With it (TalkBack's selection mode) the bridge computes the new
+   * absolute range and sends it to the framework as {@link Action#SET_SELECTION}; the framework's
+   * next semantics update then fires the selection event. A collapse is sent as -1/-1, which
+   * clears the selection. A move past either end of the text returns false, so that TalkBack moves
+   * on to the next node.
+   */
+  private boolean performSelectableTextMoveAction(
+      @NonNull SemanticsNode semanticsNode, @Nullable Bundle arguments, boolean forward) {
+    final String text = semanticsNode.label;
+    if (arguments == null || text == null || text.isEmpty()) {
+      return false;
+    }
+    final int granularity =
+        arguments.getInt(AccessibilityNodeInfo.ACTION_ARGUMENT_MOVEMENT_GRANULARITY_INT);
+    final boolean extendSelection =
+        arguments.getBoolean(AccessibilityNodeInfo.ACTION_ARGUMENT_EXTEND_SELECTION_BOOLEAN);
+    final int[] selection = semanticsNode.getSelectableTextSelection();
+    final int position;
+    if (extendSelection && selection != null) {
+      position = selection[1];
+    } else {
+      final int cursor = selectableTextReadingCursors.get(semanticsNode.id, -1);
+      if (cursor >= 0 && cursor <= text.length()) {
+        position = cursor;
+      } else if (selection != null) {
+        position = selection[1];
+      } else {
+        position = forward ? 0 : text.length();
+      }
+    }
+    final int[] segment =
+        getTextSegment(text, semanticsNode.getEffectiveLocale(), granularity, forward, position);
+    if (segment == null) {
+      return false;
+    }
+    final int newPosition = forward ? segment[1] : segment[0];
+    selectableTextReadingCursors.put(semanticsNode.id, newPosition);
+
+    if (!extendSelection) {
+      final AccessibilityEvent event =
+          obtainAccessibilityEvent(
+              semanticsNode.id, AccessibilityEvent.TYPE_VIEW_TEXT_TRAVERSED_AT_MOVEMENT_GRANULARITY);
+      event.getText().add(text);
+      event.setFromIndex(segment[0]);
+      event.setToIndex(segment[1]);
+      event.setItemCount(text.length());
+      event.setAction(
+          forward
+              ? AccessibilityNodeInfo.ACTION_NEXT_AT_MOVEMENT_GRANULARITY
+              : AccessibilityNodeInfo.ACTION_PREVIOUS_AT_MOVEMENT_GRANULARITY);
+      event.setMovementGranularity(granularity);
+      sendAccessibilityEvent(event);
+      return true;
+    }
+
+    focusSelectableText(semanticsNode, selection != null ? selection : new int[] {position, position});
+    final int base = selection != null ? selection[0] : position;
+    if (newPosition == base) {
+      dispatchSelectableTextSelection(semanticsNode, -1, -1);
+    } else {
+      dispatchSelectableTextSelection(semanticsNode, base, newPosition);
+    }
+    return true;
+  }
+
+  /**
+   * Handles {@link AccessibilityNodeInfo#ACTION_SET_SELECTION} for a selectable static text node.
+   *
+   * <p>With a range, the range is sent to the framework. A collapsed range clears an existing
+   * selection (TalkBack's selection mode reports a collapse that way) and otherwise only places
+   * the reading cursor and the framework's accessibility anchor. Without arguments (TalkBack may
+   * send this when its selection mode starts) an existing selection is cleared; with none, the
+   * node is seeded so that the first extension is spoken.
+   */
+  private boolean performSelectableTextSetSelection(
+      @NonNull SemanticsNode semanticsNode, @Nullable Bundle arguments) {
+    final int length = semanticsNode.label == null ? 0 : semanticsNode.label.length();
+    final int[] selection = semanticsNode.getSelectableTextSelection();
+    final boolean hasSelection = selection != null && selection[0] != selection[1];
+    final boolean hasArguments =
+        arguments != null
+            && arguments.containsKey(AccessibilityNodeInfo.ACTION_ARGUMENT_SELECTION_START_INT)
+            && arguments.containsKey(AccessibilityNodeInfo.ACTION_ARGUMENT_SELECTION_END_INT);
+    if (!hasArguments) {
+      if (hasSelection) {
+        dispatchSelectableTextSelection(semanticsNode, -1, -1);
+      } else {
+        final int cursor = selectableTextReadingCursors.get(semanticsNode.id, 0);
+        final int position = Math.max(0, Math.min(cursor, length));
+        focusSelectableText(semanticsNode, new int[] {position, position});
+      }
+      return true;
+    }
+    final int start =
+        Math.max(
+            0,
+            Math.min(
+                arguments.getInt(AccessibilityNodeInfo.ACTION_ARGUMENT_SELECTION_START_INT),
+                length));
+    final int end =
+        Math.max(
+            0,
+            Math.min(
+                arguments.getInt(AccessibilityNodeInfo.ACTION_ARGUMENT_SELECTION_END_INT), length));
+    selectableTextReadingCursors.put(semanticsNode.id, end);
+    if (start == end && hasSelection) {
+      dispatchSelectableTextSelection(semanticsNode, -1, -1);
+      return true;
+    }
+    if (start != end) {
+      selectionFocusedSemanticsNode = semanticsNode;
+      releaseSelectionFocusOnNextUpdate = false;
+    }
+    dispatchSelectableTextSelection(semanticsNode, start, end);
+    return true;
+  }
+
+  /**
+   * Makes {@code semanticsNode} the {@link #selectionFocusedSemanticsNode} and, if TalkBack did not
+   * see a selection event from it last, sends the seed event {@code seed} = {from, to}, before
+   * anything reaches the framework.
+   */
+  private void focusSelectableText(@NonNull SemanticsNode semanticsNode, @NonNull int[] seed) {
+    selectionFocusedSemanticsNode = semanticsNode;
+    releaseSelectionFocusOnNextUpdate = false;
+    if (lastSelectionEventSourceId != semanticsNode.id) {
+      sendSelectableTextSelectionEvent(semanticsNode, seed[0], seed[1]);
+    }
+  }
+
+  /**
+   * Sends a selection to the framework for a selectable static text node and keeps it as the
+   * node's pending selection, which the next move extends until the framework's update arrives.
+   * Negative offsets clear the selection.
+   */
+  private void dispatchSelectableTextSelection(
+      @NonNull SemanticsNode semanticsNode, int base, int extent) {
+    final Map<String, Integer> selection = new HashMap<>();
+    selection.put("base", base);
+    selection.put("extent", extent);
+    accessibilityChannel.dispatchSemanticsAction(
+        semanticsNode.id, Action.SET_SELECTION, selection);
+    semanticsNode.setPendingTextSelection(base, extent);
+  }
+
+  private void sendSelectableTextSelectionEvent(
+      @NonNull SemanticsNode semanticsNode, int fromIndex, int toIndex) {
+    final String text = semanticsNode.label != null ? semanticsNode.label : "";
+    final AccessibilityEvent event =
+        obtainAccessibilityEvent(
+            semanticsNode.id, AccessibilityEvent.TYPE_VIEW_TEXT_SELECTION_CHANGED);
+    event.getText().add(text);
+    event.setFromIndex(fromIndex);
+    event.setToIndex(toIndex);
+    event.setItemCount(text.length());
+    sendAccessibilityEvent(event);
+    lastSelectionEventSourceId = semanticsNode.id;
+  }
+
+  /**
+   * Returns the {start, end} range of the text segment of {@code granularity} that follows ({@code
+   * forward}) or precedes {@code offset}, or null at the end of the text in that direction.
+   *
+   * <p>Mirrors the segment iterators that a native {@link View} uses for accessibility traversal:
+   * character = grapheme cluster, word = a run of letters or digits (whitespace and punctuation are
+   * skipped), paragraph = a run of characters between line feeds. {@link
+   * AccessibilityNodeInfo#MOVEMENT_GRANULARITY_LINE} is treated as paragraph, because the
+   * semantics tree carries no line layout.
+   */
+  @VisibleForTesting
+  @Nullable
+  static int[] getTextSegment(
+      @NonNull String text,
+      @Nullable String languageTag,
+      int granularity,
+      boolean forward,
+      int offset) {
+    final Locale locale =
+        languageTag == null || languageTag.isEmpty()
+            ? Locale.getDefault()
+            : Locale.forLanguageTag(languageTag);
+    switch (granularity) {
+      case AccessibilityNodeInfo.MOVEMENT_GRANULARITY_CHARACTER:
+        {
+          final BreakIterator iterator = BreakIterator.getCharacterInstance(locale);
+          iterator.setText(text);
+          return forward
+              ? followingCharacter(iterator, text, offset)
+              : precedingCharacter(iterator, offset);
+        }
+      case AccessibilityNodeInfo.MOVEMENT_GRANULARITY_WORD:
+        {
+          final BreakIterator iterator = BreakIterator.getWordInstance(locale);
+          iterator.setText(text);
+          return forward ? followingWord(iterator, text, offset) : precedingWord(iterator, text, offset);
+        }
+      case AccessibilityNodeInfo.MOVEMENT_GRANULARITY_LINE:
+      case AccessibilityNodeInfo.MOVEMENT_GRANULARITY_PARAGRAPH:
+        return forward ? followingParagraph(text, offset) : precedingParagraph(text, offset);
+      default:
+        return null;
+    }
+  }
+
+  @Nullable
+  private static int[] followingCharacter(
+      @NonNull BreakIterator iterator, @NonNull String text, int offset) {
+    if (offset >= text.length()) {
+      return null;
+    }
+    int start = Math.max(0, offset);
+    while (!iterator.isBoundary(start)) {
+      start = iterator.following(start);
+      if (start == BreakIterator.DONE) {
+        return null;
+      }
+    }
+    final int end = iterator.following(start);
+    return end == BreakIterator.DONE ? null : new int[] {start, end};
+  }
+
+  @Nullable
+  private static int[] precedingCharacter(@NonNull BreakIterator iterator, int offset) {
+    if (offset <= 0) {
+      return null;
+    }
+    int end = offset;
+    while (!iterator.isBoundary(end)) {
+      end = iterator.preceding(end);
+      if (end == BreakIterator.DONE) {
+        return null;
+      }
+    }
+    final int start = iterator.preceding(end);
+    return start == BreakIterator.DONE ? null : new int[] {start, end};
+  }
+
+  @Nullable
+  private static int[] followingWord(
+      @NonNull BreakIterator iterator, @NonNull String text, int offset) {
+    if (offset >= text.length()) {
+      return null;
+    }
+    int start = Math.max(0, offset);
+    while (!isLetterOrDigit(text, start) && !isWordStart(text, start)) {
+      start = iterator.following(start);
+      if (start == BreakIterator.DONE || start >= text.length()) {
+        return null;
+      }
+    }
+    final int end = iterator.following(start);
+    if (end == BreakIterator.DONE || !isWordEnd(text, end)) {
+      return null;
+    }
+    return new int[] {start, end};
+  }
+
+  @Nullable
+  private static int[] precedingWord(
+      @NonNull BreakIterator iterator, @NonNull String text, int offset) {
+    if (offset <= 0) {
+      return null;
+    }
+    int end = Math.min(offset, text.length());
+    while (end > 0 && !isLetterOrDigit(text, end - 1) && !isWordEnd(text, end)) {
+      end = iterator.preceding(end);
+      if (end == BreakIterator.DONE) {
+        return null;
+      }
+    }
+    if (end <= 0) {
+      return null;
+    }
+    final int start = iterator.preceding(end);
+    if (start == BreakIterator.DONE || !isWordStart(text, start)) {
+      return null;
+    }
+    return new int[] {start, end};
+  }
+
+  private static boolean isLetterOrDigit(@NonNull String text, int index) {
+    return index >= 0 && index < text.length() && Character.isLetterOrDigit(text.codePointAt(index));
+  }
+
+  private static boolean isWordStart(@NonNull String text, int index) {
+    return isLetterOrDigit(text, index) && (index == 0 || !isLetterOrDigit(text, index - 1));
+  }
+
+  private static boolean isWordEnd(@NonNull String text, int index) {
+    return index > 0
+        && isLetterOrDigit(text, index - 1)
+        && (index == text.length() || !isLetterOrDigit(text, index));
+  }
+
+  @Nullable
+  private static int[] followingParagraph(@NonNull String text, int offset) {
+    final int length = text.length();
+    int start = Math.max(0, offset);
+    while (start < length && text.charAt(start) == '\n') {
+      start++;
+    }
+    if (start >= length) {
+      return null;
+    }
+    int end = text.indexOf('\n', start);
+    if (end < 0) {
+      end = length;
+    }
+    return new int[] {start, end};
+  }
+
+  @Nullable
+  private static int[] precedingParagraph(@NonNull String text, int offset) {
+    int end = Math.min(offset, text.length());
+    while (end > 0 && text.charAt(end - 1) == '\n') {
+      end--;
+    }
+    if (end <= 0) {
+      return null;
+    }
+    final int start = text.lastIndexOf('\n', end - 1) + 1;
+    return new int[] {start, end};
   }
 
   /**
@@ -1624,6 +1988,8 @@ public class AccessibilityBridge extends AccessibilityNodeProvider {
     //     see https://github.com/flutter/flutter/issues/14534
     sendWindowContentChangeEvent(0, AccessibilityEvent.CONTENT_CHANGE_TYPE_SUBTREE);
 
+    updateSelectableTextState(updated);
+
     for (SemanticsNode object : updated) {
       if (object.didScroll()) {
         AccessibilityEvent event =
@@ -1755,6 +2121,63 @@ public class AccessibilityBridge extends AccessibilityNodeProvider {
           sendAccessibilityEvent(selectionEvent);
         }
       }
+
+      // Selectable static text: the node TalkBack is selecting in (or that holds the extent of a
+      // keyboard or pointer selection) reports its selection change, with the label as its text.
+      // A sibling of the text-field block above, which also fires text-changed events from the
+      // value.
+      if (object == selectionFocusedSemanticsNode
+          && object.isSelectableStaticText()
+          && object.didChangeTextSelection()
+          && getReportedFocusedSemanticsNode() == object) {
+        final int[] selection = object.getPublishedTextSelection();
+        if (selection != null) {
+          sendSelectableTextSelectionEvent(object, selection[0], selection[1]);
+        } else {
+          sendSelectableTextSelectionEvent(object, -1, -1);
+        }
+      }
+    }
+  }
+
+  /**
+   * Updates the bridge's selectable static text state for a semantics update, before its events
+   * are sent: drops pending selections and reading cursors the update supersedes, and moves
+   * {@link #selectionFocusedSemanticsNode} to the node that holds the extent of a new selection.
+   */
+  private void updateSelectableTextState(@NonNull List<SemanticsNode> updated) {
+    if (releaseSelectionFocusOnNextUpdate) {
+      releaseSelectionFocusOnNextUpdate = false;
+      if (selectionFocusedSemanticsNode != null
+          && !selectionFocusedSemanticsNode.hasNonEmptyTextSelection()) {
+        selectionFocusedSemanticsNode = null;
+      }
+    }
+    SemanticsNode extentNode = null;
+    for (SemanticsNode object : updated) {
+      object.clearPendingTextSelection();
+      if (object.didChangeLabel()) {
+        selectableTextReadingCursors.delete(object.id);
+      }
+      if (!object.isSelectableStaticText()
+          || !object.didChangeTextSelection()
+          || !object.hasNonEmptyTextSelection()) {
+        continue;
+      }
+      selectableTextReadingCursors.put(object.id, object.textSelectionExtent);
+      // In a selection across several nodes, the extent lies inside the extent node, while the
+      // other nodes' clips end at the edge the selection passes through.
+      if (extentNode == null || extentNode.isTextSelectionExtentAtPassThroughEdge()) {
+        extentNode = object;
+      }
+    }
+    if (extentNode != null) {
+      selectionFocusedSemanticsNode = extentNode;
+    } else if (selectionFocusedSemanticsNode != null
+        && updated.contains(selectionFocusedSemanticsNode)
+        && selectionFocusedSemanticsNode.didChangeTextSelection()
+        && !selectionFocusedSemanticsNode.hasNonEmptyTextSelection()) {
+      releaseSelectionFocusOnNextUpdate = true;
     }
   }
 
@@ -1990,6 +2413,15 @@ public class AccessibilityBridge extends AccessibilityNodeProvider {
       inputFocusedSemanticsNode = null;
     }
 
+    if (selectionFocusedSemanticsNode == semanticsNodeToBeRemoved) {
+      selectionFocusedSemanticsNode = null;
+      releaseSelectionFocusOnNextUpdate = false;
+    }
+    if (lastSelectionEventSourceId == semanticsNodeToBeRemoved.id) {
+      lastSelectionEventSourceId = -1;
+    }
+    selectableTextReadingCursors.delete(semanticsNodeToBeRemoved.id);
+
     if (hoveredObject == semanticsNodeToBeRemoved) {
       hoveredObject = null;
     }
@@ -2014,6 +2446,10 @@ public class AccessibilityBridge extends AccessibilityNodeProvider {
     }
     accessibilityFocusedSemanticsNode = null;
     hoveredObject = null;
+    selectionFocusedSemanticsNode = null;
+    releaseSelectionFocusOnNextUpdate = false;
+    lastSelectionEventSourceId = -1;
+    selectableTextReadingCursors.clear();
     sendWindowContentChangeEvent(0, AccessibilityEvent.CONTENT_CHANGE_TYPE_SUBTREE);
   }
 
@@ -2336,6 +2772,12 @@ public class AccessibilityBridge extends AccessibilityNodeProvider {
     private String previousValue;
     private String previousLabel;
 
+    // The selection the bridge last sent to the framework for this selectable static text node,
+    // until the framework's next update of the node replaces it.
+    private boolean hasPendingTextSelection = false;
+    private int pendingTextSelectionBase = -1;
+    private int pendingTextSelectionExtent = -1;
+
     private float left;
     private float top;
     private float right;
@@ -2429,6 +2871,50 @@ public class AccessibilityBridge extends AccessibilityNodeProvider {
     @Nullable
     int[] getPublishedTextSelection() {
       return validTextSelection(textSelectionBase, textSelectionExtent);
+    }
+
+    /**
+     * Returns the selection to extend from: the pending selection the bridge sent, else the
+     * published one; null if there is none.
+     */
+    @Nullable
+    private int[] getSelectableTextSelection() {
+      if (hasPendingTextSelection) {
+        return validTextSelection(pendingTextSelectionBase, pendingTextSelectionExtent);
+      }
+      return getPublishedTextSelection();
+    }
+
+    private void setPendingTextSelection(int base, int extent) {
+      hasPendingTextSelection = true;
+      pendingTextSelectionBase = base;
+      pendingTextSelectionExtent = extent;
+    }
+
+    private void clearPendingTextSelection() {
+      hasPendingTextSelection = false;
+      pendingTextSelectionBase = -1;
+      pendingTextSelectionExtent = -1;
+    }
+
+    private boolean didChangeTextSelection() {
+      return previousTextSelectionBase != textSelectionBase
+          || previousTextSelectionExtent != textSelectionExtent;
+    }
+
+    private boolean hasNonEmptyTextSelection() {
+      final int[] selection = getPublishedTextSelection();
+      return selection != null && selection[0] != selection[1];
+    }
+
+    // Whether the published selection's extent sits at the edge of the label through which a
+    // selection spanning several nodes continues: the end for a forward selection, the start
+    // for a backward one.
+    private boolean isTextSelectionExtentAtPassThroughEdge() {
+      final int length = label == null ? 0 : label.length();
+      return textSelectionBase <= textSelectionExtent
+          ? textSelectionExtent == length
+          : textSelectionExtent == 0;
     }
 
     @Nullable
@@ -3015,6 +3501,7 @@ public class AccessibilityBridge extends AccessibilityNodeProvider {
       case AccessibilityEvent.TYPE_VIEW_FOCUSED:
         embeddedInputFocusedNodeId = virtualNodeId;
         inputFocusedSemanticsNode = null;
+        selectionFocusedSemanticsNode = null;
         break;
     }
     return true;
