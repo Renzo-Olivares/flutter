@@ -521,7 +521,11 @@ static void fl_accessible_node_set_actions_impl(
     FlutterSemanticsAction actions) {
   FlAccessibleNodePrivate* priv = FL_ACCESSIBLE_NODE_GET_PRIVATE(self);
 
+  gboolean was_selectable = is_selectable_static_text(priv);
   priv->flutter_actions = actions;
+  if (was_selectable != is_selectable_static_text(priv)) {
+    g_object_notify(G_OBJECT(self), "accessible-role");
+  }
 
   // NOTE(robert-ancell): It appears that AtkAction doesn't have a method of
   // notifying that actions have changed, and even if it did an ATK client
@@ -711,16 +715,29 @@ static gint fl_accessible_node_get_caret_offset(AtkText* text) {
   return utf16_to_character_offset(priv->name, caret);
 }
 
+// The node holding the caret an assistive technology set last, so that the
+// caret is dropped once the framework publishes a selection anywhere.
+static GWeakRef caret_node;
+
 // Asks the framework to select the characters [start, end) of selectable
-// text.
+// text. A negative end offset means the end of the text, as in ATK.
 static void select_characters(FlAccessibleNode* self, gint start, gint end) {
   FlAccessibleNodePrivate* priv = FL_ACCESSIBLE_NODE_GET_PRIVATE(self);
+  if (end < 0) {
+    end = fl_accessible_node_get_text_length(priv);
+  }
   gint base = character_to_utf16_offset(priv->name, MAX(start, 0));
-  gint extent = character_to_utf16_offset(priv->name, MAX(end, 0));
+  gint extent = character_to_utf16_offset(priv->name, end);
   // The framework only records a collapsed selection, so this node reports
   // the caret until the framework publishes a selection.
   if (base == extent) {
+    g_autoptr(FlAccessibleNode) previous =
+        FL_ACCESSIBLE_NODE(g_weak_ref_get(&caret_node));
+    if (previous != nullptr && previous != self) {
+      FL_ACCESSIBLE_NODE_GET_PRIVATE(previous)->caret_offset = -1;
+    }
     priv->caret_offset = base;
+    g_weak_ref_set(&caret_node, self);
   }
   fl_accessible_node_perform_set_selection_action(self, base, extent);
 }
@@ -1091,6 +1108,16 @@ void fl_accessible_node_emit_text_selection_changes(GPtrArray* nodes) {
   }
   if (changed->len == 0) {
     return;
+  }
+
+  // A published selection replaces the caret an assistive technology set.
+  if (selected->len > 0) {
+    g_autoptr(FlAccessibleNode) node =
+        FL_ACCESSIBLE_NODE(g_weak_ref_get(&caret_node));
+    if (node != nullptr) {
+      FL_ACCESSIBLE_NODE_GET_PRIVATE(node)->caret_offset = -1;
+      g_weak_ref_set(&caret_node, nullptr);
+    }
   }
 
   // Only the node holding the selection extent speaks for the change: the last

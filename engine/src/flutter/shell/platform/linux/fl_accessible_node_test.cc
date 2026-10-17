@@ -585,6 +585,13 @@ TEST_F(FlAccessibleNodeTest, SelectableTextSetSelection) {
   EXPECT_EQ(atk_text_get_caret_offset(ATK_TEXT(node)), 2);
   update_selection(node, 2, 4);
 
+  // An end offset of -1 means the end of the text.
+  update_selection(node, -1, -1);
+  EXPECT_TRUE(atk_text_add_selection(ATK_TEXT(node), 1, -1));
+  EXPECT_EQ(base, 2);
+  EXPECT_EQ(extent, 4);
+  update_selection(node, 2, 4);
+
   // Negative offsets clear the selection in the framework.
   EXPECT_TRUE(atk_text_remove_selection(ATK_TEXT(node), 0));
   EXPECT_EQ(base, -1);
@@ -600,6 +607,28 @@ TEST_F(FlAccessibleNodeTest, SelectableTextSetSelection) {
   EXPECT_EQ(atk_text_get_caret_offset(ATK_TEXT(node)), 1);
   update_selection(node, 3, 4);
   EXPECT_EQ(atk_text_get_caret_offset(ATK_TEXT(node)), 3);
+}
+
+// Checks a caret an assistive technology set is dropped once the framework
+// publishes a selection in another node.
+TEST_F(FlAccessibleNodeTest, SelectableTextCaretEndsWithASelectionElsewhere) {
+  StartEngine();
+  fl_engine_get_embedder_api(engine)->SendSemanticsAction = MOCK_ENGINE_PROC(
+      SendSemanticsAction,
+      ([](auto engine, const FlutterSendSemanticsActionInfo* info) {
+        return kSuccess;
+      }));
+  g_autoptr(FlAccessibleNode) first =
+      create_selectable_text(engine, 1, "Hello world");
+  g_autoptr(FlAccessibleNode) second =
+      create_selectable_text(engine, 2, "Second line");
+
+  EXPECT_TRUE(atk_text_set_caret_offset(ATK_TEXT(first), 4));
+  EXPECT_EQ(atk_text_get_caret_offset(ATK_TEXT(first)), 4);
+
+  update_selection(second, 0, 6);
+  EXPECT_EQ(atk_text_get_caret_offset(ATK_TEXT(first)), -1);
+  EXPECT_EQ(atk_text_get_caret_offset(ATK_TEXT(second)), 6);
 }
 
 // NOLINTEND(clang-analyzer-core.StackAddressEscape)
