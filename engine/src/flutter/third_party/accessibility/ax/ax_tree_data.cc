@@ -75,6 +75,7 @@ bool operator==(const AXTreeData& lhs, const AXTreeData& rhs) {
           lhs.loading_progress == rhs.loading_progress &&
           lhs.mimetype == rhs.mimetype && lhs.title == rhs.title &&
           lhs.url == rhs.url && lhs.focus_id == rhs.focus_id &&
+          lhs.sel_is_backward == rhs.sel_is_backward &&
           lhs.sel_anchor_object_id == rhs.sel_anchor_object_id &&
           lhs.sel_anchor_offset == rhs.sel_anchor_offset &&
           lhs.sel_anchor_affinity == rhs.sel_anchor_affinity &&

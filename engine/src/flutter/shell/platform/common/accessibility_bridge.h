@@ -104,6 +104,23 @@ class AccessibilityBridge
   const std::vector<ui::AXEventGenerator::TargetedEvent> GetPendingEvents()
       const;
 
+  //------------------------------------------------------------------------------
+  /// @brief      Records the caret an assistive technology set on selectable
+  ///             static text with a collapsed selection. The framework only
+  ///             records such a caret and publishes no selection, so
+  ///             platforms report it until a selection is published anywhere
+  ///             in the tree. Only the last caret set is kept.
+  ///
+  /// @param[in]  id           The node the caret is in.
+  /// @param[in]  offset       The caret offset, in UTF-16 code units of the
+  ///                          node's label.
+  void SetAssistiveTechnologyCaret(AccessibilityNodeId id, int32_t offset);
+
+  //------------------------------------------------------------------------------
+  /// @brief      The caret recorded by SetAssistiveTechnologyCaret() if it is
+  ///             in the node with the given id and still current, or -1.
+  int32_t GetAssistiveTechnologyCaret(AccessibilityNodeId id) const;
+
   // |AXTreeManager|
   ui::AXNode* GetNodeFromTree(const ui::AXTreeID tree_id,
                               const ui::AXNode::AXID node_id) const override;
@@ -224,6 +241,10 @@ class AccessibilityBridge
   // Whether the last CommitUpdates() cleared a selection that
   // |selected_static_nodes_| owned.
   bool static_selection_cleared_ = false;
+
+  // See SetAssistiveTechnologyCaret().
+  AccessibilityNodeId assistive_technology_caret_id_ = ui::AXNode::kInvalidAXID;
+  int32_t assistive_technology_caret_offset_ = -1;
 
   void InitAXTree(const ui::AXTreeUpdate& initial_state);
 

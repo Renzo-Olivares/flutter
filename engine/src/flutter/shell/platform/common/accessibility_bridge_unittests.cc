@@ -501,6 +501,78 @@ TEST(AccessibilityBridgeTest, FocusedTextFieldWins) {
   EXPECT_TRUE(bridge->IsStaticTextSelection());
 }
 
+TEST(AccessibilityBridgeTest, FocusedTextFieldSelectionIsNotBackward) {
+  std::shared_ptr<TestAccessibilityBridge> bridge =
+      std::make_shared<TestAccessibilityBridge>();
+  std::vector<int32_t> children{1, 2};
+  FlutterSemanticsNode2 root = CreateSemanticsNode(0, "root", &children);
+  FlutterSemanticsNode2 paragraph =
+      CreateSelectableTextNode(1, "Hello world", 5, 0);
+  FlutterSemanticsNode2 field = CreateSemanticsNode(2, "Email");
+  field.value = "me@example.com";
+  auto focused_field_flags = FlutterSemanticsFlags{
+      .is_focused = FlutterTristate::kFlutterTristateTrue,
+      .is_text_field = true,
+  };
+  auto blurred_field_flags = FlutterSemanticsFlags{
+      .is_focused = FlutterTristate::kFlutterTristateFalse,
+      .is_text_field = true,
+  };
+  field.flags2 = &blurred_field_flags;
+  bridge->AddFlutterSemanticsNodeUpdate(root);
+  bridge->AddFlutterSemanticsNodeUpdate(paragraph);
+  bridge->AddFlutterSemanticsNodeUpdate(field);
+  bridge->CommitUpdates();
+  const ui::AXTreeData& tree = bridge->GetAXTreeData();
+  ASSERT_TRUE(tree.sel_is_backward);
+
+  field.flags2 = &focused_field_flags;
+  field.text_selection_base = 2;
+  field.text_selection_extent = 4;
+  bridge->AddFlutterSemanticsNodeUpdate(field);
+  bridge->CommitUpdates();
+  EXPECT_EQ(tree.sel_anchor_object_id, 2);
+  EXPECT_FALSE(tree.sel_is_backward);
+}
+
+TEST(AccessibilityBridgeTest, AssistiveTechnologyCaretLastsUntilASelection) {
+  std::shared_ptr<TestAccessibilityBridge> bridge =
+      std::make_shared<TestAccessibilityBridge>();
+  std::vector<int32_t> children{1, 2};
+  FlutterSemanticsNode2 root = CreateSemanticsNode(0, "root", &children);
+  FlutterSemanticsNode2 first = CreateSelectableTextNode(1, "Hello world");
+  FlutterSemanticsNode2 second = CreateSelectableTextNode(2, "Second line");
+  bridge->AddFlutterSemanticsNodeUpdate(root);
+  bridge->AddFlutterSemanticsNodeUpdate(first);
+  bridge->AddFlutterSemanticsNodeUpdate(second);
+  bridge->CommitUpdates();
+
+  bridge->SetAssistiveTechnologyCaret(1, 3);
+  EXPECT_EQ(bridge->GetAssistiveTechnologyCaret(1), 3);
+  EXPECT_EQ(bridge->GetAssistiveTechnologyCaret(2), -1);
+
+  // An update that changes no selection keeps the caret.
+  bridge->AddFlutterSemanticsNodeUpdate(root);
+  bridge->CommitUpdates();
+  EXPECT_EQ(bridge->GetAssistiveTechnologyCaret(1), 3);
+
+  // A selection anywhere replaces it.
+  second.text_selection_base = 0;
+  second.text_selection_extent = 6;
+  bridge->AddFlutterSemanticsNodeUpdate(second);
+  bridge->CommitUpdates();
+  EXPECT_EQ(bridge->GetAssistiveTechnologyCaret(1), -1);
+
+  // So does the removal of its node.
+  bridge->SetAssistiveTechnologyCaret(1, 3);
+  root.child_count = 1;
+  children = {2};
+  root.children_in_traversal_order = children.data();
+  bridge->AddFlutterSemanticsNodeUpdate(root);
+  bridge->CommitUpdates();
+  EXPECT_EQ(bridge->GetAssistiveTechnologyCaret(1), -1);
+}
+
 TEST(AccessibilityBridgeTest, SwitchHasSwitchRole) {
   std::shared_ptr<TestAccessibilityBridge> bridge =
       std::make_shared<TestAccessibilityBridge>();

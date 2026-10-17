@@ -4,6 +4,7 @@
 
 #include "accessibility_bridge.h"
 
+#include <algorithm>
 #include <functional>
 #include <utility>
 
@@ -71,6 +72,7 @@ void AccessibilityBridge::CommitUpdates() {
   // Second, apply the pending node updates. This also moves reparented nodes to
   // their new parents if needed.
   ui::AXTreeUpdate update{.tree_data = tree_->data()};
+  const ui::AXTreeData previous_tree_data = tree_->data();
 
   // Figure out update order, ui::AXTree only accepts update in tree order,
   // where parent node must come before the child node in
@@ -115,6 +117,18 @@ void AccessibilityBridge::CommitUpdates() {
     return;
   }
   UpdateStaticSelectionTreeData();
+  // A caret an assistive technology set is out of date once the framework
+  // publishes a selection change.
+  const ui::AXTreeData& tree_data = tree_->data();
+  if (tree_data.sel_anchor_object_id !=
+          previous_tree_data.sel_anchor_object_id ||
+      tree_data.sel_anchor_offset != previous_tree_data.sel_anchor_offset ||
+      tree_data.sel_focus_object_id != previous_tree_data.sel_focus_object_id ||
+      tree_data.sel_focus_offset != previous_tree_data.sel_focus_offset ||
+      !tree_->GetFromId(assistive_technology_caret_id_)) {
+    assistive_technology_caret_id_ = ui::AXNode::kInvalidAXID;
+    assistive_technology_caret_offset_ = -1;
+  }
   // Handles accessibility events as the result of the semantics update.
   for (const auto& targeted_event : event_generator_) {
     auto event_target =
@@ -611,25 +625,58 @@ bool AccessibilityBridge::IsStaticTextSelection() const {
   return static_nodes_own_selection_ || static_selection_cleared_;
 }
 
+void AccessibilityBridge::SetAssistiveTechnologyCaret(AccessibilityNodeId id,
+                                                      int32_t offset) {
+  assistive_technology_caret_id_ = id;
+  assistive_technology_caret_offset_ = offset;
+}
+
+int32_t AccessibilityBridge::GetAssistiveTechnologyCaret(
+    AccessibilityNodeId id) const {
+  return id == assistive_technology_caret_id_
+             ? assistive_technology_caret_offset_
+             : -1;
+}
+
+namespace {
+
+// Returns the indexes of |node| and its ancestors in their parents, from the
+// root, which orders nodes in tree order.
+std::vector<size_t> GetTreePath(const ui::AXNode* node) {
+  std::vector<size_t> path;
+  for (; node != nullptr; node = node->parent()) {
+    path.push_back(node->index_in_parent());
+  }
+  std::reverse(path.begin(), path.end());
+  return path;
+}
+
+}  // namespace
+
 void AccessibilityBridge::UpdateStaticSelectionTreeData() {
   static_selection_cleared_ = false;
   // A focused text field with a selection owns the tree selection, which
-  // SetTreeData has already written.
+  // SetTreeData has already written. Text field selections have no direction.
   ui::AXNode* focused = tree_->GetFromId(tree_->data().focus_id);
-  if (focused && focused->data().role == ax::mojom::Role::kTextField &&
+  if (focused && focused->data().IsTextField() &&
       focused->data().GetIntAttribute(ax::mojom::IntAttribute::kTextSelStart) !=
           -1) {
     static_nodes_own_selection_ = false;
+    if (tree_->data().sel_is_backward) {
+      ui::AXTreeData data = tree_->data();
+      data.sel_is_backward = false;
+      tree_->UpdateData(data);
+    }
     return;
   }
 
-  ui::AXTreeData data = tree_->data();
   if (selected_static_nodes_.empty()) {
     if (!static_nodes_own_selection_) {
       return;
     }
     static_nodes_own_selection_ = false;
     static_selection_cleared_ = true;
+    ui::AXTreeData data = tree_->data();
     data.sel_is_backward = false;
     data.sel_anchor_object_id = ui::AXNode::kInvalidAXID;
     data.sel_anchor_offset = -1;
@@ -643,24 +690,21 @@ void AccessibilityBridge::UpdateStaticSelectionTreeData() {
   // order.
   ui::AXNode* first = nullptr;
   ui::AXNode* last = nullptr;
-  if (selected_static_nodes_.size() == 1) {
-    first = last = tree_->GetFromId(*selected_static_nodes_.begin());
-  } else {
-    std::vector<ui::AXNode*> stack;
-    if (tree_->root()) {
-      stack.push_back(tree_->root());
+  std::vector<size_t> first_path;
+  std::vector<size_t> last_path;
+  for (AccessibilityNodeId id : selected_static_nodes_) {
+    ui::AXNode* node = tree_->GetFromId(id);
+    if (!node) {
+      continue;
     }
-    while (!stack.empty()) {
-      ui::AXNode* node = stack.back();
-      stack.pop_back();
-      if (selected_static_nodes_.count(node->id())) {
-        if (!first) {
-          first = node;
-        }
-        last = node;
-      }
-      const std::vector<ui::AXNode*>& children = node->children();
-      stack.insert(stack.end(), children.rbegin(), children.rend());
+    std::vector<size_t> path = GetTreePath(node);
+    if (!first || path < first_path) {
+      first = node;
+      first_path = path;
+    }
+    if (!last || path > last_path) {
+      last = node;
+      last_path = std::move(path);
     }
   }
   if (!first) {
@@ -681,6 +725,7 @@ void AccessibilityBridge::UpdateStaticSelectionTreeData() {
                          ? first_base > first_extent
                          : first_base > first_extent && last_base > last_extent;
   static_nodes_own_selection_ = true;
+  ui::AXTreeData data = tree_->data();
   data.sel_is_backward = is_backward;
   if (is_backward) {
     data.sel_anchor_object_id = last->id();
