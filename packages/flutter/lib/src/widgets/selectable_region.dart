@@ -761,6 +761,27 @@ class SelectableRegionState extends State<SelectableRegion>
   bool get _representsFocusOnParagraph =>
       _focusNode.hasPrimaryFocus && SemanticsBinding.instance.semanticsEnabled;
 
+  /// The accessibility anchor, or null once its selectable is gone (a
+  /// paragraph that replaced or disposed its fragments, or detached).
+  ({Selectable target, int offset})? get _liveAccessibilityAnchor {
+    final ({Selectable target, int offset})? anchor = _accessibilityAnchor;
+    if (anchor == null) {
+      return null;
+    }
+    for (final RenderParagraph paragraph in _selectableParagraphs) {
+      if (paragraph.attached && paragraph.selectableBelongsToParagraph(anchor.target)) {
+        return anchor;
+      }
+    }
+    _accessibilityAnchor = null;
+    return null;
+  }
+
+  void _didDisposeSelectables(RenderParagraph paragraph) {
+    // Drops the anchor if its fragment was among the disposed ones.
+    _liveAccessibilityAnchor;
+  }
+
   bool _isFocusAnchor(RenderParagraph paragraph) {
     final bool isAnchor =
         _representsFocusOnParagraph && identical(paragraph, _resolveAnchorParagraph());
@@ -842,7 +863,7 @@ class SelectableRegionState extends State<SelectableRegion>
     }
     final Rect? regionRect = _globalRectOf(regionRenderObject);
     final RenderObject? root = regionRenderObject.owner?.rootNode;
-    if (regionRect == null || root is! RenderBox || !root.hasSize) {
+    if (regionRect == null || root is! RenderView) {
       return regionRect;
     }
     final Rect visible = regionRect.intersect(Offset.zero & root.size);
@@ -860,7 +881,7 @@ class SelectableRegionState extends State<SelectableRegion>
       return cached;
     }
     _anchorParagraph = null;
-    final Selectable? target = _accessibilityAnchor?.target;
+    final Selectable? target = _liveAccessibilityAnchor?.target;
     if (target != null) {
       for (final RenderParagraph paragraph in _selectableParagraphs) {
         if (paragraph.attached &&
@@ -977,7 +998,7 @@ class SelectableRegionState extends State<SelectableRegion>
               ..onDragStart = _handleMouseDragStart
               ..onDragUpdate = _handleMouseDragUpdate
               ..onDragEnd = _handleMouseDragEnd
-              ..onCancel = clearSelection
+              ..onCancel = _handleGestureCancel
               ..dragStartBehavior = DragStartBehavior.down;
           },
         );
@@ -1026,7 +1047,7 @@ class SelectableRegionState extends State<SelectableRegion>
               ..onDragStart = _handleMouseDragStart
               ..onDragUpdate = _handleMouseDragUpdate
               ..onDragEnd = _handleMouseDragEnd
-              ..onCancel = clearSelection
+              ..onCancel = _handleGestureCancel
               ..dragStartBehavior = DragStartBehavior.down;
           },
         );
@@ -1212,6 +1233,13 @@ class SelectableRegionState extends State<SelectableRegion>
         }
     }
     _updateSelectedContentIfNeeded();
+  }
+
+  /// A cancelled gesture clears the selection and commits the clear, so a
+  /// change that was in progress is finalized rather than left pending.
+  void _handleGestureCancel() {
+    clearSelection();
+    _commitSelectionChange(_SelectionChangeSource.pointerOrKeyboard);
   }
 
   void _handleMouseDragEnd(TapDragEndDetails details) {
@@ -1971,7 +1999,7 @@ class SelectableRegionState extends State<SelectableRegion>
       return false;
     }
     SelectionResult result = SelectionResult.none;
-    if (_accessibilityAnchor case (:final Selectable target, :final int offset)) {
+    if (_liveAccessibilityAnchor case (:final Selectable target, :final int offset)) {
       result = root.dispatchSelectionEvent(
         SelectContentRangeSelectionEvent(target: target, startOffset: offset, endOffset: offset),
       );
@@ -4005,9 +4033,13 @@ class _SelectionChangeAnnouncer {
       return;
     }
     if (!_state._mayAnnounceSelectionChange(source)) {
-      // Silent; the selection is not even gathered.
       _cancel();
-      _lastAnnounced = null;
+      // Silent. With an accessibility client attached the real state is kept
+      // as the baseline, so the next announcement describes only the change;
+      // without one nothing listens and the selection is not even gathered.
+      _lastAnnounced = SemanticsBinding.instance.semanticsEnabled
+          ? _state._selectionSnapshot()
+          : null;
       return;
     }
     _pending = _state._selectionSnapshot().copyWith(isAll: isAll);
@@ -4179,6 +4211,11 @@ class _SelectionSemanticsDelegate implements SelectionSemanticsDelegate {
   @override
   void didDetachParagraph(RenderParagraph paragraph) {
     _state._didDetachParagraph(paragraph);
+  }
+
+  @override
+  void didDisposeSelectables(RenderParagraph paragraph) {
+    _state._didDisposeSelectables(paragraph);
   }
 }
 

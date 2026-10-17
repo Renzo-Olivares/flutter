@@ -359,6 +359,10 @@ abstract class SelectionSemanticsDelegate {
 
   /// Called when `paragraph` stops using this delegate or is disposed.
   void didDetachParagraph(RenderParagraph paragraph);
+
+  /// Called when `paragraph` disposed its selectables (its text changed or
+  /// it left a registrar), so references to them are stale.
+  void didDisposeSelectables(RenderParagraph paragraph);
 }
 
 /// A render object that displays a paragraph of text.
@@ -510,8 +514,9 @@ class RenderParagraph extends RenderBox
 
   // The committed selection snapshot that the semantics nodes publish, in
   // plain-text code units, one entry per selected fragment. Null when nothing
-  // is published. Refreshed by [publishSelectionSemantics], cleared by any
-  // text change and by fragment disposal.
+  // is published. Refreshed by [publishSelectionSemantics]; cleared when the
+  // fragments are disposed (a plain-text change or leaving a registrar),
+  // which is the only time the offsets stop indexing the text.
   List<TextSelection>? _publishedSelections;
 
   /// Copies the fragments' current selection into the snapshot that the
@@ -767,6 +772,7 @@ class RenderParagraph extends RenderBox
     if (_lastSelectableFragments == null) {
       return;
     }
+    _selectionSemanticsDelegate?.didDisposeSelectables(this);
     for (final _SelectableFragment fragment in _lastSelectableFragments!) {
       fragment.dispose();
     }
@@ -1517,7 +1523,9 @@ class RenderParagraph extends RenderBox
     var placeholderIndex = 0;
     var childConfigsIndex = 0;
     var attributedLabelCacheIndex = 0;
-    _cachedCombinedSemanticsInfos ??= combineSemanticsInfo(_semanticsInfo!);
+    _cachedCombinedSemanticsInfos ??= combineSemanticsInfo(
+      _semanticsInfo ??= text.getSemanticsInformation(),
+    );
     for (final InlineSpanSemanticsInformation info in _cachedCombinedSemanticsInfos!) {
       if (info.isPlaceholder) {
         // Mark every childConfig belongs to this placeholder to merge up group.
@@ -1595,7 +1603,11 @@ class RenderParagraph extends RenderBox
     SemanticsConfiguration config,
     Iterable<SemanticsNode> children,
   ) {
-    assert(_semanticsInfo != null && _semanticsInfo!.isNotEmpty);
+    // Normally collected by describeSemanticsConfiguration; recomputed if a
+    // text change invalidated it since.
+    final List<InlineSpanSemanticsInformation> semanticsInfo = _semanticsInfo ??= text
+        .getSemanticsInformation();
+    assert(semanticsInfo.isNotEmpty);
     final newChildren = <SemanticsNode>[];
     TextDirection currentDirection = textDirection;
     Rect currentRect;
@@ -1607,7 +1619,7 @@ class RenderParagraph extends RenderBox
     final newChildCache = <Key, SemanticsNode>{};
     bool representsFocus =
         _selectionSemanticsDelegate != null && _selectionSemanticsDelegate!.isFocusAnchor(this);
-    _cachedCombinedSemanticsInfos ??= combineSemanticsInfo(_semanticsInfo!);
+    _cachedCombinedSemanticsInfos ??= combineSemanticsInfo(semanticsInfo);
     for (final InlineSpanSemanticsInformation info in _cachedCombinedSemanticsInfos!) {
       final selection = TextSelection(baseOffset: start, extentOffset: start + info.text.length);
       start += info.text.length;

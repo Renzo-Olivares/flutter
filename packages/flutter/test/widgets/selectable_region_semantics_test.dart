@@ -1624,6 +1624,197 @@ void main() {
       expect(messages(tester), <String>['Hello selected']);
     }, variant: TargetPlatformVariant.only(TargetPlatform.macOS));
   });
+  group('embedder review findings', () {
+    const window = Duration(milliseconds: 300);
+    const shiftRight = SingleActivator(LogicalKeyboardKey.arrowRight, shift: true);
+    List<String> messages(WidgetTester tester) =>
+        tester.takeAnnouncements().map((CapturedAccessibilityAnnouncement a) => a.message).toList();
+
+    testWidgets('a cancelled drag publishes the cleared selection', (WidgetTester tester) async {
+      await tester.pumpWidget(
+        _region(child: const Text('Hello world', style: TextStyle(fontSize: 20))),
+      );
+      await tester.pump();
+      final SemanticsNode node = tester.getSemantics(find.byType(RichText));
+      final RenderParagraph paragraph = _paragraphAt(tester, 0);
+      tester.semantics.setSelection(find.semantics.byLabel('Hello world'), base: 0, extent: 5);
+      await tester.pump();
+      expect(node.getSemanticsData().textSelection, isNotNull);
+
+      final TestGesture gesture = await tester.startGesture(
+        _textOffsetToPosition(paragraph, 1),
+        kind: PointerDeviceKind.mouse,
+      );
+      addTearDown(gesture.removePointer);
+      await tester.pump();
+      await gesture.moveTo(_textOffsetToPosition(paragraph, 8));
+      await tester.pump();
+      await gesture.cancel();
+      await tester.pump();
+      expect(paragraph.selections, isEmpty);
+      expect(node.getSemanticsData().textSelection, isNull);
+      expect(node.getSemanticsData().hasAction(SemanticsAction.copy), isFalse);
+      expect(
+        SelectableRegionSelectionStatusScope.maybeOf(tester.element(find.byType(RichText)))!.value,
+        SelectableRegionSelectionStatus.finalized,
+      );
+    }, variant: TargetPlatformVariant.desktop());
+
+    testWidgets('a silent commit does not hide the next clear', (WidgetTester tester) async {
+      Widget build({required bool supportsAnnounce}) {
+        return TestWidgetsApp(
+          home: MediaQuery(
+            data: MediaQueryData(supportsAnnounce: supportsAnnounce),
+            child: SelectableRegion(
+              selectionControls: emptyTextSelectionControls,
+              child: const Text('Hello world'),
+            ),
+          ),
+        );
+      }
+
+      await tester.pumpWidget(build(supportsAnnounce: false));
+      await tester.pump();
+      tester.semantics.setSelection(find.semantics.byLabel('Hello world'), base: 0, extent: 5);
+      await tester.pump(window);
+      expect(messages(tester), isEmpty);
+
+      await tester.pumpWidget(build(supportsAnnounce: true));
+      await tester.pump();
+      await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+      await tester.pump(window);
+      expect(messages(tester), <String>['Selection cleared']);
+
+      // After a silent change the next delta is relative to the real state.
+      await tester.pumpWidget(build(supportsAnnounce: false));
+      tester.semantics.setSelection(find.semantics.byLabel('Hello world'), base: 0, extent: 5);
+      await tester.pump(window);
+      await tester.pumpWidget(build(supportsAnnounce: true));
+      await tester.pump();
+      await sendKeyCombination(tester, shiftRight);
+      await tester.pump(window);
+      expect(messages(tester), <String>['space selected']);
+    }, variant: TargetPlatformVariant.only(TargetPlatform.macOS));
+
+    testWidgets('an accessibility caret survives a text change as a fresh start', (
+      WidgetTester tester,
+    ) async {
+      final focusNode = FocusNode();
+      addTearDown(focusNode.dispose);
+      await tester.pumpWidget(
+        _region(
+          focusNode: focusNode,
+          child: const Column(children: <Widget>[Text('First'), Text('Hello world')]),
+        ),
+      );
+      await tester.pump();
+      tester.semantics.setSelection(find.semantics.byLabel('Hello world'), base: 3, extent: 3);
+      await tester.pump();
+      // The paragraph's fragments are replaced.
+      await tester.pumpWidget(
+        _region(
+          focusNode: focusNode,
+          child: const Column(children: <Widget>[Text('First'), Text('Hello there')]),
+        ),
+      );
+      await tester.pump();
+      focusNode.requestFocus();
+      await tester.pump();
+      await tester.pump();
+      expect(_nodeWithLabel(tester, 'First').flagsCollection.isFocused, Tristate.isTrue);
+      await sendKeyCombination(tester, shiftRight);
+      await tester.pump();
+      expect(_paragraphAt(tester, 0).selections, const <TextSelection>[
+        TextSelection(baseOffset: 0, extentOffset: 1),
+      ]);
+      expect(_paragraphAt(tester, 1).selections, isEmpty);
+    });
+
+    testWidgets('a style-only text change keeps the published selection', (
+      WidgetTester tester,
+    ) async {
+      await tester.pumpWidget(_region(child: const Text('Hello world')));
+      await tester.pump();
+      tester.semantics.setSelection(find.semantics.byLabel('Hello world'), base: 0, extent: 5);
+      await tester.pump();
+      await tester.pumpWidget(
+        _region(
+          child: const Text('Hello world', style: TextStyle(color: Color(0xFF00FF00))),
+        ),
+      );
+      await tester.pump();
+      final SemanticsNode node = tester.getSemantics(find.byType(RichText));
+      expect(
+        node.getSemanticsData().textSelection,
+        const TextSelection(baseOffset: 0, extentOffset: 5),
+      );
+      expect(node.getSemanticsData().hasAction(SemanticsAction.copy), isTrue);
+    });
+
+    testWidgets('announces without a Localizations ancestor', (WidgetTester tester) async {
+      await tester.pumpWidget(
+        Directionality(
+          textDirection: TextDirection.ltr,
+          child: MediaQuery(
+            data: const MediaQueryData(supportsAnnounce: true),
+            child: Overlay(
+              initialEntries: <OverlayEntry>[
+                OverlayEntry(
+                  builder: (BuildContext context) => SelectableRegion(
+                    selectionControls: emptyTextSelectionControls,
+                    child: const Text('Hello world'),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+      tester.semantics.setSelection(find.semantics.byLabel('Hello world'), base: 0, extent: 5);
+      await tester.pump(window);
+      expect(messages(tester), <String>['Hello selected']);
+    }, variant: TargetPlatformVariant.only(TargetPlatform.macOS));
+
+    testWidgets('keyboard start in a region taller than the screen begins on screen', (
+      WidgetTester tester,
+    ) async {
+      final focusNode = FocusNode();
+      addTearDown(focusNode.dispose);
+      final controller = ScrollController();
+      addTearDown(controller.dispose);
+      await tester.pumpWidget(
+        TestWidgetsApp(
+          home: SingleChildScrollView(
+            controller: controller,
+            child: SelectableRegion(
+              focusNode: focusNode,
+              selectionControls: emptyTextSelectionControls,
+              child: Column(
+                children: <Widget>[
+                  for (int i = 0; i < 50; i += 1) SizedBox(height: 50.0, child: Text('Item $i')),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+      controller.jumpTo(1500.0);
+      await tester.pump();
+      focusNode.requestFocus();
+      await tester.pump();
+      await tester.pump();
+      expect(_nodeWithLabel(tester, 'Item 30').flagsCollection.isFocused, Tristate.isTrue);
+      await sendKeyCombination(tester, shiftRight);
+      await tester.pump();
+      final Iterable<String> selected = _allNodes(tester)
+          .where((SemanticsNode node) => node.getSemanticsData().textSelection != null)
+          .map((SemanticsNode node) => node.label);
+      expect(selected, <String>['Item 30']);
+      expect(controller.offset, 1500.0);
+    });
+  });
 }
 
 class _CustomWidgetsLocalizations extends DefaultWidgetsLocalizations {

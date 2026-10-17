@@ -244,7 +244,7 @@ class _RenderSelectableAdapter extends RenderProxyBox
         }
       case SelectionEventType.selectContentRange:
         // Offsets index text; this selectable has none, so it is never the
-        // target of such an event.
+        // target of such an event, and it has no edge to place a caret at.
         result = SelectionResult.none;
       case SelectionEventType.directionallyExtendSelection:
         result = SelectionResult.end;
