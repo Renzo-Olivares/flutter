@@ -21,6 +21,9 @@ void TestAccessibilityBridge::DispatchAccessibilityAction(
     FlutterSemanticsAction action,
     fml::MallocMapping data) {
   performed_actions.push_back(action);
+  performed_action_targets.push_back(target);
+  performed_action_data.emplace_back(data.GetMapping(),
+                                     data.GetMapping() + data.GetSize());
 }
 
 }  // namespace flutter

@@ -7,6 +7,7 @@
 #include <utility>
 
 #include "flutter/shell/platform/common/accessibility_bridge.h"
+#include "flutter/shell/platform/common/set_selection_arguments.h"
 #include "flutter/third_party/accessibility/ax/ax_action_data.h"
 #include "flutter/third_party/accessibility/ax/ax_tree_manager_map.h"
 #include "flutter/third_party/accessibility/gfx/geometry/rect_conversions.h"
@@ -50,6 +51,28 @@ bool FlutterPlatformNodeDelegate::AccessibilityPerformAction(
           target, FlutterSemanticsAction::kFlutterSemanticsActionShowOnScreen,
           {});
       return true;
+    case ax::mojom::Action::kSetSelection: {
+      // Only selectable static text, such as a paragraph under a
+      // SelectableRegion, takes a selection here, in label offsets. Text
+      // fields keep their own selection handling.
+      const ui::AXNodeData& node_data = GetData();
+      if (node_data.role == ax::mojom::Role::kTextField ||
+          !node_data.HasAction(ax::mojom::Action::kSetSelection)) {
+        return false;
+      }
+      // The macOS AXSelectedTextRange setter fills only the offsets, so node
+      // ids of -1 mean this node.
+      if ((data.anchor_node_id != ui::AXNode::kInvalidAXID &&
+           data.anchor_node_id != target) ||
+          (data.focus_node_id != ui::AXNode::kInvalidAXID &&
+           data.focus_node_id != target)) {
+        return false;
+      }
+      bridge_ptr->DispatchAccessibilityAction(
+          target, FlutterSemanticsAction::kFlutterSemanticsActionSetSelection,
+          EncodeSetSelectionArguments(data.anchor_offset, data.focus_offset));
+      return true;
+    }
     // TODO(chunhtai): support more actions.
     default:
       return false;

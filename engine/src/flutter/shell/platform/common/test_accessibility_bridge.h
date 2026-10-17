@@ -19,6 +19,8 @@ class TestAccessibilityBridge : public AccessibilityBridge {
 
   std::vector<ui::AXEventGenerator::Event> accessibility_events;
   std::vector<FlutterSemanticsAction> performed_actions;
+  std::vector<AccessibilityNodeId> performed_action_targets;
+  std::vector<std::vector<uint8_t>> performed_action_data;
 
  protected:
   void OnAccessibilityEvent(

@@ -88,6 +88,108 @@ TEST(FlutterPlatformNodeDelegateTest, canPerfomActions) {
             FlutterSemanticsAction::kFlutterSemanticsActionShowOnScreen);
 }
 
+namespace {
+
+FlutterSemanticsNode2 CreateSetSelectionTestNode(int32_t id,
+                                                 const char* label,
+                                                 FlutterSemanticsFlags* flags) {
+  FlutterSemanticsNode2 node{sizeof(FlutterSemanticsNode2), id};
+  node.flags2 = flags;
+  node.actions = FlutterSemanticsAction::kFlutterSemanticsActionSetSelection;
+  node.text_selection_base = -1;
+  node.text_selection_extent = -1;
+  node.label = label;
+  node.hint = "";
+  node.value = "";
+  node.increased_value = "";
+  node.decreased_value = "";
+  node.tooltip = "";
+  node.identifier = "";
+  return node;
+}
+
+// The StandardMessageCodec encoding of {"base": 1, "extent": 4}.
+const std::vector<uint8_t> kBase1Extent4 = {
+    13, 2, 7,   4,   'b', 'a', 's', 'e', 3, 1, 0, 0, 0,
+    7,  6, 'e', 'x', 't', 'e', 'n', 't', 3, 4, 0, 0, 0,
+};
+
+}  // namespace
+
+TEST(FlutterPlatformNodeDelegateTest, setSelectionOnStaticTextDispatchesRange) {
+  std::shared_ptr<TestAccessibilityBridge> bridge =
+      std::make_shared<TestAccessibilityBridge>();
+  FlutterSemanticsFlags flags = FlutterSemanticsFlags{0};
+  std::vector<int32_t> children{1, 2};
+  FlutterSemanticsNode2 root = CreateSetSelectionTestNode(0, "root", &flags);
+  root.actions = static_cast<FlutterSemanticsAction>(0);
+  root.child_count = children.size();
+  root.children_in_traversal_order = children.data();
+  FlutterSemanticsNode2 paragraph =
+      CreateSetSelectionTestNode(1, "Hello world", &flags);
+  FlutterSemanticsNode2 label = CreateSetSelectionTestNode(2, "Other", &flags);
+  label.actions = static_cast<FlutterSemanticsAction>(0);
+  bridge->AddFlutterSemanticsNodeUpdate(root);
+  bridge->AddFlutterSemanticsNodeUpdate(paragraph);
+  bridge->AddFlutterSemanticsNodeUpdate(label);
+  bridge->CommitUpdates();
+
+  auto paragraph_delegate =
+      bridge->GetFlutterPlatformNodeDelegateFromID(1).lock();
+  // The macOS AXSelectedTextRange setter fills only the offsets; node ids of
+  // -1 mean this node.
+  ui::AXActionData action_data;
+  action_data.action = ax::mojom::Action::kSetSelection;
+  action_data.anchor_offset = 1;
+  action_data.focus_offset = 4;
+  EXPECT_TRUE(paragraph_delegate->AccessibilityPerformAction(action_data));
+  ASSERT_EQ(bridge->performed_actions.size(), size_t{1});
+  EXPECT_EQ(bridge->performed_actions[0],
+            FlutterSemanticsAction::kFlutterSemanticsActionSetSelection);
+  EXPECT_EQ(bridge->performed_action_targets[0], 1);
+  EXPECT_EQ(bridge->performed_action_data[0], kBase1Extent4);
+
+  // UIA sets the node ids; they must name this node.
+  action_data.anchor_node_id = 1;
+  action_data.focus_node_id = 1;
+  EXPECT_TRUE(paragraph_delegate->AccessibilityPerformAction(action_data));
+  ASSERT_EQ(bridge->performed_actions.size(), size_t{2});
+  EXPECT_EQ(bridge->performed_action_data[1], kBase1Extent4);
+
+  action_data.focus_node_id = 2;
+  EXPECT_FALSE(paragraph_delegate->AccessibilityPerformAction(action_data));
+  EXPECT_EQ(bridge->performed_actions.size(), size_t{2});
+
+  // A node without the set selection action is not selectable.
+  auto label_delegate = bridge->GetFlutterPlatformNodeDelegateFromID(2).lock();
+  action_data.anchor_node_id = -1;
+  action_data.focus_node_id = -1;
+  EXPECT_FALSE(label_delegate->AccessibilityPerformAction(action_data));
+  EXPECT_EQ(bridge->performed_actions.size(), size_t{2});
+}
+
+TEST(FlutterPlatformNodeDelegateTest, setSelectionOnTextFieldIsNoOp) {
+  std::shared_ptr<TestAccessibilityBridge> bridge =
+      std::make_shared<TestAccessibilityBridge>();
+  FlutterSemanticsFlags flags = FlutterSemanticsFlags{0};
+  flags.is_text_field = true;
+  flags.is_focused = FlutterTristate::kFlutterTristateTrue;
+  FlutterSemanticsNode2 field = CreateSetSelectionTestNode(0, "Email", &flags);
+  field.value = "me@example.com";
+  field.text_selection_base = 2;
+  field.text_selection_extent = 2;
+  bridge->AddFlutterSemanticsNodeUpdate(field);
+  bridge->CommitUpdates();
+
+  auto field_delegate = bridge->GetFlutterPlatformNodeDelegateFromID(0).lock();
+  ui::AXActionData action_data;
+  action_data.action = ax::mojom::Action::kSetSelection;
+  action_data.anchor_offset = 1;
+  action_data.focus_offset = 4;
+  EXPECT_FALSE(field_delegate->AccessibilityPerformAction(action_data));
+  EXPECT_TRUE(bridge->performed_actions.empty());
+}
+
 TEST(FlutterPlatformNodeDelegateTest, canGetAXNode) {
   // Set up a flutter accessibility node.
   std::shared_ptr<TestAccessibilityBridge> bridge =
