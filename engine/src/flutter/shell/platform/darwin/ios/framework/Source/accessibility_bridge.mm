@@ -8,6 +8,7 @@
 
 #include "flutter/fml/logging.h"
 #import "flutter/shell/platform/darwin/ios/framework/Source/FlutterEngine_Internal.h"
+#import "flutter/shell/platform/darwin/ios/framework/Source/FlutterSelectableTextSemanticsObject.h"
 #import "flutter/shell/platform/darwin/ios/framework/Source/FlutterViewController_Internal.h"
 #import "flutter/shell/platform/darwin/ios/framework/Source/TextInputSemanticsObject.h"
 #import "flutter/shell/platform/darwin/ios/platform_view_ios.h"
@@ -312,6 +313,10 @@ static SemanticsObject* CreateObject(const flutter::SemanticsNode& node,
     return [[FlutterPlatformViewSemanticsContainer alloc] initWithBridge:weak_ptr
                                                                      uid:node.id
                                                             platformView:touchInterceptingView];
+  } else if ([FlutterSelectableTextSemanticsObject isSelectableStaticText:node]) {
+    // Selectable static text, such as a paragraph in a SelectionArea, also
+    // implements UITextInput so that VoiceOver can select within it.
+    return [[FlutterSelectableTextSemanticsObject alloc] initWithBridge:weak_ptr uid:node.id];
   } else {
     return [[FlutterSemanticsObject alloc] initWithBridge:weak_ptr uid:node.id];
   }
@@ -335,9 +340,9 @@ SemanticsObject* AccessibilityBridge::GetOrCreateObject(int32_t uid,
               (node.flags.isChecked == flutter::SemanticsCheckState::kNone) ||
           ((object.node.flags.isToggled == flutter::SemanticsTristate::kNone) !=
            (node.flags.isToggled == flutter::SemanticsTristate::kNone)) ||
-          object.node.flags.hasImplicitScrolling != node.flags.hasImplicitScrolling
-
-      ) {
+          object.node.flags.hasImplicitScrolling != node.flags.hasImplicitScrolling ||
+          [FlutterSelectableTextSemanticsObject isSelectableStaticText:object.node] !=
+              [FlutterSelectableTextSemanticsObject isSelectableStaticText:node]) {
         // The node changed its type. In this case, we cannot reuse the existing
         // SemanticsObject implementation. Instead, we replace it with a new
         // instance.
