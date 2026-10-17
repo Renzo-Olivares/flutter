@@ -298,6 +298,7 @@ TEST(AccessibilityBridgeTest, StaticTextSelectionOwnsTreeSelection) {
   const ui::AXTreeData& tree = bridge->GetAXTreeData();
   EXPECT_EQ(tree.sel_anchor_object_id, ui::AXNode::kInvalidAXID);
   EXPECT_EQ(tree.sel_focus_object_id, ui::AXNode::kInvalidAXID);
+  EXPECT_FALSE(bridge->IsStaticTextSelection());
   bridge->accessibility_events.clear();
 
   paragraph.text_selection_base = 0;
@@ -310,6 +311,7 @@ TEST(AccessibilityBridgeTest, StaticTextSelectionOwnsTreeSelection) {
   EXPECT_EQ(tree.sel_focus_object_id, 1);
   EXPECT_EQ(tree.sel_focus_offset, 4);
   EXPECT_FALSE(tree.sel_is_backward);
+  EXPECT_TRUE(bridge->IsStaticTextSelection());
   EXPECT_THAT(
       bridge->accessibility_events,
       Contains(ui::AXEventGenerator::Event::DOCUMENT_SELECTION_CHANGED));
@@ -411,9 +413,14 @@ TEST(AccessibilityBridgeTest, StaticOwnerClears) {
   EXPECT_EQ(tree.sel_focus_object_id, ui::AXNode::kInvalidAXID);
   EXPECT_EQ(tree.sel_focus_offset, -1);
   EXPECT_FALSE(tree.sel_is_backward);
+  // The update that cleared the selection still belongs to static text.
+  EXPECT_TRUE(bridge->IsStaticTextSelection());
   EXPECT_THAT(
       bridge->accessibility_events,
       Contains(ui::AXEventGenerator::Event::DOCUMENT_SELECTION_CHANGED));
+  bridge->AddFlutterSemanticsNodeUpdate(root);
+  bridge->CommitUpdates();
+  EXPECT_FALSE(bridge->IsStaticTextSelection());
 
   // A selected node that is removed from the tree stops owning the selection.
   second.text_selection_base = 0;
@@ -471,6 +478,7 @@ TEST(AccessibilityBridgeTest, FocusedTextFieldWins) {
   EXPECT_EQ(tree.sel_anchor_offset, 2);
   EXPECT_EQ(tree.sel_focus_object_id, 2);
   EXPECT_EQ(tree.sel_focus_offset, 2);
+  EXPECT_FALSE(bridge->IsStaticTextSelection());
 
   // A static selection change while the field is focused leaves the field as
   // the owner.
@@ -479,6 +487,7 @@ TEST(AccessibilityBridgeTest, FocusedTextFieldWins) {
   bridge->CommitUpdates();
   EXPECT_EQ(tree.sel_anchor_object_id, 2);
   EXPECT_EQ(tree.sel_focus_offset, 2);
+  EXPECT_FALSE(bridge->IsStaticTextSelection());
 
   // A blurred field that still holds a selection is not an owner: the static
   // selection takes over.
@@ -489,6 +498,7 @@ TEST(AccessibilityBridgeTest, FocusedTextFieldWins) {
   EXPECT_EQ(tree.sel_anchor_offset, 0);
   EXPECT_EQ(tree.sel_focus_object_id, 1);
   EXPECT_EQ(tree.sel_focus_offset, 7);
+  EXPECT_TRUE(bridge->IsStaticTextSelection());
 }
 
 TEST(AccessibilityBridgeTest, SwitchHasSwitchRole) {

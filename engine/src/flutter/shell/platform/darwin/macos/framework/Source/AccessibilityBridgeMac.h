@@ -97,15 +97,15 @@ class AccessibilityBridgeMac : public AccessibilityBridge {
                                                            const ui::AXNode& ax_node) const;
 
   //---------------------------------------------------------------------------
-  /// @brief      The node whose selection moved last if the tree selection is
-  ///             owned by selectable static text, or kInvalidAXID otherwise.
-  AccessibilityNodeId StaticSelectionFocusId() const;
+  /// @brief      Records the focus node of a selection of selectable static
+  ///             text, the node a notification for its clearing targets.
+  void UpdateLastStaticSelectionFocusId();
 
   __weak FlutterEngine* flutter_engine_;
   __weak FlutterViewController* view_controller_;
 
-  // The StaticSelectionFocusId() at the last DOCUMENT_SELECTION_CHANGED, so
-  // that the clearing of a static selection is told apart from a text field's.
+  // The focus node of the selectable static text selection at the last
+  // DOCUMENT_SELECTION_CHANGED, or kInvalidAXID.
   AccessibilityNodeId last_static_selection_focus_id_ = ui::AXNode::kInvalidAXID;
 
   FML_DISALLOW_COPY_AND_ASSIGN(AccessibilityBridgeMac);

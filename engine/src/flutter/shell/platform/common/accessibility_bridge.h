@@ -158,6 +158,14 @@ class AccessibilityBridge
   virtual std::shared_ptr<FlutterPlatformNodeDelegate>
   CreateFlutterPlatformNodeDelegate() = 0;
 
+  //---------------------------------------------------------------------------
+  /// @brief      Whether the tree selection belongs to selectable static text,
+  ///             such as paragraphs under a SelectableRegion, including the
+  ///             update that cleared it. Platforms use this to tell a
+  ///             DOCUMENT_SELECTION_CHANGED event of static text from one of
+  ///             a text field.
+  bool IsStaticTextSelection() const;
+
  private:
   // See FlutterSemanticsNode in embedder.h
   typedef struct {
@@ -212,6 +220,10 @@ class AccessibilityBridge
   // Whether the tree selection was last written from
   // |selected_static_nodes_|, so that it is cleared when that set empties.
   bool static_nodes_own_selection_ = false;
+
+  // Whether the last CommitUpdates() cleared a selection that
+  // |selected_static_nodes_| owned.
+  bool static_selection_cleared_ = false;
 
   void InitAXTree(const ui::AXTreeUpdate& initial_state);
 

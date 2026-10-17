@@ -13,6 +13,8 @@ class TestAccessibilityBridge : public AccessibilityBridge {
  public:
   TestAccessibilityBridge() = default;
 
+  using AccessibilityBridge::IsStaticTextSelection;
+
   void DispatchAccessibilityAction(AccessibilityNodeId target,
                                    FlutterSemanticsAction action,
                                    fml::MallocMapping data) override;

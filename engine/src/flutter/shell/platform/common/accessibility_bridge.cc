@@ -607,7 +607,12 @@ void AccessibilityBridge::UpdateSelectedStaticNodes(const SemanticsNode& node) {
   }
 }
 
+bool AccessibilityBridge::IsStaticTextSelection() const {
+  return static_nodes_own_selection_ || static_selection_cleared_;
+}
+
 void AccessibilityBridge::UpdateStaticSelectionTreeData() {
+  static_selection_cleared_ = false;
   // A focused text field with a selection owns the tree selection, which
   // SetTreeData has already written.
   ui::AXNode* focused = tree_->GetFromId(tree_->data().focus_id);
@@ -624,6 +629,7 @@ void AccessibilityBridge::UpdateStaticSelectionTreeData() {
       return;
     }
     static_nodes_own_selection_ = false;
+    static_selection_cleared_ = true;
     data.sel_is_backward = false;
     data.sel_anchor_object_id = ui::AXNode::kInvalidAXID;
     data.sel_anchor_offset = -1;

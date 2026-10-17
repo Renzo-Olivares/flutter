@@ -39,7 +39,7 @@ void AccessibilityBridgeMac::OnAccessibilityEvent(
   if (!view_controller_.viewLoaded || !view_controller_.view.window) {
     // Don't need to send accessibility events if the there is no view or window.
     if (event_type == ui::AXEventGenerator::Event::DOCUMENT_SELECTION_CHANGED) {
-      last_static_selection_focus_id_ = StaticSelectionFocusId();
+      UpdateLastStaticSelectionFocusId();
     }
     return;
   }
@@ -47,7 +47,7 @@ void AccessibilityBridgeMac::OnAccessibilityEvent(
   std::vector<AccessibilityBridgeMac::NSAccessibilityEvent> events =
       MacOSEventsFromAXEvent(event_type, *ax_node);
   if (event_type == ui::AXEventGenerator::Event::DOCUMENT_SELECTION_CHANGED) {
-    last_static_selection_focus_id_ = StaticSelectionFocusId();
+    UpdateLastStaticSelectionFocusId();
   }
   for (const AccessibilityBridgeMac::NSAccessibilityEvent& event : events) {
     if (event.user_info != nil) {
@@ -138,18 +138,16 @@ AccessibilityBridgeMac::MacOSEventsFromAXEvent(ui::AXEventGenerator::Event event
       // SelectableRegion) changed or was cleared. This is decided by the
       // owner of the tree selection rather than by GetFocus(), the last node
       // an assistive technology focused, which may be a stale text field.
-      AccessibilityNodeId static_focus = StaticSelectionFocusId();
-      bool static_selection_cleared = static_focus == ui::AXNode::kInvalidAXID &&
-                                      last_static_selection_focus_id_ != ui::AXNode::kInvalidAXID &&
-                                      !GetNodeFromTree(GetAXTreeData().sel_focus_object_id);
-      if (static_focus != ui::AXNode::kInvalidAXID || static_selection_cleared) {
+      if (IsStaticTextSelection()) {
         if (!ShouldPostStaticSelectionNotifications()) {
           break;
         }
         // Notify the node whose selection edge moved, or, when the selection
         // was cleared, the node it ended on.
-        AccessibilityNodeId target_id =
-            static_selection_cleared ? last_static_selection_focus_id_ : static_focus;
+        AccessibilityNodeId target_id = GetAXTreeData().sel_focus_object_id;
+        if (target_id == ui::AXNode::kInvalidAXID) {
+          target_id = last_static_selection_focus_id_;
+        }
         auto target = GetFlutterPlatformNodeDelegateFromID(target_id).lock();
         if (target) {
           events.push_back({
@@ -387,15 +385,9 @@ bool AccessibilityBridgeMac::ShouldPostStaticSelectionNotifications() const {
   return kPostStaticSelectionNotifications;
 }
 
-AccessibilityNodeId AccessibilityBridgeMac::StaticSelectionFocusId() const {
-  const ui::AXTreeData& tree_data = GetAXTreeData();
-  ui::AXNode* owner = GetNodeFromTree(tree_data.sel_focus_object_id);
-  // The tree selection belongs to a text field or to selectable static text;
-  // read the role from the tree, where read-only text fields are text fields.
-  if (!owner || owner->data().IsTextField()) {
-    return ui::AXNode::kInvalidAXID;
-  }
-  return owner->id();
+void AccessibilityBridgeMac::UpdateLastStaticSelectionFocusId() {
+  last_static_selection_focus_id_ =
+      IsStaticTextSelection() ? GetAXTreeData().sel_focus_object_id : ui::AXNode::kInvalidAXID;
 }
 
 std::shared_ptr<FlutterPlatformNodeDelegate>
