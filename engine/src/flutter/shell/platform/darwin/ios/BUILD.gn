@@ -128,6 +128,8 @@ source_set("flutter_framework_source") {
     "framework/Source/FlutterSceneDelegate.mm",
     "framework/Source/FlutterSceneLifeCycle.mm",
     "framework/Source/FlutterSceneLifeCycle_Internal.h",
+    "framework/Source/FlutterSelectableTextSemanticsObject.h",
+    "framework/Source/FlutterSelectableTextSemanticsObject.mm",
     "framework/Source/FlutterSemanticsScrollView.h",
     "framework/Source/FlutterSemanticsScrollView.mm",
     "framework/Source/FlutterSharedApplication.h",
