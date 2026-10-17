@@ -22,6 +22,9 @@ class AXPlatformNodeMacTest : public AXPlatformNodeTest {
 
  protected:
   AXPlatformNode* AXPlatformNodeFromNode(AXNode* node);
+  AXPlatformNodeCocoa* InitStaticText(const std::string& name,
+                                      int sel_start = -1,
+                                      int sel_end = -1);
 };
 
 }  // namespace ui

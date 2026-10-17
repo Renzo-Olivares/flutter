@@ -6,6 +6,7 @@
 
 #import <Cocoa/Cocoa.h>
 
+#include <algorithm>
 #include <cstddef>
 
 #include "ax/ax_action_data.h"
@@ -343,6 +344,8 @@ bool AlsoUseShowMenuActionForDefaultAction(const ui::AXNodeData& data) {
 - (NSString*)getStringAttribute:(ax::mojom::StringAttribute)attribute;
 // Returns AXValue, or nil if AXValue isn't an NSString.
 - (NSString*)getAXValueAsString;
+// Returns the substring of the value in |range| clamped to the value.
+- (NSString*)substringOfValueClampedToRange:(NSRange)range;
 // Returns the data necessary to queue an NSAccessibility announcement if
 // |eventType| should be announced, or nullptr otherwise.
 - (std::unique_ptr<AnnouncementSpec>)announcementForEvent:(ax::mojom::Event)eventType;
@@ -700,7 +703,18 @@ bool AlsoUseShowMenuActionForDefaultAction(const ui::AXNodeData& data) {
 - (NSString*)AXSelectedTextInternal {
   NSRange selectedTextRange;
   [[self AXSelectedTextRangeInternal] getValue:&selectedTextRange];
-  return [[self getAXValueAsString] substringWithRange:selectedTextRange];
+  return [self substringOfValueClampedToRange:selectedTextRange];
+}
+
+// Assistive technologies pass ranges they computed themselves, and an
+// unselected node reports {NSNotFound, 0}, so ranges are clamped to the text
+// rather than passed to -substringWithRange:, which throws.
+- (NSString*)substringOfValueClampedToRange:(NSRange)range {
+  NSString* value = [self getAXValueAsString];
+  NSUInteger length = [value length];
+  NSUInteger location = std::min(range.location, length);
+  NSUInteger clamped_length = std::min(range.length, length - location);
+  return [value substringWithRange:NSMakeRange(location, clamped_length)];
 }
 
 - (NSValue*)AXSelectedTextRangeInternal {
@@ -965,7 +979,7 @@ bool AlsoUseShowMenuActionForDefaultAction(const ui::AXNodeData& data) {
   if (!_node)
     return nil;
 
-  return [[self getAXValueAsString] substringWithRange:range];
+  return [self substringOfValueClampedToRange:range];
 }
 
 - (NSAttributedString*)accessibilityAttributedStringForRange:(NSRange)range {
@@ -989,8 +1003,18 @@ bool AlsoUseShowMenuActionForDefaultAction(const ui::AXNodeData& data) {
 }
 
 - (NSRange)accessibilityRangeForIndex:(NSInteger)index {
-  BASE_UNREACHABLE();
-  return NSMakeRange(0, 0);
+  if (!_node)
+    return NSMakeRange(0, 0);
+
+  // Assistive technologies ask for the character at an index they computed
+  // themselves, so this returns the composed character sequence at the index
+  // clamped to the text.
+  NSString* value = [self getAXValueAsString];
+  NSInteger length = [value length];
+  if (length == 0)
+    return NSMakeRange(0, 0);
+  NSInteger clamped_index = std::clamp<NSInteger>(index, 0, length - 1);
+  return [value rangeOfComposedCharacterSequenceAtIndex:clamped_index];
 }
 
 - (NSRange)accessibilityStyleRangeForIndex:(NSInteger)index {
@@ -1005,10 +1029,10 @@ bool AlsoUseShowMenuActionForDefaultAction(const ui::AXNodeData& data) {
   if (!_node)
     return NSMakeRange(0, 0);
 
-  if (line != 0) {
-    BASE_LOG() << "Views textfields are single-line.";
-    BASE_UNREACHABLE();
-  }
+  // Without line metrics, all text is on line 0, and assistive technologies
+  // may ask for other lines of static text, which do not exist.
+  if (line != 0)
+    return NSMakeRange(NSNotFound, 0);
   return NSMakeRange(0, [self accessibilityNumberOfCharacters]);
 }
 
