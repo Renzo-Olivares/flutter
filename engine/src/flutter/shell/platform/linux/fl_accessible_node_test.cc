@@ -577,6 +577,14 @@ TEST_F(FlAccessibleNodeTest, SelectableTextSetSelection) {
   EXPECT_EQ(extent, 2);
   EXPECT_FALSE(atk_text_set_selection(ATK_TEXT(node), 1, 0, 1));
 
+  // A collapsed selection is a caret too.
+  update_selection(node, -1, -1);
+  EXPECT_TRUE(atk_text_set_selection(ATK_TEXT(node), 0, 2, 2));
+  EXPECT_EQ(base, 3);
+  EXPECT_EQ(extent, 3);
+  EXPECT_EQ(atk_text_get_caret_offset(ATK_TEXT(node)), 2);
+  update_selection(node, 2, 4);
+
   // Negative offsets clear the selection in the framework.
   EXPECT_TRUE(atk_text_remove_selection(ATK_TEXT(node), 0));
   EXPECT_EQ(base, -1);
@@ -596,8 +604,8 @@ TEST_F(FlAccessibleNodeTest, SelectableTextSetSelection) {
 
 // NOLINTEND(clang-analyzer-core.StackAddressEscape)
 
-// Checks nodes without the set selection action, and text that is not plain,
-// are not selectable.
+// Checks nodes without the set selection action are not selectable, and that
+// selectable headings keep their role.
 TEST_F(FlAccessibleNodeTest, NotSelectableText) {
   g_autoptr(FlAccessibleNode) label = fl_accessible_node_new(engine, 123, 1);
   fl_accessible_node_set_name(label, "Hello world");

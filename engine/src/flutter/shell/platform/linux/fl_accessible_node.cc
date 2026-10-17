@@ -554,10 +554,10 @@ static void fl_accessible_node_set_text_selection_impl(FlAccessibleNode* self,
   }
 
   gboolean caret_moved = extent != priv->selection_extent;
-  gboolean has_selection = base != extent;
-  gboolean had_selection = priv->selection_base != priv->selection_extent;
-  priv->selection_changed = (has_selection || had_selection) &&
-                            (caret_moved || base != priv->selection_base);
+  gboolean is_range = base != extent;
+  gboolean was_range = priv->selection_base != priv->selection_extent;
+  priv->selection_changed =
+      (is_range || was_range) && (caret_moved || base != priv->selection_base);
   // Clearing the selection moves no caret.
   priv->caret_moved = caret_moved && extent != -1;
 
@@ -711,6 +711,20 @@ static gint fl_accessible_node_get_caret_offset(AtkText* text) {
   return utf16_to_character_offset(priv->name, caret);
 }
 
+// Asks the framework to select the characters [start, end) of selectable
+// text.
+static void select_characters(FlAccessibleNode* self, gint start, gint end) {
+  FlAccessibleNodePrivate* priv = FL_ACCESSIBLE_NODE_GET_PRIVATE(self);
+  gint base = character_to_utf16_offset(priv->name, MAX(start, 0));
+  gint extent = character_to_utf16_offset(priv->name, MAX(end, 0));
+  // The framework only records a collapsed selection, so this node reports
+  // the caret until the framework publishes a selection.
+  if (base == extent) {
+    priv->caret_offset = base;
+  }
+  fl_accessible_node_perform_set_selection_action(self, base, extent);
+}
+
 // Implements AtkText::set_caret_offset.
 static gboolean fl_accessible_node_set_caret_offset(AtkText* text,
                                                     gint offset) {
@@ -718,17 +732,13 @@ static gboolean fl_accessible_node_set_caret_offset(AtkText* text,
   if (!is_selectable_static_text(priv)) {
     return FALSE;
   }
-  gint caret = character_to_utf16_offset(priv->name, MAX(offset, 0));
-  // The framework only records a collapsed selection, so this node reports
-  // the caret until the framework publishes a selection.
-  priv->caret_offset = caret;
-  fl_accessible_node_perform_set_selection_action(FL_ACCESSIBLE_NODE(text),
-                                                  caret, caret);
+  select_characters(FL_ACCESSIBLE_NODE(text), offset, offset);
   return TRUE;
 }
 
 // Implements AtkText::get_n_selections.
-// Static text such as a heading cannot be selected, so report no selections.
+// Selectable text has at most one selection; other static text, such as a
+// heading, has none.
 static gint fl_accessible_node_get_n_selections(AtkText* text) {
   FlAccessibleNodePrivate* priv = FL_ACCESSIBLE_NODE_GET_PRIVATE(text);
   return has_selection(priv) ? 1 : 0;
@@ -740,7 +750,7 @@ static gchar* fl_accessible_node_get_selection(AtkText* text,
                                                gint* start_offset,
                                                gint* end_offset) {
   FlAccessibleNodePrivate* priv = FL_ACCESSIBLE_NODE_GET_PRIVATE(text);
-  if (selection_num != 0 || !has_selection(priv)) {
+  if (selection_num != 0 || !has_selection(priv) || priv->name == nullptr) {
     if (start_offset != nullptr) {
       *start_offset = 0;
     }
@@ -772,10 +782,7 @@ static gboolean fl_accessible_node_add_selection(AtkText* text,
   if (!is_selectable_static_text(priv) || has_selection(priv)) {
     return FALSE;
   }
-  fl_accessible_node_perform_set_selection_action(
-      FL_ACCESSIBLE_NODE(text),
-      character_to_utf16_offset(priv->name, MAX(start_offset, 0)),
-      character_to_utf16_offset(priv->name, MAX(end_offset, 0)));
+  select_characters(FL_ACCESSIBLE_NODE(text), start_offset, end_offset);
   return TRUE;
 }
 
@@ -802,10 +809,7 @@ static gboolean fl_accessible_node_set_selection(AtkText* text,
   if (selection_num != 0 || !is_selectable_static_text(priv)) {
     return FALSE;
   }
-  fl_accessible_node_perform_set_selection_action(
-      FL_ACCESSIBLE_NODE(text),
-      character_to_utf16_offset(priv->name, MAX(start_offset, 0)),
-      character_to_utf16_offset(priv->name, MAX(end_offset, 0)));
+  select_characters(FL_ACCESSIBLE_NODE(text), start_offset, end_offset);
   return TRUE;
 }
 
