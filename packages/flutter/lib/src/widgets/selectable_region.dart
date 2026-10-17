@@ -1867,9 +1867,53 @@ class SelectableRegionState extends State<SelectableRegion>
     return _adjustingSelectionEnd = forward != isReversed;
   }
 
+  /// Starts a keyboard selection where none exists, so that an extend intent
+  /// has something to extend (DESIGN 3).
+  ///
+  /// Only when semantics is enabled (an accessibility client is attached) and
+  /// this region's focus node has primary focus; otherwise, as today, extend
+  /// intents without a selection do nothing. The selection starts collapsed at
+  /// the last accessibility caret or range if its selectable is still there,
+  /// else at the start of the first visible selectable when moving forward or
+  /// the end of the last visible one when moving backward. Returns whether a
+  /// selection now exists.
+  bool _startKeyboardSelection({required bool forward}) {
+    if (_selectionDelegate.value.hasSelection) {
+      return true;
+    }
+    final Selectable? root = _selectable;
+    if (root == null ||
+        !SemanticsBinding.instance.semanticsEnabled ||
+        !_focusNode.hasPrimaryFocus) {
+      return false;
+    }
+    SelectionResult result = SelectionResult.none;
+    if (_accessibilityAnchor case (:final Selectable target, :final int offset)) {
+      result = root.dispatchSelectionEvent(
+        SelectContentRangeSelectionEvent(target: target, startOffset: offset, endOffset: offset),
+      );
+    }
+    if (result != SelectionResult.end) {
+      final SelectionEdge edge = forward ? SelectionEdge.start : SelectionEdge.end;
+      final RenderObject? regionRenderObject = context.findRenderObject();
+      final Rect? visibleRect = regionRenderObject is RenderBox
+          ? _globalRectOf(regionRenderObject)
+          : null;
+      result = root.dispatchSelectionEvent(
+        SelectContentRangeSelectionEvent.atEdge(edge: edge, globalVisibleRect: visibleRect),
+      );
+      if (result != SelectionResult.end && visibleRect != null) {
+        // Nothing is visible; start at the edge of the content instead.
+        result = root.dispatchSelectionEvent(SelectContentRangeSelectionEvent.atEdge(edge: edge));
+      }
+    }
+    _adjustingSelectionEnd = null;
+    return result == SelectionResult.end && _selectionDelegate.value.hasSelection;
+  }
+
   void _granularlyExtendSelection(TextGranularity granularity, bool forward) {
     _directionalHorizontalBaseline = null;
-    if (!_selectionDelegate.value.hasSelection) {
+    if (!_startKeyboardSelection(forward: forward)) {
       return;
     }
     _selectable?.dispatchSelectionEvent(
@@ -1887,7 +1931,7 @@ class SelectableRegionState extends State<SelectableRegion>
   double? _directionalHorizontalBaseline;
 
   void _directionallyExtendSelection(bool forward) {
-    if (!_selectionDelegate.value.hasSelection) {
+    if (!_startKeyboardSelection(forward: forward)) {
       return;
     }
     final bool adjustingSelectionExtend = _determineIsAdjustingSelectionEnd(forward);
@@ -2071,6 +2115,14 @@ class SelectableRegionState extends State<SelectableRegion>
   Object? _hideToolbarIfVisible(DismissIntent intent) {
     if (_selectionOverlay?.toolbarIsVisible ?? false) {
       hideToolbar(false);
+      return null;
+    }
+    // With an accessibility client attached, a second Escape clears the
+    // selection (DESIGN 1.6, D2.17); sighted users without one see today's
+    // behavior. Escape with nothing to clear still reaches ancestors.
+    if (SemanticsBinding.instance.semanticsEnabled && _selectionDelegate.value.hasSelection) {
+      clearSelection();
+      _commitSelectionChange(_SelectionChangeSource.pointerOrKeyboard);
       return null;
     }
     return Actions.invoke(context, intent);

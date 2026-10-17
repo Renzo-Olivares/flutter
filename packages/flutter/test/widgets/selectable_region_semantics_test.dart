@@ -16,6 +16,7 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'clipboard_utils.dart';
+import 'editable_text_tester.dart';
 import 'keyboard_utils.dart';
 
 Widget _region({
@@ -1091,5 +1092,297 @@ void main() {
       expect(selectionOf('Footer note'), const TextSelection(baseOffset: 0, extentOffset: 6));
       expect(selectionOf(' anytime.'), const TextSelection(baseOffset: 0, extentOffset: 1));
     });
+  });
+
+  group('keyboard start', () {
+    const shiftRight = SingleActivator(LogicalKeyboardKey.arrowRight, shift: true);
+    const shiftLeft = SingleActivator(LogicalKeyboardKey.arrowLeft, shift: true);
+
+    testWidgets('Shift+Right with no selection starts at the anchor paragraph', (
+      WidgetTester tester,
+    ) async {
+      final focusNode = FocusNode();
+      addTearDown(focusNode.dispose);
+      await tester.pumpWidget(
+        _region(
+          focusNode: focusNode,
+          child: const Column(children: <Widget>[Text('First'), Text('Second')]),
+        ),
+      );
+      await tester.pump();
+      focusNode.requestFocus();
+      await tester.pump();
+      await tester.pump();
+      expect(_paragraphAt(tester, 0).selections, isEmpty);
+
+      for (var i = 1; i <= 3; i += 1) {
+        await sendKeyCombination(tester, shiftRight);
+        await tester.pump();
+        expect(_paragraphAt(tester, 0).selections, <TextSelection>[
+          TextSelection(baseOffset: 0, extentOffset: i),
+        ]);
+        expect(
+          _nodeWithLabel(tester, 'First').getSemanticsData().textSelection,
+          TextSelection(baseOffset: 0, extentOffset: i),
+        );
+      }
+      expect(_paragraphAt(tester, 1).selections, isEmpty);
+    });
+
+    testWidgets('Shift+Left with no selection starts at the end of the last paragraph', (
+      WidgetTester tester,
+    ) async {
+      final focusNode = FocusNode();
+      addTearDown(focusNode.dispose);
+      await tester.pumpWidget(
+        _region(
+          focusNode: focusNode,
+          child: const Column(children: <Widget>[Text('First'), Text('Second')]),
+        ),
+      );
+      await tester.pump();
+      focusNode.requestFocus();
+      await tester.pump();
+      await tester.pump();
+
+      await sendKeyCombination(tester, shiftLeft);
+      await tester.pump();
+      expect(_paragraphAt(tester, 0).selections, isEmpty);
+      // Extending backward from a caret moves the start edge, as it does
+      // after a click, so the range stays forward.
+      expect(_paragraphAt(tester, 1).selections, const <TextSelection>[
+        TextSelection(baseOffset: 5, extentOffset: 6),
+      ]);
+      expect(
+        _nodeWithLabel(tester, 'Second').getSemanticsData().textSelection,
+        const TextSelection(baseOffset: 5, extentOffset: 6),
+      );
+    });
+
+    testWidgets('starts in the first visible paragraph of a scrolled list', (
+      WidgetTester tester,
+    ) async {
+      final focusNode = FocusNode();
+      addTearDown(focusNode.dispose);
+      final controller = ScrollController();
+      addTearDown(controller.dispose);
+      await tester.pumpWidget(
+        _region(
+          focusNode: focusNode,
+          child: ListView(
+            controller: controller,
+            itemExtent: 50.0,
+            children: <Widget>[for (int i = 0; i < 50; i += 1) Text('Item $i')],
+          ),
+        ),
+      );
+      await tester.pump();
+      controller.jumpTo(
+        1500.0,
+      ); // Item 30 at the top; items in the cache extent above are laid out.
+      await tester.pump();
+      focusNode.requestFocus();
+      await tester.pump();
+      await tester.pump();
+
+      await sendKeyCombination(tester, shiftRight);
+      await tester.pump();
+      expect(controller.offset, 1500.0);
+      final Iterable<SemanticsNode> selected = _allNodes(tester)
+          .where((SemanticsNode node) => node.getSemanticsData().textSelection != null);
+      expect(selected.map((SemanticsNode node) => node.label), <String>['Item 30']);
+      expect(
+        selected.single.getSemanticsData().textSelection,
+        const TextSelection(baseOffset: 0, extentOffset: 1),
+      );
+    });
+
+    testWidgets('is a no-op while a descendant has focus or semantics is off', (
+      WidgetTester tester,
+    ) async {
+      final focusNode = FocusNode();
+      addTearDown(focusNode.dispose);
+      final buttonFocusNode = FocusNode();
+      addTearDown(buttonFocusNode.dispose);
+      await tester.pumpWidget(
+        _region(
+          focusNode: focusNode,
+          child: Column(
+            children: <Widget>[
+              const Text('First'),
+              Focus(focusNode: buttonFocusNode, child: const SizedBox(width: 10, height: 10)),
+            ],
+          ),
+        ),
+      );
+      await tester.pump();
+      buttonFocusNode.requestFocus();
+      await tester.pump();
+      expect(focusNode.hasFocus, isTrue);
+      expect(focusNode.hasPrimaryFocus, isFalse);
+      await sendKeyCombination(tester, shiftRight);
+      await tester.pump();
+      expect(_paragraphAt(tester, 0).selections, isEmpty);
+    });
+
+    testWidgets('is a no-op with semantics off', (WidgetTester tester) async {
+      final focusNode = FocusNode();
+      addTearDown(focusNode.dispose);
+      await tester.pumpWidget(_region(focusNode: focusNode, child: const Text('First')));
+      await tester.pump();
+      focusNode.requestFocus();
+      await tester.pump();
+      expect(SemanticsBinding.instance.semanticsEnabled, isFalse);
+      await sendKeyCombination(tester, shiftRight);
+      await tester.pump();
+      expect(_paragraphAt(tester, 0).selections, isEmpty);
+    }, semanticsEnabled: false);
+
+    testWidgets('starts at an accessibility caret', (WidgetTester tester) async {
+      final focusNode = FocusNode();
+      addTearDown(focusNode.dispose);
+      await tester.pumpWidget(
+        _region(
+          focusNode: focusNode,
+          child: const Column(children: <Widget>[Text('First'), Text('Second')]),
+        ),
+      );
+      await tester.pump();
+      tester.semantics.setSelection(find.semantics.byLabel('Second'), base: 3, extent: 3);
+      await tester.pump();
+      expect(focusNode.hasFocus, isFalse);
+      focusNode.requestFocus();
+      await tester.pump();
+      await tester.pump();
+      // The caret paragraph represents the focus and is where the selection starts.
+      expect(_nodeWithLabel(tester, 'Second').flagsCollection.isFocused, Tristate.isTrue);
+      await sendKeyCombination(tester, shiftRight);
+      await tester.pump();
+      expect(_paragraphAt(tester, 1).selections, const <TextSelection>[
+        TextSelection(baseOffset: 3, extentOffset: 4),
+      ]);
+      // Shift+Down continues from there.
+      await sendKeyCombination(
+        tester,
+        const SingleActivator(LogicalKeyboardKey.arrowDown, shift: true),
+      );
+      await tester.pump();
+      expect(_paragraphAt(tester, 1).selections, const <TextSelection>[
+        TextSelection(baseOffset: 3, extentOffset: 6),
+      ]);
+    });
+  });
+
+  group('Escape', () {
+    testWidgets('clears the selection when semantics is on and no toolbar is visible', (
+      WidgetTester tester,
+    ) async {
+      final focusNode = FocusNode();
+      addTearDown(focusNode.dispose);
+      var dismissed = 0;
+      await tester.pumpWidget(
+        TestWidgetsApp(
+          home: Actions(
+            actions: <Type, Action<Intent>>{
+              DismissIntent: CallbackAction<DismissIntent>(
+                onInvoke: (DismissIntent intent) => dismissed += 1,
+              ),
+            },
+            child: SelectableRegion(
+              focusNode: focusNode,
+              selectionControls: emptyTextSelectionControls,
+              child: const Text('Hello world'),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+      tester.semantics.setSelection(find.semantics.byLabel('Hello world'), base: 0, extent: 5);
+      await tester.pump();
+      expect(focusNode.hasPrimaryFocus, isTrue);
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+      await tester.pump();
+      expect(_paragraphAt(tester, 0).selections, isEmpty);
+      expect(_nodeWithLabel(tester, 'Hello world').getSemanticsData().textSelection, isNull);
+      expect(dismissed, 0);
+
+      // Nothing left to clear: the intent reaches the ancestor.
+      await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+      await tester.pump();
+      expect(dismissed, 1);
+    });
+
+    testWidgets('hides a visible toolbar and keeps the selection', (WidgetTester tester) async {
+      final toolbarKey = UniqueKey();
+      await tester.pumpWidget(
+        TestWidgetsApp(
+          home: SelectableRegion(
+            selectionControls: testTextSelectionHandleControls,
+            contextMenuBuilder: (BuildContext context, SelectableRegionState state) {
+              return SizedBox.shrink(key: toolbarKey);
+            },
+            child: const Text('How are you?'),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      final RenderParagraph paragraph = _paragraphAt(tester, 0);
+      // A long press selects a word and shows the context menu.
+      final TestGesture gesture = await tester.startGesture(_textOffsetToPosition(paragraph, 6));
+      addTearDown(gesture.removePointer);
+      await tester.pump(const Duration(milliseconds: 500));
+      await tester.pumpAndSettle();
+      await gesture.up();
+      await tester.pumpAndSettle();
+      expect(paragraph.selections, const <TextSelection>[
+        TextSelection(baseOffset: 4, extentOffset: 7),
+      ]);
+      expect(find.byKey(toolbarKey), findsOneWidget);
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+      await tester.pump();
+      expect(find.byKey(toolbarKey), findsNothing);
+      expect(paragraph.selections, const <TextSelection>[
+        TextSelection(baseOffset: 4, extentOffset: 7),
+      ]);
+
+      // The next Escape clears it.
+      await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+      await tester.pump();
+      expect(paragraph.selections, isEmpty);
+    }, skip: kIsWeb); // [intended] Web uses its native context menu.
+
+    testWidgets('leaves the selection alone with semantics off and propagates', (
+      WidgetTester tester,
+    ) async {
+      final focusNode = FocusNode();
+      addTearDown(focusNode.dispose);
+      var dismissed = 0;
+      await tester.pumpWidget(
+        TestWidgetsApp(
+          home: Actions(
+            actions: <Type, Action<Intent>>{
+              DismissIntent: CallbackAction<DismissIntent>(
+                onInvoke: (DismissIntent intent) => dismissed += 1,
+              ),
+            },
+            child: SelectableRegion(
+              focusNode: focusNode,
+              selectionControls: emptyTextSelectionControls,
+              child: const Text('Hello world'),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+      _delegateOf(tester).select(_fragmentAt(tester, 0), 0, 5);
+      await tester.pump();
+      expect(focusNode.hasPrimaryFocus, isTrue);
+      await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+      await tester.pump();
+      expect(_paragraphAt(tester, 0).selections, isNotEmpty);
+      expect(dismissed, 1);
+    }, semanticsEnabled: false);
   });
 }
