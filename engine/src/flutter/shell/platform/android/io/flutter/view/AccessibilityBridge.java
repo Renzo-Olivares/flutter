@@ -1280,8 +1280,7 @@ public class AccessibilityBridge extends AccessibilityNodeProvider {
    * <p>A range is sent to the framework. A collapsed range only places the reading cursor and the
    * framework's accessibility anchor; it never clears the selection. Without arguments (TalkBack
    * resets the selection this way whenever it locks a node for granular navigation, and a native
-   * {@code TextView} then removes its selection) an existing selection is cleared; with none, the
-   * node is seeded so that the first extension is spoken.
+   * {@code TextView} then removes its selection) an existing selection is cleared.
    */
   private boolean performSelectableTextSetSelection(
       @NonNull SemanticsNode semanticsNode, @Nullable Bundle arguments) {
@@ -1291,12 +1290,11 @@ public class AccessibilityBridge extends AccessibilityNodeProvider {
             && arguments.containsKey(AccessibilityNodeInfo.ACTION_ARGUMENT_SELECTION_START_INT)
             && arguments.containsKey(AccessibilityNodeInfo.ACTION_ARGUMENT_SELECTION_END_INT);
     if (!hasArguments) {
+      // No seed here: a selection event right before TalkBack's next traversal event makes
+      // TalkBack skip that character (P2 Phase 4B run 2); the first extension seeds instead.
       final int[] selection = semanticsNode.getSelectableTextSelection();
       if (selection != null && selection[0] != selection[1]) {
         dispatchSelectableTextSelection(semanticsNode, -1, -1);
-      } else {
-        final int position = clamp(selectableTextReadingCursors.get(semanticsNode.id, 0), length);
-        focusSelectableText(semanticsNode, position, position);
       }
       return true;
     }
@@ -1332,11 +1330,15 @@ public class AccessibilityBridge extends AccessibilityNodeProvider {
    * Makes {@code semanticsNode} the {@link #selectionFocusedSemanticsNode} and, if TalkBack did not
    * see a selection event from it last, sends the seed event {@code fromIndex}..{@code toIndex},
    * before anything reaches the framework.
+   *
+   * <p>While a focused text field still holds the input focus, TalkBack would drop the seed, so it
+   * is left to the semantics update in which the framework moves the focus to the paragraph.
    */
   private void focusSelectableText(
       @NonNull SemanticsNode semanticsNode, int fromIndex, int toIndex) {
     holdSelectionFocus(semanticsNode);
-    if (lastSelectionEventSourceId != semanticsNode.id) {
+    if (lastSelectionEventSourceId != semanticsNode.id
+        && getReportedFocusedSemanticsNode() == semanticsNode) {
       sendSelectableTextSelectionEvent(semanticsNode, fromIndex, toIndex);
     }
   }

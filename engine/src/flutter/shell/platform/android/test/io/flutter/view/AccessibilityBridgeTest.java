@@ -2281,17 +2281,17 @@ public class AccessibilityBridgeTest {
   }
 
   @Test
-  public void itClearsOrSeedsOnSetSelectionWithoutArguments() {
+  public void itOnlyClearsOnSetSelectionWithoutArguments() {
     SelectableTextBridge harness = new SelectableTextBridge();
     harness.sendTree(selectableParagraph(1, "Hello world", -1, -1));
     harness.clearEvents();
 
-    // Nothing selected: a seed, nothing for the framework.
+    // Nothing selected (TalkBack's reset when it locks the node): no event, nothing dispatched, so
+    // TalkBack's next traversal event is spoken in full.
     assertTrue(harness.bridge.performAction(1, AccessibilityNodeInfo.ACTION_SET_SELECTION, null));
-    assertEquals(1, harness.selectionEvents().size());
-    assertEquals(0, harness.selectionEvents().get(0).getFromIndex());
+    verify(harness.parent, never()).requestSendAccessibilityEvent(any(View.class), any());
     verify(harness.channel, never()).dispatchSemanticsAction(anyInt(), any(Action.class), any());
-    assertTrue(harness.bridge.createAccessibilityNodeInfo(1).isFocused());
+    assertFalse(harness.bridge.createAccessibilityNodeInfo(1).isFocused());
 
     // A selection: cleared with -1/-1.
     harness.sendTree(selectableParagraph(1, "Hello world", 0, 5));
@@ -2300,6 +2300,45 @@ public class AccessibilityBridgeTest {
     List<int[]> dispatched = harness.dispatchedSelections(1);
     assertEquals(-1, dispatched.get(0)[0]);
     assertEquals(-1, dispatched.get(0)[1]);
+  }
+
+  @Test
+  public void itDefersTheSeedWhileAFocusedTextFieldHoldsInputFocus() {
+    SelectableTextBridge harness = new SelectableTextBridge();
+    TestSemanticsNode field = new TestSemanticsNode();
+    field.id = 2;
+    field.value = "typed";
+    field.textSelectionBase = 5;
+    field.textSelectionExtent = 5;
+    field.addFlag(Flag.IS_TEXT_FIELD);
+    field.addFlag(Flag.IS_FOCUSED);
+    harness.sendTree(selectableParagraph(1, "Hello world", -1, -1), field);
+    harness.clearEvents();
+
+    // TalkBack would drop a seed from a node that is not reported focused.
+    assertTrue(harness.extendNext(1, AccessibilityNodeInfo.MOVEMENT_GRANULARITY_CHARACTER));
+    verify(harness.parent, never()).requestSendAccessibilityEvent(any(View.class), any());
+    assertEquals(1, harness.dispatchedSelections(1).size());
+    harness.clearEvents();
+
+    // The framework moves the focus to the paragraph with the new selection: seed, then the change.
+    TestSemanticsNode paragraph = selectableParagraph(1, "Hello world", 0, 1);
+    paragraph.addFlag(Flag.IS_FOCUSABLE);
+    paragraph.addFlag(Flag.IS_FOCUSED);
+    TestSemanticsNode unfocusedField = new TestSemanticsNode();
+    unfocusedField.id = 2;
+    unfocusedField.value = "typed";
+    unfocusedField.textSelectionBase = 5;
+    unfocusedField.textSelectionExtent = 5;
+    unfocusedField.addFlag(Flag.IS_TEXT_FIELD);
+    harness.sendTree(paragraph, unfocusedField);
+    List<AccessibilityEvent> events = harness.selectionEvents();
+    assertEquals(2, events.size());
+    assertEquals(0, events.get(0).getFromIndex());
+    assertEquals(0, events.get(0).getToIndex());
+    assertEquals(0, events.get(1).getFromIndex());
+    assertEquals(1, events.get(1).getToIndex());
+    assertTrue(harness.bridge.createAccessibilityNodeInfo(1).isFocused());
   }
 
   @Test
