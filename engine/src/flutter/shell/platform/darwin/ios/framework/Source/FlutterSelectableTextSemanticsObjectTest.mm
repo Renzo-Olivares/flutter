@@ -387,6 +387,92 @@ FLUTTER_ASSERT_ARC
   XCTAssertTrue([object canPerformAction:@selector(select:) withSender:nil]);
 }
 
+- (void)testARequestedRangeIsDroppedWhenTheFrameworkKeepsItsSelection {
+  fml::WeakPtrFactory<flutter::AccessibilityBridgeIos> factory(
+      new flutter::testing::MockAccessibilityBridge());
+  fml::WeakPtr<flutter::AccessibilityBridgeIos> bridge = factory.GetWeakPtr();
+
+  flutter::SemanticsNode node;
+  node.label = "Hello world";
+  node.actions = static_cast<int32_t>(flutter::SemanticsAction::kSetSelection) |
+                 static_cast<int32_t>(flutter::SemanticsAction::kCopy);
+  node.textSelectionBase = 0;
+  node.textSelectionExtent = 5;
+  FlutterSelectableTextSemanticsObject* object =
+      [[FlutterSelectableTextSemanticsObject alloc] initWithBridge:bridge uid:1];
+  [object setSemanticsNode:&node];
+
+  object.selectedTextRange = [FlutterTextRange rangeWithNSRange:NSMakeRange(6, 5)];
+  // The framework updates the node but keeps its selection, so the request
+  // did not take effect; report what the framework has, which copy: copies.
+  [object setSemanticsNode:&node];
+  XCTAssertTrue(
+      NSEqualRanges(((FlutterTextRange*)object.selectedTextRange).range, NSMakeRange(0, 5)));
+}
+
+- (void)testLayoutDirectionsFollowTheTextDirection {
+  fml::WeakPtrFactory<flutter::AccessibilityBridgeIos> factory(
+      new flutter::testing::MockAccessibilityBridge());
+  fml::WeakPtr<flutter::AccessibilityBridgeIos> bridge = factory.GetWeakPtr();
+
+  flutter::SemanticsNode node;
+  node.label = "\xD7\xA9\xD7\x9C\xD7\x95\xD7\x9D";  // "שלום"
+  node.actions = static_cast<int32_t>(flutter::SemanticsAction::kSetSelection);
+  node.textDirection = 1;  // RTL
+  FlutterSelectableTextSemanticsObject* object =
+      [[FlutterSelectableTextSemanticsObject alloc] initWithBridge:bridge uid:1];
+  [object setSemanticsNode:&node];
+
+  FlutterTextPosition* two = [FlutterTextPosition positionWithIndex:2];
+  // In right-to-left text, left is towards the end.
+  XCTAssertEqual(((FlutterTextPosition*)[object positionFromPosition:two
+                                                         inDirection:UITextLayoutDirectionLeft
+                                                              offset:1])
+                     .index,
+                 3u);
+  XCTAssertEqual(((FlutterTextPosition*)[object positionFromPosition:two
+                                                         inDirection:UITextLayoutDirectionRight
+                                                              offset:1])
+                     .index,
+                 1u);
+  XCTAssertTrue(NSEqualRanges(
+      ((FlutterTextRange*)[object characterRangeByExtendingPosition:two
+                                                        inDirection:UITextLayoutDirectionLeft])
+          .range,
+      NSMakeRange(2, 2)));
+  UITextRange* all = [object textRangeFromPosition:object.beginningOfDocument
+                                        toPosition:object.endOfDocument];
+  XCTAssertEqual(((FlutterTextPosition*)[object positionWithinRange:all
+                                                farthestInDirection:UITextLayoutDirectionLeft])
+                     .index,
+                 4u);
+  // Up and down stay logical.
+  XCTAssertEqual(((FlutterTextPosition*)[object positionFromPosition:two
+                                                         inDirection:UITextLayoutDirectionUp
+                                                              offset:1])
+                     .index,
+                 1u);
+}
+
+- (void)testALabelThatIsNotUTF8IsEmptyText {
+  fml::WeakPtrFactory<flutter::AccessibilityBridgeIos> factory(
+      new flutter::testing::MockAccessibilityBridge());
+  fml::WeakPtr<flutter::AccessibilityBridgeIos> bridge = factory.GetWeakPtr();
+
+  flutter::SemanticsNode node;
+  node.label = "\xFF\xFE";
+  node.actions = static_cast<int32_t>(flutter::SemanticsAction::kSetSelection);
+  FlutterSelectableTextSemanticsObject* object =
+      [[FlutterSelectableTextSemanticsObject alloc] initWithBridge:bridge uid:1];
+  [object setSemanticsNode:&node];
+  object.selectedTextRange = [FlutterTextRange rangeWithNSRange:NSMakeRange(0, 0)];
+  [object setSemanticsNode:&node];
+
+  XCTAssertFalse(object.hasText);
+  XCTAssertEqualObjects([object textInRange:[FlutterTextRange rangeWithNSRange:NSMakeRange(0, 0)]],
+                        @"");
+}
+
 - (void)testGeometryComesFromTheNodeRect {
   fml::WeakPtrFactory<flutter::AccessibilityBridgeIos> factory(
       new flutter::testing::MockAccessibilityBridge());
@@ -566,6 +652,30 @@ FLUTTER_ASSERT_ARC
     }
     // The text view leaves the Flutter view with its semantics object.
     XCTAssertNil(textView.superview);
+  }
+}
+
+- (void)testBackingTextViewLeavesAnUnloadedView {
+  if (@available(iOS 18.1, *)) {
+    flutter::testing::MockAccessibilityBridge* mock =
+        new flutter::testing::MockAccessibilityBridge();
+    fml::WeakPtrFactory<flutter::AccessibilityBridgeIos> factory(mock);
+    fml::WeakPtr<flutter::AccessibilityBridgeIos> bridge = factory.GetWeakPtr();
+
+    flutter::SemanticsNode node;
+    node.label = "Hello world";
+    node.actions = static_cast<int32_t>(flutter::SemanticsAction::kSetSelection);
+    FlutterSelectableTextSemanticsObject* object =
+        [[FlutterSelectableTextSemanticsObject alloc] initWithBridge:bridge uid:1];
+    object.usesBackingTextView = YES;
+    [object setSemanticsNode:&node];
+    UITextView* textView = object.backingTextView;
+    XCTAssertEqual(textView.superview, mock->view());
+
+    mock->isViewLoaded = false;
+    [object accessibilityBridgeDidChangeView];
+    XCTAssertNil(textView.superview);
+    XCTAssertEqual(object.accessibilityTextInputResponder, object);
   }
 }
 

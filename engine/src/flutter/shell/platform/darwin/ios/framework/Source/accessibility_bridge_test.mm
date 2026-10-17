@@ -2823,6 +2823,56 @@ void UpdateRootSemantics(flutter::AccessibilityBridge* bridge, std::string label
   XCTAssertFalse([plainAgain conformsToProtocol:@protocol(UITextInput)]);
 }
 
+- (void)testSwitchKeepsItsObjectWhenSetSelectionIsAdded {
+  flutter::MockDelegate mock_delegate;
+  auto thread_task_runner = CreateNewThread("AccessibilityBridgeTest");
+  flutter::TaskRunners runners(/*label=*/self.name.UTF8String,
+                               /*platform=*/thread_task_runner,
+                               /*raster=*/thread_task_runner,
+                               /*ui=*/thread_task_runner,
+                               /*io=*/thread_task_runner);
+  auto platform_view = std::make_unique<flutter::PlatformViewIOS>(
+      /*delegate=*/mock_delegate,
+      /*platform_views_controller=*/nil,
+      /*task_runners=*/runners,
+      /*is_gpu_disabled_sync_switch=*/std::make_shared<fml::SyncSwitch>());
+  id engine = OCMClassMock([FlutterEngine class]);
+  id mockFlutterViewController = OCMClassMock([FlutterViewController class]);
+  FlutterView* flutterView = [[FlutterView alloc] initWithDelegate:engine
+                                                            opaque:YES
+                                                   enableWideGamut:NO];
+  StubLoadedView(mockFlutterViewController, flutterView);
+  auto bridge = std::make_unique<flutter::AccessibilityBridge>(
+      /*view_controller=*/mockFlutterViewController,
+      /*platform_view=*/platform_view.get(),
+      /*platform_views_controller=*/nil);
+
+  flutter::SemanticsNode toggle;
+  toggle.id = 1;
+  toggle.label = "Wi-Fi";
+  toggle.flags.isToggled = flutter::SemanticsTristate::kTrue;
+  flutter::SemanticsNode root;
+  root.id = kRootNodeId;
+  root.childrenInTraversalOrder = {1};
+  root.childrenInHitTestOrder = {1};
+  flutter::SemanticsNodeUpdates nodes;
+  nodes[root.id] = root;
+  nodes[toggle.id] = toggle;
+  bridge->UpdateSemantics(/*nodes=*/nodes, /*actions=*/{});
+
+  SemanticsObjectContainer* rootContainer = flutterView.accessibilityElements[0];
+  id before = [rootContainer accessibilityElementAtIndex:1];
+  XCTAssertTrue([before isMemberOfClass:[FlutterSwitchSemanticsObject class]]);
+
+  toggle.actions = static_cast<int32_t>(flutter::SemanticsAction::kSetSelection);
+  flutter::SemanticsNodeUpdates update;
+  update[toggle.id] = toggle;
+  bridge->UpdateSemantics(/*nodes=*/update, /*actions=*/{});
+
+  // A switch stays a switch, so there is nothing to replace.
+  XCTAssertEqual([rootContainer accessibilityElementAtIndex:1], before);
+}
+
 - (void)testSelectableStaticTextDispatchesSetSelectionToTheFramework {
   flutter::SemanticsActionRecordingDelegate mock_delegate;
   auto thread_task_runner = CreateNewThread("AccessibilityBridgeTest");
