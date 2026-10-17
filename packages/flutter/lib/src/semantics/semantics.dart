@@ -158,6 +158,10 @@ final int _kUnblockedUserActions =
     SemanticsAction.didGainAccessibilityFocus.index |
     SemanticsAction.didLoseAccessibilityFocus.index;
 
+/// The actions that selectable static text publishes next to its
+/// [SemanticsConfiguration.textSelection].
+final int _kSelectableTextActions = SemanticsAction.setSelection.index | SemanticsAction.copy.index;
+
 /// A static class to conduct semantics role checks.
 sealed class _DebugSemanticsRoleChecks {
   static FlutterError? _checkSemanticsData(SemanticsNode node) {
@@ -1318,7 +1322,7 @@ class SemanticsData with Diagnosticable {
   final TextDirection? textDirection;
 
   /// The currently selected text (or the position of the cursor) within [value]
-  /// if this node represents a text field.
+  /// if this node represents a text field, or within [label] otherwise.
   final TextSelection? textSelection;
 
   /// The total number of scrollable children that contribute to semantics.
@@ -3464,6 +3468,7 @@ class SemanticsNode with DiagnosticableTreeMixin {
         _textDirection != config.textDirection ||
         _sortKey != config._sortKey ||
         _textSelection != config._textSelection ||
+        _selectableTextLength != config._selectableTextLength ||
         _scrollPosition != config._scrollPosition ||
         _scrollExtentMax != config._scrollExtentMax ||
         _scrollExtentMin != config._scrollExtentMin ||
@@ -3656,9 +3661,15 @@ class SemanticsNode with DiagnosticableTreeMixin {
   SemanticsSortKey? _sortKey;
 
   /// The currently selected text (or the position of the cursor) within [value]
-  /// if this node represents a text field.
+  /// if this node represents a text field, or within [label] otherwise.
   TextSelection? get textSelection => _textSelection;
   TextSelection? _textSelection;
+
+  // The selectable-text marker and the action bits it owns, copied from the
+  // configuration this node was formed from. See
+  // [SemanticsConfiguration.selectableTextLength].
+  int? _selectableTextLength;
+  int _selectableTextActionBits = 0;
 
   /// If this node represents a text field, this indicates whether or not it's
   /// a multiline text field.
@@ -3839,6 +3850,14 @@ class SemanticsNode with DiagnosticableTreeMixin {
     List<SemanticsNode>? childrenInInversePaintOrder,
   }) {
     config ??= _kEmptyConfig;
+    if (config.isTextField
+        ? config._selectableTextActionBits != 0
+        : config._selectableTextLength != null && !config._isPureSelectableText) {
+      // Selection semantics contributed by selectable text survive node
+      // formation only on pure-text nodes; a text field keeps only its own.
+      // Filtering a copy keeps the caller's configuration untouched.
+      config = config.copy().._dropSelectableTextData();
+    }
     if (_isDifferentFromCurrentSemanticAnnotation(config)) {
       _markDirty();
     }
@@ -3872,6 +3891,8 @@ class SemanticsNode with DiagnosticableTreeMixin {
     );
     _actionsAsBits = config._actionsAsBits;
     _textSelection = config._textSelection;
+    _selectableTextLength = config._selectableTextLength;
+    _selectableTextActionBits = config._selectableTextActionBits;
     _isMultiline = config.isMultiline;
     _scrollPosition = config._scrollPosition;
     _scrollExtentMax = config._scrollExtentMax;
@@ -3973,12 +3994,37 @@ class SemanticsNode with DiagnosticableTreeMixin {
     }
 
     if (mergeAllDescendantsIntoThisNode) {
+      // Selection semantics merge with the same rules as
+      // [SemanticsConfiguration.absorb]: a text field's own selection and
+      // handlers always win, and selectable-text data survives only when the
+      // merged result is still pure text.
+      int? selectableTextLength = _selectableTextLength;
+      int selectableTextActionBits = _selectableTextActionBits;
+      int unmarkedSelectionActionBits =
+          (_actionsAsBits & _kSelectableTextActions) & ~_selectableTextActionBits;
+      TextSelection? selectableTextSelection;
+      if (_selectableTextLength != null && !_flags.isTextField) {
+        selectableTextSelection = textSelection;
+        textSelection = null;
+      }
       _visitDescendants((SemanticsNode node) {
         assert(node.isMergedIntoParent);
         flags = flags.merge(node._flags);
         actions |= node._effectiveActionsAsBits;
         textDirection ??= node._textDirection;
-        textSelection ??= node._textSelection;
+        final int nodeSelectionActionBits = node._effectiveActionsAsBits & _kSelectableTextActions;
+        selectableTextActionBits |= nodeSelectionActionBits & node._selectableTextActionBits;
+        unmarkedSelectionActionBits |= nodeSelectionActionBits & ~node._selectableTextActionBits;
+        if (node._selectableTextLength != null) {
+          selectableTextLength = selectableTextLength == null ? node._selectableTextLength : -1;
+        }
+        if (node._flags.isTextField) {
+          textSelection = node._textSelection;
+        } else if (node._selectableTextLength != null) {
+          selectableTextSelection ??= node._textSelection;
+        } else {
+          textSelection ??= node._textSelection;
+        }
         scrollChildCount ??= node._scrollChildCount;
         scrollIndex ??= node._scrollIndex;
         scrollPosition ??= node._scrollPosition;
@@ -4077,6 +4123,27 @@ class SemanticsNode with DiagnosticableTreeMixin {
 
         return true;
       });
+      // Bits owned by a text field or by an app-level handler are never
+      // dropped; bits contributed only by selectable text are kept on a
+      // pure-text result and dropped from anything else.
+      final int droppableActionBits = selectableTextActionBits & ~unmarkedSelectionActionBits;
+      final bool isPureSelectableText =
+          !flags.isTextField &&
+          SemanticsConfiguration._isPureSelectableTextData(
+            selectableTextLength: selectableTextLength,
+            labelLength: attributedLabel.string.length,
+            actions: actions,
+            flags: flags,
+            role: role,
+            value: attributedValue.string,
+            hint: attributedHint.string,
+          ) &&
+          selectableTextActionBits == actions & _kSelectableTextActions;
+      if (isPureSelectableText) {
+        textSelection ??= selectableTextSelection;
+      } else {
+        actions &= ~droppableActionBits;
+      }
     }
 
     return SemanticsData(
@@ -5231,15 +5298,25 @@ class SemanticsOwner extends ChangeNotifier {
     // a merge root that owns *some* custom action would short-circuit the
     // walk and we'd dispatch to the wrong handler.
     if (result.isPartOfNodeMerging && !result._canHandleAction(action, args)) {
+      // A selectable-text paragraph merged into a text field never answers
+      // the field's selection actions.
+      final isSelectionAction = action.index & _kSelectableTextActions != 0;
+      bool hasTextField = result._flags.isTextField;
       SemanticsNode? found;
+      SemanticsNode? selectableTextFallback;
       result._visitDescendants((SemanticsNode node) {
+        hasTextField = hasTextField || node._flags.isTextField;
         if (node._canHandleAction(action, args)) {
+          if (isSelectionAction && node._selectableTextActionBits & action.index != 0) {
+            selectableTextFallback ??= node;
+            return true; // keep looking for a text field
+          }
           found = node;
           return false; // found node, abort walk
         }
         return true; // continue walk
       });
-      result = found;
+      result = found ?? (hasTextField ? null : selectableTextFallback);
     }
     if (result == null || !result._canHandleAction(action, args)) {
       return null;
@@ -5465,6 +5542,9 @@ class SemanticsConfiguration {
   void _addAction(SemanticsAction action, SemanticsActionHandler handler) {
     _actions[action] = handler;
     _actionsAsBits |= action.index;
+    if (_selectableTextLength != null) {
+      _selectableTextActionBits |= action.index & _kSelectableTextActions;
+    }
     _hasBeenAnnotated = true;
   }
 
@@ -6707,13 +6787,99 @@ class SemanticsConfiguration {
   }
 
   /// The currently selected text (or the position of the cursor) within
-  /// [value] if this node represents a text field.
+  /// [value] if this node represents a text field, or within [label]
+  /// otherwise.
+  ///
+  /// Offsets are UTF-16 code units. Static text publishes a selection only
+  /// through [selectableTextLength], which keeps the offsets meaningful by
+  /// dropping them when the node's label is not the text they index.
   TextSelection? get textSelection => _textSelection;
   TextSelection? _textSelection;
   set textSelection(TextSelection? value) {
     assert(value != null);
     _textSelection = value;
     _hasBeenAnnotated = true;
+  }
+
+  /// The UTF-16 length of the [label] that [textSelection], [onSetSelection]
+  /// and [onCopy] index when this configuration describes selectable static
+  /// text, or null when it does not.
+  ///
+  /// This is a framework-internal marker set by the paragraph render object
+  /// of a selectable paragraph. A configuration that carries it keeps its
+  /// selection semantics only while the node formed from it is pure text:
+  /// the label is exactly this long (nothing was concatenated into it), the
+  /// only actions are [SemanticsAction.setSelection] and
+  /// [SemanticsAction.copy], it is not a button, has no explicit role, and
+  /// has an empty [value] and [hint]. Otherwise the selection, and the
+  /// handlers the selectable text contributed, are dropped when the node is
+  /// formed, so buttons, tiles, merged labels and text fields keep today's
+  /// semantics. Text fields always keep their own selection and handlers.
+  ///
+  /// The marker also masks the two actions out of [isCompatibleWith], so that
+  /// advertising them on paragraphs never changes which nodes merge.
+  @internal
+  int? get selectableTextLength => _selectableTextLength;
+  int? _selectableTextLength;
+  @internal
+  set selectableTextLength(int? value) {
+    _selectableTextLength = value;
+    _selectableTextActionBits = value == null ? 0 : _actionsAsBits & _kSelectableTextActions;
+  }
+
+  // The subset of [_kSelectableTextActions] whose handlers were contributed by
+  // selectable text, as opposed to a text field or an app-level handler.
+  int _selectableTextActionBits = 0;
+
+  /// Whether a node formed from this configuration may keep the selection
+  /// semantics that selectable text contributed.
+  bool get _isPureSelectableText {
+    return _isPureSelectableTextData(
+          selectableTextLength: _selectableTextLength,
+          labelLength: _attributedLabel.string.length,
+          actions: _actionsAsBits,
+          flags: _flags,
+          role: _role,
+          value: _attributedValue.string,
+          hint: _attributedHint.string,
+        ) &&
+        _selectableTextActionBits == _actionsAsBits & _kSelectableTextActions;
+  }
+
+  static bool _isPureSelectableTextData({
+    required int? selectableTextLength,
+    required int labelLength,
+    required int actions,
+    required SemanticsFlags flags,
+    required SemanticsRole role,
+    required String value,
+    required String hint,
+  }) {
+    return selectableTextLength != null &&
+        selectableTextLength >= 0 &&
+        selectableTextLength == labelLength &&
+        actions & ~_kSelectableTextActions == 0 &&
+        !flags.isButton &&
+        !_hasExplicitRoleFor(flags, role) &&
+        value.isEmpty &&
+        hint.isEmpty;
+  }
+
+  /// Removes the selection semantics that selectable text contributed.
+  ///
+  /// Handlers owned by a text field or by an app-level handler are kept.
+  void _dropSelectableTextData() {
+    for (final action in <SemanticsAction>[SemanticsAction.setSelection, SemanticsAction.copy]) {
+      if (_selectableTextActionBits & action.index != 0) {
+        _actions.remove(action);
+        _actionsAsBits &= ~action.index;
+      }
+    }
+    _selectableTextActionBits = 0;
+    if (!isTextField) {
+      _textSelection = null;
+    }
+    _selectableTextLength = null;
   }
 
   /// Indicates the current scrolling position in logical pixels if the node is
@@ -6856,18 +7022,20 @@ class SemanticsConfiguration {
 
   SemanticsFlags _flags = SemanticsFlags.none;
 
-  bool get _hasExplicitRole {
-    if (_role != SemanticsRole.none) {
+  bool get _hasExplicitRole => _hasExplicitRoleFor(_flags, _role);
+
+  static bool _hasExplicitRoleFor(SemanticsFlags flags, SemanticsRole role) {
+    if (role != SemanticsRole.none) {
       return true;
     }
-    if (_flags.isTextField ||
+    if (flags.isTextField ||
         // In non web platforms, the header is a trait.
-        (_flags.isHeader && kIsWeb) ||
-        _flags.isSlider ||
-        _flags.isLink ||
-        _flags.scopesRoute ||
-        _flags.isImage ||
-        _flags.isKeyboardKey) {
+        (flags.isHeader && kIsWeb) ||
+        flags.isSlider ||
+        flags.isLink ||
+        flags.scopesRoute ||
+        flags.isImage ||
+        flags.isKeyboardKey) {
       return true;
     }
     return false;
@@ -6893,7 +7061,12 @@ class SemanticsConfiguration {
     if (!hasBeenAnnotated) {
       return true;
     }
-    if (_actionsAsBits & other._actionsAsBits != 0) {
+    // Actions contributed by selectable text never cause a conflict, so
+    // paragraphs that merge today keep merging (the node-time filter decides
+    // whether the merged node keeps them).
+    final int actions = _actionsAsBits & ~_selectableTextActionBits;
+    final int otherActions = other._actionsAsBits & ~other._selectableTextActionBits;
+    if (actions & otherActions != 0) {
       return false;
     }
     if (_flags.hasConflictingFlags(other._flags)) {
@@ -6955,13 +7128,44 @@ class SemanticsConfiguration {
         }
       });
     } else {
-      _actions.addAll(child._actions);
+      child._actions.forEach((SemanticsAction key, SemanticsActionHandler value) {
+        if (key.index & _kSelectableTextActions == 0 || child.isTextField) {
+          // Ordinary handlers, and a text field's selection handlers, always
+          // overwrite (text-field-first absorption).
+          _actions[key] = value;
+          _selectableTextActionBits &= ~key.index;
+        } else if (child._selectableTextActionBits & key.index != 0) {
+          // A selection handler contributed by selectable text never
+          // overwrites an existing one.
+          if (!_actions.containsKey(key)) {
+            _actions[key] = value;
+            _selectableTextActionBits |= key.index;
+          }
+        } else {
+          _actions[key] = value;
+          _selectableTextActionBits &= ~key.index;
+        }
+      });
     }
     _actionsAsBits |= child._effectiveActionsAsBits;
     _customSemanticsActions.addAll(child._customSemanticsActions);
     _flags = _flags.merge(child._flags);
     _linkUrl ??= child._linkUrl;
-    _textSelection ??= child._textSelection;
+    if (child.isTextField) {
+      // A text field's selection always wins over a label's.
+      _textSelection = child._textSelection;
+    } else if (child._selectableTextLength != null) {
+      // Selectable text never publishes a selection on a text field.
+      if (!_flags.isTextField) {
+        _textSelection ??= child._textSelection;
+      }
+    } else {
+      _textSelection ??= child._textSelection;
+    }
+    if (child._selectableTextLength != null) {
+      // Two selectable texts merged together can no longer index the label.
+      _selectableTextLength = _selectableTextLength == null ? child._selectableTextLength : -1;
+    }
     _scrollPosition ??= child._scrollPosition;
     _scrollExtentMax ??= child._scrollExtentMax;
     _scrollExtentMin ??= child._scrollExtentMin;
@@ -7072,6 +7276,8 @@ class SemanticsConfiguration {
       .._flags = _flags
       .._tagsForChildren = _tagsForChildren
       .._textSelection = _textSelection
+      .._selectableTextLength = _selectableTextLength
+      .._selectableTextActionBits = _selectableTextActionBits
       .._scrollPosition = _scrollPosition
       .._scrollExtentMax = _scrollExtentMax
       .._scrollExtentMin = _scrollExtentMin
