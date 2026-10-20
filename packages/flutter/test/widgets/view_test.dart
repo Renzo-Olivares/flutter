@@ -5,6 +5,7 @@
 import 'dart:ui';
 
 import 'package:flutter/rendering.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:leak_tracker_flutter_testing/leak_tracker_flutter_testing.dart';
@@ -666,6 +667,214 @@ void main() {
 
     expect(nodeA.hasPrimaryFocus, isTrue);
     expect(nodeB.hasPrimaryFocus, isFalse);
+  });
+
+  group('ViewFocusEvent with a direction before the first layout', () {
+    // Regression tests for https://github.com/flutter/flutter/issues/193287
+    // and https://github.com/flutter/flutter/issues/187939: a forward or
+    // backward view focus event that arrives after the first build but before
+    // the first layout must not make the traversal policy read the geometry of
+    // render objects that have none yet.
+
+    Widget twoFocusNodes(FocusNode first, FocusNode last, {bool autofocusLast = false}) {
+      return Directionality(
+        textDirection: TextDirection.ltr,
+        child: Column(
+          children: <Widget>[
+            Focus(focusNode: first, child: const SizedBox(width: 10, height: 10)),
+            Focus(
+              focusNode: last,
+              autofocus: autofocusLast,
+              child: const SizedBox(width: 10, height: 10),
+            ),
+          ],
+        ),
+      );
+    }
+
+    void notifyViewFocus(WidgetTester tester, ViewFocusState state, ViewFocusDirection direction) {
+      tester.platformDispatcher.notifyViewFocusChanged(
+        ViewFocusEvent(viewId: tester.view.viewId, state: state, direction: direction),
+      );
+    }
+
+    testWidgets('does not throw with a SelectableRegion beside the Navigator scope', (
+      WidgetTester tester,
+    ) async {
+      // The shape from the issue: a traversable node (here a SelectableRegion
+      // in WidgetsApp.builder) outside the Navigator scope gives the reading
+      // order policy two nodes to sort, so it measures them.
+      for (final direction in <ViewFocusDirection>[
+        ViewFocusDirection.forward,
+        ViewFocusDirection.backward,
+      ]) {
+        await tester.pumpWidget(
+          WidgetsApp(
+            color: const Color(0xFFFFFFFF),
+            onGenerateRoute: (RouteSettings settings) => PageRouteBuilder<void>(
+              settings: settings,
+              pageBuilder: (_, _, _) =>
+                  const Center(child: Text('hello', textDirection: TextDirection.ltr)),
+            ),
+            builder: (BuildContext context, Widget? child) => Overlay(
+              initialEntries: <OverlayEntry>[
+                OverlayEntry(
+                  builder: (BuildContext context) => SelectableRegion(
+                    selectionControls: emptyTextSelectionControls,
+                    child: child ?? const SizedBox.shrink(),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          phase: EnginePhase.build,
+        );
+        notifyViewFocus(tester, ViewFocusState.focused, direction);
+        await tester.pump();
+        expect(tester.takeException(), isNull, reason: 'direction $direction');
+      }
+    });
+
+    testWidgets('forward focuses the first node once the frame has been laid out', (
+      WidgetTester tester,
+    ) async {
+      final nodeA = FocusNode(debugLabel: 'a');
+      addTearDown(nodeA.dispose);
+      final nodeB = FocusNode(debugLabel: 'b');
+      addTearDown(nodeB.dispose);
+
+      await tester.pumpWidget(twoFocusNodes(nodeA, nodeB), phase: EnginePhase.build);
+      notifyViewFocus(tester, ViewFocusState.focused, ViewFocusDirection.forward);
+      expect(tester.takeException(), isNull);
+      expect(nodeA.hasPrimaryFocus, isFalse);
+
+      await tester.pump();
+      expect(tester.takeException(), isNull);
+      expect(nodeA.hasPrimaryFocus, isTrue);
+      expect(nodeB.hasPrimaryFocus, isFalse);
+    });
+
+    testWidgets('backward focuses the last node once the frame has been laid out', (
+      WidgetTester tester,
+    ) async {
+      final nodeA = FocusNode(debugLabel: 'a');
+      addTearDown(nodeA.dispose);
+      final nodeB = FocusNode(debugLabel: 'b');
+      addTearDown(nodeB.dispose);
+
+      await tester.pumpWidget(twoFocusNodes(nodeA, nodeB), phase: EnginePhase.build);
+      notifyViewFocus(tester, ViewFocusState.focused, ViewFocusDirection.backward);
+      expect(tester.takeException(), isNull);
+
+      await tester.pump();
+      expect(tester.takeException(), isNull);
+      expect(nodeB.hasPrimaryFocus, isTrue);
+      expect(nodeA.hasPrimaryFocus, isFalse);
+    });
+
+    testWidgets('does not override focus that a widget took in the meantime', (
+      WidgetTester tester,
+    ) async {
+      final nodeA = FocusNode(debugLabel: 'a');
+      addTearDown(nodeA.dispose);
+      final nodeB = FocusNode(debugLabel: 'b');
+      addTearDown(nodeB.dispose);
+
+      // nodeB autofocuses during the first build; the view focus event
+      // arrives before the first layout, as it does at startup on the web.
+      await tester.pumpWidget(
+        twoFocusNodes(nodeA, nodeB, autofocusLast: true),
+        phase: EnginePhase.build,
+      );
+      notifyViewFocus(tester, ViewFocusState.focused, ViewFocusDirection.forward);
+      expect(tester.takeException(), isNull);
+
+      await tester.pump();
+      expect(tester.takeException(), isNull);
+      expect(nodeB.hasPrimaryFocus, isTrue);
+      expect(nodeA.hasPrimaryFocus, isFalse);
+    });
+
+    testWidgets('delivered during a frame waits for the frame to end', (WidgetTester tester) async {
+      // The engine can report view focus from inside a frame (on the web, a
+      // semantics update can move DOM focus). A node whose element was
+      // deactivated in that frame is still in the focus tree but has no
+      // render object to measure until the tree is finalized.
+      final SemanticsHandle semantics = tester.ensureSemantics();
+      final nodeA = FocusNode(debugLabel: 'a');
+      addTearDown(nodeA.dispose);
+      final nodeB = FocusNode(debugLabel: 'b');
+      addTearDown(nodeB.dispose);
+      late StateSetter setState;
+      var showB = true;
+
+      await tester.pumpWidget(
+        Directionality(
+          textDirection: TextDirection.ltr,
+          child: StatefulBuilder(
+            builder: (BuildContext context, StateSetter setter) {
+              setState = setter;
+              return Column(
+                children: <Widget>[
+                  Focus(focusNode: nodeA, child: const SizedBox(width: 10, height: 10)),
+                  if (showB) Focus(focusNode: nodeB, child: const SizedBox(width: 10, height: 10)),
+                ],
+              );
+            },
+          ),
+        ),
+      );
+
+      // Deliver the event while the frame that removes nodeB's widget is
+      // sending its semantics update: nodeB's element is inactive, not yet
+      // unmounted.
+      final SemanticsOwner owner = tester
+          .renderObject<RenderView>(find.byType(View))
+          .owner!
+          .semanticsOwner!;
+      var delivered = false;
+      void deliverDuringFrame() {
+        if (delivered || showB) {
+          return;
+        }
+        delivered = true;
+        expect(SchedulerBinding.instance.schedulerPhase, SchedulerPhase.persistentCallbacks);
+        notifyViewFocus(tester, ViewFocusState.focused, ViewFocusDirection.forward);
+      }
+
+      owner.addListener(deliverDuringFrame);
+
+      setState(() {
+        showB = false;
+      });
+      await tester.pump();
+      owner.removeListener(deliverDuringFrame);
+      semantics.dispose();
+
+      expect(delivered, isTrue);
+      expect(tester.takeException(), isNull);
+      expect(nodeA.hasPrimaryFocus, isTrue);
+    });
+
+    testWidgets('is cancelled by an unfocused event that arrives before the frame', (
+      WidgetTester tester,
+    ) async {
+      final nodeA = FocusNode(debugLabel: 'a');
+      addTearDown(nodeA.dispose);
+      final nodeB = FocusNode(debugLabel: 'b');
+      addTearDown(nodeB.dispose);
+
+      await tester.pumpWidget(twoFocusNodes(nodeA, nodeB), phase: EnginePhase.build);
+      notifyViewFocus(tester, ViewFocusState.focused, ViewFocusDirection.forward);
+      notifyViewFocus(tester, ViewFocusState.unfocused, ViewFocusDirection.undefined);
+      expect(tester.takeException(), isNull);
+
+      await tester.pump();
+      expect(tester.takeException(), isNull);
+      expect(nodeA.hasFocus, isFalse);
+      expect(nodeB.hasFocus, isFalse);
+      expect(FocusManager.instance.rootScope.hasPrimaryFocus, isTrue);
+    });
   });
 
   testWidgets(

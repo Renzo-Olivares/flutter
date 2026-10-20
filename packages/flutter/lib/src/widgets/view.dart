@@ -13,6 +13,7 @@ import 'dart:ui'
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/rendering.dart';
+import 'package:flutter/scheduler.dart';
 
 import 'binding.dart';
 import 'focus_manager.dart';
@@ -209,6 +210,12 @@ class _ViewState extends State<View> with WidgetsBindingObserver {
   final FocusTraversalPolicy _policy = ReadingOrderTraversalPolicy();
   bool _viewHasFocus = false;
 
+  // The direction of a focused [ViewFocusEvent] whose first/last focus could
+  // not be determined when it arrived (see [_canMeasureFocusNodes]); resolved
+  // by [_applyPendingEdgeFocus] at the end of the next frame.
+  ViewFocusDirection? _pendingEdgeFocusDirection;
+  bool _edgeFocusCallbackScheduled = false;
+
   @override
   void initState() {
     super.initState();
@@ -246,24 +253,82 @@ class _ViewState extends State<View> with WidgetsBindingObserver {
     if (event.viewId != widget.view.viewId) {
       return;
     }
-    FocusNode nextFocus;
+    // A newer event for this view supersedes a pending edge focus.
+    _pendingEdgeFocusDirection = null;
     switch (event.state) {
       case ViewFocusState.focused:
-        switch (event.direction) {
-          case ViewFocusDirection.forward:
-            nextFocus = _policy.findFirstFocus(_scopeNode, ignoreCurrentFocus: true) ?? _scopeNode;
-          case ViewFocusDirection.backward:
-            nextFocus = _policy.findLastFocus(_scopeNode, ignoreCurrentFocus: true);
-          case ViewFocusDirection.undefined:
-            nextFocus = _scopeNode;
+        if (event.direction != ViewFocusDirection.undefined && !_canMeasureFocusNodes) {
+          // The view was entered by traversal, so focus belongs on its first
+          // or last focusable node, but the traversal policy finds that node
+          // by sorting geometry, and there is none yet (the event arrived
+          // after the first build but before the first layout, which is how
+          // startup is sequenced, or in the middle of a frame). Resolve it
+          // once the frame has ended.
+          _pendingEdgeFocusDirection = event.direction;
+          _scheduleEdgeFocusCallback();
+          return;
         }
-        nextFocus.requestFocus();
+        _edgeFocusFor(event.direction).requestFocus();
       case ViewFocusState.unfocused:
         // Focusing on the root scope node will "park" the focus, so that no
         // descendant node will be given focus, and there's no widget that can
         // receive keyboard events.
         FocusManager.instance.rootScope.requestScopeFocus();
     }
+  }
+
+  FocusNode _edgeFocusFor(ViewFocusDirection direction) {
+    return switch (direction) {
+      ViewFocusDirection.forward =>
+        _policy.findFirstFocus(_scopeNode, ignoreCurrentFocus: true) ?? _scopeNode,
+      ViewFocusDirection.backward => _policy.findLastFocus(_scopeNode, ignoreCurrentFocus: true),
+      ViewFocusDirection.undefined => _scopeNode,
+    };
+  }
+
+  // Whether the traversal policy can read the geometry of this view's focus
+  // nodes: not while a frame is being built or laid out, and not before the
+  // view's content has been laid out for the first time.
+  bool get _canMeasureFocusNodes {
+    switch (SchedulerBinding.instance.schedulerPhase) {
+      case SchedulerPhase.transientCallbacks:
+      case SchedulerPhase.midFrameMicrotasks:
+      case SchedulerPhase.persistentCallbacks:
+        return false;
+      case SchedulerPhase.idle:
+      case SchedulerPhase.postFrameCallbacks:
+        break;
+    }
+    final RenderObject? renderObject = _scopeNode.context?.findRenderObject();
+    return renderObject is RenderBox && renderObject.hasSize;
+  }
+
+  void _scheduleEdgeFocusCallback() {
+    if (_edgeFocusCallbackScheduled) {
+      return;
+    }
+    _edgeFocusCallbackScheduled = true;
+    SchedulerBinding.instance.addPostFrameCallback(
+      _applyPendingEdgeFocus,
+      debugLabel: 'View.pendingEdgeFocus',
+    );
+    SchedulerBinding.instance.ensureVisualUpdate();
+  }
+
+  void _applyPendingEdgeFocus(Duration timeStamp) {
+    _edgeFocusCallbackScheduled = false;
+    final ViewFocusDirection? direction = _pendingEdgeFocusDirection;
+    _pendingEdgeFocusDirection = null;
+    if (!mounted || direction == null || !_viewHasFocus || _scopeNode.hasFocus) {
+      // The view has lost focus again, or something inside it (an autofocus,
+      // a programmatic request) took focus in the meantime; the stale event
+      // must not override that.
+      return;
+    }
+    // If the view still has no geometry, settle for the scope itself rather
+    // than wait for a frame that may never come.
+    final FocusNode nextFocus = _canMeasureFocusNodes ? _edgeFocusFor(direction) : _scopeNode;
+    nextFocus.requestFocus();
   }
 
   @override
