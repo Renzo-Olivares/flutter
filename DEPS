@@ -17,7 +17,7 @@ vars = {
   'dart_ai_rev': '9c96bfe5f091c9451eff5b59c9bffeb2e806b875',
   # 'skia_revision': 'e84ecd98d9f2273b6cc9a0c0c962fdcceda733b7',
   'my_skia_git': 'https://github.com/Renzo-Olivares/skia',
-  'skia_revision': '21d257de12ff066cf697ff7811d38a1e9fb7a041',
+  'skia_revision': 'bce73f25887f447b9fe5579ee4d31ff9dc33f2d7',
 
   # Do not download the Emscripten SDK by default.
   # This prevents us from downloading the Emscripten toolchain for builds
