@@ -949,14 +949,17 @@ void main() {
       expect(renderSelectionSpy.events[0], isA<SelectWordSelectionEvent>());
 
       renderSelectionSpy.events.clear();
+      // The scroll must start inside the 800x600 test surface so that it hits the
+      // SelectableRegion, and must be held for kPressTimeout so that the tap down is
+      // reported before the ancestor scrollable wins the gesture arena.
       final TestGesture scrollGesture = await tester.startGesture(const Offset(250.0, 400.0));
       addTearDown(scrollGesture.removePointer);
-      await tester.pump(kPressTimeout + const Duration(milliseconds: 50));
+      await tester.pump(kPressTimeout);
       await scrollGesture.moveBy(const Offset(0.0, -30.0));
       await scrollGesture.moveBy(const Offset(0.0, -150.0));
       await scrollGesture.up();
       await tester.pumpAndSettle();
-      expect(scrollController.offset, greaterThan(0));
+      expect(scrollController.offset, greaterThan(0.0));
       expect(renderSelectionSpy.events.length, 0);
     });
 
@@ -6994,11 +6997,11 @@ void main() {
             home: SingleChildScrollView(
               controller: scrollController,
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+                crossAxisAlignment: .start,
                 children: <Widget>[
-                  const SizedBox(height: 200),
+                  const SizedBox(height: 200.0),
                   _selectableRegion(child: const Text('Hello selectable world')),
-                  const SizedBox(height: 1000),
+                  const SizedBox(height: 1000.0),
                 ],
               ),
             ),
@@ -7013,7 +7016,7 @@ void main() {
         // Long-press "Hello" to create an active selection.
         final TestGesture longPress = await tester.startGesture(textOffsetToPosition(paragraph, 2));
         addTearDown(longPress.removePointer);
-        await tester.pump(const Duration(milliseconds: 500));
+        await tester.pump(kLongPressTimeout);
         await longPress.up();
         await tester.pumpAndSettle();
 
@@ -7021,19 +7024,20 @@ void main() {
           TextSelection(baseOffset: 0, extentOffset: 5),
         ]);
 
-        // Touch down directly inside the SelectableRegion, pause past kPressTimeout,
-        // and drag vertically to scroll the parent scrollable.
+        // Touch down directly inside the SelectableRegion, pause for kPressTimeout so
+        // that the tap down is reported, and drag vertically to scroll the parent
+        // scrollable.
         final Offset regionCenter = tester.getCenter(find.byType(SelectableRegion));
         final TestGesture scrollGesture = await tester.startGesture(regionCenter);
         addTearDown(scrollGesture.removePointer);
-        await tester.pump(kPressTimeout + const Duration(milliseconds: 50));
-        await scrollGesture.moveBy(const Offset(0, -30));
-        await scrollGesture.moveBy(const Offset(0, -100));
+        await tester.pump(kPressTimeout);
+        await scrollGesture.moveBy(const Offset(0.0, -30.0));
+        await scrollGesture.moveBy(const Offset(0.0, -100.0));
         await tester.pump();
         await scrollGesture.up();
         await tester.pumpAndSettle();
 
-        expect(scrollController.offset, greaterThan(0));
+        expect(scrollController.offset, greaterThan(0.0));
         expect(paragraph.selections, const <TextSelection>[
           TextSelection(baseOffset: 0, extentOffset: 5),
         ]);
@@ -7059,8 +7063,8 @@ void main() {
               child: SingleChildScrollView(
                 controller: scrollController,
                 child: const Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[Text('Child scrollable text'), SizedBox(height: 1000)],
+                  crossAxisAlignment: .start,
+                  children: <Widget>[Text('Child scrollable text'), SizedBox(height: 1000.0)],
                 ),
               ),
             ),
@@ -7075,7 +7079,7 @@ void main() {
         // Long-press "Child" to select it.
         final TestGesture longPress = await tester.startGesture(textOffsetToPosition(paragraph, 2));
         addTearDown(longPress.removePointer);
-        await tester.pump(const Duration(milliseconds: 500));
+        await tester.pump(kLongPressTimeout);
         await longPress.up();
         await tester.pumpAndSettle();
 
@@ -7083,21 +7087,23 @@ void main() {
           TextSelection(baseOffset: 0, extentOffset: 5),
         ]);
 
-        // Touch down inside the child scrollable, wait past kPressTimeout, and move
-        // slightly diagonally so Euclidean distance exceeds touch slop before |dy| does.
-        final TestGesture scrollGesture = await tester.startGesture(const Offset(200, 300));
+        // Touch down inside the child scrollable, wait for kPressTimeout, and move
+        // slightly diagonally so that the Euclidean distance exceeds the touch slop
+        // before the vertical distance does: (10.0, -16.0) is ~18.9 pixels from the
+        // touch down, which is more than kTouchSlop (18.0), while |dy| is only 16.0.
+        final TestGesture scrollGesture = await tester.startGesture(const Offset(200.0, 300.0));
         addTearDown(scrollGesture.removePointer);
-        await tester.pump(kPressTimeout + const Duration(milliseconds: 50));
-        await scrollGesture.moveBy(const Offset(10, -16));
+        await tester.pump(kPressTimeout);
+        await scrollGesture.moveBy(const Offset(10.0, -16.0));
         await tester.pump();
-        await scrollGesture.moveBy(const Offset(0, -30));
+        await scrollGesture.moveBy(const Offset(0.0, -30.0));
         await tester.pump();
-        await scrollGesture.moveBy(const Offset(0, -100));
+        await scrollGesture.moveBy(const Offset(0.0, -100.0));
         await tester.pump();
         await scrollGesture.up();
         await tester.pumpAndSettle();
 
-        expect(scrollController.offset, greaterThan(0));
+        expect(scrollController.offset, greaterThan(0.0));
         expect(paragraph.selections, const <TextSelection>[
           TextSelection(baseOffset: 0, extentOffset: 5),
         ]);
@@ -7115,12 +7121,12 @@ void main() {
           TestWidgetsApp(
             textStyle: _materialDefaultTextStyle,
             home: SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
+              scrollDirection: .horizontal,
               controller: scrollController,
               child: Row(
                 children: <Widget>[
                   _selectableRegion(child: const Text('Horizontal scroll text')),
-                  const SizedBox(width: 1000),
+                  const SizedBox(width: 1000.0),
                 ],
               ),
             ),
@@ -7134,7 +7140,7 @@ void main() {
 
         final TestGesture longPress = await tester.startGesture(textOffsetToPosition(paragraph, 2));
         addTearDown(longPress.removePointer);
-        await tester.pump(const Duration(milliseconds: 500));
+        await tester.pump(kLongPressTimeout);
         await longPress.up();
         await tester.pumpAndSettle();
 
@@ -7145,14 +7151,14 @@ void main() {
         final Offset regionCenter = tester.getCenter(find.byType(SelectableRegion));
         final TestGesture scrollGesture = await tester.startGesture(regionCenter);
         addTearDown(scrollGesture.removePointer);
-        await tester.pump(kPressTimeout + const Duration(milliseconds: 50));
-        await scrollGesture.moveBy(const Offset(-30, 0));
-        await scrollGesture.moveBy(const Offset(-150, 0));
+        await tester.pump(kPressTimeout);
+        await scrollGesture.moveBy(const Offset(-30.0, 0.0));
+        await scrollGesture.moveBy(const Offset(-150.0, 0.0));
         await tester.pump();
         await scrollGesture.up();
         await tester.pumpAndSettle();
 
-        expect(scrollController.offset, greaterThan(0));
+        expect(scrollController.offset, greaterThan(0.0));
         expect(paragraph.selections, const <TextSelection>[
           TextSelection(baseOffset: 0, extentOffset: 10),
         ]);
@@ -7161,7 +7167,7 @@ void main() {
     );
 
     testWidgets(
-      'Cancelling an in-progress drag selection finalizes status without clearing selection',
+      'Canceling an in-progress drag selection finalizes status without clearing selection',
       (WidgetTester tester) async {
         final GlobalKey textKey = GlobalKey();
 
@@ -7182,7 +7188,7 @@ void main() {
 
         final TestGesture gesture = await tester.startGesture(
           textOffsetToPosition(paragraph, 0),
-          kind: PointerDeviceKind.mouse,
+          kind: .mouse,
         );
         addTearDown(gesture.removePointer);
         await gesture.moveTo(textOffsetToPosition(paragraph, 5));
