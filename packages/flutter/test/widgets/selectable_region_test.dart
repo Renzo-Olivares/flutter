@@ -6977,6 +6977,196 @@ void main() {
     expect(outerParagraph1.selections[0], const TextSelection(baseOffset: 4, extentOffset: 3));
     expect(outerParagraph2.selections[0], const TextSelection(baseOffset: 2, extentOffset: 1));
   });
+
+  group('Deferring focus request on mobile tap down', () {
+    testWidgets(
+      'Scrolling over a sibling SelectableRegion after kPressTimeout does not steal focus or clear selection',
+      (WidgetTester tester) async {
+        final scrollController = ScrollController();
+        addTearDown(scrollController.dispose);
+        final focus1 = FocusNode();
+        addTearDown(focus1.dispose);
+        final focus2 = FocusNode();
+        addTearDown(focus2.dispose);
+
+        await tester.pumpWidget(
+          TestWidgetsApp(
+            textStyle: _materialDefaultTextStyle,
+            home: SingleChildScrollView(
+              controller: scrollController,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  _selectableRegion(focusNode: focus1, child: const Text('First region')),
+                  const SizedBox(height: 50),
+                  _selectableRegion(focusNode: focus2, child: const Text('Second region')),
+                  const SizedBox(height: 1000),
+                ],
+              ),
+            ),
+          ),
+        );
+        await setAppLifecycleState(AppLifecycleState.resumed);
+        await tester.pumpAndSettle();
+
+        final RenderParagraph paragraph1 = tester.renderObject<RenderParagraph>(
+          find.descendant(of: find.text('First region'), matching: find.byType(RichText)),
+        );
+
+        // Select "First" in the first SelectableRegion.
+        final TestGesture longPress = await tester.startGesture(
+          textOffsetToPosition(paragraph1, 2),
+        );
+        addTearDown(longPress.removePointer);
+        await tester.pump(const Duration(milliseconds: 500));
+        await longPress.up();
+        await tester.pumpAndSettle();
+
+        expect(focus1.hasFocus, isTrue);
+        expect(focus2.hasFocus, isFalse);
+        expect(paragraph1.selections, const <TextSelection>[
+          TextSelection(baseOffset: 0, extentOffset: 5),
+        ]);
+
+        // Scroll by touching down on the second SelectableRegion and pausing past kPressTimeout.
+        final Offset secondRegionCenter = tester.getCenter(find.text('Second region'));
+        final TestGesture scrollGesture = await tester.startGesture(secondRegionCenter);
+        addTearDown(scrollGesture.removePointer);
+        await tester.pump(kPressTimeout + const Duration(milliseconds: 50));
+        await scrollGesture.moveBy(const Offset(0, -30));
+        await scrollGesture.moveBy(const Offset(0, -100));
+        await tester.pump();
+        await scrollGesture.up();
+        await tester.pumpAndSettle();
+
+        expect(scrollController.offset, greaterThan(0));
+        expect(focus1.hasFocus, isTrue);
+        expect(focus2.hasFocus, isFalse);
+        expect(paragraph1.selections, const <TextSelection>[
+          TextSelection(baseOffset: 0, extentOffset: 5),
+        ]);
+
+        // Actually tapping the second SelectableRegion moves focus and clears the first selection.
+        await tester.tap(find.text('Second region'));
+        await tester.pumpAndSettle();
+
+        expect(focus2.hasFocus, isTrue);
+        expect(focus1.hasFocus, isFalse);
+        expect(paragraph1.selections, isEmpty);
+      },
+      variant: TargetPlatformVariant.mobile(),
+    );
+
+    testWidgets(
+      'Scrolling over SelectableRegion after kPressTimeout does not steal focus from a focused TextField',
+      (WidgetTester tester) async {
+        final scrollController = ScrollController();
+        addTearDown(scrollController.dispose);
+        final textFieldController = TextEditingController(text: 'Input text');
+        addTearDown(textFieldController.dispose);
+        final textFieldFocus = FocusNode();
+        addTearDown(textFieldFocus.dispose);
+        final regionFocus = FocusNode();
+        addTearDown(regionFocus.dispose);
+
+        await tester.pumpWidget(
+          TestWidgetsApp(
+            textStyle: _materialDefaultTextStyle,
+            home: SingleChildScrollView(
+              controller: scrollController,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  TestTextField(controller: textFieldController, focusNode: textFieldFocus),
+                  const SizedBox(height: 150),
+                  _selectableRegion(focusNode: regionFocus, child: const Text('Selectable card')),
+                  const SizedBox(height: 1000),
+                ],
+              ),
+            ),
+          ),
+        );
+        textFieldFocus.requestFocus();
+        await tester.pumpAndSettle();
+
+        expect(textFieldFocus.hasFocus, isTrue);
+        expect(regionFocus.hasFocus, isFalse);
+
+        // Scroll starting on the SelectableRegion after pausing past kPressTimeout.
+        final Offset regionCenter = tester.getCenter(find.text('Selectable card'));
+        final TestGesture scrollGesture = await tester.startGesture(regionCenter);
+        addTearDown(scrollGesture.removePointer);
+        await tester.pump(kPressTimeout + const Duration(milliseconds: 50));
+        await scrollGesture.moveBy(const Offset(0, -30));
+        await scrollGesture.moveBy(const Offset(0, -100));
+        await tester.pump();
+        await scrollGesture.up();
+        await tester.pumpAndSettle();
+
+        expect(scrollController.offset, greaterThan(0));
+        expect(textFieldFocus.hasFocus, isTrue);
+        expect(regionFocus.hasFocus, isFalse);
+
+        // Actually tapping the SelectableRegion focuses it.
+        await tester.tap(find.text('Selectable card'));
+        await tester.pumpAndSettle();
+
+        expect(regionFocus.hasFocus, isTrue);
+        expect(textFieldFocus.hasFocus, isFalse);
+      },
+      variant: TargetPlatformVariant.mobile(),
+    );
+
+    testWidgets('Mouse drag selection on mobile requests focus on SelectableRegion', (
+      WidgetTester tester,
+    ) async {
+      final textFieldController = TextEditingController(text: 'Input text');
+      addTearDown(textFieldController.dispose);
+      final textFieldFocus = FocusNode();
+      addTearDown(textFieldFocus.dispose);
+      final regionFocus = FocusNode();
+      addTearDown(regionFocus.dispose);
+
+      await tester.pumpWidget(
+        TestWidgetsApp(
+          textStyle: _materialDefaultTextStyle,
+          home: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              TestTextField(controller: textFieldController, focusNode: textFieldFocus),
+              const SizedBox(height: 50),
+              _selectableRegion(focusNode: regionFocus, child: const Text('Mouse drag on mobile')),
+            ],
+          ),
+        ),
+      );
+      textFieldFocus.requestFocus();
+      await tester.pumpAndSettle();
+
+      expect(textFieldFocus.hasFocus, isTrue);
+      expect(regionFocus.hasFocus, isFalse);
+
+      final RenderParagraph paragraph = tester.renderObject<RenderParagraph>(
+        find.descendant(of: find.text('Mouse drag on mobile'), matching: find.byType(RichText)),
+      );
+
+      final TestGesture gesture = await tester.startGesture(
+        textOffsetToPosition(paragraph, 0),
+        kind: PointerDeviceKind.mouse,
+      );
+      addTearDown(gesture.removePointer);
+      await gesture.moveTo(textOffsetToPosition(paragraph, 5));
+      await tester.pump();
+      await gesture.up();
+      await tester.pumpAndSettle();
+
+      expect(regionFocus.hasFocus, isTrue);
+      expect(textFieldFocus.hasFocus, isFalse);
+      expect(paragraph.selections, const <TextSelection>[
+        TextSelection(baseOffset: 0, extentOffset: 5),
+      ]);
+    }, variant: TargetPlatformVariant.mobile());
+  });
 }
 
 class ColumnSelectionContainerDelegate extends StaticSelectionContainerDelegate {

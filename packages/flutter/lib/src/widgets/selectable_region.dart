@@ -746,17 +746,17 @@ class SelectableRegionState extends State<SelectableRegion>
     _lastPointerDeviceKind = details.kind;
     switch (_getEffectiveConsecutiveTapCount(details.consecutiveTapCount)) {
       case 1:
-        _focusNode.requestFocus();
         switch (defaultTargetPlatform) {
           case TargetPlatform.android:
           case TargetPlatform.fuchsia:
           case TargetPlatform.iOS:
-            // On mobile platforms the selection is set on tap up for the first
-            // tap.
+            // On mobile platforms the selection and focus are set on tap up
+            // for the first tap.
             break;
           case TargetPlatform.macOS:
           case TargetPlatform.linux:
           case TargetPlatform.windows:
+            _focusNode.requestFocus();
             hideToolbar();
             // It is impossible to extend the selection when the shift key is
             // pressed and the start of the selection has not been initialized.
@@ -822,6 +822,7 @@ class SelectableRegionState extends State<SelectableRegion>
           // Drag to select is only enabled with a precise pointer device.
           return;
         }
+        _focusNode.requestFocus();
         _selectStartTo(offset: details.globalPosition);
         _selectionStatusNotifier.value = SelectableRegionSelectionStatus.changing;
     }
@@ -958,6 +959,7 @@ class SelectableRegionState extends State<SelectableRegion>
           case TargetPlatform.android:
           case TargetPlatform.fuchsia:
           case TargetPlatform.iOS:
+            _focusNode.requestFocus();
             hideToolbar();
             _collapseSelectionAt(offset: details.globalPosition);
             _selectionStatusNotifier.value = SelectableRegionSelectionStatus.changing;
