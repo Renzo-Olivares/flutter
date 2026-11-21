@@ -6998,9 +6998,9 @@ void main() {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
                   _selectableRegion(focusNode: focus1, child: const Text('First region')),
-                  const SizedBox(height: 50),
+                  const SizedBox(height: 50.0),
                   _selectableRegion(focusNode: focus2, child: const Text('Second region')),
-                  const SizedBox(height: 1000),
+                  const SizedBox(height: 1000.0),
                 ],
               ),
             ),
@@ -7018,7 +7018,7 @@ void main() {
           textOffsetToPosition(paragraph1, 2),
         );
         addTearDown(longPress.removePointer);
-        await tester.pump(const Duration(milliseconds: 500));
+        await tester.pump(kLongPressTimeout);
         await longPress.up();
         await tester.pumpAndSettle();
 
@@ -7032,14 +7032,16 @@ void main() {
         final Offset secondRegionCenter = tester.getCenter(find.text('Second region'));
         final TestGesture scrollGesture = await tester.startGesture(secondRegionCenter);
         addTearDown(scrollGesture.removePointer);
-        await tester.pump(kPressTimeout + const Duration(milliseconds: 50));
-        await scrollGesture.moveBy(const Offset(0, -30));
-        await scrollGesture.moveBy(const Offset(0, -100));
+        await tester.pump(kPressTimeout);
+        // The first move exceeds kTouchSlop so that the scrollable wins the gesture arena. It
+        // is not applied to the scroll offset. The second move scrolls the content.
+        await scrollGesture.moveBy(const Offset(0.0, -30.0));
+        await scrollGesture.moveBy(const Offset(0.0, -100.0));
         await tester.pump();
         await scrollGesture.up();
         await tester.pumpAndSettle();
 
-        expect(scrollController.offset, greaterThan(0));
+        expect(scrollController.offset, greaterThan(0.0));
         expect(focus1.hasFocus, isTrue);
         expect(focus2.hasFocus, isFalse);
         expect(paragraph1.selections, const <TextSelection>[
@@ -7078,9 +7080,9 @@ void main() {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
                   TestTextField(controller: textFieldController, focusNode: textFieldFocus),
-                  const SizedBox(height: 150),
+                  const SizedBox(height: 150.0),
                   _selectableRegion(focusNode: regionFocus, child: const Text('Selectable card')),
-                  const SizedBox(height: 1000),
+                  const SizedBox(height: 1000.0),
                 ],
               ),
             ),
@@ -7096,14 +7098,16 @@ void main() {
         final Offset regionCenter = tester.getCenter(find.text('Selectable card'));
         final TestGesture scrollGesture = await tester.startGesture(regionCenter);
         addTearDown(scrollGesture.removePointer);
-        await tester.pump(kPressTimeout + const Duration(milliseconds: 50));
-        await scrollGesture.moveBy(const Offset(0, -30));
-        await scrollGesture.moveBy(const Offset(0, -100));
+        await tester.pump(kPressTimeout);
+        // The first move exceeds kTouchSlop so that the scrollable wins the gesture arena. It
+        // is not applied to the scroll offset. The second move scrolls the content.
+        await scrollGesture.moveBy(const Offset(0.0, -30.0));
+        await scrollGesture.moveBy(const Offset(0.0, -100.0));
         await tester.pump();
         await scrollGesture.up();
         await tester.pumpAndSettle();
 
-        expect(scrollController.offset, greaterThan(0));
+        expect(scrollController.offset, greaterThan(0.0));
         expect(textFieldFocus.hasFocus, isTrue);
         expect(regionFocus.hasFocus, isFalse);
 
@@ -7134,7 +7138,7 @@ void main() {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
               TestTextField(controller: textFieldController, focusNode: textFieldFocus),
-              const SizedBox(height: 50),
+              const SizedBox(height: 50.0),
               _selectableRegion(focusNode: regionFocus, child: const Text('Mouse drag on mobile')),
             ],
           ),
@@ -7166,6 +7170,58 @@ void main() {
         TextSelection(baseOffset: 0, extentOffset: 5),
       ]);
     }, variant: TargetPlatformVariant.mobile());
+
+    testWidgets('Tapping on an active selection on iOS requests focus on SelectableRegion', (
+      WidgetTester tester,
+    ) async {
+      const text = 'Tap on selection';
+      final textFieldController = TextEditingController(text: 'Input text');
+      addTearDown(textFieldController.dispose);
+      final textFieldFocus = FocusNode();
+      addTearDown(textFieldFocus.dispose);
+      final regionFocus = FocusNode();
+      addTearDown(regionFocus.dispose);
+
+      await tester.pumpWidget(
+        TestWidgetsApp(
+          textStyle: _materialDefaultTextStyle,
+          home: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              TestTextField(controller: textFieldController, focusNode: textFieldFocus),
+              const SizedBox(height: 50.0),
+              _selectableRegion(focusNode: regionFocus, child: const Text(text)),
+            ],
+          ),
+        ),
+      );
+      textFieldFocus.requestFocus();
+      await tester.pumpAndSettle();
+
+      final RenderParagraph paragraph = tester.renderObject<RenderParagraph>(
+        find.descendant(of: find.text(text), matching: find.byType(RichText)),
+      );
+
+      // Selecting all programmatically does not focus the SelectableRegion.
+      tester.state<SelectableRegionState>(find.byType(SelectableRegion)).selectAll();
+      await tester.pumpAndSettle();
+
+      expect(textFieldFocus.hasFocus, isTrue);
+      expect(regionFocus.hasFocus, isFalse);
+      expect(paragraph.selections, const <TextSelection>[
+        TextSelection(baseOffset: 0, extentOffset: text.length),
+      ]);
+
+      // Tapping on the active selection toggles the toolbar instead of moving the selection.
+      await tester.tap(find.text(text));
+      await tester.pumpAndSettle();
+
+      expect(regionFocus.hasFocus, isTrue);
+      expect(textFieldFocus.hasFocus, isFalse);
+      expect(paragraph.selections, const <TextSelection>[
+        TextSelection(baseOffset: 0, extentOffset: text.length),
+      ]);
+    }, variant: TargetPlatformVariant.only(TargetPlatform.iOS));
   });
 }
 

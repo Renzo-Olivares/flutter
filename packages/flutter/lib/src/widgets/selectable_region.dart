@@ -822,6 +822,9 @@ class SelectableRegionState extends State<SelectableRegion>
           // Drag to select is only enabled with a precise pointer device.
           return;
         }
+        // On mobile platforms focus is not requested on tap down, and tap up
+        // is not called when the pointer starts a drag, so focus is requested
+        // here. On desktop platforms focus was already requested on tap down.
         _focusNode.requestFocus();
         _selectStartTo(offset: details.globalPosition);
         _selectionStatusNotifier.value = SelectableRegionSelectionStatus.changing;
@@ -945,6 +948,10 @@ class SelectableRegionState extends State<SelectableRegion>
         _positionIsOnActiveSelection(globalPosition: details.globalPosition)) {
       // On iOS when the tap occurs on the previous selection, instead of
       // moving the selection, the context menu will be toggled.
+      //
+      // Focus is still requested, because the selection may have been set
+      // without focusing this region, for example by calling selectAll.
+      _focusNode.requestFocus();
       final bool toolbarIsVisible = _selectionOverlay?.toolbarIsVisible ?? false;
       if (toolbarIsVisible) {
         hideToolbar(false);
