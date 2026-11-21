@@ -673,7 +673,7 @@ class SelectableRegionState extends State<SelectableRegion>
               ..onDragStart = _handleMouseDragStart
               ..onDragUpdate = _handleMouseDragUpdate
               ..onDragEnd = _handleMouseDragEnd
-              ..onCancel = clearSelection
+              ..onCancel = _handleTapDragCancel
               ..dragStartBehavior = DragStartBehavior.down;
           },
         );
@@ -722,7 +722,7 @@ class SelectableRegionState extends State<SelectableRegion>
               ..onDragStart = _handleMouseDragStart
               ..onDragUpdate = _handleMouseDragUpdate
               ..onDragEnd = _handleMouseDragEnd
-              ..onCancel = clearSelection
+              ..onCancel = _handleTapDragCancel
               ..dragStartBehavior = DragStartBehavior.down;
           },
         );
@@ -997,6 +997,12 @@ class SelectableRegionState extends State<SelectableRegion>
     }
     _finalizeSelectableRegionStatus();
     _updateSelectedContentIfNeeded();
+  }
+
+  void _handleTapDragCancel() {
+    _doubleTapOffset = null;
+    _finalizeSelection();
+    _finalizeSelectableRegionStatus();
   }
 
   void _updateSelectedContentIfNeeded() {

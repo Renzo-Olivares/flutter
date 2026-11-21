@@ -921,16 +921,16 @@ void main() {
     ) async {
       // Regression test for https://github.com/flutter/flutter/issues/128765
       final spy = UniqueKey();
+      final scrollController = ScrollController();
+      addTearDown(scrollController.dispose);
 
       await tester.pumpWidget(
         TestWidgetsApp(
-          home: SizedBox(
-            height: 750,
-            child: SingleChildScrollView(
-              child: SizedBox(
-                height: 2000,
-                child: _selectableRegion(child: SelectionSpy(key: spy)),
-              ),
+          home: SingleChildScrollView(
+            controller: scrollController,
+            child: SizedBox(
+              height: 2000,
+              child: _selectableRegion(child: SelectionSpy(key: spy)),
             ),
           ),
         ),
@@ -949,11 +949,14 @@ void main() {
       expect(renderSelectionSpy.events[0], isA<SelectWordSelectionEvent>());
 
       renderSelectionSpy.events.clear();
-      final TestGesture scrollGesture = await tester.startGesture(const Offset(250.0, 850.0));
-      await tester.pump(const Duration(milliseconds: 500));
-      await scrollGesture.moveTo(Offset.zero);
+      final TestGesture scrollGesture = await tester.startGesture(const Offset(250.0, 400.0));
+      addTearDown(scrollGesture.removePointer);
+      await tester.pump(kPressTimeout + const Duration(milliseconds: 50));
+      await scrollGesture.moveBy(const Offset(0.0, -30.0));
+      await scrollGesture.moveBy(const Offset(0.0, -150.0));
       await scrollGesture.up();
       await tester.pumpAndSettle();
+      expect(scrollController.offset, greaterThan(0));
       expect(renderSelectionSpy.events.length, 0);
     });
 
@@ -6976,6 +6979,230 @@ void main() {
     expect(paragraphE.selections[0], const TextSelection(baseOffset: 7, extentOffset: 0));
     expect(outerParagraph1.selections[0], const TextSelection(baseOffset: 4, extentOffset: 3));
     expect(outerParagraph2.selections[0], const TextSelection(baseOffset: 2, extentOffset: 1));
+  });
+
+  group('Preserving selection on gesture cancel', () {
+    testWidgets(
+      'Dragging inside SelectableRegion after kPressTimeout scrolls parent without clearing selection',
+      (WidgetTester tester) async {
+        final scrollController = ScrollController();
+        addTearDown(scrollController.dispose);
+
+        await tester.pumpWidget(
+          TestWidgetsApp(
+            textStyle: _materialDefaultTextStyle,
+            home: SingleChildScrollView(
+              controller: scrollController,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  const SizedBox(height: 200),
+                  _selectableRegion(child: const Text('Hello selectable world')),
+                  const SizedBox(height: 1000),
+                ],
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final RenderParagraph paragraph = tester.renderObject<RenderParagraph>(
+          find.descendant(of: find.text('Hello selectable world'), matching: find.byType(RichText)),
+        );
+
+        // Long-press "Hello" to create an active selection.
+        final TestGesture longPress = await tester.startGesture(textOffsetToPosition(paragraph, 2));
+        addTearDown(longPress.removePointer);
+        await tester.pump(const Duration(milliseconds: 500));
+        await longPress.up();
+        await tester.pumpAndSettle();
+
+        expect(paragraph.selections, const <TextSelection>[
+          TextSelection(baseOffset: 0, extentOffset: 5),
+        ]);
+
+        // Touch down directly inside the SelectableRegion, pause past kPressTimeout,
+        // and drag vertically to scroll the parent scrollable.
+        final Offset regionCenter = tester.getCenter(find.byType(SelectableRegion));
+        final TestGesture scrollGesture = await tester.startGesture(regionCenter);
+        addTearDown(scrollGesture.removePointer);
+        await tester.pump(kPressTimeout + const Duration(milliseconds: 50));
+        await scrollGesture.moveBy(const Offset(0, -30));
+        await scrollGesture.moveBy(const Offset(0, -100));
+        await tester.pump();
+        await scrollGesture.up();
+        await tester.pumpAndSettle();
+
+        expect(scrollController.offset, greaterThan(0));
+        expect(paragraph.selections, const <TextSelection>[
+          TextSelection(baseOffset: 0, extentOffset: 5),
+        ]);
+
+        // Tapping outside the active selection still collapses it.
+        await tester.tapAt(textOffsetToPosition(paragraph, 18));
+        await tester.pumpAndSettle();
+        expect(paragraph.selections.single.isCollapsed, isTrue);
+      },
+      variant: TargetPlatformVariant.mobile(),
+    );
+
+    testWidgets(
+      'Dragging slightly diagonally inside SelectableRegion after kPressTimeout scrolls child without clearing selection',
+      (WidgetTester tester) async {
+        final scrollController = ScrollController();
+        addTearDown(scrollController.dispose);
+
+        await tester.pumpWidget(
+          TestWidgetsApp(
+            textStyle: _materialDefaultTextStyle,
+            home: _selectableRegion(
+              child: SingleChildScrollView(
+                controller: scrollController,
+                child: const Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[Text('Child scrollable text'), SizedBox(height: 1000)],
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final RenderParagraph paragraph = tester.renderObject<RenderParagraph>(
+          find.descendant(of: find.text('Child scrollable text'), matching: find.byType(RichText)),
+        );
+
+        // Long-press "Child" to select it.
+        final TestGesture longPress = await tester.startGesture(textOffsetToPosition(paragraph, 2));
+        addTearDown(longPress.removePointer);
+        await tester.pump(const Duration(milliseconds: 500));
+        await longPress.up();
+        await tester.pumpAndSettle();
+
+        expect(paragraph.selections, const <TextSelection>[
+          TextSelection(baseOffset: 0, extentOffset: 5),
+        ]);
+
+        // Touch down inside the child scrollable, wait past kPressTimeout, and move
+        // slightly diagonally so Euclidean distance exceeds touch slop before |dy| does.
+        final TestGesture scrollGesture = await tester.startGesture(const Offset(200, 300));
+        addTearDown(scrollGesture.removePointer);
+        await tester.pump(kPressTimeout + const Duration(milliseconds: 50));
+        await scrollGesture.moveBy(const Offset(10, -16));
+        await tester.pump();
+        await scrollGesture.moveBy(const Offset(0, -30));
+        await tester.pump();
+        await scrollGesture.moveBy(const Offset(0, -100));
+        await tester.pump();
+        await scrollGesture.up();
+        await tester.pumpAndSettle();
+
+        expect(scrollController.offset, greaterThan(0));
+        expect(paragraph.selections, const <TextSelection>[
+          TextSelection(baseOffset: 0, extentOffset: 5),
+        ]);
+      },
+      variant: TargetPlatformVariant.mobile(),
+    );
+
+    testWidgets(
+      'Dragging horizontally inside SelectableRegion after kPressTimeout scrolls parent horizontal scrollable on iOS without clearing selection',
+      (WidgetTester tester) async {
+        final scrollController = ScrollController();
+        addTearDown(scrollController.dispose);
+
+        await tester.pumpWidget(
+          TestWidgetsApp(
+            textStyle: _materialDefaultTextStyle,
+            home: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              controller: scrollController,
+              child: Row(
+                children: <Widget>[
+                  _selectableRegion(child: const Text('Horizontal scroll text')),
+                  const SizedBox(width: 1000),
+                ],
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final RenderParagraph paragraph = tester.renderObject<RenderParagraph>(
+          find.descendant(of: find.text('Horizontal scroll text'), matching: find.byType(RichText)),
+        );
+
+        final TestGesture longPress = await tester.startGesture(textOffsetToPosition(paragraph, 2));
+        addTearDown(longPress.removePointer);
+        await tester.pump(const Duration(milliseconds: 500));
+        await longPress.up();
+        await tester.pumpAndSettle();
+
+        expect(paragraph.selections, const <TextSelection>[
+          TextSelection(baseOffset: 0, extentOffset: 10),
+        ]);
+
+        final Offset regionCenter = tester.getCenter(find.byType(SelectableRegion));
+        final TestGesture scrollGesture = await tester.startGesture(regionCenter);
+        addTearDown(scrollGesture.removePointer);
+        await tester.pump(kPressTimeout + const Duration(milliseconds: 50));
+        await scrollGesture.moveBy(const Offset(-30, 0));
+        await scrollGesture.moveBy(const Offset(-150, 0));
+        await tester.pump();
+        await scrollGesture.up();
+        await tester.pumpAndSettle();
+
+        expect(scrollController.offset, greaterThan(0));
+        expect(paragraph.selections, const <TextSelection>[
+          TextSelection(baseOffset: 0, extentOffset: 10),
+        ]);
+      },
+      variant: TargetPlatformVariant.only(TargetPlatform.iOS),
+    );
+
+    testWidgets(
+      'Cancelling an in-progress drag selection finalizes status without clearing selection',
+      (WidgetTester tester) async {
+        final GlobalKey textKey = GlobalKey();
+
+        await tester.pumpWidget(
+          TestWidgetsApp(
+            textStyle: _materialDefaultTextStyle,
+            home: _selectableRegion(child: Text('Hello world', key: textKey)),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final RenderParagraph paragraph = tester.renderObject<RenderParagraph>(
+          find.descendant(of: find.byKey(textKey), matching: find.byType(RichText)),
+        );
+        final ValueListenable<SelectableRegionSelectionStatus>? statusNotifier =
+            SelectableRegionSelectionStatusScope.maybeOf(textKey.currentContext!);
+        expect(statusNotifier, isNotNull);
+
+        final TestGesture gesture = await tester.startGesture(
+          textOffsetToPosition(paragraph, 0),
+          kind: PointerDeviceKind.mouse,
+        );
+        addTearDown(gesture.removePointer);
+        await gesture.moveTo(textOffsetToPosition(paragraph, 5));
+        await tester.pump();
+
+        expect(statusNotifier!.value, SelectableRegionSelectionStatus.changing);
+        expect(paragraph.selections, const <TextSelection>[
+          TextSelection(baseOffset: 0, extentOffset: 5),
+        ]);
+
+        await gesture.cancel();
+        await tester.pump();
+
+        expect(statusNotifier.value, SelectableRegionSelectionStatus.finalized);
+        expect(paragraph.selections, const <TextSelection>[
+          TextSelection(baseOffset: 0, extentOffset: 5),
+        ]);
+      },
+      variant: TargetPlatformVariant.all(),
+    );
   });
 }
 
