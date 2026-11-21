@@ -12,6 +12,7 @@ library;
 
 import 'dart:async';
 import 'dart:math';
+import 'dart:ui' as ui;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
@@ -30,13 +31,18 @@ import 'framework.dart';
 import 'gesture_detector.dart';
 import 'magnifier.dart';
 import 'media_query.dart';
+import 'notification_listener.dart';
 import 'overlay.dart';
 import 'platform_selectable_region_context_menu.dart';
+import 'scroll_notification.dart';
+import 'scroll_notification_observer.dart';
+import 'scrollable.dart';
 import 'selection_container.dart';
 import 'tap_region.dart';
 import 'text_editing_intents.dart';
 import 'text_selection.dart';
 import 'text_selection_toolbar_anchors.dart';
+import 'view.dart';
 
 // Examples can assume:
 // late GlobalKey key;
@@ -213,6 +219,14 @@ const double _kSelectableVerticalComparingThreshold = 3.0;
 /// done in [State.didChangeDependencies]. Remove the listener when no longer
 /// needed, typically in your Stateful widgets [State.dispose] method through
 /// [ValueListenable.removeListener].
+///
+/// ## Scrolling Considerations
+///
+/// If this [SelectableRegion] is not a descendant of [Scaffold] and is being
+/// used within a [Scrollable] or nested [Scrollable]s, consider placing a
+/// [ScrollNotificationObserver] above the root [Scrollable] that contains this
+/// [SelectableRegion] to ensure proper scroll coordination for
+/// [SelectableRegion] and its components like [SelectionOverlay].
 ///
 /// ## Tests
 ///
@@ -418,6 +432,26 @@ class SelectableRegionState extends State<SelectableRegion>
   Orientation? _lastOrientation;
   SelectedContent? _lastSelectedContent;
 
+  ScrollNotificationObserverState? _scrollNotificationObserver;
+  ({SelectionStatus status, String? selectedText, bool hadSelectionRects})?
+  _dataWhenToolbarShowScheduled;
+  bool _listeningToScrollNotificationObserver = false;
+  bool _showToolbarOnScreenScheduled = false;
+
+  bool get _platformSupportsFadeOnScroll => switch (defaultTargetPlatform) {
+    TargetPlatform.android || TargetPlatform.iOS => true,
+    TargetPlatform.fuchsia ||
+    TargetPlatform.linux ||
+    TargetPlatform.macOS ||
+    TargetPlatform.windows => false,
+  };
+
+  void _disposeScrollNotificationObserver() {
+    _listeningToScrollNotificationObserver = false;
+    _scrollNotificationObserver?.removeListener(_handleContextMenuOnParentScroll);
+    _scrollNotificationObserver = null;
+  }
+
   /// Whether the native browser context menu is enabled.
   // TODO(Renzo-Olivares): Re-enable web context menu for Android
   // and iOS when https://github.com/flutter/flutter/issues/177123
@@ -458,6 +492,7 @@ class SelectableRegionState extends State<SelectableRegion>
   void initState() {
     super.initState();
     _focusNode.addListener(_handleFocusChanged);
+    _selectionStatusNotifier.addListener(_handleSelectionStatusChanged);
     _initMouseGestureRecognizer();
     _initTouchGestureRecognizer();
     // Right clicks.
@@ -497,11 +532,17 @@ class SelectableRegionState extends State<SelectableRegion>
     final Orientation orientation = MediaQuery.orientationOf(context);
     if (_lastOrientation == null) {
       _lastOrientation = orientation;
-      return;
-    }
-    if (orientation != _lastOrientation) {
+    } else if (orientation != _lastOrientation) {
       _lastOrientation = orientation;
       hideToolbar(defaultTargetPlatform == TargetPlatform.android);
+    }
+
+    if (_listeningToScrollNotificationObserver) {
+      // Remove any existing listener in case didChangeDependencies was called
+      // because the ScrollNotificationObserver ancestor changed.
+      _scrollNotificationObserver?.removeListener(_handleContextMenuOnParentScroll);
+      _scrollNotificationObserver = ScrollNotificationObserver.maybeOf(context);
+      _scrollNotificationObserver?.addListener(_handleContextMenuOnParentScroll);
     }
   }
 
@@ -526,6 +567,14 @@ class SelectableRegionState extends State<SelectableRegion>
 
   Action<T> _makeOverridable<T extends Intent>(Action<T> defaultAction) {
     return Action<T>.overridable(context: context, defaultAction: defaultAction);
+  }
+
+  void _handleSelectionStatusChanged() {
+    if (_selectionStatusNotifier.value == SelectableRegionSelectionStatus.changing &&
+        _dataWhenToolbarShowScheduled != null) {
+      _dataWhenToolbarShowScheduled = null;
+      _disposeScrollNotificationObserver();
+    }
   }
 
   void _handleFocusChanged() {
@@ -565,6 +614,8 @@ class SelectableRegionState extends State<SelectableRegion>
     if (_hasSelectionOverlayGeometry) {
       _updateSelectionOverlay();
     } else {
+      _dataWhenToolbarShowScheduled = null;
+      _disposeScrollNotificationObserver();
       _selectionOverlay?.dispose();
       _selectionOverlay = null;
     }
@@ -1381,23 +1432,252 @@ class SelectableRegionState extends State<SelectableRegion>
     }
 
     _selectionOverlay!.toolbarLocation = location;
+    _dataWhenToolbarShowScheduled = null;
     // TODO(Renzo-Olivares): Remove the logic below that does a runtimeType
     // check for TextSelectionHandleControls when TextSelectionHandleControls
     // is fully removed, see: https://github.com/flutter/flutter/pull/124262.
     if (widget.selectionControls is! TextSelectionHandleControls) {
       _selectionOverlay!.showToolbar();
-      return true;
+    } else {
+      if (widget.contextMenuBuilder == null) {
+        return false;
+      }
+      _selectionOverlay!.hideToolbar();
+      _selectionOverlay!.showToolbar(
+        context: context,
+        contextMenuBuilder: (BuildContext context) {
+          return widget.contextMenuBuilder!(context, this);
+        },
+      );
     }
 
-    _selectionOverlay!.hideToolbar();
-
-    _selectionOverlay!.showToolbar(
-      context: context,
-      contextMenuBuilder: (BuildContext context) {
-        return widget.contextMenuBuilder!(context, this);
-      },
-    );
+    // Listen to parent scroll events when the toolbar is visible so it can be
+    // hidden during a scroll on supported platforms.
+    if (_platformSupportsFadeOnScroll) {
+      _listeningToScrollNotificationObserver = true;
+      _scrollNotificationObserver?.removeListener(_handleContextMenuOnParentScroll);
+      _scrollNotificationObserver = ScrollNotificationObserver.maybeOf(context);
+      _scrollNotificationObserver?.addListener(_handleContextMenuOnParentScroll);
+    }
     return true;
+  }
+
+  bool _scrollableNotificationIsFromSameSubtree(BuildContext? notificationContext) {
+    if (notificationContext == null) {
+      return false;
+    }
+    BuildContext? currentContext = context;
+    // The notification context of a ScrollNotification points to the RawGestureDetector
+    // of the Scrollable. We get the ScrollableState associated with this notification
+    // by looking up the tree.
+    final ScrollableState? notificationScrollableState = notificationContext
+        .findAncestorStateOfType<ScrollableState>();
+    if (notificationScrollableState == null) {
+      return false;
+    }
+    while (currentContext != null) {
+      final ScrollableState? scrollableState = currentContext
+          .findAncestorStateOfType<ScrollableState>();
+      if (scrollableState == notificationScrollableState) {
+        return true;
+      }
+      currentContext = scrollableState?.context;
+    }
+    return false;
+  }
+
+  bool _hasSelectionChangedSinceToolbarHide() {
+    final ({SelectionStatus status, String? selectedText, bool hadSelectionRects})? scheduled =
+        _dataWhenToolbarShowScheduled;
+    if (scheduled == null) {
+      return true;
+    }
+    return scheduled.status != _selectionDelegate.value.status ||
+        scheduled.selectedText != _selectable?.getSelectedContent()?.plainText;
+  }
+
+  void _handleContextMenuOnParentScroll(ScrollNotification notification) {
+    // Do some preliminary checks to avoid expensive subtree traversal.
+    if (notification is! ScrollStartNotification && notification is! ScrollEndNotification) {
+      return;
+    }
+    switch (notification) {
+      case ScrollStartNotification() when _dataWhenToolbarShowScheduled != null:
+      case ScrollEndNotification() when _dataWhenToolbarShowScheduled == null:
+        break;
+      case ScrollEndNotification() when _hasSelectionChangedSinceToolbarHide():
+        _dataWhenToolbarShowScheduled = null;
+        _disposeScrollNotificationObserver();
+      case ScrollNotification(:final BuildContext? context)
+          when _scrollableNotificationIsFromSameSubtree(context):
+        _handleContextMenuOnScroll(notification);
+    }
+  }
+
+  Rect _calculateDeviceRect() {
+    final Size screenSize = MediaQuery.sizeOf(context);
+    final ui.FlutterView view = View.of(context);
+    final double obscuredVertical =
+        (view.padding.top + view.padding.bottom + view.viewInsets.bottom) / view.devicePixelRatio;
+    final double obscuredHorizontal =
+        (view.padding.left + view.padding.right) / view.devicePixelRatio;
+    final visibleScreenSize = Size(
+      screenSize.width - obscuredHorizontal,
+      screenSize.height - obscuredVertical,
+    );
+    return Rect.fromLTWH(
+      view.padding.left / view.devicePixelRatio,
+      view.padding.top / view.devicePixelRatio,
+      visibleScreenSize.width,
+      visibleScreenSize.height,
+    );
+  }
+
+  Rect? _getLocalSelectionBounds() {
+    final SelectionGeometry geometry = _selectionDelegate.value;
+    if (geometry.selectionRects.isNotEmpty) {
+      return geometry.selectionRects.reduce(
+        (Rect result, Rect rect) => result.expandToInclude(rect),
+      );
+    }
+    final SelectionPoint? start = geometry.startSelectionPoint;
+    final SelectionPoint? end = geometry.endSelectionPoint;
+    if (start == null && end == null) {
+      return null;
+    }
+    final Offset startPosition = start?.localPosition ?? end!.localPosition;
+    final Offset endPosition = end?.localPosition ?? start!.localPosition;
+    final double startHeight = start?.lineHeight ?? end!.lineHeight;
+    final double endHeight = end?.lineHeight ?? start!.lineHeight;
+    final startRect = Rect.fromLTWH(
+      startPosition.dx,
+      startPosition.dy - startHeight,
+      1.0,
+      startHeight,
+    );
+    final endRect = Rect.fromLTWH(endPosition.dx, endPosition.dy - endHeight, 1.0, endHeight);
+    return startRect.expandToInclude(endRect);
+  }
+
+  bool _selectionInViewport(RenderBox renderBox, Rect selectionBounds) {
+    RenderAbstractViewport? closestViewport = RenderAbstractViewport.maybeOf(renderBox);
+    while (closestViewport != null) {
+      final Rect selectionBoundsLocalToViewport = MatrixUtils.transformRect(
+        renderBox.getTransformTo(closestViewport),
+        selectionBounds,
+      );
+      if (selectionBoundsLocalToViewport.hasNaN ||
+          closestViewport.paintBounds.hasNaN ||
+          !closestViewport.paintBounds.overlaps(selectionBoundsLocalToViewport)) {
+        return false;
+      }
+      closestViewport = RenderAbstractViewport.maybeOf(closestViewport.parent);
+    }
+    return true;
+  }
+
+  void _handleContextMenuOnScroll(ScrollNotification notification) {
+    if (_webContextMenuEnabled || !_platformSupportsFadeOnScroll) {
+      return;
+    }
+    if (notification is! ScrollStartNotification && notification is! ScrollEndNotification) {
+      return;
+    }
+    // When the scroll begins and the toolbar is visible, hide it
+    // until scrolling ends.
+    //
+    // The selection needs to be visible within the current viewport for the
+    // toolbar to show when scrolling ends. If it is not, then the toolbar is
+    // shown when it is scrolled back into view, unless invalidated by a change
+    // in selection.
+    if (notification is ScrollStartNotification) {
+      if (_dataWhenToolbarShowScheduled != null) {
+        return;
+      }
+      final bool toolbarIsVisible = _selectionOverlay?.toolbarIsVisible ?? false;
+      if (!toolbarIsVisible) {
+        return;
+      }
+      if (_getLocalSelectionBounds() == null) {
+        return;
+      }
+      _dataWhenToolbarShowScheduled = (
+        status: _selectionDelegate.value.status,
+        selectedText: _selectable?.getSelectedContent()?.plainText,
+        hadSelectionRects: _selectionDelegate.value.selectionRects.isNotEmpty,
+      );
+      _selectionOverlay?.hideToolbar();
+    } else if (notification is ScrollEndNotification) {
+      if (_dataWhenToolbarShowScheduled == null) {
+        return;
+      }
+      if (_hasSelectionChangedSinceToolbarHide()) {
+        _dataWhenToolbarShowScheduled = null;
+        _disposeScrollNotificationObserver();
+        return;
+      }
+      if (_showToolbarOnScreenScheduled) {
+        return;
+      }
+      _showToolbarOnScreenScheduled = true;
+      void scheduleToolbar(Duration _) {
+        _showToolbarOnScreenScheduled = false;
+        if (!mounted || _dataWhenToolbarShowScheduled == null) {
+          return;
+        }
+        if (_hasSelectionChangedSinceToolbarHide()) {
+          _dataWhenToolbarShowScheduled = null;
+          _disposeScrollNotificationObserver();
+          return;
+        }
+        if (!_hasSelectionOverlayGeometry) {
+          return;
+        }
+        if (_dataWhenToolbarShowScheduled!.hadSelectionRects &&
+            _selectionDelegate.value.selectionRects.isEmpty) {
+          // The selection has been clipped out of a descendant scrollable's viewport.
+          return;
+        }
+        final Rect? localSelectionBounds = _getLocalSelectionBounds();
+        if (localSelectionBounds == null) {
+          return;
+        }
+        final renderBox = context.findRenderObject() as RenderBox?;
+        if (renderBox == null || !renderBox.attached || !renderBox.hasSize) {
+          return;
+        }
+        if (!localSelectionBounds.overlaps(Offset.zero & renderBox.size)) {
+          return;
+        }
+        final Rect deviceRect = _calculateDeviceRect();
+        final Rect globalSelectionBounds = MatrixUtils.transformRect(
+          renderBox.getTransformTo(null),
+          localSelectionBounds,
+        );
+        final bool selectionOverlapsWithDeviceRect =
+            !globalSelectionBounds.hasNaN && deviceRect.overlaps(globalSelectionBounds);
+
+        if (selectionOverlapsWithDeviceRect &&
+            _selectionInViewport(renderBox, localSelectionBounds)) {
+          _showToolbar();
+          _dataWhenToolbarShowScheduled = null;
+        }
+      }
+
+      // Always run in a post-frame callback so that layout/paint and any child
+      // _ScrollableSelectionContainerDelegate.layoutDidChange() callbacks have
+      // already run with the final scroll offset.
+      SchedulerBinding.instance.addPostFrameCallback(
+        scheduleToolbar,
+        debugLabel: 'SelectableRegion.scheduleToolbar',
+      );
+      if (SchedulerBinding.instance.schedulerPhase == SchedulerPhase.idle ||
+          SchedulerBinding.instance.schedulerPhase == SchedulerPhase.postFrameCallbacks) {
+        // During these scheduler phases we cannot guarantee there will be a
+        // frame after, so explicitly schedule one.
+        SchedulerBinding.instance.scheduleFrame();
+      }
+    }
   }
 
   /// Sets or updates selection end edge to the `offset` location.
@@ -1578,6 +1858,8 @@ class SelectableRegionState extends State<SelectableRegion>
 
   /// Removes the ongoing selection for this [SelectableRegion].
   void clearSelection() {
+    _dataWhenToolbarShowScheduled = null;
+    _disposeScrollNotificationObserver();
     _finalizeSelection();
     _directionalHorizontalBaseline = null;
     _adjustingSelectionEnd = null;
@@ -1788,12 +2070,16 @@ class SelectableRegionState extends State<SelectableRegion>
 
   /// The line height at the start of the current selection.
   double get startGlyphHeight {
-    return _selectionDelegate.value.startSelectionPoint!.lineHeight;
+    final SelectionPoint? start = _selectionDelegate.value.startSelectionPoint;
+    final SelectionPoint? end = _selectionDelegate.value.endSelectionPoint;
+    return start?.lineHeight ?? end!.lineHeight;
   }
 
   /// The line height at the end of the current selection.
   double get endGlyphHeight {
-    return _selectionDelegate.value.endSelectionPoint!.lineHeight;
+    final SelectionPoint? start = _selectionDelegate.value.startSelectionPoint;
+    final SelectionPoint? end = _selectionDelegate.value.endSelectionPoint;
+    return end?.lineHeight ?? start!.lineHeight;
   }
 
   /// Returns the local coordinates of the endpoints of the current selection.
@@ -1838,6 +2124,9 @@ class SelectableRegionState extends State<SelectableRegion>
 
   @override
   void hideToolbar([bool hideHandles = true]) {
+    // Stop listening to parent scroll events when toolbar is hidden.
+    _dataWhenToolbarShowScheduled = null;
+    _disposeScrollNotificationObserver();
     _selectionOverlay?.hideToolbar();
     if (hideHandles) {
       _selectionOverlay?.hideHandles();
@@ -1941,12 +2230,15 @@ class SelectableRegionState extends State<SelectableRegion>
   @protected
   @override
   void dispose() {
+    _dataWhenToolbarShowScheduled = null;
+    _disposeScrollNotificationObserver();
     _selectable?.removeListener(_updateSelectionStatus);
     _selectable?.pushHandleLayers(null, null);
     if (kIsWeb) {
       PlatformSelectableRegionContextMenu.detach(_selectionDelegate);
     }
     _selectionDelegate.dispose();
+    _selectionStatusNotifier.removeListener(_handleSelectionStatusChanged);
     _selectionStatusNotifier.dispose();
     // In case dispose was triggered before gesture end, remove the magnifier
     // so it doesn't remain stuck in the overlay forever.
@@ -1992,10 +2284,16 @@ class SelectableRegionState extends State<SelectableRegion>
           excludeFromSemantics: true,
           child: Actions(
             actions: _actions,
-            child: Focus.withExternalFocusNode(
-              includeSemantics: false,
-              focusNode: _focusNode,
-              child: result,
+            child: NotificationListener<ScrollNotification>(
+              onNotification: (ScrollNotification notification) {
+                _handleContextMenuOnScroll(notification);
+                return false;
+              },
+              child: Focus.withExternalFocusNode(
+                includeSemantics: false,
+                focusNode: _focusNode,
+                child: result,
+              ),
             ),
           ),
         ),

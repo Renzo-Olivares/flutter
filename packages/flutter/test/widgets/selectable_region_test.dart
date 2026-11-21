@@ -6977,6 +6977,527 @@ void main() {
     expect(outerParagraph1.selections[0], const TextSelection(baseOffset: 4, extentOffset: 3));
     expect(outerParagraph2.selections[0], const TextSelection(baseOffset: 2, extentOffset: 1));
   });
+
+  group('Parent scrollable context menu refresh', () {
+    testWidgets(
+      'Toolbar hides on parent scroll start and re-shows with updated anchors on scroll end',
+      (WidgetTester tester) async {
+        final toolbarKey = UniqueKey();
+        final scrollController = ScrollController();
+        addTearDown(scrollController.dispose);
+        TextSelectionToolbarAnchors? lastAnchors;
+
+        await tester.pumpWidget(
+          TestWidgetsApp(
+            home: ScrollNotificationObserver(
+              child: SingleChildScrollView(
+                controller: scrollController,
+                child: Column(
+                  children: <Widget>[
+                    const SizedBox(height: 200),
+                    _selectableRegion(
+                      contextMenuBuilder: (BuildContext context, SelectableRegionState state) {
+                        lastAnchors = state.contextMenuAnchors;
+                        return SizedBox(key: toolbarKey, width: 100, height: 40);
+                      },
+                      child: const Text('Select me please'),
+                    ),
+                    const SizedBox(height: 1000),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final RenderParagraph paragraph = tester.renderObject<RenderParagraph>(
+          find.descendant(of: find.text('Select me please'), matching: find.byType(RichText)),
+        );
+
+        // Long-press to select a word and show the toolbar.
+        final TestGesture longPress = await tester.startGesture(textOffsetToPosition(paragraph, 2));
+        addTearDown(longPress.removePointer);
+        await tester.pump(const Duration(milliseconds: 500));
+        await longPress.up();
+        await tester.pumpAndSettle();
+
+        expect(find.byKey(toolbarKey), findsOneWidget);
+        final Offset anchorsBeforeScroll = lastAnchors!.primaryAnchor;
+
+        // Start scrolling the parent scrollable by dragging outside the SelectableRegion.
+        final TestGesture scrollGesture = await tester.startGesture(const Offset(100, 400));
+        addTearDown(scrollGesture.removePointer);
+        await scrollGesture.moveBy(const Offset(0, -100));
+        await tester.pump();
+
+        // Toolbar should be hidden while scrolling.
+        expect(find.byKey(toolbarKey), findsNothing);
+
+        // End the scroll (non-fling).
+        await scrollGesture.up();
+        await tester.pumpAndSettle();
+
+        // Toolbar should re-appear with recalculated anchors shifted upward.
+        expect(find.byKey(toolbarKey), findsOneWidget);
+        expect(lastAnchors!.primaryAnchor.dy, lessThan(anchorsBeforeScroll.dy));
+        expect(
+          lastAnchors!.primaryAnchor.dy,
+          moreOrLessEquals(anchorsBeforeScroll.dy - scrollController.offset, epsilon: 1.0),
+        );
+      },
+      variant: const TargetPlatformVariant(<TargetPlatform>{
+        TargetPlatform.android,
+        TargetPlatform.iOS,
+      }),
+      skip: kIsWeb, // [intended] Web uses native context menu on desktop; covered separately.
+    );
+
+    testWidgets(
+      'Toolbar stays hidden when scrolled out of parent viewport and re-appears when scrolled back',
+      (WidgetTester tester) async {
+        final toolbarKey = UniqueKey();
+        final scrollController = ScrollController();
+        addTearDown(scrollController.dispose);
+
+        await tester.pumpWidget(
+          TestWidgetsApp(
+            home: ScrollNotificationObserver(
+              child: SingleChildScrollView(
+                controller: scrollController,
+                child: Column(
+                  children: <Widget>[
+                    const SizedBox(height: 100),
+                    _selectableRegion(
+                      contextMenuBuilder: (BuildContext context, SelectableRegionState state) {
+                        return SizedBox(key: toolbarKey, width: 100, height: 40);
+                      },
+                      child: const Text('Scroll me away'),
+                    ),
+                    const SizedBox(height: 2000),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final RenderParagraph paragraph = tester.renderObject<RenderParagraph>(
+          find.descendant(of: find.text('Scroll me away'), matching: find.byType(RichText)),
+        );
+
+        final TestGesture longPress = await tester.startGesture(textOffsetToPosition(paragraph, 2));
+        addTearDown(longPress.removePointer);
+        await tester.pump(const Duration(milliseconds: 500));
+        await longPress.up();
+        await tester.pumpAndSettle();
+
+        expect(find.byKey(toolbarKey), findsOneWidget);
+
+        // Scroll selection completely off the top of the viewport.
+        scrollController.jumpTo(500);
+        await tester.pumpAndSettle();
+
+        expect(find.byKey(toolbarKey), findsNothing);
+
+        // Scroll back into view: toolbar should re-appear.
+        scrollController.jumpTo(50);
+        await tester.pumpAndSettle();
+
+        expect(find.byKey(toolbarKey), findsOneWidget);
+      },
+      variant: const TargetPlatformVariant(<TargetPlatform>{
+        TargetPlatform.android,
+        TargetPlatform.iOS,
+      }),
+      skip: kIsWeb,
+    );
+
+    testWidgets(
+      'Clearing selection while scrolled out of view cancels scheduled toolbar re-show',
+      (WidgetTester tester) async {
+        final toolbarKey = UniqueKey();
+        final regionKey = GlobalKey<SelectableRegionState>();
+        final scrollController = ScrollController();
+        addTearDown(scrollController.dispose);
+
+        await tester.pumpWidget(
+          TestWidgetsApp(
+            home: ScrollNotificationObserver(
+              child: SingleChildScrollView(
+                controller: scrollController,
+                child: Column(
+                  children: <Widget>[
+                    const SizedBox(height: 100),
+                    _selectableRegion(
+                      key: regionKey,
+                      contextMenuBuilder: (BuildContext context, SelectableRegionState state) {
+                        return SizedBox(key: toolbarKey, width: 100, height: 40);
+                      },
+                      child: const Text('Clear while hidden'),
+                    ),
+                    const SizedBox(height: 2000),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final RenderParagraph paragraph = tester.renderObject<RenderParagraph>(
+          find.descendant(of: find.text('Clear while hidden'), matching: find.byType(RichText)),
+        );
+
+        final TestGesture longPress = await tester.startGesture(textOffsetToPosition(paragraph, 2));
+        addTearDown(longPress.removePointer);
+        await tester.pump(const Duration(milliseconds: 500));
+        await longPress.up();
+        await tester.pumpAndSettle();
+
+        expect(find.byKey(toolbarKey), findsOneWidget);
+
+        // Scroll off-screen.
+        scrollController.jumpTo(500);
+        await tester.pumpAndSettle();
+        expect(find.byKey(toolbarKey), findsNothing);
+
+        // Clear selection while scrolled out of view.
+        regionKey.currentState!.clearSelection();
+        await tester.pumpAndSettle();
+
+        // Scroll back into view: toolbar must NOT re-appear.
+        scrollController.jumpTo(0);
+        await tester.pumpAndSettle();
+        expect(find.byKey(toolbarKey), findsNothing);
+      },
+      variant: const TargetPlatformVariant(<TargetPlatform>{
+        TargetPlatform.android,
+        TargetPlatform.iOS,
+      }),
+      skip: kIsWeb,
+    );
+
+    testWidgets(
+      'Scrolling an unrelated sibling scrollable does not hide SelectableRegion toolbar',
+      (WidgetTester tester) async {
+        final toolbarKey = UniqueKey();
+        final siblingController = ScrollController();
+        addTearDown(siblingController.dispose);
+
+        await tester.pumpWidget(
+          TestWidgetsApp(
+            home: ScrollNotificationObserver(
+              child: Row(
+                children: <Widget>[
+                  Expanded(
+                    child: _selectableRegion(
+                      contextMenuBuilder: (BuildContext context, SelectableRegionState state) {
+                        return SizedBox(key: toolbarKey, width: 100, height: 40);
+                      },
+                      child: const Center(child: Text('Selectable text')),
+                    ),
+                  ),
+                  Expanded(
+                    child: SingleChildScrollView(
+                      controller: siblingController,
+                      child: const SizedBox(height: 2000),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final RenderParagraph paragraph = tester.renderObject<RenderParagraph>(
+          find.descendant(of: find.text('Selectable text'), matching: find.byType(RichText)),
+        );
+
+        final TestGesture longPress = await tester.startGesture(textOffsetToPosition(paragraph, 2));
+        addTearDown(longPress.removePointer);
+        await tester.pump(const Duration(milliseconds: 500));
+        await longPress.up();
+        await tester.pumpAndSettle();
+
+        expect(find.byKey(toolbarKey), findsOneWidget);
+
+        // Start dragging the sibling scrollable.
+        final TestGesture siblingDrag = await tester.startGesture(const Offset(600, 300));
+        addTearDown(siblingDrag.removePointer);
+        await siblingDrag.moveBy(const Offset(0, -100));
+        await tester.pump();
+
+        // Toolbar should remain visible while sibling scrolls.
+        expect(find.byKey(toolbarKey), findsOneWidget);
+
+        await siblingDrag.up();
+        await tester.pumpAndSettle();
+        expect(find.byKey(toolbarKey), findsOneWidget);
+      },
+      variant: const TargetPlatformVariant(<TargetPlatform>{
+        TargetPlatform.android,
+        TargetPlatform.iOS,
+      }),
+      skip: kIsWeb,
+    );
+
+    testWidgets(
+      'SelectionOverlay.markNeedsBuild rebuilds contextMenuBuilder when handles are hidden',
+      (WidgetTester tester) async {
+        final regionKey = GlobalKey<SelectableRegionState>();
+        var buildCount = 0;
+
+        await tester.pumpWidget(
+          TestWidgetsApp(
+            home: _selectableRegion(
+              key: regionKey,
+              contextMenuBuilder: (BuildContext context, SelectableRegionState state) {
+                buildCount += 1;
+                return const SizedBox(width: 100, height: 40);
+              },
+              child: const Center(child: Text('Hello world')),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final RenderParagraph paragraph = tester.renderObject<RenderParagraph>(
+          find.descendant(of: find.text('Hello world'), matching: find.byType(RichText)),
+        );
+
+        final TestGesture longPress = await tester.startGesture(textOffsetToPosition(paragraph, 1));
+        addTearDown(longPress.removePointer);
+        await tester.pump(const Duration(milliseconds: 500));
+        await longPress.up();
+        await tester.pumpAndSettle();
+
+        final SelectionOverlay overlay = regionKey.currentState!.selectionOverlay!;
+        expect(overlay.toolbarIsVisible, isTrue);
+        overlay.hideHandles();
+        await tester.pump();
+
+        final buildsBefore = buildCount;
+        overlay.markNeedsBuild();
+        await tester.pump();
+
+        expect(buildCount, greaterThan(buildsBefore));
+      },
+    );
+
+    testWidgets(
+      'Toolbar flips below selection after parent scrollable scrolls selection near top',
+      (WidgetTester tester) async {
+        final toolbarKey = UniqueKey();
+        final scrollController = ScrollController();
+        addTearDown(scrollController.dispose);
+
+        await tester.pumpWidget(
+          TestWidgetsApp(
+            home: ScrollNotificationObserver(
+              child: SingleChildScrollView(
+                controller: scrollController,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    const SizedBox(height: 200),
+                    _selectableRegion(
+                      contextMenuBuilder: (BuildContext context, SelectableRegionState state) {
+                        final TextSelectionToolbarAnchors anchors = state.contextMenuAnchors;
+                        return CustomSingleChildLayout(
+                          delegate: TextSelectionToolbarLayoutDelegate(
+                            anchorAbove: anchors.primaryAnchor,
+                            anchorBelow: anchors.secondaryAnchor ?? anchors.primaryAnchor,
+                          ),
+                          child: SizedBox(key: toolbarKey, width: 100, height: 40),
+                        );
+                      },
+                      child: const Text('First selectable line\nSecond selectable line'),
+                    ),
+                    const SizedBox(height: 1000),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final RenderParagraph paragraph = tester.renderObject<RenderParagraph>(
+          find.descendant(of: find.byType(SelectableRegion), matching: find.byType(RichText)),
+        );
+
+        final TestGesture longPress = await tester.startGesture(textOffsetToPosition(paragraph, 2));
+        addTearDown(longPress.removePointer);
+        await tester.pump(const Duration(milliseconds: 500));
+        await longPress.up();
+        await tester.pumpAndSettle();
+
+        expect(find.byKey(toolbarKey), findsOneWidget);
+        final double textTopBeforeScroll = tester.getTopLeft(find.byType(SelectableRegion)).dy;
+        final double toolbarTopBeforeScroll = tester.getTopLeft(find.byKey(toolbarKey)).dy;
+        expect(toolbarTopBeforeScroll, lessThan(textTopBeforeScroll));
+
+        // Scroll parent so the top of the selection is too close to the top edge for the toolbar.
+        scrollController.jumpTo(195);
+        await tester.pumpAndSettle();
+
+        expect(find.byKey(toolbarKey), findsOneWidget);
+        final double textTopAfterScroll = tester.getTopLeft(find.byType(SelectableRegion)).dy;
+        final double toolbarTopAfterScroll = tester.getTopLeft(find.byKey(toolbarKey)).dy;
+        expect(toolbarTopAfterScroll, greaterThan(textTopAfterScroll));
+      },
+      variant: const TargetPlatformVariant(<TargetPlatform>{
+        TargetPlatform.android,
+        TargetPlatform.iOS,
+      }),
+      skip: kIsWeb,
+    );
+
+    testWidgets(
+      'Toolbar hides on child scroll start and re-shows with updated anchors on scroll end without ScrollNotificationObserver',
+      (WidgetTester tester) async {
+        final toolbarKey = UniqueKey();
+        final scrollController = ScrollController();
+        addTearDown(scrollController.dispose);
+        TextSelectionToolbarAnchors? lastAnchors;
+
+        await tester.pumpWidget(
+          TestWidgetsApp(
+            home: _selectableRegion(
+              contextMenuBuilder: (BuildContext context, SelectableRegionState state) {
+                lastAnchors = state.contextMenuAnchors;
+                return SizedBox(key: toolbarKey, width: 100, height: 40);
+              },
+              child: SingleChildScrollView(
+                controller: scrollController,
+                child: const Column(
+                  children: <Widget>[
+                    SizedBox(height: 200),
+                    Text('Child scroll text'),
+                    SizedBox(height: 1000),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final RenderParagraph paragraph = tester.renderObject<RenderParagraph>(
+          find.descendant(of: find.text('Child scroll text'), matching: find.byType(RichText)),
+        );
+
+        final TestGesture longPress = await tester.startGesture(textOffsetToPosition(paragraph, 2));
+        addTearDown(longPress.removePointer);
+        await tester.pump(const Duration(milliseconds: 500));
+        await longPress.up();
+        await tester.pumpAndSettle();
+
+        expect(find.byKey(toolbarKey), findsOneWidget);
+        final Offset anchorsBeforeScroll = lastAnchors!.primaryAnchor;
+
+        // Start scrolling the child scrollable (first move breaks touch slop;
+        // second move scrolls the viewport).
+        final TestGesture scrollGesture = await tester.startGesture(const Offset(100, 400));
+        addTearDown(scrollGesture.removePointer);
+        await scrollGesture.moveBy(const Offset(0, -30));
+        await scrollGesture.moveBy(const Offset(0, -100));
+        await tester.pump();
+
+        expect(scrollController.offset, greaterThan(0));
+
+        // Toolbar should hide during child scroll.
+        expect(find.byKey(toolbarKey), findsNothing);
+
+        // End the scroll.
+        await scrollGesture.up();
+        await tester.pumpAndSettle();
+
+        // Toolbar should re-appear with recalculated anchors shifted upward.
+        expect(find.byKey(toolbarKey), findsOneWidget);
+        expect(lastAnchors!.primaryAnchor.dy, lessThan(anchorsBeforeScroll.dy));
+        expect(
+          lastAnchors!.primaryAnchor.dy,
+          moreOrLessEquals(anchorsBeforeScroll.dy - scrollController.offset, epsilon: 1.0),
+        );
+      },
+      variant: const TargetPlatformVariant(<TargetPlatform>{
+        TargetPlatform.android,
+        TargetPlatform.iOS,
+      }),
+      skip: kIsWeb,
+    );
+
+    testWidgets(
+      'Toolbar stays hidden when scrolled out of child viewport and re-appears when scrolled back',
+      (WidgetTester tester) async {
+        final toolbarKey = UniqueKey();
+        final scrollController = ScrollController();
+        addTearDown(scrollController.dispose);
+
+        await tester.pumpWidget(
+          TestWidgetsApp(
+            home: Center(
+              child: SizedBox(
+                height: 300,
+                child: _selectableRegion(
+                  contextMenuBuilder: (BuildContext context, SelectableRegionState state) {
+                    return SizedBox(key: toolbarKey, width: 100, height: 40);
+                  },
+                  child: SingleChildScrollView(
+                    controller: scrollController,
+                    child: const Column(
+                      children: <Widget>[
+                        SizedBox(height: 100),
+                        Text('Scroll out of child viewport'),
+                        SizedBox(height: 1000),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final RenderParagraph paragraph = tester.renderObject<RenderParagraph>(
+          find.descendant(
+            of: find.text('Scroll out of child viewport'),
+            matching: find.byType(RichText),
+          ),
+        );
+
+        final TestGesture longPress = await tester.startGesture(textOffsetToPosition(paragraph, 2));
+        addTearDown(longPress.removePointer);
+        await tester.pump(const Duration(milliseconds: 500));
+        await longPress.up();
+        await tester.pumpAndSettle();
+
+        expect(find.byKey(toolbarKey), findsOneWidget);
+
+        // Scroll selection above the child viewport (even though global y is still on screen).
+        scrollController.jumpTo(200);
+        await tester.pumpAndSettle();
+
+        expect(find.byKey(toolbarKey), findsNothing);
+
+        // Scroll back into the child viewport: toolbar should re-appear.
+        scrollController.jumpTo(50);
+        await tester.pumpAndSettle();
+
+        expect(find.byKey(toolbarKey), findsOneWidget);
+      },
+      variant: const TargetPlatformVariant(<TargetPlatform>{
+        TargetPlatform.android,
+        TargetPlatform.iOS,
+      }),
+      skip: kIsWeb,
+    );
+  });
 }
 
 class ColumnSelectionContainerDelegate extends StaticSelectionContainerDelegate {

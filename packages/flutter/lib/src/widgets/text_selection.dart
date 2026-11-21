@@ -1719,7 +1719,10 @@ class SelectionOverlay {
 
   /// Rebuilds the selection toolbar or handles if they are present.
   void markNeedsBuild() {
-    if (_handles == null && _toolbar == null) {
+    if (_handles == null &&
+        _toolbar == null &&
+        !_contextMenuController.isShown &&
+        !_spellCheckToolbarController.isShown) {
       return;
     }
     // If we are in build state, it will be too late to update visibility.
